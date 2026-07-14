@@ -7,10 +7,12 @@ use App\Actions\Documents\DownloadPrivateDocument;
 use App\Actions\Documents\StorePrivateDocument;
 use App\Enums\DocumentType;
 use App\Models\Customer;
+use App\Models\DamageReport;
 use App\Models\Document;
 use App\Models\DocumentAccessLog;
 use App\Models\Driver;
 use App\Models\Vehicle;
+use App\Models\VehicleInspection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +41,20 @@ class DocumentController extends Controller
         $this->authorize('view', $driver);
 
         return $this->store($request, $driver, $action);
+    }
+
+    public function storeForInspection(Request $request, VehicleInspection $inspection, StorePrivateDocument $action): RedirectResponse
+    {
+        $this->authorize('manage', $inspection);
+
+        return $this->store($request, $inspection, $action);
+    }
+
+    public function storeForDamage(Request $request, DamageReport $damage, StorePrivateDocument $action): RedirectResponse
+    {
+        $this->authorize('report', $damage);
+
+        return $this->store($request, $damage, $action);
     }
 
     public function show(Request $request, Document $document): View

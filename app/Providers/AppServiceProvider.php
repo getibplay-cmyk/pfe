@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Customer;
+use App\Models\DamageReport;
 use App\Models\Driver;
+use App\Models\RentalContract;
 use App\Models\Vehicle;
+use App\Models\VehicleInspection;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
             'customer' => Customer::class,
             'driver' => Driver::class,
             'vehicle' => Vehicle::class,
+            'rental_contract' => RentalContract::class,
+            'vehicle_inspection' => VehicleInspection::class,
+            'damage_report' => DamageReport::class,
         ]);
     }
 }

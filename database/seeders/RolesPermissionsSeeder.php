@@ -46,13 +46,23 @@ class RolesPermissionsSeeder extends Seeder
             Permission::firstOrCreate(['slug' => $slug], ['name' => $name, 'group' => Str::before($slug, '.')]);
         }
 
+        $lotFourPermissions = [
+            'contract.create' => 'CrÃ©er un contrat', 'contract.version' => 'Versionner un contrat', 'contract.accept' => 'Accepter un contrat',
+            'contract.activate' => 'Activer un contrat', 'contract.return' => 'Traiter le retour', 'contract.cancel' => 'Annuler un contrat brouillon',
+            'inspection.manage' => 'GÃ©rer les inspections', 'damage.view' => 'Voir les dommages', 'damage.report' => 'Signaler un dommage',
+            'damage.review' => 'DÃ©cider la responsabilitÃ©', 'charge.review' => 'Revoir les frais',
+        ];
+        foreach ($lotFourPermissions as $slug => $name) {
+            Permission::firstOrCreate(['slug' => $slug], ['name' => $name, 'group' => Str::before($slug, '.')]);
+        }
+
         $roles = [
             'tenant-owner' => ['Tenant Owner', Permission::pluck('slug')->all()],
-            'agency-manager' => ['Agency Manager', ['agency.view', 'agency.manage', 'user.view', 'user.manage', 'audit.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'document.delete', 'pricing.view', 'pricing.manage', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'reservation.export', 'vehicle_block.manage']],
-            'rental-agent' => ['Rental Agent', ['agency.view', 'user.view', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'pricing.view', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'contract.view']],
-            'fleet-manager' => ['Fleet Manager', ['agency.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'maintenance.view', 'document.view', 'document.upload', 'document.download', 'reservation.view', 'vehicle_block.manage']],
-            'accountant' => ['Accountant', ['agency.view', 'payment.view', 'report.view', 'pricing.view', 'reservation.view']],
-            'viewer-auditor' => ['Viewer/Auditor', ['agency.view', 'user.view', 'vehicle.view', 'customer.view', 'document.view', 'pricing.view', 'reservation.view', 'report.view', 'audit.view']],
+            'agency-manager' => ['Agency Manager', ['agency.view', 'agency.manage', 'user.view', 'user.manage', 'audit.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'document.delete', 'pricing.view', 'pricing.manage', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'reservation.export', 'vehicle_block.manage', 'contract.view', 'contract.create', 'contract.version', 'contract.accept', 'contract.activate', 'contract.return', 'contract.cancel', 'inspection.manage', 'damage.view', 'damage.report', 'damage.review', 'charge.review']],
+            'rental-agent' => ['Rental Agent', ['agency.view', 'user.view', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'pricing.view', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'contract.view', 'contract.create', 'contract.version', 'contract.accept', 'contract.activate', 'contract.return', 'contract.cancel', 'inspection.manage', 'damage.view', 'damage.report']],
+            'fleet-manager' => ['Fleet Manager', ['agency.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'maintenance.view', 'document.view', 'document.upload', 'document.download', 'reservation.view', 'vehicle_block.manage', 'contract.view', 'inspection.manage', 'damage.view', 'damage.report', 'damage.review']],
+            'accountant' => ['Accountant', ['agency.view', 'payment.view', 'report.view', 'pricing.view', 'reservation.view', 'contract.view', 'damage.view', 'charge.review']],
+            'viewer-auditor' => ['Viewer/Auditor', ['agency.view', 'user.view', 'vehicle.view', 'customer.view', 'document.view', 'pricing.view', 'reservation.view', 'contract.view', 'damage.view', 'report.view', 'audit.view']],
         ];
 
         foreach ($roles as $slug => [$name, $permissions]) {

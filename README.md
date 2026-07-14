@@ -219,3 +219,48 @@ php artisan reservations:expire-pending
 
 Le scheduler Laravel l’exécute chaque minute. Pour la démonstration, le seeder
 ajoute des tarifs MAD et des réservations fictives dans tous les états du lot.
+
+## Lot 04 — contrats, départ et retour
+
+Une réservation confirmée peut désormais être convertie en un contrat unique.
+La conversion conserve le `vehicle_block` existant, le rattache au contrat et
+passe la réservation à `converted` sans recalculer son tarif figé.
+
+Le contrat suit la machine d’états suivante :
+
+```text
+draft → ready → accepted → active → return_pending → returned
+   └──────────────→ cancelled
+```
+
+Chaque contrat possède des versions JSON canoniques avec empreinte SHA-256.
+L’acceptation trace la version exacte, la méthode, la date, l’adresse IP et le
+user-agent. Une version acceptée reste immuable ; un avenant crée une nouvelle
+version qui doit être acceptée à nouveau. Cette acceptation PFE n’est pas
+présentée comme une signature électronique qualifiée.
+
+Le départ exige une inspection terminée, un véhicule actif, un permis valide
+et le bloc contractuel actif. Le retour compare kilométrage, carburant et
+éléments contrôlés. Les frais restent proposés jusqu’à une approbation ou un
+rejet explicite. Les dommages ne reçoivent jamais de responsabilité automatique.
+Les photos d’inspection et de dommage réutilisent le stockage documentaire privé.
+
+Le lot se termine à `returned`. Le statut `closed`, les paiements et les
+mouvements de caution sont volontairement réservés au lot 05.
+
+Routes principales :
+
+- `/contracts` : liste filtrée des contrats ;
+- `/contracts/{contract}` : timeline, versions, inspections, dommages et frais ;
+- `/contracts/{contract}/print` : vue HTML imprimable, sans package PDF ;
+- création du contrat depuis la fiche d’une réservation confirmée.
+
+Les scénarios de démonstration créent six contrats fictifs (`draft`, `ready`,
+`accepted`, `active`, `return_pending`, `returned`), des inspections, deux
+dommages et des frais proposés/approuvés. Pour rejouer uniquement sur la base
+de test :
+
+```powershell
+php artisan migrate:fresh --seed --env=testing
+php artisan test tests/Feature/Lot04RentalContractLifecycleTest.php
+```

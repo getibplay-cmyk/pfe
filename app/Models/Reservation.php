@@ -84,4 +84,9 @@ class Reservation extends Model
     {
         return $this->hasOne(VehicleBlock::class)->where('status', 'active');
     }
+
+    public function rentalContract(): HasOne
+    {
+        return $this->hasOne(RentalContract::class);
+    }
 }

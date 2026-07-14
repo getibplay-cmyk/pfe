@@ -54,7 +54,7 @@ class ReservationController extends Controller
     public function show(Reservation $reservation, ResolvePricingRule $resolve, CalculateReservationQuote $calculate): View
     {
         $this->authorize('view', $reservation);
-        $reservation->load(['agency', 'customer', 'driver', 'vehicleCategory', 'vehicle', 'pricingRule', 'statusHistories.actor', 'vehicleBlocks']);
+        $reservation->load(['agency', 'customer', 'driver', 'vehicleCategory', 'vehicle', 'pricingRule', 'statusHistories.actor', 'vehicleBlocks', 'rentalContract']);
         $quote = null;
         $quoteError = null;
         if ($reservation->status->canBeConfirmed()) {

@@ -25,6 +25,10 @@ modification architecturale ou tout nouveau module.
 - Un tarif confirmé est figé dans `pricing_snapshot` et ne doit jamais être recalculé silencieusement.
 - Les montants sont des décimaux `numeric(14,2)` manipulés sans `float`.
 - Ne pas ajouter de package, SPA ou microservice sans accord.
+- Un contrat provient uniquement d’une réservation `confirmed`, puis reprend son `vehicle_block` existant sans créer de bloc concurrent.
+- Une version contractuelle acceptée et une inspection `completed` sont immuables ; toute correction contractuelle crée une nouvelle version traçable.
+- Aucune règle automatique ne décide de la responsabilité d’un dommage. Toute responsabilité et tout frais associé exigent une décision humaine explicite.
+- Le lot 04 s’arrête à `returned`. Le statut `closed`, les paiements et les mouvements de caution appartiennent au lot financier suivant.
 - Ne jamais commiter `.env`, `.env.testing`, secrets ou données personnelles.
 - Exécuter les tests PostgreSQL pertinents, Pint et le build avant de terminer.
 - Rapporter fichiers modifiés, commandes, résultats et limites.
