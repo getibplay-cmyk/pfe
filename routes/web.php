@@ -28,6 +28,7 @@ use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -68,8 +69,8 @@ Route::get('/health', function () {
         DB::connection()->getPdo();
 
         return response()->json(['status' => 'ok', 'application' => 'ok', 'database' => 'ok']);
-    } catch (Throwable $exception) {
-        report($exception);
+    } catch (Throwable) {
+        Log::warning('Health check database unavailable.');
 
         return response()->json(['status' => 'error', 'application' => 'ok', 'database' => 'error'], 503);
     }

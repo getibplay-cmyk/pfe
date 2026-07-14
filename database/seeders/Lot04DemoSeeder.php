@@ -51,12 +51,13 @@ class Lot04DemoSeeder extends Seeder
             }
             $owner = User::whereHas('role', fn ($query) => $query->where('slug', 'tenant-owner'))->firstOrFail();
             $start = CarbonImmutable::now(config('reservations.display_timezone'))->addDays(30)->startOfHour();
+            $category = VehicleCategory::where('is_active', true)->firstOrFail();
+            $agencyId = Vehicle::where('vehicle_category_id', $category->id)->value('agency_id');
             $customer = Customer::with(['drivers' => fn ($query) => $query->where('licence_expires_at', '>', $start->addDays(20)->toDateString())])
+                ->where('agency_id', $agencyId)
                 ->whereHas('drivers', fn ($query) => $query->where('licence_expires_at', '>', $start->addDays(20)->toDateString()))->firstOrFail();
             $driver = $customer->drivers->first();
-            $category = VehicleCategory::where('is_active', true)->firstOrFail();
-            $agencyId = Vehicle::value('agency_id');
-            $vehicles = Vehicle::where('vehicle_category_id', $category->id)->where('operational_status', 'active')->take(6)->get();
+            $vehicles = Vehicle::where('agency_id', $agencyId)->where('vehicle_category_id', $category->id)->where('operational_status', 'active')->take(6)->get();
             while ($vehicles->count() < 6) {
                 $index = $vehicles->count() + 1;
                 $vehicles->push($createVehicle->handle(['agency_id' => $agencyId, 'vehicle_category_id' => $category->id, 'registration_number' => 'RF-DEMO-04-'.$index, 'brand' => 'Dacia', 'model' => 'Duster', 'production_year' => 2025, 'fuel_type' => 'diesel', 'transmission' => 'manual', 'current_mileage' => 2000 + ($index * 100)], $owner->id));

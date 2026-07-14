@@ -11,6 +11,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->environment('production')) {
+            throw new \LogicException('Les données fictives de démonstration sont interdites en production.');
+        }
+
         $this->call([
             RolesPermissionsSeeder::class,
             DemoTenancySeeder::class,

@@ -1,10 +1,9 @@
 # RentFleet
 
 RentFleet est un SaaS B2B de gestion de location automobile réalisé dans le
-cadre d’un PFE de Master en Sciences des Données. Les lots 00 à 03 fournissent
-le socle authentifié multitenant, les référentiels, les documents privés, la
-tarification versionnée et les réservations protégées contre la double
-affectation par PostgreSQL.
+cadre d’un PFE de Master en Sciences des Données. Les lots 00 à 06 fournissent
+un cycle démontrable de la réservation à la clôture, avec isolation
+multitenant, documents privés, contraintes PostgreSQL et outillage de release.
 
 ## Stack
 
@@ -130,13 +129,9 @@ Réinitialiser exclusivement la base de test avec les données fictives :
 php artisan migrate:fresh --seed --env=testing
 ```
 
-Pour réinitialiser volontairement la base locale de développement :
-
-```powershell
-php artisan migrate:fresh --seed
-```
-
-Cette dernière commande détruit les données locales. Les seeders créent deux
+Ne jamais exécuter `migrate:fresh` sur `rentfleet`. Pour une démonstration
+persistante, créer une base dédiée `rentfleet_demo`, vérifier sa configuration
+avec `php artisan db:show`, puis suivre le runbook. Les seeders créent deux
 tenants fictifs, trois agences, les six rôles initiaux et des utilisateurs de
 démonstration avec les domaines `@atlas-demo.test` et `@rif-demo.test`. Le mot
 de passe de démonstration peut être fourni localement avec `DEMO_PASSWORD` ;
@@ -294,3 +289,29 @@ php artisan test tests/Feature/Lot05MaintenanceInsurancePhaseBTest.php
 ```
 
 Ce lot n’ajoute ni comptabilité générale, grand livre, paiement bancaire réel, stockage de carte, déclaration fiscale, paie ou IA.
+
+## Lot 06 — sécurité, exploitation et release candidate
+
+Le lot 06 ajoute des en-têtes HTTP défensifs, un identifiant de corrélation,
+des pages d’erreur génériques, une configuration de production sans secret et
+la commande non destructive suivante :
+
+```powershell
+php artisan rentfleet:doctor
+```
+
+Le contrôle de déploiement vérifie migrations, diagnostic, caches, tests,
+formatage et build :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/deploy-check.ps1
+```
+
+Les procédures détaillées sont dans `docs/deployment/production-checklist.md`,
+`docs/operations/backup-and-restore.md` et `docs/demo/runbook.md`. Sauvegarde et
+restauration associent PostgreSQL et le stockage privé ; la restauration
+automatisée est limitée à `rentfleet_restore_test`. Les mots de passe passent
+par `pgpass`/`PGPASSFILE`, jamais par un argument ou un fichier versionné.
+
+La release candidate reste volontairement sans IA. Les règles, modèles et
+prédictions relèvent des lots suivants et ne conditionnent aucun flux métier.

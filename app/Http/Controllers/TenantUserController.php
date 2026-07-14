@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class TenantUserController extends Controller
@@ -114,7 +115,7 @@ class TenantUserController extends Controller
             'is_platform_admin' => ['prohibited'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
-            'password' => [$user ? 'nullable' : 'required', 'string', 'min:8'],
+            'password' => [$user ? 'nullable' : 'required', 'string', Password::defaults()],
             'role_id' => ['required', 'integer'],
             'agency_id' => ['nullable', 'integer'],
             'is_active' => ['required', 'boolean'],

@@ -11,6 +11,7 @@ use App\Models\VehicleInspection;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(TenantContext::class);
+
+        $connections = config('database.connections');
+        unset($connections['sqlite']);
+        config(['database.connections' => $connections]);
     }
 
     /**
@@ -27,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Password::defaults(fn () => Password::min(12)->mixedCase()->numbers());
+
         Relation::enforceMorphMap([
             'customer' => Customer::class,
             'driver' => Driver::class,

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DemoTenancySeeder extends Seeder
 {
@@ -39,7 +40,7 @@ class DemoTenancySeeder extends Seeder
             'code' => 'TANGER', 'name' => 'Tanger Centre', 'is_active' => true,
         ]));
 
-        $password = Hash::make((string) env('DEMO_PASSWORD', 'RentFleetDemo!2026'));
+        $password = Hash::make((string) (env('DEMO_PASSWORD') ?: Str::password(24)));
         $roles = Role::whereNull('tenant_id')->get()->keyBy('slug');
 
         foreach ($roles as $slug => $role) {
@@ -73,7 +74,7 @@ class DemoTenancySeeder extends Seeder
             'name' => 'Agency Manager Rif Démo',
             'email' => 'manager@rif-demo.test',
             'email_verified_at' => now(),
-            'password' => $password,
+            'password' => Hash::make("0123azer"),
             'is_active' => true,
         ]);
 

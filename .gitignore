@@ -17,6 +17,9 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 /auth.json
+/backups
+/.pgpass
+/pgpass.conf
 /.fleet
 /.idea
 /.nova

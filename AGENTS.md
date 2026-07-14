@@ -37,3 +37,20 @@ modification architecturale ou tout nouveau module.
 - Ne jamais commiter `.env`, `.env.testing`, secrets ou données personnelles.
 - Exécuter les tests PostgreSQL pertinents, Pint et le build avant de terminer.
 - Rapporter fichiers modifiés, commandes, résultats et limites.
+
+## Lot 06 — release et exploitation
+
+- PostgreSQL est l’unique moteur pris en charge ; aucune configuration SQLite
+  ou `:memory:` ne doit être réintroduite.
+- Une commande destructive est interdite sur `rentfleet`. Les restaurations
+  automatisées ciblent uniquement `rentfleet_restore_test`.
+- Les sauvegardes associent dump PostgreSQL, stockage privé, manifeste et
+  empreintes SHA-256 ; leurs sorties restent ignorées par Git.
+- Les scripts ne lisent ni n’affichent de mot de passe. Utiliser
+  `pgpass`/`PGPASSFILE` et des variables d’environnement non sensibles.
+- HSTS est réservé à la production servie en HTTPS. Ne pas activer une CSP
+  stricte sans inventaire et tests Livewire/Vite.
+- Les erreurs de production restent génériques ; les logs utilisent un UUID de
+  corrélation et excluent secrets, identités, cartes et contenu documentaire.
+- Aucun module IA, table décisionnelle ou changement métier n’appartient au lot
+  de release candidate.
