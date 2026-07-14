@@ -264,3 +264,33 @@ de test :
 php artisan migrate:fresh --seed --env=testing
 php artisan test tests/Feature/Lot04RentalContractLifecycleTest.php
 ```
+
+## Lot 05 — finance, clôture, maintenance et assurance
+
+Le workflow contractuel atteint désormais `closed` uniquement après règlement :
+
+```text
+returned → invoice issued → payment allocation + deposit settlement → closed
+```
+
+Les factures émises et leurs lignes sont protégées contre la mutation par PostgreSQL. Paiements et cautions sont des registres idempotents et traçables ; toute correction produit une contrepassation. Les montants utilisent `numeric(14,2)` et `DecimalMoney`, sans `float`. Les taxes sont configurables et figées, mais ne constituent pas un calcul fiscal officiel.
+
+Une maintenance approuvée crée un `vehicle_block` soumis à la même contrainte GiST que les réservations. La terminer libère le bloc et peut générer une dépense brouillon. Les polices, garanties et sinistres sont suivis administrativement ; numéros et références sensibles sont chiffrés, et aucune responsabilité juridique n’est décidée automatiquement.
+
+Routes principales :
+
+- `/finance` et `/finance/invoices/{invoice}` ;
+- `/maintenance` ;
+- `/insurance` ;
+- `/dashboard` avec KPI financiers et opérationnels tenant/agence-scopés.
+
+Scénarios fictifs du seeder : factures partiellement payée et payée, cautions remboursée et partiellement retenue, contrat clôturé, maintenances planifiée/en cours, assurance proche expiration et sinistre en revue.
+
+Validation ciblée :
+
+```powershell
+php artisan test tests/Feature/Lot05FinancePhaseATest.php
+php artisan test tests/Feature/Lot05MaintenanceInsurancePhaseBTest.php
+```
+
+Ce lot n’ajoute ni comptabilité générale, grand livre, paiement bancaire réel, stockage de carte, déclaration fiscale, paie ou IA.

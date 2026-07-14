@@ -7,6 +7,9 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\InsuranceController;
+use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalContractController;
@@ -16,8 +19,14 @@ use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleCategoryController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleInspectionController;
+use App\Models\Expense;
+use App\Models\InsurancePolicy;
+use App\Models\Invoice;
+use App\Models\MaintenanceOrder;
+use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\Vehicle;
+use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,12 +40,26 @@ Route::get('/dashboard', function (Request $request) {
     $reservationQuery = fn () => Reservation::query()->when($agencyId, fn ($query) => $query->where('agency_id', $agencyId));
     $todayStart = now(config('reservations.display_timezone'))->startOfDay();
     $todayEnd = $todayStart->addDay();
+    $agencyScope = fn ($query) => $query->when($agencyId, fn ($builder) => $builder->where('agency_id', $agencyId));
+    $collected = DB::table('payment_allocations as a')->join('payments as p', 'p.id', '=', 'a.payment_id')
+        ->join('invoices as i', 'i.id', '=', 'a.invoice_id')->where('a.tenant_id', $request->user()->tenant_id)
+        ->when($agencyId, fn ($query) => $query->where('i.agency_id', $agencyId))->whereIn('p.status', ['posted', 'reversed'])
+        ->selectRaw("COALESCE(SUM(CASE WHEN p.direction = 'incoming' THEN a.amount ELSE -a.amount END), 0) AS amount")->value('amount');
+    $depositOutstanding = $agencyScope(RentalContract::query())->sum(DB::raw('deposit_received - deposit_retained - deposit_refunded'));
+    $approvedExpenses = $agencyScope(Expense::query())->where('status', 'approved')->sum('amount');
 
     return view('dashboard', ['kpis' => [
         'Véhicules opérationnels' => (clone $vehicleQuery)->where('operational_status', 'active')->count(),
         'Réservations confirmées' => $reservationQuery()->where('status', 'confirmed')->count(),
         'Départs attendus aujourd’hui' => $reservationQuery()->where('status', 'confirmed')->where('starts_at', '>=', $todayStart)->where('starts_at', '<', $todayEnd)->count(),
         'Expirées ou à traiter' => $reservationQuery()->where(fn ($query) => $query->where('status', 'expired')->orWhere(fn ($pending) => $pending->where('status', 'pending')->where('expires_at', '<=', now())))->count(),
+        'Chiffre d’affaires encaissé' => DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits((string) $collected)).' MAD',
+        'Factures impayées' => $agencyScope(Invoice::query())->whereIn('status', ['issued', 'partially_paid'])->count(),
+        'Cautions à rembourser' => DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits((string) $depositOutstanding)).' MAD',
+        'Dépenses approuvées' => DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits((string) $approvedExpenses)).' MAD',
+        'Véhicules en maintenance' => (clone $vehicleQuery)->where('operational_status', 'maintenance')->count(),
+        'Maintenances proches' => $agencyScope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', today()->addDays(30))->count(),
+        'Assurances expirant prochainement' => $agencyScope(InsurancePolicy::query())->where('status', 'active')->whereDate('ends_at', '<=', today()->addDays(30))->count(),
     ]]);
 })->middleware(['auth', 'tenant'])->name('dashboard');
 
@@ -87,6 +110,32 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/contracts/{contract}/returned', [RentalContractController::class, 'returned'])->name('contracts.returned');
     Route::post('/contracts/{contract}/cancel', [RentalContractController::class, 'cancel'])->name('contracts.cancel');
     Route::get('/contracts/{contract}/print', [RentalContractController::class, 'print'])->name('contracts.print');
+    Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('/finance/invoices/{invoice}', [FinanceController::class, 'show'])->name('finance.invoices.show');
+    Route::post('/contracts/{contract}/invoice', [FinanceController::class, 'createInvoice'])->name('finance.invoices.create');
+    Route::post('/finance/invoices/{invoice}/issue', [FinanceController::class, 'issue'])->name('finance.invoices.issue');
+    Route::post('/finance/invoices/{invoice}/void', [FinanceController::class, 'void'])->name('finance.invoices.void');
+    Route::post('/finance/payments', [FinanceController::class, 'recordPayment'])->name('finance.payments.store');
+    Route::post('/finance/payments/{payment}/invoices/{invoice}', [FinanceController::class, 'allocate'])->name('finance.allocations.store');
+    Route::post('/finance/payments/{payment}/post', [FinanceController::class, 'post'])->name('finance.payments.post');
+    Route::post('/finance/payments/{payment}/reverse', [FinanceController::class, 'reverse'])->name('finance.payments.reverse');
+    Route::post('/contracts/{contract}/deposit/receive', [FinanceController::class, 'receiveDeposit'])->name('finance.deposits.receive');
+    Route::post('/contracts/{contract}/deposit/retain', [FinanceController::class, 'retainDeposit'])->name('finance.deposits.retain');
+    Route::post('/contracts/{contract}/deposit/refund', [FinanceController::class, 'refundDeposit'])->name('finance.deposits.refund');
+    Route::post('/finance/expenses', [FinanceController::class, 'storeExpense'])->name('finance.expenses.store');
+    Route::post('/finance/expenses/{expense}/approve', [FinanceController::class, 'approveExpense'])->name('finance.expenses.approve');
+    Route::post('/contracts/{contract}/close', [FinanceController::class, 'close'])->name('finance.contracts.close');
+    Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
+    Route::post('/maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');
+    Route::post('/maintenance/{maintenance}/approve', [MaintenanceController::class, 'approve'])->name('maintenance.approve');
+    Route::post('/maintenance/{maintenance}/start', [MaintenanceController::class, 'start'])->name('maintenance.start');
+    Route::post('/maintenance/{maintenance}/complete', [MaintenanceController::class, 'complete'])->name('maintenance.complete');
+    Route::post('/maintenance/{maintenance}/cancel', [MaintenanceController::class, 'cancel'])->name('maintenance.cancel');
+    Route::get('/insurance', [InsuranceController::class, 'index'])->name('insurance.index');
+    Route::post('/insurance/companies', [InsuranceController::class, 'storeCompany'])->name('insurance.companies.store');
+    Route::post('/insurance/policies', [InsuranceController::class, 'storePolicy'])->name('insurance.policies.store');
+    Route::post('/insurance/policies/{policy}/coverages', [InsuranceController::class, 'storeCoverage'])->name('insurance.coverages.store');
+    Route::post('/insurance/claims', [InsuranceController::class, 'storeClaim'])->name('insurance.claims.store');
     Route::get('/customers/{customer}/identity', [CustomerController::class, 'identity'])->name('customers.identity');
     Route::post('/customers/{customer}/drivers', [DriverController::class, 'store'])->name('customers.drivers.store');
     Route::post('/vehicles/{vehicle}/documents', [DocumentController::class, 'storeForVehicle'])->name('vehicles.documents.store');

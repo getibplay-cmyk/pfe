@@ -52,6 +52,16 @@ class Vehicle extends Model
         return $this->hasMany(RentalContract::class);
     }
 
+    public function maintenanceOrders(): HasMany
+    {
+        return $this->hasMany(MaintenanceOrder::class);
+    }
+
+    public function insurancePolicies(): HasMany
+    {
+        return $this->hasMany(InsurancePolicy::class);
+    }
+
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');

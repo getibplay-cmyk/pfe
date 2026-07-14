@@ -29,6 +29,11 @@ modification architecturale ou tout nouveau module.
 - Une version contractuelle acceptée et une inspection `completed` sont immuables ; toute correction contractuelle crée une nouvelle version traçable.
 - Aucune règle automatique ne décide de la responsabilité d’un dommage. Toute responsabilité et tout frais associé exigent une décision humaine explicite.
 - Le lot 04 s’arrête à `returned`. Le statut `closed`, les paiements et les mouvements de caution appartiennent au lot financier suivant.
+- Une facture émise et ses lignes sont immuables ; paiements, allocations et cautions se corrigent uniquement par contrepassation append-only.
+- `closed` exige une facture payée, aucune écriture en attente et une caution soldée ; les résumés du contrat ne remplacent jamais les registres.
+- Une maintenance approuvée utilise obligatoirement `vehicle_blocks` et sa contrainte GiST ; le retour du véhicule à `active` reste une confirmation humaine.
+- Chiffrer et masquer les numéros de police et références assureur. RentFleet ne décide jamais de la responsabilité juridique d’un sinistre.
+- Le périmètre financier exclut comptabilité générale, grand livre, carte bancaire, passerelle de paiement et calcul fiscal officiel.
 - Ne jamais commiter `.env`, `.env.testing`, secrets ou données personnelles.
 - Exécuter les tests PostgreSQL pertinents, Pint et le build avant de terminer.
 - Rapporter fichiers modifiés, commandes, résultats et limites.

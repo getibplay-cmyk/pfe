@@ -13,7 +13,7 @@ class VehicleBlock extends Model
 {
     use BelongsToTenant, HasFactory;
 
-    protected $fillable = ['agency_id', 'vehicle_id', 'reservation_id', 'rental_contract_id', 'block_type', 'starts_at', 'ends_at', 'status', 'reason', 'created_by', 'released_at'];
+    protected $fillable = ['agency_id', 'vehicle_id', 'reservation_id', 'rental_contract_id', 'maintenance_order_id', 'block_type', 'starts_at', 'ends_at', 'status', 'reason', 'created_by', 'released_at'];
 
     protected function casts(): array
     {
@@ -44,6 +44,11 @@ class VehicleBlock extends Model
     public function rentalContract(): BelongsTo
     {
         return $this->belongsTo(RentalContract::class);
+    }
+
+    public function maintenanceOrder(): BelongsTo
+    {
+        return $this->belongsTo(MaintenanceOrder::class);
     }
 
     public function creator(): BelongsTo

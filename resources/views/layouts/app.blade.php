@@ -25,6 +25,9 @@
                 @can('viewAny', App\Models\Reservation::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('reservations.index') }}">Réservations</a>@endcan
                 @can('viewAny', App\Models\Reservation::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('availability.index') }}">Disponibilité</a>@endcan
                 @can('viewAny', App\Models\PricingRule::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('pricing-rules.index') }}">Tarification</a>@endcan
+                @if(auth()->user()->hasPermission('invoice.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('finance.index') }}">Finance</a>@endif
+                @if(auth()->user()->hasPermission('maintenance.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('maintenance.index') }}">Maintenance</a>@endif
+                @if(auth()->user()->hasPermission('insurance.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('insurance.index') }}">Assurance</a>@endif
                 <a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('audit-logs.index') }}">Journal d’audit</a>
             @endif
         </nav>

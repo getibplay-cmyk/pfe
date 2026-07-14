@@ -56,6 +56,20 @@ class RolesPermissionsSeeder extends Seeder
             Permission::firstOrCreate(['slug' => $slug], ['name' => $name, 'group' => Str::before($slug, '.')]);
         }
 
+        $lotFivePermissions = [
+            'invoice.view' => 'Voir les factures', 'invoice.create' => 'Créer les factures', 'invoice.issue' => 'Émettre les factures', 'invoice.void' => 'Annuler une facture',
+            'payment.view' => 'Voir les paiements', 'payment.create' => 'Saisir les paiements', 'payment.post' => 'Comptabiliser les paiements', 'payment.allocate' => 'Allouer les paiements', 'payment.reverse' => 'Contrepasser les paiements',
+            'deposit.view' => 'Voir les cautions', 'deposit.create' => 'Saisir les mouvements de caution', 'deposit.reverse' => 'Contrepasser une caution',
+            'expense.view' => 'Voir les dépenses', 'expense.create' => 'Saisir les dépenses', 'expense.approve' => 'Approuver les dépenses',
+            'contract.close' => 'Clôturer financièrement un contrat',
+            'maintenance.create' => 'Créer une maintenance', 'maintenance.approve' => 'Approuver une maintenance', 'maintenance.start' => 'Démarrer une maintenance', 'maintenance.complete' => 'Terminer une maintenance', 'maintenance.cancel' => 'Annuler une maintenance',
+            'insurance.view' => 'Voir les assurances', 'insurance.manage' => 'Gérer les assurances',
+            'claim.view' => 'Voir les sinistres assurance', 'claim.manage' => 'Gérer les sinistres assurance',
+        ];
+        foreach ($lotFivePermissions as $slug => $name) {
+            Permission::firstOrCreate(['slug' => $slug], ['name' => $name, 'group' => Str::before($slug, '.')]);
+        }
+
         $roles = [
             'tenant-owner' => ['Tenant Owner', Permission::pluck('slug')->all()],
             'agency-manager' => ['Agency Manager', ['agency.view', 'agency.manage', 'user.view', 'user.manage', 'audit.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'document.delete', 'pricing.view', 'pricing.manage', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'reservation.export', 'vehicle_block.manage', 'contract.view', 'contract.create', 'contract.version', 'contract.accept', 'contract.activate', 'contract.return', 'contract.cancel', 'inspection.manage', 'damage.view', 'damage.report', 'damage.review', 'charge.review']],
@@ -71,6 +85,17 @@ class RolesPermissionsSeeder extends Seeder
                 ['name' => $name, 'is_system' => true],
             );
             $role->permissions()->sync(Permission::whereIn('slug', $permissions)->pluck('id'));
+        }
+
+        $grants = [
+            'agency-manager' => array_keys($lotFivePermissions),
+            'rental-agent' => ['invoice.view', 'invoice.create', 'payment.view', 'payment.create', 'payment.allocate', 'deposit.view', 'deposit.create', 'contract.close', 'maintenance.view', 'insurance.view', 'claim.view'],
+            'fleet-manager' => ['maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'expense.view', 'expense.create', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
+            'accountant' => ['invoice.view', 'invoice.create', 'invoice.issue', 'payment.view', 'payment.create', 'payment.post', 'payment.allocate', 'payment.reverse', 'deposit.view', 'deposit.create', 'deposit.reverse', 'expense.view', 'expense.create', 'expense.approve', 'contract.close'],
+            'viewer-auditor' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'insurance.view', 'claim.view'],
+        ];
+        foreach ($grants as $roleSlug => $permissions) {
+            Role::where('slug', $roleSlug)->firstOrFail()->permissions()->syncWithoutDetaching(Permission::whereIn('slug', $permissions)->pluck('id'));
         }
     }
 }

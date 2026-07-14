@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             Lot02DemoSeeder::class,
             Lot03DemoSeeder::class,
             Lot04DemoSeeder::class,
+            Lot05DemoSeeder::class,
         ]);
     }
 }
