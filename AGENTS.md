@@ -18,6 +18,12 @@ modification architecturale ou tout nouveau module.
 - Stocker les documents sur le disque privé uniquement, avec chemin serveur aléatoire et téléchargement contrôlé.
 - Ne jamais utiliser `Storage::url` pour un document privé ni accepter un chemin ou un type polymorphe du client.
 - Vérifier MIME, extension, taille et autorisation avant chaque ajout ou téléchargement de fichier.
+- `vehicle_blocks` est l’unique source de vérité de disponibilité ; ne jamais ajouter de booléen de disponibilité sur `vehicles`.
+- Toute période de réservation ou de bloc utilise l’intervalle semi-ouvert `[début, fin)` et des timestamps avec timezone.
+- Ne jamais retirer ni contourner la contrainte GiST `vehicle_blocks_no_active_overlap_excl` ; une vérification PHP seule est insuffisante.
+- Confirmation, annulation et expiration de réservation passent par leurs actions transactionnelles et créent un historique.
+- Un tarif confirmé est figé dans `pricing_snapshot` et ne doit jamais être recalculé silencieusement.
+- Les montants sont des décimaux `numeric(14,2)` manipulés sans `float`.
 - Ne pas ajouter de package, SPA ou microservice sans accord.
 - Ne jamais commiter `.env`, `.env.testing`, secrets ou données personnelles.
 - Exécuter les tests PostgreSQL pertinents, Pint et le build avant de terminer.

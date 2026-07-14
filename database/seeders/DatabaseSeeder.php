@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             RolesPermissionsSeeder::class,
             DemoTenancySeeder::class,
             Lot02DemoSeeder::class,
+            Lot03DemoSeeder::class,
         ]);
     }
 }

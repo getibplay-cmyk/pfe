@@ -1,20 +1,20 @@
 # RentFleet
 
 RentFleet est un SaaS B2B de gestion de location automobile réalisé dans le
-cadre d’un PFE de Master en Sciences des Données. Le lot 00 fournit le socle
-technique : authentification, interface responsive, dashboard vide, contrôle
-de santé, PostgreSQL et tests reproductibles. Aucun module métier ou mécanisme
-multitenant n’est encore implémenté.
+cadre d’un PFE de Master en Sciences des Données. Les lots 00 à 03 fournissent
+le socle authentifié multitenant, les référentiels, les documents privés, la
+tarification versionnée et les réservations protégées contre la double
+affectation par PostgreSQL.
 
 ## Stack
 
 - Laravel 12.63 ;
 - PHP 8.5 avec `pdo_pgsql` et `pgsql` ;
 - PostgreSQL 18 ;
-- Breeze Blade, Tailwind CSS et Vite ;
+- Breeze Blade, Livewire 3.8, Tailwind CSS et Vite ;
 - PHPUnit et Laravel Pint.
 
-Livewire reste réservé aux interactions ciblées ; les pages du socle multitenant utilisent Blade.
+Livewire reste réservé aux interactions ciblées ; les pages actuelles utilisent Blade.
 
 ## Prérequis
 
@@ -179,3 +179,43 @@ Routes principales supplémentaires :
 - `/vehicles` ;
 - `/customers` ;
 - `/documents/{document}` et téléchargement contrôlé associé.
+
+## Lot 03 — tarification, réservations et disponibilité
+
+Les règles tarifaires sont versionnées : une modification archive la version
+active et crée une nouvelle ligne. La résolution privilégie une règle d’agence,
+puis la priorité, la date de validité la plus récente et enfin l’identifiant.
+Les devis utilisent des centimes entiers et les montants PostgreSQL
+`numeric(14,2)` ; aucun calcul monétaire ne dépend d’un `float`.
+
+Une réservation `draft` ou `pending` ne bloque pas le véhicule. La confirmation
+transactionnelle résout le tarif, fige `pricing_snapshot`, crée un
+`vehicle_block` actif, l’historique et l’audit. L’annulation libère le bloc.
+Les intervalles sont semi-ouverts `[début, fin)` : deux créneaux qui se touchent
+exactement sont autorisés.
+
+PostgreSQL impose l’absence de chevauchement avec l’extension `btree_gist` et
+la contrainte `vehicle_blocks_no_active_overlap_excl`. Cette extension doit
+pouvoir être créée par le rôle de migration. Elle n’est volontairement pas
+supprimée lors d’un rollback, car elle peut être partagée.
+
+Routes principales :
+
+- `/pricing-rules` : règles et création de versions ;
+- `/availability` : recherche par agence, catégorie et période ;
+- `/reservations` : brouillons, devis, confirmation, annulation et historique.
+
+La durée maximale initiale est configurable sans secret :
+
+```dotenv
+RESERVATION_MAXIMUM_DURATION_DAYS=365
+```
+
+La commande planifiée suivante expire les attentes arrivées à échéance :
+
+```powershell
+php artisan reservations:expire-pending
+```
+
+Le scheduler Laravel l’exécute chaque minute. Pour la démonstration, le seeder
+ajoute des tarifs MAD et des réservations fictives dans tous les états du lot.

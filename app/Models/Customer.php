@@ -29,6 +29,11 @@ class Customer extends Model
         return $this->hasMany(Driver::class);
     }
 
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');

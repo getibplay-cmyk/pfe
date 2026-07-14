@@ -37,6 +37,16 @@ class Vehicle extends Model
         return $this->hasMany(VehicleStatusHistory::class);
     }
 
+    public function blocks(): HasMany
+    {
+        return $this->hasMany(VehicleBlock::class);
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');

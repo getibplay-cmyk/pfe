@@ -21,6 +21,9 @@
                 <a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('users.index') }}">Utilisateurs</a>
                 @can('viewAny', App\Models\Vehicle::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('vehicles.index') }}">Véhicules</a>@endcan
                 @can('viewAny', App\Models\Customer::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('customers.index') }}">Clients</a>@endcan
+                @can('viewAny', App\Models\Reservation::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('reservations.index') }}">Réservations</a>@endcan
+                @can('viewAny', App\Models\Reservation::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('availability.index') }}">Disponibilité</a>@endcan
+                @can('viewAny', App\Models\PricingRule::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('pricing-rules.index') }}">Tarification</a>@endcan
                 <a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('audit-logs.index') }}">Journal d’audit</a>
             @endif
         </nav>
@@ -39,7 +42,7 @@
             </div>
             @unless(auth()->user()->is_platform_admin)
                 <nav class="mt-4 flex gap-3 overflow-x-auto text-sm md:hidden">
-                    <a href="{{ route('dashboard') }}">Dashboard</a><a href="{{ route('tenant.show') }}">Entreprise</a><a href="{{ route('agencies.index') }}">Agences</a>@can('viewAny', App\Models\Vehicle::class)<a href="{{ route('vehicles.index') }}">Véhicules</a>@endcan @can('viewAny', App\Models\Customer::class)<a href="{{ route('customers.index') }}">Clients</a>@endcan
+                    <a href="{{ route('dashboard') }}">Dashboard</a><a href="{{ route('tenant.show') }}">Entreprise</a><a href="{{ route('agencies.index') }}">Agences</a>@can('viewAny', App\Models\Vehicle::class)<a href="{{ route('vehicles.index') }}">Véhicules</a>@endcan @can('viewAny', App\Models\Customer::class)<a href="{{ route('customers.index') }}">Clients</a>@endcan @can('viewAny', App\Models\Reservation::class)<a href="{{ route('reservations.index') }}">Réservations</a><a href="{{ route('availability.index') }}">Disponibilité</a>@endcan
                 </nav>
             @endunless
         </header>
