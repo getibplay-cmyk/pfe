@@ -1,0 +1,1 @@
+<x-app-layout><div class="mx-auto max-w-xl rounded-xl bg-white p-8"><h1 class="text-2xl font-bold">Identité sensible</h1><p class="mt-4">{{ $customer->identity_type }} : <strong>{{ $identity ?? 'Non renseignée' }}</strong></p><p class="mt-4 text-sm text-slate-500">Cette consultation a été journalisée.</p></div></x-app-layout>

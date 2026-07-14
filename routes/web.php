@@ -2,9 +2,14 @@
 
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantUserController;
+use App\Http\Controllers\VehicleCategoryController;
+use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -38,6 +43,18 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::resource('agencies', AgencyController::class)->except('show');
     Route::resource('users', TenantUserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::resource('vehicle-categories', VehicleCategoryController::class)->except('show');
+    Route::resource('vehicles', VehicleController::class)->except('destroy');
+    Route::post('/vehicles/{vehicle}/status', [VehicleController::class, 'changeStatus'])->name('vehicles.status');
+    Route::resource('customers', CustomerController::class)->except('destroy');
+    Route::get('/customers/{customer}/identity', [CustomerController::class, 'identity'])->name('customers.identity');
+    Route::post('/customers/{customer}/drivers', [DriverController::class, 'store'])->name('customers.drivers.store');
+    Route::post('/vehicles/{vehicle}/documents', [DocumentController::class, 'storeForVehicle'])->name('vehicles.documents.store');
+    Route::post('/customers/{customer}/documents', [DocumentController::class, 'storeForCustomer'])->name('customers.documents.store');
+    Route::post('/drivers/{driver}/documents', [DocumentController::class, 'storeForDriver'])->name('drivers.documents.store');
+    Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::post('/documents/{document}/versions', [DocumentController::class, 'addVersion'])->name('documents.versions.store');
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
 });
 
 Route::prefix('platform')->name('platform.')->middleware(['auth', 'platform'])->group(function () {

@@ -149,3 +149,33 @@ Routes principales :
 - `/users` : utilisateurs autorisés et attribution des rôles ;
 - `/audit-logs` : journal tenant filtré ;
 - `/platform/dashboard` : espace séparé du platform admin.
+
+## Lot 02 — véhicules, clients et documents privés
+
+Le lot 02 fournit les catégories, véhicules et historiques de statut
+opérationnel, ainsi que les clients, conducteurs et documents versionnés.
+La disponibilité locative n’est pas stockée : elle sera dérivée au lot 03.
+
+Les numéros d’identité et de permis sont normalisés, chiffrés avec le service
+Laravel et accompagnés d’une empreinte HMAC tenant-scopée. Les listes ne
+montrent qu’une valeur masquée. Une consultation complète nécessite la
+permission dédiée et produit un audit sans inclure la valeur consultée.
+
+Les fichiers sont stockés sous `storage/app/private` avec un nom aléatoire.
+Ils ne disposent d’aucune URL publique et sont téléchargés uniquement via un
+contrôleur autorisé. La taille maximale initiale est de 10 Mio et peut être
+configurée localement :
+
+```dotenv
+PRIVATE_DOCUMENT_MAX_KB=10240
+```
+
+Les seeders ajoutent quatre catégories, seize véhicules, douze clients avec
+conducteurs et trois PDF strictement fictifs. Aucun numéro réel n’est utilisé.
+
+Routes principales supplémentaires :
+
+- `/vehicle-categories` ;
+- `/vehicles` ;
+- `/customers` ;
+- `/documents/{document}` et téléchargement contrôlé associé.
