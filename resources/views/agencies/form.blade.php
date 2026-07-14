@@ -1,0 +1,11 @@
+<x-app-layout>
+    <div class="mx-auto max-w-3xl"><h1 class="mb-6 text-3xl font-bold">{{ $agency->exists ? 'Modifier l’agence' : 'Nouvelle agence' }}</h1>
+        <form class="space-y-5 rounded-xl bg-white p-6 shadow-sm" method="POST" action="{{ $agency->exists ? route('agencies.update', $agency) : route('agencies.store') }}">@csrf @if($agency->exists) @method('PUT') @endif
+            <div class="grid gap-5 sm:grid-cols-2"><label class="text-sm">Code<input class="mt-1 w-full rounded-lg border-slate-300" name="code" value="{{ old('code', $agency->code) }}" required></label><label class="text-sm">Nom<input class="mt-1 w-full rounded-lg border-slate-300" name="name" value="{{ old('name', $agency->name) }}" required></label><label class="text-sm">E-mail<input type="email" class="mt-1 w-full rounded-lg border-slate-300" name="email" value="{{ old('email', $agency->email) }}"></label><label class="text-sm">Téléphone<input class="mt-1 w-full rounded-lg border-slate-300" name="phone" value="{{ old('phone', $agency->phone) }}"></label></div>
+            <label class="block text-sm">Adresse<textarea class="mt-1 w-full rounded-lg border-slate-300" name="address">{{ old('address', $agency->address) }}</textarea></label>
+            <label class="flex items-center gap-2 text-sm"><input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $agency->is_active ?? true))> Agence active</label>
+            @if($errors->any())<div class="rounded-lg bg-red-50 p-3 text-sm text-red-800">{{ $errors->first() }}</div>@endif
+            <button class="rounded-lg bg-slate-950 px-5 py-2 text-white">Enregistrer</button>
+        </form>
+    </div>
+</x-app-layout>
