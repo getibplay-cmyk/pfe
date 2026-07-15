@@ -13,7 +13,7 @@ class ContractVersion extends Model
 
     public const UPDATED_AT = null;
 
-    protected $fillable = ['rental_contract_id', 'version_number', 'terms_snapshot', 'pricing_snapshot', 'customer_snapshot', 'vehicle_snapshot', 'content_hash', 'change_reason', 'created_by', 'locked_at'];
+    protected $fillable = ['agency_id', 'rental_contract_id', 'document_id', 'version_number', 'terms_snapshot', 'pricing_snapshot', 'customer_snapshot', 'vehicle_snapshot', 'content_hash', 'change_reason', 'created_by', 'locked_at'];
 
     protected function casts(): array
     {
@@ -23,6 +23,11 @@ class ContractVersion extends Model
     public function rentalContract(): BelongsTo
     {
         return $this->belongsTo(RentalContract::class);
+    }
+
+    public function document(): BelongsTo
+    {
+        return $this->belongsTo(Document::class);
     }
 
     public function acceptances(): HasMany

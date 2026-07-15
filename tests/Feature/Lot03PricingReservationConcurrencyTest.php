@@ -259,7 +259,7 @@ class Lot03PricingReservationConcurrencyTest extends TestCase
     {
         $f = $this->fixture('agency-manager');
         $otherAgency = $this->inTenant($f, fn () => Agency::factory()->create());
-        $otherVehicle = $this->inTenant($f, fn () => app(CreateVehicle::class)->handle([...$this->vehicleData($f, 'FOREIGN-'.uniqid()), 'agency_id' => $otherAgency->id], $f['user']->id));
+        $otherVehicle = app(TenantContext::class)->run($f['tenant'], fn () => app(CreateVehicle::class)->handle([...$this->vehicleData($f, 'FOREIGN-'.uniqid()), 'agency_id' => $otherAgency->id], $f['user']->id));
         $own = $this->reservation($f, now()->addDays(2)->toImmutable());
         $foreign = $this->inTenant($f, fn () => Reservation::create([...$this->rawReservation($f, now()->addDays(4), now()->addDays(5)), 'agency_id' => $otherAgency->id, 'vehicle_id' => $otherVehicle->id, 'reservation_number' => 'RES-2026-999999']));
 

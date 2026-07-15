@@ -8,14 +8,19 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
+use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class DemoTenancySeeder extends Seeder
 {
+    use PreventsDemoSeedingInProduction;
+
     public function run(): void
     {
+        $this->ensureDemoSeedingIsAllowed();
+
         $primary = Tenant::create([
             'name' => 'Atlas Location Démo',
             'slug' => 'atlas-location-demo',
@@ -74,7 +79,7 @@ class DemoTenancySeeder extends Seeder
             'name' => 'Agency Manager Rif Démo',
             'email' => 'manager@rif-demo.test',
             'email_verified_at' => now(),
-            'password' => Hash::make("0123azer"),
+            'password' => $password,
             'is_active' => true,
         ]);
 

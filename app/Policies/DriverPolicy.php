@@ -14,6 +14,6 @@ class DriverPolicy
 
     public function view(User $user, Driver $driver): bool
     {
-        return $user->tenant_id === $driver->tenant_id && (! $user->isAgencyManager() || $user->agency_id === $driver->customer?->agency_id) && $user->hasPermission('customer.view');
+        return $user->tenant_id === $driver->tenant_id && ($user->agency_id === null || $user->agency_id === $driver->customer?->agency_id) && $user->hasPermission('customer.view');
     }
 }

@@ -11,25 +11,22 @@ use App\Models\ReservationStatusHistory;
 use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Support\Audit\AuditRecorder;
-use Carbon\CarbonImmutable;
+use App\Support\Reservations\ReservationPeriodValidator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CreateReservation
 {
-    public function __construct(private GenerateReservationNumber $numbers, private AuditRecorder $audit) {}
+    public function __construct(
+        private GenerateReservationNumber $numbers,
+        private AuditRecorder $audit,
+        private ReservationPeriodValidator $periods,
+    ) {}
 
     public function handle(array $data, int $actorId): Reservation
     {
         return DB::transaction(function () use ($data, $actorId) {
-            $startsAt = CarbonImmutable::parse($data['starts_at']);
-            $endsAt = CarbonImmutable::parse($data['ends_at']);
-            if ($endsAt->lte($startsAt)) {
-                throw ValidationException::withMessages(['ends_at' => 'La fin doit être strictement postérieure au début.']);
-            }
-            if ($startsAt->diffInDays($endsAt) > config('reservations.maximum_duration_days')) {
-                throw ValidationException::withMessages(['ends_at' => 'La durée dépasse la limite configurable.']);
-            }
+            [$startsAt, $endsAt] = $this->periods->future($data['starts_at'], $data['ends_at']);
 
             $agency = Agency::findOrFail($data['agency_id']);
             $customer = Customer::findOrFail($data['customer_id']);

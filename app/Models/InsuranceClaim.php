@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\InsuranceClaimStatus;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InsuranceClaim extends Model
 {
@@ -16,7 +18,7 @@ class InsuranceClaim extends Model
 
     protected function casts(): array
     {
-        return ['reported_at' => 'immutable_datetime', 'submitted_at' => 'immutable_datetime', 'reviewed_at' => 'immutable_datetime', 'claimed_amount' => 'decimal:2', 'approved_amount' => 'decimal:2', 'settled_amount' => 'decimal:2', 'insurer_reference_encrypted' => 'encrypted'];
+        return ['status' => InsuranceClaimStatus::class, 'reported_at' => 'immutable_datetime', 'submitted_at' => 'immutable_datetime', 'reviewed_at' => 'immutable_datetime', 'claimed_amount' => 'decimal:2', 'approved_amount' => 'decimal:2', 'settled_amount' => 'decimal:2', 'insurer_reference_encrypted' => 'encrypted'];
     }
 
     public function policy(): BelongsTo
@@ -32,5 +34,10 @@ class InsuranceClaim extends Model
     public function rentalContract(): BelongsTo
     {
         return $this->belongsTo(RentalContract::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(InsuranceClaimStatusHistory::class);
     }
 }

@@ -100,6 +100,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/contracts/{contract}', [RentalContractController::class, 'show'])->name('contracts.show');
     Route::post('/reservations/{reservation}/contract', [RentalContractController::class, 'store'])->name('contracts.store');
     Route::post('/contracts/{contract}/versions', [RentalContractController::class, 'version'])->name('contracts.versions.store');
+    Route::post('/contracts/{contract}/version-document', [RentalContractController::class, 'versionDocument'])->name('contracts.version-document.store');
     Route::post('/contracts/{contract}/ready', [RentalContractController::class, 'ready'])->name('contracts.ready');
     Route::post('/contracts/{contract}/accept', [RentalContractController::class, 'accept'])->name('contracts.accept');
     Route::post('/contracts/{contract}/departure-inspection', [VehicleInspectionController::class, 'departure'])->name('contracts.departure-inspection');
@@ -137,6 +138,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/insurance/policies', [InsuranceController::class, 'storePolicy'])->name('insurance.policies.store');
     Route::post('/insurance/policies/{policy}/coverages', [InsuranceController::class, 'storeCoverage'])->name('insurance.coverages.store');
     Route::post('/insurance/claims', [InsuranceController::class, 'storeClaim'])->name('insurance.claims.store');
+    Route::post('/insurance/claims/{claim}/submit', [InsuranceController::class, 'submit'])->name('insurance.claims.submit');
+    Route::post('/insurance/claims/{claim}/review', [InsuranceController::class, 'review'])->name('insurance.claims.review');
+    Route::post('/insurance/claims/{claim}/approve', [InsuranceController::class, 'approve'])->name('insurance.claims.approve');
+    Route::post('/insurance/claims/{claim}/reject', [InsuranceController::class, 'reject'])->name('insurance.claims.reject');
+    Route::post('/insurance/claims/{claim}/settle', [InsuranceController::class, 'settle'])->name('insurance.claims.settle');
+    Route::post('/insurance/claims/{claim}/close', [InsuranceController::class, 'close'])->name('insurance.claims.close');
     Route::get('/customers/{customer}/identity', [CustomerController::class, 'identity'])->name('customers.identity');
     Route::post('/customers/{customer}/drivers', [DriverController::class, 'store'])->name('customers.drivers.store');
     Route::post('/vehicles/{vehicle}/documents', [DocumentController::class, 'storeForVehicle'])->name('vehicles.documents.store');

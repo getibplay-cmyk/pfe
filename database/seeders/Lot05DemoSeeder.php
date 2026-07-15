@@ -11,11 +11,12 @@ use App\Actions\Finance\RecordDepositReceipt;
 use App\Actions\Finance\RecordPayment;
 use App\Actions\Finance\RefundDeposit;
 use App\Actions\Finance\RetainDeposit;
+use App\Actions\Insurance\CreateInsuranceClaim;
+use App\Actions\Insurance\StartInsuranceClaimReview;
 use App\Actions\Maintenance\ApproveMaintenanceOrder;
 use App\Actions\Maintenance\CreateMaintenanceOrder;
 use App\Actions\Maintenance\StartMaintenanceOrder;
 use App\Enums\RentalContractStatus;
-use App\Models\InsuranceClaim;
 use App\Models\InsuranceCompany;
 use App\Models\InsurancePolicy;
 use App\Models\Invoice;
@@ -25,10 +26,13 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
 
 class Lot05DemoSeeder extends Seeder
 {
+    use PreventsDemoSeedingInProduction;
+
     public function run(
         CreateInvoiceFromReturnedContract $createInvoice,
         IssueInvoice $issueInvoice,
@@ -42,9 +46,13 @@ class Lot05DemoSeeder extends Seeder
         CreateMaintenanceOrder $createMaintenance,
         ApproveMaintenanceOrder $approveMaintenance,
         StartMaintenanceOrder $startMaintenance,
+        CreateInsuranceClaim $createClaim,
+        StartInsuranceClaimReview $startClaimReview,
     ): void {
+        $this->ensureDemoSeedingIsAllowed();
+
         $tenant = Tenant::where('slug', 'atlas-location-demo')->firstOrFail();
-        app(TenantContext::class)->run($tenant, function () use ($createInvoice, $issueInvoice, $recordPayment, $allocate, $postPayment, $receiveDeposit, $retainDeposit, $refundDeposit, $closeContract, $createMaintenance, $approveMaintenance, $startMaintenance) {
+        app(TenantContext::class)->run($tenant, function () use ($createInvoice, $issueInvoice, $recordPayment, $allocate, $postPayment, $receiveDeposit, $retainDeposit, $refundDeposit, $closeContract, $createMaintenance, $approveMaintenance, $startMaintenance, $createClaim, $startClaimReview) {
             if (Invoice::exists()) {
                 return;
             }
@@ -81,7 +89,8 @@ class Lot05DemoSeeder extends Seeder
             $policy = new InsurancePolicy(['agency_id' => $vehicles[0]->agency_id, 'vehicle_id' => $vehicles[0]->id, 'insurance_company_id' => $company->id, 'policy_type' => 'comprehensive', 'starts_at' => today()->subYear(), 'ends_at' => today()->addDays(20), 'premium_amount' => '4800.00', 'deductible_amount' => '2500.00', 'currency' => 'MAD', 'status' => 'active']);
             $policy->setPolicyNumber('DEMO-POLICY-0001')->save();
             $policy->coverages()->create(['coverage_type' => 'collision', 'label' => 'Collision fictive', 'limit_amount' => '50000.00', 'deductible_amount' => '2500.00', 'terms' => ['demo' => true]]);
-            InsuranceClaim::create(['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'claim_number' => 'CLM-'.today()->year.'-000001', 'status' => 'under_review', 'reported_at' => now(), 'claimed_amount' => '5000.00', 'notes' => 'Scénario fictif, décision humaine en attente.', 'created_by' => $owner->id]);
+            $claim = $createClaim->handle(['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'reported_at' => now(), 'claimed_amount' => '5000.00', 'notes' => 'Scénario fictif, décision humaine en attente.'], $owner->id);
+            $startClaimReview->handle($claim, $owner->id, 'Revue humaine de démonstration en cours.');
         });
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Rentals\AcceptRentalContract;
 use App\Actions\Rentals\ActivateRentalContract;
+use App\Actions\Rentals\AttachContractVersionDocument;
 use App\Actions\Rentals\CalculateReturnCharges;
 use App\Actions\Rentals\CancelDraftRentalContract;
 use App\Actions\Rentals\CompareVehicleInspections;
@@ -15,6 +16,7 @@ use App\Enums\AcceptanceMethod;
 use App\Enums\RentalContractStatus;
 use App\Models\RentalContract;
 use App\Models\Reservation;
+use App\Models\Document;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -37,7 +39,7 @@ class RentalContractController extends Controller
     public function show(RentalContract $contract, CompareVehicleInspections $compare): View
     {
         $this->authorize('view', $contract);
-        $contract->load(['reservation', 'customer', 'vehicle', 'agency', 'drivers.driver', 'versions', 'currentVersion', 'acceptances', 'inspections.items', 'damages.statusHistories', 'charges', 'statusHistories.actor', 'vehicleBlock']);
+        $contract->load(['reservation', 'customer', 'vehicle', 'agency', 'drivers.driver', 'versions', 'currentVersion.document.currentVersion', 'acceptances', 'inspections.items', 'damages.statusHistories', 'charges', 'statusHistories.actor', 'vehicleBlock']);
 
         $departure = $contract->inspections->firstWhere('inspection_type.value', 'departure');
         $return = $contract->inspections->firstWhere('inspection_type.value', 'return');
@@ -71,6 +73,16 @@ class RentalContractController extends Controller
         $action->handle($contract, $request->user()->id);
 
         return back()->with('status', 'Contrat prêt à accepter.');
+    }
+
+    public function versionDocument(Request $request, RentalContract $contract, AttachContractVersionDocument $action): RedirectResponse
+    {
+        $this->authorize('version', $contract);
+        $this->authorize('upload', Document::class);
+        $request->validate(['tenant_id' => ['prohibited'], 'stored_path' => ['prohibited'], 'file' => ['required', 'file', 'max:'.config('documents.max_size_kb')]]);
+        $action->handle($contract, $request->file('file'), $request->user()->id);
+
+        return back()->with('status', 'Document privé associé à la version contractuelle.');
     }
 
     public function accept(Request $request, RentalContract $contract, AcceptRentalContract $action): RedirectResponse

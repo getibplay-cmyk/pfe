@@ -34,6 +34,6 @@ class VehiclePolicy
 
     private function sameScope(User $user, Vehicle $vehicle): bool
     {
-        return $user->tenant_id === $vehicle->tenant_id && (! $user->isAgencyManager() || $user->agency_id === $vehicle->agency_id);
+        return $user->tenant_id === $vehicle->tenant_id && ($user->agency_id === null || $user->agency_id === $vehicle->agency_id);
     }
 }

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Insurance\ApproveInsuranceClaim;
+use App\Actions\Insurance\CreateInsuranceClaim;
+use App\Actions\Insurance\StartInsuranceClaimReview;
 use App\Actions\Maintenance\ApproveMaintenanceOrder;
 use App\Actions\Maintenance\CompleteMaintenanceOrder;
 use App\Actions\Maintenance\CreateMaintenanceOrder;
@@ -9,7 +12,6 @@ use App\Actions\Maintenance\StartMaintenanceOrder;
 use App\Actions\Vehicles\CreateVehicle;
 use App\Enums\VehicleOperationalStatus;
 use App\Models\Agency;
-use App\Models\InsuranceClaim;
 use App\Models\InsuranceCompany;
 use App\Models\InsurancePolicy;
 use App\Models\MaintenanceOrder;
@@ -101,7 +103,12 @@ class Lot05MaintenanceInsurancePhaseBTest extends TestCase
         $f = $this->fixture();
         $policy = $this->policy($f, today()->addYear());
         $coverage = $this->inTenant($f, fn () => $policy->coverages()->create(['coverage_type' => 'collision', 'label' => 'Collision choisie', 'limit_amount' => '50000.00', 'deductible_amount' => '2500.00', 'terms' => ['decision' => 'assureur']]));
-        $claim = $this->inTenant($f, fn () => InsuranceClaim::create(['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'claim_number' => 'CLM-2026-000001', 'status' => 'under_review', 'reported_at' => now(), 'claimed_amount' => '7000.00', 'approved_amount' => '4500.00', 'insurer_reference_encrypted' => 'REF-SENSIBLE', 'notes' => 'Décision réservée à l’assureur et aux humains.', 'created_by' => $f['user']->id]));
+        $claim = $this->inTenant($f, function () use ($f, $policy) {
+            $claim = app(CreateInsuranceClaim::class)->handle(['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'reported_at' => now(), 'claimed_amount' => '7000.00', 'insurer_reference' => 'REF-SENSIBLE', 'notes' => 'Décision réservée à l’assureur et aux humains.'], $f['user']->id);
+            app(StartInsuranceClaimReview::class)->handle($claim, $f['user']->id);
+
+            return app(ApproveInsuranceClaim::class)->handle($claim, '4500.00', $f['user']->id);
+        });
 
         $this->assertSame('collision', $coverage->coverage_type);
         $this->assertSame('4500.00', $claim->approved_amount);

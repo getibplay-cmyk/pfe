@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Customers\CreateCustomer;
-use App\Actions\Customers\UpdateCustomerIdentity;
+use App\Actions\Customers\UpdateCustomer;
 use App\Enums\CustomerType;
 use App\Enums\VerificationStatus;
 use App\Models\Agency;
@@ -20,16 +20,16 @@ class CustomerController extends Controller
     public function index(Request $request, IdentityProtector $protector): View
     {
         $this->authorize('viewAny', Customer::class);
-        $customers = Customer::when($request->user()->isAgencyManager(), fn ($q) => $q->where('agency_id', $request->user()->agency_id))->when($request->string('q')->isNotEmpty(), fn ($q) => $q->where(fn ($s) => $s->where('last_name', 'ilike', '%'.$request->q.'%')->orWhere('company_name', 'ilike', '%'.$request->q.'%')))->orderByDesc('id')->paginate(20)->withQueryString();
+        $customers = Customer::when($request->user()->agency_id, fn ($q, $agencyId) => $q->where('agency_id', $agencyId))->when($request->string('q')->isNotEmpty(), fn ($q) => $q->where(fn ($s) => $s->where('last_name', 'ilike', '%'.$request->q.'%')->orWhere('company_name', 'ilike', '%'.$request->q.'%')))->orderByDesc('id')->paginate(20)->withQueryString();
 
         return view('customers.index', compact('customers', 'protector'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', Customer::class);
 
-        return view('customers.form', $this->formData(new Customer));
+        return view('customers.form', $this->formData($request, new Customer));
     }
 
     public function store(Request $request, CreateCustomer $action): RedirectResponse
@@ -48,27 +48,19 @@ class CustomerController extends Controller
         return view('customers.show', compact('customer', 'protector'));
     }
 
-    public function edit(Customer $customer): View
+    public function edit(Request $request, Customer $customer): View
     {
         $this->authorize('update', $customer);
 
-        return view('customers.form', $this->formData($customer));
+        return view('customers.form', $this->formData($request, $customer));
     }
 
-    public function update(Request $request, Customer $customer, UpdateCustomerIdentity $identity): RedirectResponse
+    public function update(Request $request, Customer $customer, UpdateCustomer $action): RedirectResponse
     {
         $this->authorize('update', $customer);
-        $data = $this->validated($request, $customer);
-        if (! empty($data['agency_id'])) {
-            Agency::findOrFail($data['agency_id']);
-        } $number = $data['identity_number'] ?? null;
-        unset($data['identity_number']);
-        $customer->update($data);
-        if ($number) {
-            $identity->handle($customer, $number, $data['identity_type'] ?? null);
-        }
+        $action->handle($customer, $this->validated($request, $customer));
 
-return redirect()->route('customers.show', $customer)->with('status', 'Client mis à jour.');
+        return redirect()->route('customers.show', $customer)->with('status', 'Client mis à jour.');
     }
 
     public function identity(Request $request, Customer $customer, IdentityProtector $protector, AuditRecorder $audit): View
@@ -80,9 +72,9 @@ return redirect()->route('customers.show', $customer)->with('status', 'Client mi
         return view('customers.identity', compact('customer', 'identity'));
     }
 
-    private function formData(Customer $customer): array
+    private function formData(Request $request, Customer $customer): array
     {
-        return ['customer' => $customer, 'agencies' => Agency::orderBy('name')->get(), 'types' => CustomerType::cases(), 'verificationStatuses' => VerificationStatus::cases()];
+        return ['customer' => $customer, 'agencies' => Agency::query()->when($request->user()->agency_id, fn ($query, $agencyId) => $query->whereKey($agencyId))->orderBy('name')->get(), 'types' => CustomerType::cases(), 'verificationStatuses' => VerificationStatus::cases()];
     }
 
     private function validated(Request $request, ?Customer $customer = null): array

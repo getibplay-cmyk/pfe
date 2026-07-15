@@ -87,7 +87,7 @@ class TenantUserController extends Controller
     {
         return User::query()
             ->where('tenant_id', $request->user()->tenant_id)
-            ->when($request->user()->isAgencyManager(), fn ($query) => $query->where('agency_id', $request->user()->agency_id));
+            ->when($request->user()->agency_id, fn ($query, $agencyId) => $query->where('agency_id', $agencyId));
     }
 
     private function findScopedUser(Request $request, int $id): User
@@ -100,7 +100,7 @@ class TenantUserController extends Controller
         return [
             'managedUser' => $user,
             'agencies' => Agency::query()
-                ->when($request->user()->isAgencyManager(), fn ($query) => $query->whereKey($request->user()->agency_id))
+                ->when($request->user()->agency_id, fn ($query, $agencyId) => $query->whereKey($agencyId))
                 ->orderBy('name')->get(),
             'roles' => Role::whereNull('tenant_id')
                 ->when($request->user()->isAgencyManager(), fn ($query) => $query->whereNot('slug', 'tenant-owner'))

@@ -31,6 +31,6 @@ class UserPolicy
     private function sameScope(User $user, User $subject): bool
     {
         return $user->tenant_id === $subject->tenant_id
-            && (! $user->isAgencyManager() || $user->agency_id === $subject->agency_id);
+            && ($user->agency_id === null || $user->agency_id === $subject->agency_id);
     }
 }

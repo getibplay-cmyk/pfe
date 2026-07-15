@@ -3,17 +3,19 @@
 namespace App\Actions\Vehicles;
 
 use App\Enums\VehicleOperationalStatus;
-use App\Models\Agency;
 use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Models\VehicleStatusHistory;
+use App\Support\Tenancy\AgencyAccess;
 use Illuminate\Support\Facades\DB;
 
 class CreateVehicle
 {
+    public function __construct(private readonly AgencyAccess $agencyAccess) {}
+
     public function handle(array $data, ?int $actorId): Vehicle
     {
-        Agency::findOrFail($data['agency_id']);
+        $data['agency_id'] = $this->agencyAccess->required($data['agency_id'] ?? null);
         VehicleCategory::findOrFail($data['vehicle_category_id']);
 
         return DB::transaction(function () use ($data, $actorId) {

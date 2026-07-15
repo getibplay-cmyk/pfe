@@ -12,7 +12,7 @@ class AuditLogController extends Controller
     {
         $this->authorize('viewAny', AuditLog::class);
         $logs = AuditLog::query()
-            ->when($request->user()->isAgencyManager(), fn ($query) => $query->where('agency_id', $request->user()->agency_id))
+            ->when($request->user()->agency_id, fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
             ->latest('created_at')
             ->paginate(30);
 

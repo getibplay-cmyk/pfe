@@ -12,7 +12,7 @@ class PaymentAllocation extends Model
 
     public const UPDATED_AT = null;
 
-    protected $fillable = ['payment_id', 'invoice_id', 'amount'];
+    protected $fillable = ['agency_id', 'customer_id', 'currency', 'payment_id', 'invoice_id', 'amount'];
 
     protected function casts(): array
     {

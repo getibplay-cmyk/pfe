@@ -2,14 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Rentals\GenerateBusinessNumber;
+use App\Actions\Insurance\ApproveInsuranceClaim;
+use App\Actions\Insurance\CloseInsuranceClaim;
+use App\Actions\Insurance\CreateInsuranceClaim;
+use App\Actions\Insurance\RejectInsuranceClaim;
+use App\Actions\Insurance\SettleInsuranceClaim;
+use App\Actions\Insurance\StartInsuranceClaimReview;
+use App\Actions\Insurance\SubmitInsuranceClaim;
+use App\Http\Requests\InsuranceClaimTransitionRequest;
+use App\Http\Requests\StoreInsuranceClaimRequest;
 use App\Models\InsuranceClaim;
 use App\Models\InsuranceCompany;
 use App\Models\InsurancePolicy;
-use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class InsuranceController extends Controller
@@ -22,7 +28,7 @@ class InsuranceController extends Controller
         return view('insurance.index', [
             'companies' => InsuranceCompany::orderBy('name')->get(),
             'policies' => InsurancePolicy::with(['vehicle', 'company', 'coverages'])->when($agency, fn ($query) => $query->where('agency_id', $agency))->latest()->paginate(20),
-            'claims' => InsuranceClaim::with('policy')->when($agency, fn ($query) => $query->where('agency_id', $agency))->latest('reported_at')->limit(20)->get(),
+            'claims' => InsuranceClaim::with(['policy', 'statusHistories.actor'])->when($agency, fn ($query) => $query->where('agency_id', $agency))->latest('reported_at')->limit(20)->get(),
         ]);
     }
 
@@ -55,25 +61,60 @@ class InsuranceController extends Controller
         return back()->with('status', 'Garantie ajoutée.');
     }
 
-    public function storeClaim(Request $request, GenerateBusinessNumber $numbers): RedirectResponse
+    public function storeClaim(StoreInsuranceClaimRequest $request, CreateInsuranceClaim $action): RedirectResponse
     {
         $this->permit($request, 'claim.manage');
-        $data = $request->validate(['tenant_id' => ['prohibited'], 'agency_id' => ['required', 'integer'], 'insurance_policy_id' => ['required', 'integer'], 'damage_report_id' => ['nullable', 'integer'], 'rental_contract_id' => ['nullable', 'integer'], 'status' => ['required', 'in:reported,submitted,under_review,approved,rejected,settled,closed'], 'reported_at' => ['required', 'date'], 'claimed_amount' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'], 'approved_amount' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/'], 'settled_amount' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/'], 'insurer_reference' => ['nullable', 'string', 'max:255'], 'notes' => ['nullable', 'string']]);
-        abort_if($request->user()->agency_id && $request->user()->agency_id !== (int) $data['agency_id'], 403);
-        $policy = InsurancePolicy::findOrFail($data['insurance_policy_id']);
-        if ($policy->agency_id !== (int) $data['agency_id']) {
-            throw ValidationException::withMessages(['insurance_policy_id' => 'Police incompatible avec cette agence.']);
-        }
-        foreach (['claimed_amount', 'approved_amount', 'settled_amount'] as $field) {
-            if (isset($data[$field])) {
-                $data[$field] = DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits($data[$field]));
-            }
-        }
-        $data['insurer_reference_encrypted'] = $data['insurer_reference'] ?? null;
-        unset($data['insurer_reference']);
-        InsuranceClaim::create([...$data, 'claim_number' => $numbers->handle('claim'), 'created_by' => $request->user()->id]);
+        $action->handle($request->validated(), $request->user()->id);
 
         return back()->with('status', 'Sinistre enregistré sans décision automatique de responsabilité.');
+    }
+
+    public function submit(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, SubmitInsuranceClaim $action): RedirectResponse
+    {
+        $this->permitClaim($request, $claim);
+        $action->handle($claim, $request->user()->id, $request->validated('note'));
+
+        return back()->with('status', 'Sinistre soumis pour instruction.');
+    }
+
+    public function review(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, StartInsuranceClaimReview $action): RedirectResponse
+    {
+        $this->permitClaim($request, $claim);
+        $action->handle($claim, $request->user()->id, $request->validated('note'));
+
+        return back()->with('status', 'Revue humaine du sinistre démarrée.');
+    }
+
+    public function approve(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, ApproveInsuranceClaim $action): RedirectResponse
+    {
+        $this->permitClaim($request, $claim);
+        $action->handle($claim, (string) $request->validated('approved_amount'), $request->user()->id, $request->validated('note'));
+
+        return back()->with('status', 'Sinistre approuvé par décision humaine.');
+    }
+
+    public function reject(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, RejectInsuranceClaim $action): RedirectResponse
+    {
+        $this->permitClaim($request, $claim);
+        $action->handle($claim, $request->user()->id, $request->validated('note'));
+
+        return back()->with('status', 'Sinistre rejeté par décision humaine.');
+    }
+
+    public function settle(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, SettleInsuranceClaim $action): RedirectResponse
+    {
+        $this->permitClaim($request, $claim);
+        $action->handle($claim, (string) $request->validated('settled_amount'), $request->user()->id, $request->validated('note'));
+
+        return back()->with('status', 'Règlement du sinistre enregistré.');
+    }
+
+    public function close(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, CloseInsuranceClaim $action): RedirectResponse
+    {
+        $this->permitClaim($request, $claim);
+        $action->handle($claim, $request->user()->id, $request->validated('note'));
+
+        return back()->with('status', 'Sinistre clôturé.');
     }
 
     private function permit(Request $request, string $permission): void
@@ -85,5 +126,11 @@ class InsuranceController extends Controller
     {
         $this->permit($request, $permission);
         abort_if($request->user()->agency_id && $request->user()->agency_id !== $policy->agency_id, 403);
+    }
+
+    private function permitClaim(Request $request, InsuranceClaim $claim): void
+    {
+        $this->permit($request, 'claim.manage');
+        abort_if($request->user()->agency_id && $request->user()->agency_id !== $claim->agency_id, 403);
     }
 }

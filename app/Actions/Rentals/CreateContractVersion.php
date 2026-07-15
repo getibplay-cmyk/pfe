@@ -43,7 +43,7 @@ class CreateContractVersion
             $customer = ['id' => $locked->customer->id, 'display_name' => $locked->customer->displayName(), 'type' => $locked->customer->customer_type->value, 'identity' => 'masked'];
             $vehicle = ['id' => $locked->vehicle->id, 'registration_number' => $locked->vehicle->registration_number, 'brand' => $locked->vehicle->brand, 'model' => $locked->vehicle->model, 'vin' => $locked->vehicle->vin ? 'masked' : null];
             $content = ['terms_snapshot' => $terms, 'pricing_snapshot' => $pricing, 'customer_snapshot' => $customer, 'vehicle_snapshot' => $vehicle];
-            $version = ContractVersion::create([...$content, 'rental_contract_id' => $locked->id, 'version_number' => $number, 'content_hash' => $this->canonical->hash($content), 'change_reason' => $reason, 'created_by' => $actorId]);
+            $version = ContractVersion::create([...$content, 'agency_id' => $locked->agency_id, 'rental_contract_id' => $locked->id, 'version_number' => $number, 'content_hash' => $this->canonical->hash($content), 'change_reason' => $reason, 'created_by' => $actorId]);
             $locked->forceFill(['current_version_id' => $version->id])->save();
             if ($locked->status === RentalContractStatus::Accepted) {
                 $locked->forceFill(['status' => RentalContractStatus::Ready, 'accepted_at' => null])->save();

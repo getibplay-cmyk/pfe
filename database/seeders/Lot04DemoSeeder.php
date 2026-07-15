@@ -2,8 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Documents\StorePrivateDocument;
+use App\Actions\Finance\RecordDepositReceipt;
 use App\Actions\Rentals\AcceptRentalContract;
 use App\Actions\Rentals\ActivateRentalContract;
+use App\Actions\Rentals\AttachContractVersionDocument;
 use App\Actions\Rentals\CalculateReturnCharges;
 use App\Actions\Rentals\CompleteDepartureInspection;
 use App\Actions\Rentals\CompleteReturnInspection;
@@ -17,7 +20,6 @@ use App\Actions\Reservations\CreateReservation;
 use App\Actions\Vehicles\CreateVehicle;
 use App\Enums\DocumentType;
 use App\Models\Customer;
-use App\Models\Document;
 use App\Models\RentalContract;
 use App\Models\Tenant;
 use App\Models\User;
@@ -25,10 +27,14 @@ use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\UploadedFile;
 
 class Lot04DemoSeeder extends Seeder
 {
+    use PreventsDemoSeedingInProduction;
+
     public function run(
         CreateVehicle $createVehicle,
         CreateReservation $createReservation,
@@ -43,9 +49,14 @@ class Lot04DemoSeeder extends Seeder
         ReportVehicleDamage $reportDamage,
         ReviewDamageResponsibility $reviewDamage,
         MarkRentalReturned $markReturned,
+        StorePrivateDocument $storeDocument,
+        RecordDepositReceipt $receiveDeposit,
+        AttachContractVersionDocument $attachContractDocument,
     ): void {
+        $this->ensureDemoSeedingIsAllowed();
+
         $tenant = Tenant::where('slug', 'atlas-location-demo')->firstOrFail();
-        app(TenantContext::class)->run($tenant, function () use ($createVehicle, $createReservation, $confirmReservation, $createContract, $markReady, $acceptContract, $departure, $activate, $returnInspection, $calculateCharges, $reportDamage, $reviewDamage, $markReturned) {
+        app(TenantContext::class)->run($tenant, function () use ($createVehicle, $createReservation, $confirmReservation, $createContract, $markReady, $acceptContract, $departure, $activate, $returnInspection, $calculateCharges, $reportDamage, $reviewDamage, $markReturned, $storeDocument, $receiveDeposit, $attachContractDocument) {
             if (RentalContract::where('contract_number', 'like', 'CTR-%')->exists()) {
                 return;
             }
@@ -62,8 +73,9 @@ class Lot04DemoSeeder extends Seeder
                 $index = $vehicles->count() + 1;
                 $vehicles->push($createVehicle->handle(['agency_id' => $agencyId, 'vehicle_category_id' => $category->id, 'registration_number' => 'RF-DEMO-04-'.$index, 'brand' => 'Dacia', 'model' => 'Duster', 'production_year' => 2025, 'fuel_type' => 'diesel', 'transmission' => 'manual', 'current_mileage' => 2000 + ($index * 100)], $owner->id));
             }
-            Document::firstOrCreate(['documentable_type' => $customer->getMorphClass(), 'documentable_id' => $customer->id, 'document_type' => DocumentType::CustomerIdentity], ['agency_id' => $customer->agency_id, 'title' => 'Identité fictive — démonstration', 'is_sensitive' => true, 'created_by' => $owner->id]);
-            Document::firstOrCreate(['documentable_type' => $driver->getMorphClass(), 'documentable_id' => $driver->id, 'document_type' => DocumentType::DrivingLicence], ['agency_id' => $customer->agency_id, 'title' => 'Permis fictif — démonstration', 'is_sensitive' => true, 'created_by' => $owner->id]);
+            $pdf = fn (string $name) => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n% RentFleet document contractuel fictif\n%%EOF");
+            $storeDocument->handle($customer, ['document_type' => DocumentType::CustomerIdentity, 'title' => 'Identité fictive — démonstration', 'is_sensitive' => true], $pdf('identite-contrat-demo.pdf'), $owner->id);
+            $storeDocument->handle($driver, ['document_type' => DocumentType::DrivingLicence, 'title' => 'Permis fictif — démonstration', 'is_sensitive' => true], $pdf('permis-contrat-demo.pdf'), $owner->id);
 
             $contracts = collect();
             foreach ($vehicles->take(6) as $index => $vehicle) {
@@ -76,11 +88,15 @@ class Lot04DemoSeeder extends Seeder
                 $markReady->handle($contract, $owner->id);
             }
             foreach ($contracts->slice(2) as $contract) {
+                $attachContractDocument->handle($contract, $pdf('contrat-version-'.$contract->id.'.pdf'), $owner->id);
                 $acceptContract->handle($contract, ['accepted_by_name' => 'Client Démo', 'acceptance_method' => 'typed_name', 'ip_address' => '127.0.0.1', 'user_agent' => 'RentFleet Demo Seeder'], $owner->id);
             }
             foreach ($contracts->slice(3) as $contract) {
                 $mileage = $contract->vehicle->current_mileage + 10;
                 $departure->handle($contract, ['mileage' => $mileage, 'fuel_level' => '80.00', 'items' => $this->items()], $owner->id);
+                if ($contract->deposit_required !== '0.00') {
+                    $receiveDeposit->handle($contract, $contract->deposit_required, 'demo-departure-deposit-'.$contract->id, $owner->id);
+                }
                 $activate->handle($contract, $owner->id);
             }
             foreach ($contracts->slice(4) as $contract) {

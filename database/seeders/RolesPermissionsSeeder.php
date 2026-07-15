@@ -88,10 +88,10 @@ class RolesPermissionsSeeder extends Seeder
         }
 
         $grants = [
-            'agency-manager' => array_keys($lotFivePermissions),
-            'rental-agent' => ['invoice.view', 'invoice.create', 'payment.view', 'payment.create', 'payment.allocate', 'deposit.view', 'deposit.create', 'contract.close', 'maintenance.view', 'insurance.view', 'claim.view'],
-            'fleet-manager' => ['maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'expense.view', 'expense.create', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
-            'accountant' => ['invoice.view', 'invoice.create', 'invoice.issue', 'payment.view', 'payment.create', 'payment.post', 'payment.allocate', 'payment.reverse', 'deposit.view', 'deposit.create', 'deposit.reverse', 'expense.view', 'expense.create', 'expense.approve', 'contract.close'],
+            'agency-manager' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
+            'rental-agent' => ['invoice.view', 'payment.view', 'deposit.view', 'maintenance.view', 'insurance.view', 'claim.view'],
+            'fleet-manager' => ['maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'expense.view', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
+            'accountant' => ['invoice.view', 'invoice.create', 'invoice.issue', 'invoice.void', 'payment.view', 'payment.create', 'payment.post', 'payment.allocate', 'payment.reverse', 'deposit.view', 'deposit.create', 'deposit.reverse', 'expense.view', 'expense.create', 'expense.approve', 'contract.close'],
             'viewer-auditor' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'insurance.view', 'claim.view'],
         ];
         foreach ($grants as $roleSlug => $permissions) {

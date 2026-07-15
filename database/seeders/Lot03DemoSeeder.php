@@ -16,12 +16,17 @@ use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
+use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
 
 class Lot03DemoSeeder extends Seeder
 {
+    use PreventsDemoSeedingInProduction;
+
     public function run(CreatePricingRule $createPricingRule, CreateReservation $createReservation, ConfirmReservation $confirmReservation, CancelReservation $cancelReservation, ExpirePendingReservations $expirePending): void
     {
+        $this->ensureDemoSeedingIsAllowed();
+
         $tenant = Tenant::where('slug', 'atlas-location-demo')->firstOrFail();
         app(TenantContext::class)->run($tenant, function () use ($tenant, $createPricingRule, $createReservation, $confirmReservation, $cancelReservation) {
             $owner = User::where('tenant_id', $tenant->id)->whereHas('role', fn ($query) => $query->where('slug', 'tenant-owner'))->firstOrFail();
@@ -46,11 +51,17 @@ class Lot03DemoSeeder extends Seeder
             $vehicles = Vehicle::where('operational_status', 'active')->orderBy('id')->get();
             $make = function (int $index, ReservationStatus $status, CarbonImmutable $startsAt, ?CarbonImmutable $expiresAt = null) use ($customers, $vehicles, $createReservation, $owner) {
                 $vehicle = $vehicles[$index];
-                $customer = $customers[$index % $customers->count()];
+                $endsAt = $startsAt->addDays(2);
+                $customer = $customers->first(fn ($candidate) => (int) $candidate->agency_id === (int) $vehicle->agency_id
+                    && $candidate->drivers->contains(fn ($driver) => $driver->licence_expires_at->endOfDay()->gte($endsAt)));
+                $driver = $customer?->drivers->first(fn ($candidate) => $candidate->licence_expires_at->endOfDay()->gte($endsAt));
+                if (! $customer || ! $driver) {
+                    throw new \RuntimeException('Aucun client de démonstration compatible avec l’agence et la période.');
+                }
                 $reservation = $createReservation->handle([
-                    'agency_id' => $vehicle->agency_id, 'customer_id' => $customer->id, 'driver_id' => $customer->drivers->first()->id,
+                    'agency_id' => $vehicle->agency_id, 'customer_id' => $customer->id, 'driver_id' => $driver->id,
                     'vehicle_category_id' => $vehicle->vehicle_category_id, 'vehicle_id' => $vehicle->id,
-                    'starts_at' => $startsAt, 'ends_at' => $startsAt->addDays(2), 'status' => $status->value,
+                    'starts_at' => $startsAt, 'ends_at' => $endsAt, 'status' => $status->value,
                     'expires_at' => $expiresAt, 'notes' => 'Donnée de démonstration fictive',
                 ], $owner->id);
 

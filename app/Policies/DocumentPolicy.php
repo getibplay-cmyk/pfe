@@ -29,6 +29,6 @@ class DocumentPolicy
 
     private function sameScope(User $user, Document $document): bool
     {
-        return $user->tenant_id === $document->tenant_id && (! $user->isAgencyManager() || $user->agency_id === $document->agency_id);
+        return $user->tenant_id === $document->tenant_id && ($user->agency_id === null || $user->agency_id === $document->agency_id);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class ProductionConfigurationTest extends TestCase
@@ -37,11 +38,53 @@ class ProductionConfigurationTest extends TestCase
 
     public function test_demo_seeders_are_blocked_in_production_and_have_no_fixed_password(): void
     {
-        $databaseSeeder = file_get_contents(database_path('seeders/DatabaseSeeder.php'));
         $tenancySeeder = file_get_contents(database_path('seeders/DemoTenancySeeder.php'));
+        $demoSeeders = [
+            'DatabaseSeeder.php',
+            'DemoTenancySeeder.php',
+            'Lot02DemoSeeder.php',
+            'Lot03DemoSeeder.php',
+            'Lot04DemoSeeder.php',
+            'Lot05DemoSeeder.php',
+        ];
 
-        $this->assertStringContainsString("environment('production')", $databaseSeeder);
-        $this->assertStringNotContainsString("env('DEMO_PASSWORD',", $tenancySeeder);
+        foreach ($demoSeeders as $seeder) {
+            $source = file_get_contents(database_path('seeders/'.$seeder));
+            $this->assertStringContainsString('PreventsDemoSeedingInProduction', $source, $seeder);
+            $this->assertStringContainsString('ensureDemoSeedingIsAllowed()', $source, $seeder);
+        }
+
+        $this->assertStringContainsString("env('DEMO_PASSWORD')", $tenancySeeder);
         $this->assertStringContainsString('Str::password(24)', $tenancySeeder);
+        $this->assertDoesNotMatchRegularExpression('/Hash::make\(\s*[\'\"][^\'\"]+[\'\"]\s*\)/', $tenancySeeder);
+    }
+
+    public function test_versioned_runtime_sources_have_no_hard_coded_password_or_secret(): void
+    {
+        $directories = [app_path(), config_path(), database_path('seeders'), base_path('routes')];
+        $patterns = [
+            'literal_hash' => '/Hash::make\(\s*[\'\"][^\'\"]+[\'\"]\s*\)/',
+            'literal_password_array' => '/[\'\"]password[\'\"]\s*=>\s*[\'\"](?!hashed[\'\"])[^\'\"]+[\'\"]/',
+            'sensitive_env_default' => '/env\(\s*[\'\"](?:[A-Z0-9_]*(?:PASSWORD|SECRET|TOKEN|API_KEY)|APP_KEY)[\'\"]\s*,\s*[\'\"][^\'\"]+[\'\"]\s*\)/i',
+            'literal_secret_assignment' => '/\b(?:password|secret|token|api_key)\b\s*=\s*[\'\"][^\'\"]+[\'\"]/i',
+        ];
+        $violations = [];
+
+        foreach ($directories as $directory) {
+            foreach (File::allFiles($directory) as $file) {
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                $source = $file->getContents();
+                foreach ($patterns as $name => $pattern) {
+                    if (preg_match($pattern, $source) === 1) {
+                        $violations[] = $file->getRelativePathname().':'.$name;
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $violations, 'Secrets potentiels détectés : '.implode(', ', $violations));
     }
 }

@@ -8,6 +8,7 @@ use App\Enums\ReservationStatus;
 use App\Enums\VehicleBlockStatus;
 use App\Enums\VehicleBlockType;
 use App\Enums\VehicleOperationalStatus;
+use App\Enums\VerificationStatus;
 use App\Exceptions\VehicleUnavailableException;
 use App\Models\Customer;
 use App\Models\Driver;
@@ -16,6 +17,7 @@ use App\Models\ReservationStatusHistory;
 use App\Models\Vehicle;
 use App\Models\VehicleBlock;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Reservations\ReservationPeriodValidator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +29,7 @@ class ConfirmReservation
         private ResolvePricingRule $resolvePricingRule,
         private CalculateReservationQuote $calculateQuote,
         private AuditRecorder $audit,
+        private ReservationPeriodValidator $periods,
     ) {}
 
     public function handle(Reservation $reservation, int $actorId): Reservation
@@ -44,10 +47,28 @@ class ConfirmReservation
                     throw ValidationException::withMessages(['driver_id' => 'Un conducteur valide doit être sélectionné avant confirmation.']);
                 }
 
-                $customer = Customer::findOrFail($locked->customer_id);
-                $driver = Driver::where('customer_id', $customer->id)->findOrFail($locked->driver_id);
-                if ($driver->licence_expires_at->endOfDay()->lt($locked->starts_at)) {
-                    throw ValidationException::withMessages(['driver_id' => 'Le permis du conducteur sera expiré au début de la réservation.']);
+                [, $endsAt] = $this->periods->future($locked->starts_at, $locked->ends_at);
+
+                $customer = Customer::withTrashed()->find($locked->customer_id);
+                if (! $customer || $customer->trashed()) {
+                    throw ValidationException::withMessages(['customer_id' => 'Le client doit être actif.']);
+                }
+                if ((int) $customer->agency_id !== (int) $locked->agency_id) {
+                    throw ValidationException::withMessages(['customer_id' => 'Le client doit appartenir à la même agence que la réservation.']);
+                }
+                if ($customer->verification_status !== VerificationStatus::Verified) {
+                    throw ValidationException::withMessages(['customer_id' => 'Le client doit être vérifié avant confirmation.']);
+                }
+
+                $driver = Driver::withTrashed()->where('customer_id', $customer->id)->find($locked->driver_id);
+                if (! $driver || $driver->trashed()) {
+                    throw ValidationException::withMessages(['driver_id' => 'Le conducteur doit être actif et appartenir au client.']);
+                }
+                if ($driver->verification_status !== VerificationStatus::Verified) {
+                    throw ValidationException::withMessages(['driver_id' => 'Le conducteur doit être vérifié avant confirmation.']);
+                }
+                if ($driver->licence_expires_at->endOfDay()->lt($endsAt)) {
+                    throw ValidationException::withMessages(['driver_id' => 'Le permis du conducteur doit rester valide pendant toute la location.']);
                 }
                 $vehicle = Vehicle::where('agency_id', $locked->agency_id)
                     ->where('vehicle_category_id', $locked->vehicle_category_id)

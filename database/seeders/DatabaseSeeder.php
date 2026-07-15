@@ -2,18 +2,19 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
+    use PreventsDemoSeedingInProduction;
+
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        if (app()->environment('production')) {
-            throw new \LogicException('Les données fictives de démonstration sont interdites en production.');
-        }
+        $this->ensureDemoSeedingIsAllowed();
 
         $this->call([
             RolesPermissionsSeeder::class,

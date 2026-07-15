@@ -32,7 +32,14 @@ class ReversePayment
                 'notes' => $reason, 'created_by' => $actorId, 'posted_by' => $actorId,
             ]);
             foreach ($original->allocations as $allocation) {
-                PaymentAllocation::create(['payment_id' => $reversal->id, 'invoice_id' => $allocation->invoice_id, 'amount' => $allocation->amount]);
+                PaymentAllocation::create([
+                    'agency_id' => $allocation->agency_id,
+                    'customer_id' => $allocation->customer_id,
+                    'currency' => $allocation->currency,
+                    'payment_id' => $reversal->id,
+                    'invoice_id' => $allocation->invoice_id,
+                    'amount' => $allocation->amount,
+                ]);
             }
             $original->forceFill(['status' => 'reversed'])->save();
             foreach ($original->allocations as $allocation) {

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\Customers\CreateCustomer;
 use App\Actions\Customers\CreateDriver;
+use App\Actions\Documents\StorePrivateDocument;
 use App\Actions\Finance\AllocatePaymentToInvoice;
 use App\Actions\Finance\CloseRentalContract;
 use App\Actions\Finance\CreateInvoiceFromReturnedContract;
@@ -14,6 +15,7 @@ use App\Actions\Finance\RecordPayment;
 use App\Actions\Finance\RefundDeposit;
 use App\Actions\Rentals\AcceptRentalContract;
 use App\Actions\Rentals\ActivateRentalContract;
+use App\Actions\Rentals\AttachContractVersionDocument;
 use App\Actions\Rentals\CompleteDepartureInspection;
 use App\Actions\Rentals\CompleteReturnInspection;
 use App\Actions\Rentals\CreateRentalContractFromReservation;
@@ -27,7 +29,6 @@ use App\Enums\DocumentType;
 use App\Enums\RentalContractStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Agency;
-use App\Models\Document;
 use App\Models\Invoice;
 use App\Models\PricingRule;
 use App\Models\RentalContract;
@@ -40,12 +41,20 @@ use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class Lot06EndToEndDemoTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake(config('documents.disk'));
+    }
 
     public function test_complete_rental_cycle_is_isolated_audited_and_database_protected(): void
     {
@@ -111,22 +120,10 @@ class Lot06EndToEndDemoTest extends TestCase
 
         $contract = $this->inTenant($fixture, function () use ($fixture) {
             $contract = app(CreateRentalContractFromReservation::class)->handle($fixture['reservation'], $fixture['owner']->id);
-            Document::create([
-                'agency_id' => $fixture['agency']->id,
-                'documentable_type' => $fixture['customer']->getMorphClass(),
-                'documentable_id' => $fixture['customer']->id,
-                'document_type' => DocumentType::CustomerIdentity,
-                'title' => 'Identité strictement fictive', 'is_sensitive' => true,
-                'created_by' => $fixture['owner']->id,
-            ]);
-            Document::create([
-                'agency_id' => $fixture['agency']->id,
-                'documentable_type' => $fixture['driver']->getMorphClass(),
-                'documentable_id' => $fixture['driver']->id,
-                'document_type' => DocumentType::DrivingLicence,
-                'title' => 'Permis strictement fictif', 'is_sensitive' => true,
-                'created_by' => $fixture['owner']->id,
-            ]);
+            $pdf = fn (string $name) => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\nDocument strictement fictif\n%%EOF");
+            app(StorePrivateDocument::class)->handle($fixture['customer'], ['document_type' => DocumentType::CustomerIdentity, 'title' => 'Identité strictement fictive', 'is_sensitive' => true], $pdf('identite-lot06.pdf'), $fixture['owner']->id);
+            app(StorePrivateDocument::class)->handle($fixture['driver'], ['document_type' => DocumentType::DrivingLicence, 'title' => 'Permis strictement fictif', 'is_sensitive' => true], $pdf('permis-lot06.pdf'), $fixture['owner']->id);
+            app(AttachContractVersionDocument::class)->handle($contract, $pdf('contrat-lot06.pdf'), $fixture['owner']->id);
             app(MarkContractReady::class)->handle($contract, $fixture['owner']->id);
             app(AcceptRentalContract::class)->handle($contract, [
                 'accepted_by_name' => 'Signataire Fictif',
@@ -137,6 +134,7 @@ class Lot06EndToEndDemoTest extends TestCase
             app(CompleteDepartureInspection::class)->handle($contract, [
                 'mileage' => 1010, 'fuel_level' => '75.00', 'items' => $this->inspectionItems(),
             ], $fixture['owner']->id);
+            app(RecordDepositReceipt::class)->handle($contract, '300.00', 'lot06-deposit-'.$contract->id, $fixture['owner']->id);
             app(ActivateRentalContract::class)->handle($contract, $fixture['owner']->id);
             app(CompleteReturnInspection::class)->handle($contract, [
                 'mileage' => 1110, 'fuel_level' => '75.00', 'items' => $this->inspectionItems(),
@@ -159,7 +157,6 @@ class Lot06EndToEndDemoTest extends TestCase
             ], $fixture['owner']->id);
             app(AllocatePaymentToInvoice::class)->handle($payment, $invoice, $invoice->total_amount);
             $payment = app(PostPayment::class)->handle($payment, $fixture['owner']->id);
-            app(RecordDepositReceipt::class)->handle($contract, '300.00', 'lot06-deposit-'.$contract->id, $fixture['owner']->id);
             app(RefundDeposit::class)->handle($contract, '300.00', 'lot06-refund-'.$contract->id, $fixture['owner']->id);
             $closed = app(CloseRentalContract::class)->handle($contract, $fixture['owner']->id);
 

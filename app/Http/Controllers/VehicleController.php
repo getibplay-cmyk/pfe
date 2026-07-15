@@ -19,16 +19,16 @@ class VehicleController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Vehicle::class);
-        $vehicles = Vehicle::with(['agency', 'category'])->when($request->user()->isAgencyManager(), fn ($q) => $q->where('agency_id', $request->user()->agency_id))->when($request->integer('agency_id'), fn ($q, $id) => $q->where('agency_id', $id))->when($request->integer('category_id'), fn ($q, $id) => $q->where('vehicle_category_id', $id))->when($request->string('status')->isNotEmpty(), fn ($q) => $q->where('operational_status', $request->string('status')))->orderBy('registration_number')->paginate(20)->withQueryString();
+        $vehicles = Vehicle::with(['agency', 'category'])->when($request->user()->agency_id, fn ($q, $agencyId) => $q->where('agency_id', $agencyId))->when($request->integer('agency_id'), fn ($q, $id) => $q->where('agency_id', $id))->when($request->integer('category_id'), fn ($q, $id) => $q->where('vehicle_category_id', $id))->when($request->string('status')->isNotEmpty(), fn ($q) => $q->where('operational_status', $request->string('status')))->orderBy('registration_number')->paginate(20)->withQueryString();
 
-        return view('vehicles.index', ['vehicles' => $vehicles, 'agencies' => Agency::orderBy('name')->get(), 'categories' => VehicleCategory::orderBy('name')->get(), 'statuses' => VehicleOperationalStatus::cases()]);
+        return view('vehicles.index', ['vehicles' => $vehicles, 'agencies' => $this->agencies($request), 'categories' => VehicleCategory::orderBy('name')->get(), 'statuses' => VehicleOperationalStatus::cases()]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', Vehicle::class);
 
-        return view('vehicles.form', $this->formData(new Vehicle));
+        return view('vehicles.form', $this->formData($request, new Vehicle));
     }
 
     public function store(Request $request, CreateVehicle $action): RedirectResponse
@@ -47,11 +47,11 @@ class VehicleController extends Controller
         return view('vehicles.show', compact('vehicle'));
     }
 
-    public function edit(Vehicle $vehicle): View
+    public function edit(Request $request, Vehicle $vehicle): View
     {
         $this->authorize('update', $vehicle);
 
-        return view('vehicles.form', $this->formData($vehicle));
+        return view('vehicles.form', $this->formData($request, $vehicle));
     }
 
     public function update(Request $request, Vehicle $vehicle, UpdateVehicle $action): RedirectResponse
@@ -71,9 +71,17 @@ class VehicleController extends Controller
         return back()->with('status', 'Statut opérationnel mis à jour.');
     }
 
-    private function formData(Vehicle $vehicle): array
+    private function formData(Request $request, Vehicle $vehicle): array
     {
-        return ['vehicle' => $vehicle, 'agencies' => Agency::orderBy('name')->get(), 'categories' => VehicleCategory::where('is_active', true)->orderBy('name')->get()];
+        return ['vehicle' => $vehicle, 'agencies' => $this->agencies($request), 'categories' => VehicleCategory::where('is_active', true)->orderBy('name')->get()];
+    }
+
+    private function agencies(Request $request)
+    {
+        return Agency::query()
+            ->when($request->user()->agency_id, fn ($query, $agencyId) => $query->whereKey($agencyId))
+            ->orderBy('name')
+            ->get();
     }
 
     private function validated(Request $request, ?Vehicle $vehicle = null): array

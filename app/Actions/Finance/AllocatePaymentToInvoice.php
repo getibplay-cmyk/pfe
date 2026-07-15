@@ -29,8 +29,11 @@ class AllocatePaymentToInvoice
             if (! in_array($lockedInvoice->status, ['issued', 'partially_paid'], true)) {
                 throw ValidationException::withMessages(['invoice' => 'La facture ne peut plus recevoir de règlement.']);
             }
-            if ($lockedPayment->customer_id !== $lockedInvoice->customer_id || $lockedPayment->currency !== $lockedInvoice->currency) {
-                throw ValidationException::withMessages(['allocation' => 'Client ou devise incompatible.']);
+            if ($lockedPayment->tenant_id !== $lockedInvoice->tenant_id
+                || $lockedPayment->agency_id !== $lockedInvoice->agency_id
+                || $lockedPayment->customer_id !== $lockedInvoice->customer_id
+                || $lockedPayment->currency !== $lockedInvoice->currency) {
+                throw ValidationException::withMessages(['allocation' => 'Tenant, agence, client ou devise incompatible.']);
             }
             $used = PaymentAllocation::where('payment_id', $lockedPayment->id)->sum('amount');
             if (DecimalMoney::toMinorUnits((string) $used) + $amountMinor > DecimalMoney::toMinorUnits($lockedPayment->amount)) {
@@ -43,7 +46,14 @@ class AllocatePaymentToInvoice
                 throw ValidationException::withMessages(['amount' => 'Le montant dépasse le solde disponible de la facture.']);
             }
 
-            $allocation = PaymentAllocation::create(['payment_id' => $lockedPayment->id, 'invoice_id' => $lockedInvoice->id, 'amount' => DecimalMoney::fromMinorUnits($amountMinor)]);
+            $allocation = PaymentAllocation::create([
+                'agency_id' => $lockedPayment->agency_id,
+                'customer_id' => $lockedPayment->customer_id,
+                'currency' => $lockedPayment->currency,
+                'payment_id' => $lockedPayment->id,
+                'invoice_id' => $lockedInvoice->id,
+                'amount' => DecimalMoney::fromMinorUnits($amountMinor),
+            ]);
             if ($lockedPayment->status === 'posted') {
                 $this->recalculate->handle($lockedInvoice);
             }

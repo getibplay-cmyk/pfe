@@ -34,6 +34,6 @@ class CustomerPolicy
 
     private function sameScope(User $user, Customer $customer): bool
     {
-        return $user->tenant_id === $customer->tenant_id && (! $user->isAgencyManager() || $user->agency_id === $customer->agency_id);
+        return $user->tenant_id === $customer->tenant_id && ($user->agency_id === null || $user->agency_id === $customer->agency_id);
     }
 }

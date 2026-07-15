@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Actions\Customers\CreateCustomer;
 use App\Actions\Customers\CreateDriver;
 use App\Actions\Documents\StorePrivateDocument;
+use App\Actions\Finance\RecordDepositReceipt;
 use App\Actions\Rentals\AcceptRentalContract;
 use App\Actions\Rentals\ActivateRentalContract;
+use App\Actions\Rentals\AttachContractVersionDocument;
 use App\Actions\Rentals\CalculateReturnCharges;
 use App\Actions\Rentals\CancelDraftRentalContract;
 use App\Actions\Rentals\CompareVehicleInspections;
@@ -31,7 +33,6 @@ use App\Enums\VehicleBlockType;
 use App\Enums\VerificationStatus;
 use App\Models\Agency;
 use App\Models\ContractCharge;
-use App\Models\Document;
 use App\Models\PricingRule;
 use App\Models\RentalContract;
 use App\Models\Role;
@@ -57,6 +58,7 @@ class Lot04RentalContractLifecycleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake(config('documents.disk'));
         $this->seed(RolesPermissionsSeeder::class);
     }
 
@@ -164,6 +166,7 @@ class Lot04RentalContractLifecycleTest extends TestCase
             $this->assertArrayHasKey('inspection', $exception->errors());
         }
         $inspection = $this->departure($f, $contract);
+        $this->deposit($f, $contract);
         $active = $this->inTenant($f, fn () => app(ActivateRentalContract::class)->handle($contract, $f['user']->id));
         $this->assertSame(RentalContractStatus::Active, $active->status);
         $this->assertSame(1010, $active->start_mileage);
@@ -399,8 +402,9 @@ class Lot04RentalContractLifecycleTest extends TestCase
     private function documents(array $f): void
     {
         $this->inTenant($f, function () use ($f) {
-            Document::firstOrCreate(['documentable_type' => $f['customer']->getMorphClass(), 'documentable_id' => $f['customer']->id, 'document_type' => DocumentType::CustomerIdentity], ['agency_id' => $f['agency']->id, 'title' => 'Identité test', 'is_sensitive' => true, 'created_by' => $f['user']->id]);
-            Document::firstOrCreate(['documentable_type' => $f['driver']->getMorphClass(), 'documentable_id' => $f['driver']->id, 'document_type' => DocumentType::DrivingLicence], ['agency_id' => $f['agency']->id, 'title' => 'Permis test', 'is_sensitive' => true, 'created_by' => $f['user']->id]);
+            $pdf = fn (string $name) => UploadedFile::fake()->createWithContent($name, "%PDF-1.4\nDocument contractuel fictif\n%%EOF");
+            app(StorePrivateDocument::class)->handle($f['customer'], ['document_type' => DocumentType::CustomerIdentity, 'title' => 'Identité test', 'is_sensitive' => true], $pdf('identite-test.pdf'), $f['user']->id);
+            app(StorePrivateDocument::class)->handle($f['driver'], ['document_type' => DocumentType::DrivingLicence, 'title' => 'Permis test', 'is_sensitive' => true], $pdf('permis-test.pdf'), $f['user']->id);
         });
     }
 
@@ -418,7 +422,13 @@ class Lot04RentalContractLifecycleTest extends TestCase
 
     private function accept(array $f, RentalContract $contract): RentalContract
     {
-        return $this->inTenant($f, fn () => app(AcceptRentalContract::class)->handle($contract, ['accepted_by_name' => 'Client Signataire', 'acceptance_method' => 'typed_name', 'ip_address' => '127.0.0.1', 'user_agent' => 'PHPUnit'], $f['user']->id));
+        return $this->inTenant($f, function () use ($f, $contract) {
+            if (! $contract->currentVersion()->value('document_id')) {
+                app(AttachContractVersionDocument::class)->handle($contract, UploadedFile::fake()->createWithContent('contrat.pdf', "%PDF-1.4\nContrat fictif\n%%EOF"), $f['user']->id);
+            }
+
+            return app(AcceptRentalContract::class)->handle($contract, ['accepted_by_name' => 'Client Signataire', 'acceptance_method' => 'typed_name', 'ip_address' => '127.0.0.1', 'user_agent' => 'PHPUnit'], $f['user']->id);
+        });
     }
 
     private function acceptedContract(array $f): RentalContract
@@ -435,8 +445,16 @@ class Lot04RentalContractLifecycleTest extends TestCase
     {
         $contract = $this->acceptedContract($f);
         $this->departure($f, $contract);
+        $this->deposit($f, $contract);
 
         return $this->inTenant($f, fn () => app(ActivateRentalContract::class)->handle($contract, $f['user']->id));
+    }
+
+    private function deposit(array $f, RentalContract $contract): void
+    {
+        if ($contract->deposit_required !== '0.00') {
+            $this->inTenant($f, fn () => app(RecordDepositReceipt::class)->handle($contract, $contract->deposit_required, 'lot04-departure-'.$contract->id, $f['user']->id));
+        }
     }
 
     private function returnInspection(array $f, RentalContract $contract, int $mileage, string $fuel, string $body = 'good')

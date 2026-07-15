@@ -19,7 +19,7 @@ class AgencyPolicy
 
     public function create(User $user): bool
     {
-        return ! $user->isAgencyManager() && $user->hasPermission('agency.manage');
+        return $user->agency_id === null && $user->hasPermission('agency.manage');
     }
 
     public function update(User $user, Agency $agency): bool
@@ -29,12 +29,12 @@ class AgencyPolicy
 
     public function delete(User $user, Agency $agency): bool
     {
-        return $this->update($user, $agency) && ! $user->isAgencyManager();
+        return $this->update($user, $agency) && $user->agency_id === null;
     }
 
     private function sameScope(User $user, Agency $agency): bool
     {
         return $user->tenant_id === $agency->tenant_id
-            && (! $user->isAgencyManager() || $user->agency_id === $agency->getKey());
+            && ($user->agency_id === null || $user->agency_id === $agency->getKey());
     }
 }

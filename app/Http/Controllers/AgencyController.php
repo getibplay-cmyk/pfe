@@ -16,7 +16,7 @@ class AgencyController extends Controller
         $this->authorize('viewAny', Agency::class);
         $query = Agency::query()->orderBy('name');
 
-        if ($request->user()->isAgencyManager()) {
+        if ($request->user()->agency_id !== null) {
             $query->whereKey($request->user()->agency_id);
         }
 

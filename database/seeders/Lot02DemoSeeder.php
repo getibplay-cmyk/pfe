@@ -15,13 +15,18 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\VehicleCategory;
 use App\Support\Tenancy\TenantContext;
+use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 
 class Lot02DemoSeeder extends Seeder
 {
+    use PreventsDemoSeedingInProduction;
+
     public function run(CreateVehicle $createVehicle, ChangeVehicleOperationalStatus $changeStatus, CreateCustomer $createCustomer, CreateDriver $createDriver, StorePrivateDocument $storeDocument): void
     {
+        $this->ensureDemoSeedingIsAllowed();
+
         $tenant = Tenant::where('slug', 'atlas-location-demo')->firstOrFail();
         $context = app(TenantContext::class);
         $context->run($tenant, function () use ($createVehicle, $changeStatus, $createCustomer, $createDriver, $storeDocument, $tenant) {
