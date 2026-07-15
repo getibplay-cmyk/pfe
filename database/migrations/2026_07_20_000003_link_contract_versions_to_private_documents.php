@@ -9,7 +9,9 @@ return new class extends Migration
     {
         DB::statement('ALTER TABLE contract_versions ADD COLUMN agency_id BIGINT');
         DB::statement('ALTER TABLE contract_versions ADD COLUMN document_id BIGINT');
+        DB::statement('ALTER TABLE contract_versions DISABLE TRIGGER contract_versions_prevent_locked_update');
         DB::statement('UPDATE contract_versions AS version SET agency_id = contract.agency_id FROM rental_contracts AS contract WHERE contract.id = version.rental_contract_id AND contract.tenant_id = version.tenant_id');
+        DB::statement('ALTER TABLE contract_versions ENABLE TRIGGER contract_versions_prevent_locked_update');
         DB::statement('ALTER TABLE contract_versions ALTER COLUMN agency_id SET NOT NULL');
         DB::statement('ALTER TABLE documents ADD CONSTRAINT documents_contract_version_scope_unique UNIQUE (tenant_id, agency_id, id)');
         DB::statement('ALTER TABLE contract_versions ADD CONSTRAINT contract_versions_contract_agency_fk FOREIGN KEY (tenant_id, agency_id, rental_contract_id) REFERENCES rental_contracts (tenant_id, agency_id, id) ON DELETE CASCADE');

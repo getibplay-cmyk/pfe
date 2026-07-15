@@ -21,7 +21,7 @@ class EnsureRequiredContractDocuments
         $contractDocument = $contract->currentVersion?->document()->first();
         if (! $contractDocument
             || $contractDocument->documentable_type !== $contract->getMorphClass()
-            || $contractDocument->documentable_id !== $contract->id
+            || (int) $contractDocument->documentable_id !== (int) $contract->id
             || $contractDocument->document_type !== DocumentType::ContractAcceptance) {
             throw ValidationException::withMessages(['documents' => 'La version contractuelle doit posséder son propre document privé.']);
         }

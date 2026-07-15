@@ -196,6 +196,7 @@ class Lot06BRentalCycleInvariantsTest extends TestCase
         $noDepositContract = $this->contract($none);
         $this->inTenant($none, fn () => $noDepositContract->forceFill(['deposit_required' => '0.00'])->save());
         $this->documents($none);
+        $this->attachContractDocument($none, $noDepositContract);
         $this->inTenant($none, fn () => app(MarkContractReady::class)->handle($noDepositContract, $none['user']->id));
         $this->accept($none, $noDepositContract);
         $this->departure($none, $noDepositContract);
