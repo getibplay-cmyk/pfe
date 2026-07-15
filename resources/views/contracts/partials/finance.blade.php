@@ -1,0 +1,31 @@
+<section class="rounded-xl bg-white p-5 shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="font-semibold">Finance du contrat</h2><p class="mt-1 text-sm text-slate-500">Devise : {{ $contract->currency }}</p></div><a href="{{ route('finance.index') }}" class="text-sm text-indigo-700 underline">Ouvrir Finance</a></div>
+    <div class="mt-4 grid gap-3 text-sm md:grid-cols-4"><p class="rounded bg-slate-50 p-3">Caution reçue<br><strong>{{ $depositTotals['received'] }} {{ $contract->currency }}</strong></p><p class="rounded bg-slate-50 p-3">Retenue<br><strong>{{ $depositTotals['retained'] }} {{ $contract->currency }}</strong></p><p class="rounded bg-slate-50 p-3">Remboursée<br><strong>{{ $depositTotals['refunded'] }} {{ $contract->currency }}</strong></p><p class="rounded bg-slate-50 p-3">Solde caution<br><strong>{{ $depositTotals['balance'] }} {{ $contract->currency }}</strong></p></div>
+
+    @if(auth()->user()->hasPermission('deposit.create') && in_array($contract->status->value, ['accepted','active','return_pending','returned']))
+        <div class="mt-5 grid gap-4 lg:grid-cols-3">
+            <form method="POST" action="{{ route('finance.deposits.receive', $contract) }}" class="rounded-lg border p-4">@csrf<input type="hidden" name="idempotency_key" value="web-deposit-receive-{{ Illuminate\Support\Str::uuid() }}"><label class="text-sm">Recevoir une caution ({{ $contract->currency }})<input name="amount" inputmode="decimal" required value="{{ old('amount', $contract->deposit_required) }}" class="mt-1 w-full rounded border-slate-300"><x-input-error :messages="$errors->get('amount')" /></label><button class="mt-3 rounded bg-slate-900 px-3 py-2 text-sm text-white">Recevoir</button></form>
+            @if($depositTotals['balance'] !== '0.00')<form method="POST" action="{{ route('finance.deposits.retain', $contract) }}" class="rounded-lg border p-4" onsubmit="return confirm('Enregistrer cette retenue définitive dans le registre ?')">@csrf<input type="hidden" name="idempotency_key" value="web-deposit-retain-{{ Illuminate\Support\Str::uuid() }}"><label class="text-sm">Retenir ({{ $contract->currency }})<input name="amount" inputmode="decimal" required class="mt-1 w-full rounded border-slate-300"></label><label class="mt-2 block text-sm">Motif<input name="reason" required class="mt-1 w-full rounded border-slate-300"></label><button class="mt-3 rounded border px-3 py-2 text-sm">Retenir</button></form>
+            <form method="POST" action="{{ route('finance.deposits.refund', $contract) }}" class="rounded-lg border p-4" onsubmit="return confirm('Enregistrer ce remboursement de caution ?')">@csrf<input type="hidden" name="idempotency_key" value="web-deposit-refund-{{ Illuminate\Support\Str::uuid() }}"><label class="text-sm">Rembourser ({{ $contract->currency }})<input name="amount" inputmode="decimal" required value="{{ $depositTotals['balance'] }}" class="mt-1 w-full rounded border-slate-300"></label><label class="mt-2 block text-sm">Note<input name="reason" class="mt-1 w-full rounded border-slate-300"></label><button class="mt-3 rounded border px-3 py-2 text-sm">Rembourser</button></form>@endif
+        </div>
+    @endif
+
+    @if($contract->depositTransactions->isNotEmpty())
+        <div class="mt-5 space-y-2 border-t pt-4 text-sm">
+            <h3 class="font-medium">Registre de caution</h3>
+            @foreach($contract->depositTransactions->sortByDesc('occurred_at') as $entry)
+                @php($isReversed = $contract->depositTransactions->contains('reversal_of_id', $entry->id))
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded border p-3"><span>{{ $entry->transaction_number }} · {{ $entry->transaction_type }} · {{ $entry->amount }} {{ $entry->currency }}</span>
+                    @if(!$isReversed && $entry->transaction_type !== 'reversal' && auth()->user()->hasPermission('deposit.reverse'))<form method="POST" action="{{ route('finance.deposits.reverse', $entry) }}" class="flex gap-2" onsubmit="return confirm('Créer une contrepassation append-only ?')">@csrf<input type="hidden" name="idempotency_key" value="web-deposit-reverse-{{ Illuminate\Support\Str::uuid() }}"><input name="reason" required placeholder="Motif" class="rounded border-slate-300"><button class="text-red-700 underline">Contrepasser</button></form>@elseif($isReversed)<span class="text-xs text-slate-500">Contrepassé</span>@endif
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    <div class="mt-5 border-t pt-5">
+        @if($contract->invoice)<p class="text-sm">Facture : <a class="font-medium text-indigo-700 underline" href="{{ route('finance.invoices.show', $contract->invoice) }}">{{ $contract->invoice->invoice_number }}</a> · {{ $contract->invoice->status }} · solde {{ $contract->invoice->balance_due }} {{ $contract->invoice->currency }}</p>
+        @elseif($contract->status->value === 'returned' && auth()->user()->hasPermission('invoice.create'))<form method="POST" action="{{ route('finance.invoices.create', $contract) }}" class="flex flex-wrap gap-2">@csrf<select name="tax_mode" class="rounded border-slate-300"><option value="none">Sans taxe officielle</option><option value="inclusive">Taxe incluse</option><option value="exclusive">Taxe ajoutée</option></select><input name="tax_rate" inputmode="decimal" value="0.0000" class="w-32 rounded border-slate-300"><button class="rounded bg-slate-900 px-4 py-2 text-white">Créer la facture</button></form>
+        @else<p class="text-sm text-slate-500">La facture devient disponible après finalisation du retour et revue de tous les frais.</p>@endif
+    </div>
+    @if($contract->status->value === 'returned' && auth()->user()->hasPermission('contract.close'))<form method="POST" action="{{ route('finance.contracts.close', $contract) }}" class="mt-4" onsubmit="return confirm('Clôturer financièrement ce contrat ?')">@csrf<button class="rounded bg-slate-900 px-4 py-2 text-white">Vérifier et clôturer</button><p class="mt-1 text-xs text-slate-500">Exige une facture payée, aucun paiement en attente et une caution soldée.</p></form>@endif
+</section>

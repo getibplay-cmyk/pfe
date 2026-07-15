@@ -68,8 +68,8 @@ class Lot04DemoSeeder extends Seeder
                 ->where('agency_id', $agencyId)
                 ->whereHas('drivers', fn ($query) => $query->where('licence_expires_at', '>', $start->addDays(20)->toDateString()))->firstOrFail();
             $driver = $customer->drivers->first();
-            $vehicles = Vehicle::where('agency_id', $agencyId)->where('vehicle_category_id', $category->id)->where('operational_status', 'active')->take(6)->get();
-            while ($vehicles->count() < 6) {
+            $vehicles = Vehicle::where('agency_id', $agencyId)->where('vehicle_category_id', $category->id)->where('operational_status', 'active')->take(8)->get();
+            while ($vehicles->count() < 8) {
                 $index = $vehicles->count() + 1;
                 $vehicles->push($createVehicle->handle(['agency_id' => $agencyId, 'vehicle_category_id' => $category->id, 'registration_number' => 'RF-DEMO-04-'.$index, 'brand' => 'Dacia', 'model' => 'Duster', 'production_year' => 2025, 'fuel_type' => 'diesel', 'transmission' => 'manual', 'current_mileage' => 2000 + ($index * 100)], $owner->id));
             }
@@ -78,7 +78,7 @@ class Lot04DemoSeeder extends Seeder
             $storeDocument->handle($driver, ['document_type' => DocumentType::DrivingLicence, 'title' => 'Permis fictif — démonstration', 'is_sensitive' => true], $pdf('permis-contrat-demo.pdf'), $owner->id);
 
             $contracts = collect();
-            foreach ($vehicles->take(6) as $index => $vehicle) {
+            foreach ($vehicles->take(8) as $index => $vehicle) {
                 $reservation = $createReservation->handle(['agency_id' => $vehicle->agency_id, 'customer_id' => $customer->id, 'driver_id' => $driver->id, 'vehicle_category_id' => $vehicle->vehicle_category_id, 'vehicle_id' => $vehicle->id, 'starts_at' => $start->addDays($index * 3), 'ends_at' => $start->addDays($index * 3 + 1), 'status' => 'draft', 'notes' => 'Scénario fictif Lot 04'], $owner->id);
                 $confirmReservation->handle($reservation, $owner->id);
                 $contracts->push($createContract->handle($reservation, $owner->id));
@@ -112,9 +112,11 @@ class Lot04DemoSeeder extends Seeder
             $major = $reportDamage->handle($pending, ['return_inspection_id' => $return->id, 'description' => 'Impact majeur fictif', 'vehicle_area' => 'Pare-chocs', 'severity' => 'major', 'estimated_cost' => '2200.00'], $owner->id);
             $reviewDamage->handle($major, ['responsibility' => 'pending', 'status' => 'under_review', 'reason' => 'Revue humaine de démonstration en cours'], $owner->id);
 
-            $returned = $contracts[5]->refresh();
-            $ids = $returned->charges()->where('status', 'proposed')->pluck('id')->all();
-            $markReturned->handle($returned, ['approved_charge_ids' => $ids, 'reason' => 'Retour fictif validé'], $owner->id);
+            foreach ($contracts->slice(5) as $returned) {
+                $returned = $returned->refresh();
+                $ids = $returned->charges()->where('status', 'proposed')->pluck('id')->all();
+                $markReturned->handle($returned, ['approved_charge_ids' => $ids, 'reason' => 'Retour fictif validé'], $owner->id);
+            }
         });
     }
 

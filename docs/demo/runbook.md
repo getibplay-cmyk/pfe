@@ -30,11 +30,38 @@ n’est versionné. Les seeders refusent l’environnement `production`.
 | Second tenant | `owner@rif-demo.test` |
 | Administration plateforme | `platform@rentfleet.test` |
 
-Le jeu attendu contient deux tenants, trois agences, six rôles métier, seize
-véhicules, douze clients/conducteurs, réservations variées, six contrats,
+Le jeu attendu contient deux tenants, trois agences, six rôles métier, au moins
+seize véhicules, douze clients/conducteurs, réservations variées, huit contrats,
 factures et cautions, deux maintenances, une police proche d’échéance et un
 sinistre fictif en revue. Vérifier ces ordres de grandeur avec le dashboard et
 `rentfleet:doctor`, sans les présenter comme des données réelles.
+
+## Parcours navigateur Lot 06C
+
+Ce parcours nominal ne nécessite ni Tinker, ni SQL manuel, ni appel direct à
+une API. Se connecter avec `tenant-owner@atlas-demo.test` et la valeur locale
+de `DEMO_PASSWORD`, puis utiliser exclusivement les écrans suivants :
+
+1. Ouvrir **Contrats**, filtrer sur `ready`, puis ouvrir le contrat préparé.
+2. Dans **Prérequis du cycle**, vérifier l’identité et le permis, téléverser un
+   PDF fictif dans **Version courante**, puis enregistrer l’acceptation.
+3. Dans **Finance du contrat**, recevoir la caution demandée avec la devise
+   affichée. Réaliser ensuite l’inspection de départ et activer le contrat.
+4. Réaliser l’inspection de retour, ajouter au besoin un dommage, calculer les
+   frais, les revoir humainement puis finaliser le retour.
+5. Depuis la même fiche, créer la facture. Sur la fiche facture, l’émettre,
+   enregistrer un paiement manuel, l’allouer puis le comptabiliser.
+6. Revenir au contrat, rembourser ou retenir explicitement le solde de caution,
+   puis utiliser **Vérifier et clôturer**. Les prérequis manquants restent
+   affichés en français et empêchent la transition.
+7. Ouvrir **Maintenance** : créer un ordre, l’approuver, le démarrer et le
+   terminer. Vérifier le bloc véhicule, l’historique et la dépense générée.
+8. Ouvrir **Assurance** : créer une police et une garantie, déclarer un
+   sinistre sans choisir de statut avancé, puis suivre uniquement les
+   transitions proposées jusqu’à la clôture.
+
+Les documents sont toujours ouverts via leur fiche et leur contrôleur de
+téléchargement autorisé. Aucune URL `storage/*` ne fait partie du scénario.
 
 ## Script oral
 

@@ -24,4 +24,9 @@ class ContractStatusHistory extends Model
     {
         return $this->belongsTo(RentalContract::class);
     }
+
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by');
+    }
 }

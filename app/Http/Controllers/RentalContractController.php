@@ -10,16 +10,21 @@ use App\Actions\Rentals\CancelDraftRentalContract;
 use App\Actions\Rentals\CompareVehicleInspections;
 use App\Actions\Rentals\CreateContractVersion;
 use App\Actions\Rentals\CreateRentalContractFromReservation;
+use App\Actions\Rentals\EnsureRequiredContractDocuments;
 use App\Actions\Rentals\MarkContractReady;
 use App\Actions\Rentals\MarkRentalReturned;
 use App\Enums\AcceptanceMethod;
+use App\Enums\DocumentType;
 use App\Enums\RentalContractStatus;
 use App\Models\Document;
 use App\Models\RentalContract;
 use App\Models\Reservation;
+use App\Support\Finance\DepositLedger;
+use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RentalContractController extends Controller
@@ -36,16 +41,51 @@ class RentalContractController extends Controller
         return view('contracts.index', ['contracts' => $contracts, 'statuses' => RentalContractStatus::cases()]);
     }
 
-    public function show(RentalContract $contract, CompareVehicleInspections $compare): View
-    {
+    public function show(
+        RentalContract $contract,
+        CompareVehicleInspections $compare,
+        EnsureRequiredContractDocuments $requiredDocuments,
+        DepositLedger $depositLedger,
+    ): View {
         $this->authorize('view', $contract);
-        $contract->load(['reservation', 'customer', 'vehicle', 'agency', 'drivers.driver', 'versions', 'currentVersion.document.currentVersion', 'acceptances', 'inspections.items', 'damages.statusHistories', 'charges', 'statusHistories.actor', 'vehicleBlock']);
+        $contract->load([
+            'reservation', 'customer', 'vehicle', 'agency', 'drivers.driver', 'versions.document.currentVersion',
+            'currentVersion.document.currentVersion', 'acceptances', 'inspections.items', 'damages.statusHistories',
+            'charges', 'statusHistories.actor', 'vehicleBlock', 'invoice.lines', 'invoice.allocations.payment',
+            'payments.allocations', 'depositTransactions',
+        ]);
 
         $departure = $contract->inspections->firstWhere('inspection_type.value', 'departure');
         $return = $contract->inspections->firstWhere('inspection_type.value', 'return');
         $comparison = $departure && $return ? $compare->handle($departure, $return) : null;
+        $primaryDriver = $contract->drivers->firstWhere('is_primary', true)?->driver;
+        $documentStatus = [
+            'identity' => Document::query()->where('agency_id', $contract->agency_id)->where('documentable_type', $contract->customer->getMorphClass())->where('documentable_id', $contract->customer_id)->where('document_type', DocumentType::CustomerIdentity->value)->whereNotNull('current_version_id')->exists(),
+            'licence' => $primaryDriver && Document::query()->where('agency_id', $contract->agency_id)->where('documentable_type', $primaryDriver->getMorphClass())->where('documentable_id', $primaryDriver->id)->where('document_type', DocumentType::DrivingLicence->value)->whereNotNull('current_version_id')->exists(),
+            'contract' => (bool) $contract->currentVersion?->document_id,
+            'valid' => false,
+            'message' => 'Les documents requis doivent être vérifiés.',
+        ];
+        if ($primaryDriver) {
+            try {
+                $requiredDocuments->handle($contract, $contract->customer, $primaryDriver);
+                $documentStatus['valid'] = true;
+                $documentStatus['message'] = 'Tous les documents privés requis sont présents, courants et vérifiés.';
+            } catch (ValidationException $exception) {
+                $documentStatus['message'] = collect($exception->errors())->flatten()->first() ?? $documentStatus['message'];
+            }
+        }
+        $depositTotals = collect($depositLedger->totals($contract))
+            ->map(fn (int $minor) => DecimalMoney::fromMinorUnits($minor))
+            ->all();
 
-        return view('contracts.show', ['contract' => $contract, 'acceptanceMethods' => AcceptanceMethod::cases(), 'comparison' => $comparison]);
+        return view('contracts.show', [
+            'contract' => $contract,
+            'acceptanceMethods' => AcceptanceMethod::cases(),
+            'comparison' => $comparison,
+            'documentStatus' => $documentStatus,
+            'depositTotals' => $depositTotals,
+        ]);
     }
 
     public function store(Request $request, Reservation $reservation, CreateRentalContractFromReservation $action): RedirectResponse

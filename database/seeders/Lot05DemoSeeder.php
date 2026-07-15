@@ -24,6 +24,8 @@ use App\Models\RentalContract;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Support\Finance\DepositLedger;
+use App\Support\Pricing\DecimalMoney;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
@@ -48,34 +50,36 @@ class Lot05DemoSeeder extends Seeder
         StartMaintenanceOrder $startMaintenance,
         CreateInsuranceClaim $createClaim,
         StartInsuranceClaimReview $startClaimReview,
+        DepositLedger $depositLedger,
     ): void {
         $this->ensureDemoSeedingIsAllowed();
 
         $tenant = Tenant::where('slug', 'atlas-location-demo')->firstOrFail();
-        app(TenantContext::class)->run($tenant, function () use ($createInvoice, $issueInvoice, $recordPayment, $allocate, $postPayment, $receiveDeposit, $retainDeposit, $refundDeposit, $closeContract, $createMaintenance, $approveMaintenance, $startMaintenance, $createClaim, $startClaimReview) {
+        app(TenantContext::class)->run($tenant, function () use ($createInvoice, $issueInvoice, $recordPayment, $allocate, $postPayment, $receiveDeposit, $retainDeposit, $refundDeposit, $closeContract, $createMaintenance, $approveMaintenance, $startMaintenance, $createClaim, $startClaimReview, $depositLedger) {
             if (Invoice::exists()) {
                 return;
             }
             $owner = User::whereHas('role', fn ($query) => $query->where('slug', 'tenant-owner'))->firstOrFail();
-            $contracts = RentalContract::orderBy('id')->take(2)->get();
-            foreach ($contracts as $contract) {
-                $contract->forceFill(['status' => RentalContractStatus::Returned, 'returned_at' => now(), 'actual_return_at' => now()])->save();
-                $contract->vehicleBlock?->forceFill(['status' => 'released', 'released_at' => now()])->save();
-            }
+            $contracts = RentalContract::where('status', RentalContractStatus::Returned)->orderBy('id')->take(2)->get();
 
             $partial = $issueInvoice->handle($createInvoice->handle($contracts[0], $owner->id), $owner->id);
             $partialPayment = $recordPayment->handle($this->paymentData($contracts[0], '100.00', 'demo-partial'), $owner->id);
             $allocate->handle($partialPayment, $partial, '100.00');
             $postPayment->handle($partialPayment, $owner->id);
-            $receiveDeposit->handle($contracts[0], '300.00', 'demo-deposit-retained', $owner->id);
+            if ($depositLedger->totals($contracts[0])['balance'] === 0) {
+                $receiveDeposit->handle($contracts[0], $contracts[0]->deposit_required, 'demo-deposit-retained', $owner->id);
+            }
             $retainDeposit->handle($contracts[0], '50.00', 'demo-deposit-retention', 'Retenue fictive décidée humainement', $owner->id);
 
             $paid = $issueInvoice->handle($createInvoice->handle($contracts[1], $owner->id), $owner->id);
             $fullPayment = $recordPayment->handle($this->paymentData($contracts[1], $paid->total_amount, 'demo-paid'), $owner->id);
             $allocate->handle($fullPayment, $paid, $paid->total_amount);
             $postPayment->handle($fullPayment, $owner->id);
-            $receiveDeposit->handle($contracts[1], '300.00', 'demo-deposit-refund', $owner->id);
-            $refundDeposit->handle($contracts[1], '300.00', 'demo-deposit-refunded', $owner->id);
+            if ($depositLedger->totals($contracts[1])['balance'] === 0) {
+                $receiveDeposit->handle($contracts[1], $contracts[1]->deposit_required, 'demo-deposit-refund', $owner->id);
+            }
+            $refundAmount = DecimalMoney::fromMinorUnits($depositLedger->totals($contracts[1])['balance']);
+            $refundDeposit->handle($contracts[1], $refundAmount, 'demo-deposit-refunded', $owner->id);
             $closeContract->handle($contracts[1], $owner->id);
 
             $vehicles = Vehicle::take(2)->get();

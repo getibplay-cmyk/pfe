@@ -48,6 +48,9 @@
                 <nav class="mt-4 flex gap-3 overflow-x-auto text-sm md:hidden">
                     @can('viewAny', App\Models\RentalContract::class)<a href="{{ route('contracts.index') }}">Contrats</a>@endcan
                     <a href="{{ route('dashboard') }}">Dashboard</a><a href="{{ route('tenant.show') }}">Entreprise</a><a href="{{ route('agencies.index') }}">Agences</a>@can('viewAny', App\Models\Vehicle::class)<a href="{{ route('vehicles.index') }}">Véhicules</a>@endcan @can('viewAny', App\Models\Customer::class)<a href="{{ route('customers.index') }}">Clients</a>@endcan @can('viewAny', App\Models\Reservation::class)<a href="{{ route('reservations.index') }}">Réservations</a><a href="{{ route('availability.index') }}">Disponibilité</a>@endcan
+                    @if(auth()->user()->hasPermission('invoice.view'))<a href="{{ route('finance.index') }}">Finance</a>@endif
+                    @if(auth()->user()->hasPermission('maintenance.view'))<a href="{{ route('maintenance.index') }}">Maintenance</a>@endif
+                    @if(auth()->user()->hasPermission('insurance.view'))<a href="{{ route('insurance.index') }}">Assurance</a>@endif
                 </nav>
             @endunless
         </header>

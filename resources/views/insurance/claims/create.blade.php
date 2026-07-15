@@ -1,0 +1,15 @@
+<x-app-layout>
+    <div class="mx-auto max-w-4xl space-y-6">
+        <div><a href="{{ route('insurance.index') }}" class="text-sm text-indigo-700">← Assurance</a><h1 class="mt-2 text-3xl font-bold">Déclarer un sinistre</h1><p class="mt-2 text-sm text-slate-600">Le sinistre sera toujours créé à l’état « Déclaré ». Aucune décision avancée n’est proposée ici.</p></div>
+        <form method="POST" action="{{ route('insurance.claims.store') }}" class="grid gap-5 rounded-xl bg-white p-6 shadow-sm md:grid-cols-2">@csrf
+            <label class="text-sm">Agence<select name="agency_id" required class="mt-1 w-full rounded border-slate-300"><option value="">Choisir</option>@foreach($agencies as $agency)<option value="{{ $agency->id }}" @selected(old('agency_id') == $agency->id)>{{ $agency->name }}</option>@endforeach</select><x-input-error :messages="$errors->get('agency_id')" /></label>
+            <label class="text-sm">Police<select name="insurance_policy_id" required class="mt-1 w-full rounded border-slate-300"><option value="">Choisir</option>@foreach($policies as $policy)<option value="{{ $policy->id }}" @selected(old('insurance_policy_id') == $policy->id)>{{ $policy->maskedPolicyNumber() }} · {{ $policy->vehicle->registration_number }}</option>@endforeach</select><x-input-error :messages="$errors->get('insurance_policy_id')" /></label>
+            <label class="text-sm">Contrat compatible (facultatif)<select name="rental_contract_id" class="mt-1 w-full rounded border-slate-300"><option value="">Aucun</option>@foreach($contracts as $contract)<option value="{{ $contract->id }}" @selected(old('rental_contract_id') == $contract->id)>{{ $contract->contract_number }} · {{ $contract->vehicle->registration_number }}</option>@endforeach</select><x-input-error :messages="$errors->get('rental_contract_id')" /></label>
+            <label class="text-sm">Dommage compatible (facultatif)<select name="damage_report_id" class="mt-1 w-full rounded border-slate-300"><option value="">Aucun</option>@foreach($damages as $damage)<option value="{{ $damage->id }}" @selected(old('damage_report_id') == $damage->id)>{{ $damage->damage_number }} · {{ $damage->rentalContract->contract_number }}</option>@endforeach</select><x-input-error :messages="$errors->get('damage_report_id')" /></label>
+            <label class="text-sm">Montant demandé (MAD)<input name="claimed_amount" inputmode="decimal" required value="{{ old('claimed_amount') }}" class="mt-1 w-full rounded border-slate-300"><x-input-error :messages="$errors->get('claimed_amount')" /></label>
+            <label class="text-sm">Référence assureur sensible<input name="insurer_reference" autocomplete="off" value="{{ old('insurer_reference') }}" class="mt-1 w-full rounded border-slate-300"></label>
+            <label class="text-sm md:col-span-2">Notes<textarea name="notes" rows="4" class="mt-1 w-full rounded border-slate-300">{{ old('notes') }}</textarea></label>
+            <div class="md:col-span-2"><button class="rounded-lg bg-slate-900 px-4 py-2 text-white">Créer à l’état déclaré</button></div>
+        </form>
+    </div>
+</x-app-layout>

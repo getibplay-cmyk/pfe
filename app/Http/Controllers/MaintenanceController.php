@@ -7,6 +7,10 @@ use App\Actions\Maintenance\CancelMaintenanceOrder;
 use App\Actions\Maintenance\CompleteMaintenanceOrder;
 use App\Actions\Maintenance\CreateMaintenanceOrder;
 use App\Actions\Maintenance\StartMaintenanceOrder;
+use App\Http\Requests\Maintenance\CancelMaintenanceOrderRequest;
+use App\Http\Requests\Maintenance\CompleteMaintenanceOrderRequest;
+use App\Http\Requests\Maintenance\StoreMaintenanceOrderRequest;
+use App\Models\Agency;
 use App\Models\MaintenanceOrder;
 use App\Models\Vehicle;
 use Illuminate\Http\RedirectResponse;
@@ -22,17 +26,33 @@ class MaintenanceController extends Controller
 
         return view('maintenance.index', [
             'orders' => MaintenanceOrder::with('vehicle')->when($agency, fn ($query) => $query->where('agency_id', $agency))->latest()->paginate(20),
-            'vehicles' => Vehicle::when($agency, fn ($query) => $query->where('agency_id', $agency))->orderBy('registration_number')->get(),
         ]);
     }
 
-    public function store(Request $request, CreateMaintenanceOrder $action): RedirectResponse
+    public function create(Request $request): View
     {
         $this->permit($request, 'maintenance.create');
-        $data = $request->validate(['tenant_id' => ['prohibited'], 'agency_id' => ['required', 'integer'], 'vehicle_id' => ['required', 'integer'], 'maintenance_type' => ['required', 'in:preventive,corrective,inspection,repair'], 'priority' => ['required', 'in:low,normal,high,critical'], 'title' => ['required', 'string', 'max:255'], 'description' => ['nullable', 'string'], 'scheduled_start_at' => ['nullable', 'date'], 'scheduled_end_at' => ['nullable', 'date', 'after:scheduled_start_at'], 'estimated_cost' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/'], 'supplier' => ['nullable', 'string', 'max:255']]);
-        $action->handle($data, $request->user()->id);
+        $agency = $request->user()->agency_id;
 
-        return back()->with('status', 'Maintenance planifiée.');
+        return view('maintenance.create', [
+            'agencies' => Agency::query()->when($agency, fn ($query) => $query->whereKey($agency))->orderBy('name')->get(),
+            'vehicles' => Vehicle::query()->when($agency, fn ($query) => $query->where('agency_id', $agency))->orderBy('registration_number')->get(),
+        ]);
+    }
+
+    public function store(StoreMaintenanceOrderRequest $request, CreateMaintenanceOrder $action): RedirectResponse
+    {
+        $order = $action->handle($request->validated(), $request->user()->id);
+
+        return redirect()->route('maintenance.show', $order)->with('status', 'Maintenance planifiée.');
+    }
+
+    public function show(Request $request, MaintenanceOrder $maintenance): View
+    {
+        $this->permitOrder($request, $maintenance, 'maintenance.view');
+        $maintenance->load(['vehicle', 'histories', 'vehicleBlock', 'expenses']);
+
+        return view('maintenance.show', ['maintenance' => $maintenance]);
     }
 
     public function approve(Request $request, MaintenanceOrder $maintenance, ApproveMaintenanceOrder $action): RedirectResponse
@@ -51,20 +71,16 @@ class MaintenanceController extends Controller
         return back()->with('status', 'Maintenance démarrée.');
     }
 
-    public function complete(Request $request, MaintenanceOrder $maintenance, CompleteMaintenanceOrder $action): RedirectResponse
+    public function complete(CompleteMaintenanceOrderRequest $request, MaintenanceOrder $maintenance, CompleteMaintenanceOrder $action): RedirectResponse
     {
-        $this->permitOrder($request, $maintenance, 'maintenance.complete');
-        $data = $request->validate(['actual_cost' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'], 'mileage' => ['required', 'integer', 'min:0'], 'next_due_date' => ['nullable', 'date'], 'next_due_mileage' => ['nullable', 'integer', 'min:0'], 'return_to_active' => ['nullable', 'boolean'], 'reason' => ['nullable', 'string']]);
-        $action->handle($maintenance, $data, $request->user()->id);
+        $action->handle($maintenance, $request->validated(), $request->user()->id);
 
         return back()->with('status', 'Maintenance terminée.');
     }
 
-    public function cancel(Request $request, MaintenanceOrder $maintenance, CancelMaintenanceOrder $action): RedirectResponse
+    public function cancel(CancelMaintenanceOrderRequest $request, MaintenanceOrder $maintenance, CancelMaintenanceOrder $action): RedirectResponse
     {
-        $this->permitOrder($request, $maintenance, 'maintenance.cancel');
-        $data = $request->validate(['reason' => ['required', 'string']]);
-        $action->handle($maintenance, $data['reason'], $request->user()->id);
+        $action->handle($maintenance, $request->validated('reason'), $request->user()->id);
 
         return back()->with('status', 'Maintenance annulée.');
     }

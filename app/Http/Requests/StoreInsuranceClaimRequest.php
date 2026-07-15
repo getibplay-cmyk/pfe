@@ -8,7 +8,10 @@ class StoreInsuranceClaimRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $agencyId = $this->integer('agency_id');
+
+        return $this->user()?->hasPermission('claim.manage')
+            && ($this->user()->agency_id === null || $this->user()->agency_id === $agencyId);
     }
 
     public function rules(): array

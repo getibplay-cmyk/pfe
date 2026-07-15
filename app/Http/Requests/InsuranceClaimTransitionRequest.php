@@ -8,7 +8,11 @@ class InsuranceClaimTransitionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $claim = $this->route('claim');
+
+        return $this->user()?->hasPermission('claim.manage')
+            && $claim
+            && ($this->user()->agency_id === null || $this->user()->agency_id === $claim->agency_id);
     }
 
     public function rules(): array
