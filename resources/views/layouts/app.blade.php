@@ -1,4 +1,74 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}"><title>{{ config('app.name', 'RentFleet') }}</title>@vite(['resources/css/app.css', 'resources/js/app.js'])</head>
-<body class="bg-slate-100 font-sans text-slate-900 antialiased"><div class="min-h-screen md:flex"><aside class="hidden w-64 shrink-0 flex-col bg-slate-950 p-6 text-white md:flex"><a href="{{ auth()->user()->is_platform_admin ? route('platform.dashboard') : route('dashboard') }}" class="text-2xl font-bold">RentFleet</a><nav class="mt-10 space-y-2 text-sm">@if(auth()->user()->is_platform_admin)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('platform.dashboard') }}">Tableau plateforme</a><a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('platform.tenants.index') }}">Tenants</a>@else<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('dashboard') }}">Tableau de bord</a>@can('viewAny', App\Models\RentalContract::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('contracts.index') }}">Contrats</a>@endcan<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('tenant.show') }}">Entreprise</a>@can('viewAny', App\Models\Agency::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('agencies.index') }}">Agences</a>@endcan @can('viewAny', App\Models\User::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('users.index') }}">Utilisateurs</a>@endcan @can('viewAny', App\Models\Vehicle::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('vehicles.index') }}">Véhicules</a>@endcan @can('viewAny', App\Models\Customer::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('customers.index') }}">Clients</a>@endcan @can('viewAny', App\Models\Reservation::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('reservations.index') }}">Réservations</a><a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('availability.index') }}">Disponibilité</a>@endcan @can('viewAny', App\Models\PricingRule::class)<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('pricing-rules.index') }}">Tarification</a>@endcan @if(auth()->user()->hasPermission('invoice.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('finance.index') }}">Finance</a>@endif @if(auth()->user()->hasPermission('maintenance.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('maintenance.index') }}">Maintenance</a>@endif @if(auth()->user()->hasPermission('insurance.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('insurance.index') }}">Assurance</a>@endif @if(auth()->user()->hasPermission('report.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('reports.index') }}">Rapports</a>@endif @if(auth()->user()->hasPermission('audit.view'))<a class="block rounded-lg px-4 py-3 hover:bg-white/10" href="{{ route('audit-logs.index') }}">Journal d’audit</a>@endif @endif</nav></aside><div class="min-w-0 flex-1"><header class="border-b bg-white px-4 py-4 md:px-6"><div class="flex items-center justify-between gap-4"><div><p class="font-semibold">{{ auth()->user()->tenant?->name ?? 'Administration plateforme' }}</p><p class="text-xs text-slate-500">{{ auth()->user()->agency?->name ?? auth()->user()->role?->name }}</p></div><div class="flex items-center gap-4 text-sm"><span class="hidden sm:inline">{{ auth()->user()->name }}</span><form method="POST" action="{{ route('logout') }}">@csrf<button class="text-slate-600 hover:text-slate-950">Déconnexion</button></form></div></div><nav class="mt-4 flex gap-4 overflow-x-auto text-sm md:hidden">@if(auth()->user()->is_platform_admin)<a href="{{ route('platform.dashboard') }}">Plateforme</a><a href="{{ route('platform.tenants.index') }}">Tenants</a>@else<a href="{{ route('dashboard') }}">Dashboard</a>@can('viewAny', App\Models\Reservation::class)<a href="{{ route('reservations.index') }}">Réservations</a>@endcan @can('viewAny', App\Models\RentalContract::class)<a href="{{ route('contracts.index') }}">Contrats</a>@endcan @if(auth()->user()->hasPermission('invoice.view'))<a href="{{ route('finance.index') }}">Finance</a>@endif @if(auth()->user()->hasPermission('maintenance.view'))<a href="{{ route('maintenance.index') }}">Maintenance</a>@endif @if(auth()->user()->hasPermission('insurance.view'))<a href="{{ route('insurance.index') }}">Assurance</a>@endif @if(auth()->user()->hasPermission('report.view'))<a href="{{ route('reports.index') }}">Rapports</a>@endif @endif</nav></header>@if(session('status'))<div class="mx-6 mt-6 rounded-lg bg-emerald-100 p-3 text-sm text-emerald-900">{{ session('status') }}</div>@endif<main class="p-4 md:p-6">{{ $slot }}</main></div></div></body></html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ config('app.name', 'RentFleet') }}</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="bg-slate-100 font-sans text-slate-900 antialiased">
+<div x-data="{ mobileMenu: false }" class="min-h-screen lg:flex">
+    <aside class="hidden w-72 shrink-0 flex-col bg-slate-950 px-5 py-6 text-white lg:flex">
+        <a href="{{ auth()->user()->is_platform_admin ? route('platform.dashboard') : route('dashboard') }}" class="rounded-lg px-2 text-2xl font-bold tracking-tight focus-visible:ring-offset-slate-950">RentFleet</a>
+        <nav aria-label="Navigation principale" class="mt-8 flex-1 space-y-6 overflow-y-auto">
+            @foreach ($navigationSections as $section)
+                <section>
+                    <h2 class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ $section['label'] }}</h2>
+                    <div class="mt-2 space-y-1">
+                        @foreach ($section['items'] as $item)<x-navigation-item :item="$item" surface="desktop" />@endforeach
+                    </div>
+                </section>
+            @endforeach
+        </nav>
+        <div class="mt-6 border-t border-white/10 pt-4 text-sm">
+            <p class="truncate font-medium">{{ auth()->user()->name }}</p>
+            <p class="truncate text-xs text-slate-400">{{ auth()->user()->email }}</p>
+        </div>
+    </aside>
+
+    <div class="min-w-0 flex-1">
+        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <button type="button" @click="mobileMenu = true" class="rounded-lg border border-slate-200 p-2 text-slate-700 lg:hidden" aria-label="Ouvrir le menu" :aria-expanded="mobileMenu">
+                        <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <div class="min-w-0">
+                        <p class="truncate font-semibold">{{ auth()->user()->tenant?->name ?? 'Administration plateforme' }}</p>
+                        <p class="truncate text-xs text-slate-500">{{ auth()->user()->agency?->name ?? App\Support\Ui\UiLabel::get(auth()->user()->role?->slug ?? 'platform-admin') }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <a href="{{ route('profile.edit') }}" class="hidden rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100 sm:inline-flex">Mon profil</a>
+                    <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-100">Déconnexion</button></form>
+                </div>
+            </div>
+        </header>
+
+        <div x-cloak x-show="mobileMenu" class="fixed inset-0 z-40 lg:hidden" @keydown.escape.window="mobileMenu = false">
+            <button type="button" aria-label="Fermer le menu" class="absolute inset-0 bg-slate-950/50" @click="mobileMenu = false"></button>
+            <aside x-show="mobileMenu" x-transition class="relative h-full w-[min(88vw,22rem)] overflow-y-auto bg-white p-5 shadow-xl">
+                <div class="flex items-center justify-between"><span class="text-xl font-bold">RentFleet</span><button type="button" @click="mobileMenu = false" class="rounded-lg p-2" aria-label="Fermer le menu">✕</button></div>
+                <nav aria-label="Navigation mobile" class="mt-6 space-y-6">
+                    @foreach ($navigationSections as $section)
+                        <section>
+                            <h2 class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{{ $section['label'] }}</h2>
+                            <div class="mt-2 space-y-1">
+                                @foreach ($section['items'] as $item)<x-navigation-item :item="$item" surface="mobile" />@endforeach
+                            </div>
+                        </section>
+                    @endforeach
+                </nav>
+                <div class="mt-8 border-t pt-4"><a href="{{ route('profile.edit') }}" class="block rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Mon profil</a></div>
+            </aside>
+        </div>
+
+        @if (session('status'))
+            <div role="status" class="mx-4 mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 sm:mx-6">{{ session('status') }}</div>
+        @endif
+        <main id="contenu" class="p-4 sm:p-6">{{ $slot }}</main>
+    </div>
+</div>
+</body>
+</html>

@@ -21,8 +21,16 @@ class TenantUserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
+        $users = $this->scopedUsers($request)
+            ->with(['agency', 'role'])
+            ->when($request->string('q')->isNotEmpty(), fn ($query) => $query->where(fn ($search) => $search->where('name', 'ilike', '%'.$request->string('q').'%')->orWhere('email', 'ilike', '%'.$request->string('q').'%')))
+            ->when($request->integer('role_id'), fn ($query, $roleId) => $query->where('role_id', $roleId))
+            ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('is_active', $request->string('status')->toString() === 'active'))
+            ->orderBy('name')->paginate(20)->withQueryString();
+
         return view('users.index', [
-            'users' => $this->scopedUsers($request)->with(['agency', 'role'])->orderBy('name')->paginate(20),
+            'users' => $users,
+            'filterRoles' => Role::query()->whereNull('tenant_id')->orderBy('name')->get(),
         ]);
     }
 

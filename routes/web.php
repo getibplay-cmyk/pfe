@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DamageReportController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FinanceController;
@@ -24,15 +25,6 @@ use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleCategoryController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleInspectionController;
-use App\Models\Expense;
-use App\Models\InsurancePolicy;
-use App\Models\Invoice;
-use App\Models\MaintenanceOrder;
-use App\Models\RentalContract;
-use App\Models\Reservation;
-use App\Models\Vehicle;
-use App\Support\Pricing\DecimalMoney;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
@@ -40,34 +32,9 @@ Route::get('/', function () {
     return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
 
-Route::get('/dashboard', function (Request $request) {
-    $agencyId = $request->user()->agency_id;
-    $vehicleQuery = Vehicle::query()->when($agencyId, fn ($query) => $query->where('agency_id', $agencyId));
-    $reservationQuery = fn () => Reservation::query()->when($agencyId, fn ($query) => $query->where('agency_id', $agencyId));
-    $todayStart = now(config('reservations.display_timezone'))->startOfDay();
-    $todayEnd = $todayStart->addDay();
-    $agencyScope = fn ($query) => $query->when($agencyId, fn ($builder) => $builder->where('agency_id', $agencyId));
-    $collected = DB::table('payment_allocations as a')->join('payments as p', 'p.id', '=', 'a.payment_id')
-        ->join('invoices as i', 'i.id', '=', 'a.invoice_id')->where('a.tenant_id', $request->user()->tenant_id)
-        ->when($agencyId, fn ($query) => $query->where('i.agency_id', $agencyId))->whereIn('p.status', ['posted', 'reversed'])
-        ->selectRaw("COALESCE(SUM(CASE WHEN p.direction = 'incoming' THEN a.amount ELSE -a.amount END), 0) AS amount")->value('amount');
-    $depositOutstanding = $agencyScope(RentalContract::query())->sum(DB::raw('deposit_received - deposit_retained - deposit_refunded'));
-    $approvedExpenses = $agencyScope(Expense::query())->where('status', 'approved')->sum('amount');
-
-    return view('dashboard', ['kpis' => [
-        'Véhicules opérationnels' => (clone $vehicleQuery)->where('operational_status', 'active')->count(),
-        'Réservations confirmées' => $reservationQuery()->where('status', 'confirmed')->count(),
-        'Départs attendus aujourd’hui' => $reservationQuery()->where('status', 'confirmed')->where('starts_at', '>=', $todayStart)->where('starts_at', '<', $todayEnd)->count(),
-        'Expirées ou à traiter' => $reservationQuery()->where(fn ($query) => $query->where('status', 'expired')->orWhere(fn ($pending) => $pending->where('status', 'pending')->where('expires_at', '<=', now())))->count(),
-        'Chiffre d’affaires encaissé' => DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits((string) $collected)).' MAD',
-        'Factures impayées' => $agencyScope(Invoice::query())->whereIn('status', ['issued', 'partially_paid'])->count(),
-        'Cautions à rembourser' => DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits((string) $depositOutstanding)).' MAD',
-        'Dépenses approuvées' => DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits((string) $approvedExpenses)).' MAD',
-        'Véhicules en maintenance' => (clone $vehicleQuery)->where('operational_status', 'maintenance')->count(),
-        'Maintenances proches' => $agencyScope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', today()->addDays(30))->count(),
-        'Assurances expirant prochainement' => $agencyScope(InsurancePolicy::query())->where('status', 'active')->whereDate('ends_at', '<=', today()->addDays(30))->count(),
-    ]]);
-})->middleware(['auth', 'tenant', 'password.changed'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)
+    ->middleware(['auth', 'tenant', 'password.changed'])
+    ->name('dashboard');
 
 Route::get('/health', function () {
     try {
@@ -84,7 +51,6 @@ Route::get('/health', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 Route::middleware(['auth', 'tenant'])->group(function () {

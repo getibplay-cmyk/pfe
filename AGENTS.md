@@ -72,3 +72,19 @@ modification architecturale ou tout nouveau module.
 - Les KPI financiers utilisent les colonnes `numeric` et `DecimalMoney`, jamais
   des conversions `float`. Leur définition publique est tenue dans
   `docs/reporting/kpi-definitions.md`.
+
+## Lot 06E — UX, navigation et profil
+
+- `NavigationBuilder` est la source unique des menus desktop et mobile. Un lien
+  exige la même permission que sa destination ; masquer le lien ne remplace
+  jamais la protection du contrôleur, de la Form Request ou de la policy.
+- Les valeurs techniques restent inchangées en base. Leur affichage français et
+  leur tonalité passent par `UiLabel`, avec une valeur de repli sûre.
+- Le profil autorise uniquement nom, e-mail et mot de passe. Tenant, agence,
+  rôle et état sont en lecture seule ; aucune route DELETE du profil n’existe.
+- Les changements de mot de passe révoquent les autres sessions sans journaliser
+  le mot de passe. La désactivation demeure une action administrative.
+- Les dashboards et listes bornent et eager-loadent leurs résultats, appliquent
+  le périmètre tenant/agence et n’affichent que les sections permises.
+- Les composants Blade communs servent les titres, statuts, KPI, erreurs,
+  résultats et états vides ; ne pas dupliquer ces conventions dans une vue.

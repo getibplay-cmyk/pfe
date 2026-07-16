@@ -1,0 +1,4 @@
+@props(['code', 'title', 'message', 'href' => '/'])
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ $title }} — RentFleet</title>@vite(['resources/css/app.css'])</head>
+<body class="flex min-h-screen items-center justify-center bg-slate-100 p-6 text-slate-900"><main class="max-w-lg rounded-xl bg-white p-8 text-center shadow-sm"><p class="text-sm font-semibold text-slate-500">Erreur {{ $code }}</p><h1 class="mt-2 text-2xl font-bold">{{ $title }}</h1><p class="mt-3 text-slate-600">{{ $message }}</p>@if(request()->attributes->get('correlation_id'))<p class="mt-4 break-all text-xs text-slate-400">Référence : {{ request()->attributes->get('correlation_id') }}</p>@endif<a class="mt-6 inline-block text-sm font-semibold text-indigo-700" href="{{ $href }}">Continuer</a></main></body></html>

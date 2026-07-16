@@ -78,6 +78,7 @@
             </form>
         @endif
 
+        <x-result-count :paginator="$reservations" />
         <div class="overflow-x-auto rounded-xl bg-white shadow-sm">
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-left">

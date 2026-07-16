@@ -61,40 +61,30 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_deactivate_their_account_without_physical_deletion(): void
+    public function test_profile_cannot_change_tenant_role_agency_or_status(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['is_active' => true]);
+        $original = $user->only(['tenant_id', 'agency_id', 'role_id', 'is_active']);
 
-        $response = $this
-            ->actingAs($user)
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
+        $this->actingAs($user)->patch('/profile', [
+            'name' => 'Nom autorisé',
+            'email' => $user->email,
+            'tenant_id' => 999,
+            'agency_id' => 999,
+            'role_id' => 999,
+            'is_active' => false,
+            'is_platform_admin' => true,
+        ])->assertRedirect('/profile');
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertNotNull($user->fresh());
-        $this->assertFalse($user->fresh()->is_active);
+        $this->assertSame($original, $user->refresh()->only(array_keys($original)));
+        $this->assertFalse($user->is_platform_admin);
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account(): void
+    public function test_profile_deletion_route_is_absent(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->fresh());
+        $this->actingAs($user)->delete('/profile')->assertMethodNotAllowed();
+        $this->actingAs($user)->get('/profile')->assertOk()->assertDontSee('Supprimer le compte')->assertDontSee('Désactiver le compte');
     }
 }

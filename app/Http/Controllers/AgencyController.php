@@ -18,13 +18,16 @@ class AgencyController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Agency::class);
-        $query = Agency::query()->orderBy('name');
+        $query = Agency::query()
+            ->when($request->string('q')->isNotEmpty(), fn ($builder) => $builder->where(fn ($search) => $search->where('name', 'ilike', '%'.$request->string('q').'%')->orWhere('code', 'ilike', '%'.$request->string('q').'%')))
+            ->when($request->string('status')->isNotEmpty(), fn ($builder) => $builder->where('is_active', $request->string('status')->toString() === 'active'))
+            ->orderBy('name');
 
         if ($request->user()->agency_id !== null) {
             $query->whereKey($request->user()->agency_id);
         }
 
-        return view('agencies.index', ['agencies' => $query->paginate(20)]);
+        return view('agencies.index', ['agencies' => $query->paginate(20)->withQueryString()]);
     }
 
     public function create(): View
@@ -48,7 +51,7 @@ class AgencyController extends Controller
 
         return view('agencies.show', [
             'agency' => $agency,
-            'users' => User::query()->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->with('role')->orderBy('name')->get(),
+            'users' => User::query()->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->with('role')->orderBy('name')->paginate(20, ['*'], 'users'),
             'counts' => [
                 'Véhicules' => DB::table('vehicles')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
                 'Réservations' => DB::table('reservations')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),

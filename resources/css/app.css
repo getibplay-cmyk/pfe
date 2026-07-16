@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    [x-cloak] { display: none !important; }
+
+    :focus-visible {
+        @apply outline-none ring-2 ring-indigo-500 ring-offset-2;
+    }
+
+    input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
+    select,
+    textarea {
+        @apply rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500;
+    }
+
+    button, [role='button'] {
+        @apply disabled:cursor-not-allowed disabled:opacity-60;
+    }
+}

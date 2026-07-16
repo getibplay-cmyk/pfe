@@ -43,13 +43,20 @@ class FinanceController extends Controller
         $scope = fn ($query) => $query->when($agency, fn ($builder) => $builder->where('agency_id', $agency));
 
         return view('finance.index', [
-            'invoices' => $scope(Invoice::with('rentalContract'))->latest()->paginate(15, ['*'], 'invoices'),
+            'invoices' => $scope(Invoice::with('rentalContract'))
+                ->when($request->string('invoice_status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('invoice_status')))
+                ->when($request->string('q')->isNotEmpty(), fn ($query) => $query->where('invoice_number', 'ilike', '%'.$request->string('q').'%'))
+                ->latest()->paginate(15, ['*'], 'invoices')->withQueryString(),
             'payments' => $scope(Payment::with(['rentalContract', 'allocations.invoice']))->latest()->limit(20)->get(),
             'deposits' => $scope(DepositTransaction::with('rentalContract'))->latest('occurred_at')->limit(20)->get(),
             'expenses' => $scope(Expense::with(['vehicle', 'rentalContract', 'maintenanceOrder']))->latest('expense_date')->limit(20)->get(),
             'agencies' => Agency::query()->when($agency, fn ($query) => $query->whereKey($agency))->orderBy('name')->get(),
-            'vehicles' => $scope(Vehicle::query())->orderBy('registration_number')->get(),
-            'contracts' => $scope(RentalContract::with('customer'))->latest()->limit(100)->get(),
+            'vehicles' => $request->user()->hasPermission('expense.create')
+                ? $scope(Vehicle::query())->orderBy('registration_number')->limit(200)->get()
+                : collect(),
+            'contracts' => $request->user()->hasPermission('expense.create')
+                ? $scope(RentalContract::with('customer'))->latest()->limit(100)->get()
+                : collect(),
         ]);
     }
 

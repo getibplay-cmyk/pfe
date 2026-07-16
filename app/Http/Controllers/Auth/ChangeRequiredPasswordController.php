@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangeRequiredPasswordRequest;
 use App\Support\Audit\AuditRecorder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
@@ -23,6 +24,10 @@ class ChangeRequiredPasswordController extends Controller
             'password' => Hash::make($request->validated('password')),
             'must_change_password' => false,
         ])->save();
+        DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $request->session()->getId())
+            ->delete();
         $audit->record('user.initial_password_changed', $user, ['must_change_password' => true], ['must_change_password' => false]);
 
         return redirect()->route('dashboard')->with('status', 'Mot de passe personnel enregistré.');

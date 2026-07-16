@@ -83,6 +83,32 @@ présenter ni enregistrer son mot de passe dans une capture ou dans le dépôt.
 La démonstration ne désactive pas une agence portant un cycle de location actif
 et ne supprime physiquement ni tenant, ni agence, ni utilisateur.
 
+## Parcours UX et rôles Lot 06E
+
+La navigation desktop et le menu mobile présentent exactement les mêmes modules
+autorisés. Pour une démonstration fluide, changer de compte dans cet ordre :
+
+1. **Platform Admin** : dashboard plateforme, recherche d’un tenant et fiche de
+   suspension/réactivation. Aucun module métier tenant n’est visible.
+2. **Tenant Owner** : dashboard global, entreprise, agences, utilisateurs,
+   audit, rapports et tous les modules opérationnels. Ouvrir le profil pour
+   montrer rôle, tenant et agence en lecture seule.
+3. **Agency Manager** : dashboard et ressources limités à son agence. Montrer
+   qu’une seconde agence et ses acteurs ne figurent ni dans les listes, ni dans
+   l’activité récente.
+4. **Rental Agent** : clients, disponibilité, réservation et contrat. La finance
+   est consultable, mais les écritures sensibles restent absentes.
+5. **Fleet Manager** : véhicules, catégories, maintenance et assurance. Les
+   actions financières ne sont pas proposées.
+6. **Accountant** : finance, contrats, réservations, tarifs et rapports. Montrer
+   émission, allocation ou contrepassation uniquement sur un scénario préparé.
+7. **Viewer/Auditor** : listes, rapports et audit en lecture seule. Aucun bouton
+   de création, modification, approbation ou contrepassation n’est affiché.
+
+Sur mobile, ouvrir le bouton **Ouvrir le menu**, parcourir les mêmes groupes,
+puis fermer par le bouton dédié ou la touche Échap. Les refus directs 403 sont
+prouvés par les tests et ne sont pas provoqués sur la base de démonstration.
+
 Les documents sont toujours ouverts via leur fiche et leur contrôleur de
 téléchargement autorisé. Aucune URL `storage/*` ne fait partie du scénario.
 

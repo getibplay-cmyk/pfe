@@ -355,3 +355,34 @@ php artisan test tests/Feature/Lot06DSaasAdministrationReportingTest.php
 php artisan route:list --path=platform
 php artisan route:list --path=reports
 ```
+
+## Lot 06E — expérience utilisateur et autorisations visibles
+
+Les menus desktop et mobile sont produits par la même matrice de permissions.
+Chaque rôle ne voit que les modules réellement accessibles, la route active est
+signalée et l’administration plateforme reste entièrement séparée. Les appels
+directs demeurent protégés côté serveur même lorsqu’une action est masquée.
+
+Le profil permet de modifier le nom, l’e-mail et le mot de passe. Tenant, agence,
+rôle et état sont affichés en lecture seule. La route Breeze de suppression du
+profil et son formulaire ont été retirés ; les désactivations sont réservées à
+l’administration. Un changement de mot de passe ferme les autres sessions.
+
+Le dashboard tenant/agence présente désormais, selon les permissions :
+
+- réservations à venir et retours attendus ou en retard ;
+- véhicules indisponibles et maintenances à surveiller ;
+- échéances documentaires et permis proches de l’expiration ;
+- factures impayées et soldes uniquement aux rôles financiers autorisés ;
+- sinistres ouverts et activité d’audit non sensible.
+
+Les libellés de statuts, rôles, paiements, documents, maintenance et assurance
+sont centralisés en français sans modifier les valeurs techniques en base. Les
+listes prioritaires conservent recherche, filtres et pagination.
+
+La matrice complète est documentée dans `docs/roles-and-navigation.md`.
+
+```powershell
+php artisan test tests/Feature/Lot06EUxNavigationAuthorizationTest.php
+php artisan test tests/Feature/ProfileTest.php
+```

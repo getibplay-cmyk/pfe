@@ -25,7 +25,12 @@ class MaintenanceController extends Controller
         $agency = $request->user()->agency_id;
 
         return view('maintenance.index', [
-            'orders' => MaintenanceOrder::with('vehicle')->when($agency, fn ($query) => $query->where('agency_id', $agency))->latest()->paginate(20),
+            'orders' => MaintenanceOrder::with('vehicle')
+                ->when($agency, fn ($query) => $query->where('agency_id', $agency))
+                ->when($request->string('q')->isNotEmpty(), fn ($query) => $query->where(fn ($search) => $search->where('maintenance_number', 'ilike', '%'.$request->string('q').'%')->orWhere('title', 'ilike', '%'.$request->string('q').'%')))
+                ->when($request->string('status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('status')))
+                ->latest()->paginate(20)->withQueryString(),
+            'statuses' => ['planned', 'approved', 'in_progress', 'completed', 'cancelled'],
         ]);
     }
 
