@@ -60,6 +60,29 @@ de `DEMO_PASSWORD`, puis utiliser exclusivement les écrans suivants :
    sinistre sans choisir de statut avancé, puis suivre uniquement les
    transitions proposées jusqu’à la clôture.
 
+## Parcours administration Lot 06D
+
+Ce parcours utilise un compte plateforme préparé localement. Il ne faut jamais
+présenter ni enregistrer son mot de passe dans une capture ou dans le dépôt.
+
+1. Ouvrir `/platform/dashboard`, relever les volumes globaux et les alertes de
+   tenants suspendus ou sans agence active.
+2. Créer un tenant depuis `/platform/tenants/create`. Copier hors écran le mot
+   de passe temporaire affiché une seule fois ; vérifier qu’un rafraîchissement
+   ne permet pas de le retrouver.
+3. Se connecter avec le Tenant Owner créé. Le changement du mot de passe initial
+   doit être imposé avant le dashboard.
+4. Dans **Organisation**, vérifier les paramètres du tenant, créer une seconde
+   agence et un agent borné à cette agence.
+5. Dans **Réservations**, exporter une période en CSV, puis ouvrir **Rapports**
+   et rappeler les définitions affichées sous les indicateurs.
+6. Revenir avec le compte plateforme, suspendre le tenant avec un motif et
+   vérifier que la session tenant et une nouvelle connexion sont refusées.
+7. Réactiver le tenant et confirmer que ses données sont intactes.
+
+La démonstration ne désactive pas une agence portant un cycle de location actif
+et ne supprime physiquement ni tenant, ni agence, ni utilisateur.
+
 Les documents sont toujours ouverts via leur fiche et leur contrôleur de
 téléchargement autorisé. Aucune URL `storage/*` ne fait partie du scénario.
 

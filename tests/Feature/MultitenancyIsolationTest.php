@@ -147,11 +147,10 @@ class MultitenancyIsolationTest extends TestCase
         $this->actingAs($owner)->post(route('users.store'), [
             'name' => 'Agent Démo',
             'email' => 'agent@example.test',
-            'password' => 'VerySecret123!',
             'role_id' => $role->id,
             'agency_id' => $agency->id,
             'is_active' => '1',
-        ])->assertRedirect(route('users.index'));
+        ])->assertOk()->assertViewIs('shared.temporary-password');
 
         $audit = AuditLog::withoutGlobalScopes()->where('action', 'user.created')->firstOrFail();
         $encoded = json_encode([$audit->old_values, $audit->new_values]);

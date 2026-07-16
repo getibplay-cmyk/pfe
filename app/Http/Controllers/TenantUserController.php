@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Tenancy\CreateTenantUser;
+use App\Actions\Tenancy\ResetTenantUserPassword;
+use App\Actions\Tenancy\UpdateTenantUser;
+use App\Http\Requests\StoreTenantUserRequest;
+use App\Http\Requests\UpdateTenantUserRequest;
 use App\Models\Agency;
 use App\Models\Role;
 use App\Models\User;
-use App\Support\Audit\AuditRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class TenantUserController extends Controller
@@ -31,56 +33,33 @@ class TenantUserController extends Controller
         return view('users.form', $this->formData($request, new User));
     }
 
-    public function store(Request $request, AuditRecorder $audit): RedirectResponse
+    public function store(StoreTenantUserRequest $request, CreateTenantUser $action): Response
     {
-        $this->authorize('create', User::class);
-        $data = $this->validated($request);
-        [$role, $agencyId] = $this->resolveAssignments($request, $data);
+        $result = $action->handle($request->validated(), $request->user());
 
-        $user = User::forceCreate([
-            'tenant_id' => $request->user()->tenant_id,
-            'agency_id' => $agencyId,
-            'role_id' => $role->id,
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'is_active' => $data['is_active'],
-        ]);
-        $audit->record('user.created', $user, [], $user->only(['name', 'email', 'agency_id', 'role_id', 'is_active']));
-
-        return redirect()->route('users.index')->with('status', 'Utilisateur créé.');
+        return $this->temporaryPasswordResponse($result['user'], $result['temporary_password'], 'Utilisateur créé');
     }
 
-    public function edit(Request $request, int $user): View
+    public function edit(Request $request, User $user): View
     {
-        $subject = $this->findScopedUser($request, $user);
-        $this->authorize('update', $subject);
+        $this->authorize('update', $user);
 
-        return view('users.form', $this->formData($request, $subject));
+        return view('users.form', $this->formData($request, $user));
     }
 
-    public function update(Request $request, int $user, AuditRecorder $audit): RedirectResponse
+    public function update(UpdateTenantUserRequest $request, User $user, UpdateTenantUser $action): RedirectResponse
     {
-        $subject = $this->findScopedUser($request, $user);
-        $this->authorize('update', $subject);
-        $data = $this->validated($request, $subject);
-        [$role, $agencyId] = $this->resolveAssignments($request, $data);
-        $old = $subject->only(['name', 'email', 'agency_id', 'role_id', 'is_active']);
-
-        $subject->forceFill([
-            'agency_id' => $agencyId,
-            'role_id' => $role->id,
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'is_active' => $data['is_active'],
-        ]);
-        if (! empty($data['password'])) {
-            $subject->password = Hash::make($data['password']);
-        }
-        $subject->save();
-        $audit->record('user.updated', $subject, $old, $subject->only(array_keys($old)));
+        $action->handle($user, $request->validated(), $request->user());
 
         return redirect()->route('users.index')->with('status', 'Utilisateur mis à jour.');
+    }
+
+    public function resetPassword(Request $request, User $user, ResetTenantUserPassword $action): Response
+    {
+        $this->authorize('update', $user);
+        $temporaryPassword = $action->handle($user);
+
+        return $this->temporaryPasswordResponse($user, $temporaryPassword, 'Mot de passe réinitialisé');
     }
 
     private function scopedUsers(Request $request)
@@ -90,53 +69,29 @@ class TenantUserController extends Controller
             ->when($request->user()->agency_id, fn ($query, $agencyId) => $query->where('agency_id', $agencyId));
     }
 
-    private function findScopedUser(Request $request, int $id): User
-    {
-        return $this->scopedUsers($request)->findOrFail($id);
-    }
-
     private function formData(Request $request, User $user): array
     {
         return [
             'managedUser' => $user,
             'agencies' => Agency::query()
+                ->where('is_active', true)
                 ->when($request->user()->agency_id, fn ($query, $agencyId) => $query->whereKey($agencyId))
                 ->orderBy('name')->get(),
-            'roles' => Role::whereNull('tenant_id')
-                ->when($request->user()->isAgencyManager(), fn ($query) => $query->whereNot('slug', 'tenant-owner'))
+            'roles' => Role::query()
+                ->whereNull('tenant_id')
+                ->when($request->user()->isAgencyManager(), fn ($query) => $query->whereIn('slug', ['rental-agent', 'fleet-manager', 'viewer-auditor']))
                 ->orderBy('name')->get(),
         ];
     }
 
-    private function validated(Request $request, ?User $user = null): array
+    private function temporaryPasswordResponse(User $user, string $temporaryPassword, string $title): Response
     {
-        return $request->validate([
-            'tenant_id' => ['prohibited'],
-            'is_platform_admin' => ['prohibited'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
-            'password' => [$user ? 'nullable' : 'required', 'string', Password::defaults()],
-            'role_id' => ['required', 'integer'],
-            'agency_id' => ['nullable', 'integer'],
-            'is_active' => ['required', 'boolean'],
-        ]);
-    }
-
-    private function resolveAssignments(Request $request, array $data): array
-    {
-        $role = Role::query()
-            ->where('id', $data['role_id'])
-            ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $request->user()->tenant_id))
-            ->firstOrFail();
-        abort_if($request->user()->isAgencyManager() && $role->slug === 'tenant-owner', 403);
-
-        $agencyId = $request->user()->isAgencyManager() ? $request->user()->agency_id : ($data['agency_id'] ?? null);
-        if ($role->slug !== 'tenant-owner') {
-            abort_unless($agencyId && Agency::whereKey($agencyId)->exists(), 422, 'Une agence du tenant est obligatoire.');
-        } else {
-            $agencyId = null;
-        }
-
-        return [$role, $agencyId];
+        return response()->view('shared.temporary-password', [
+            'title' => $title,
+            'message' => 'Transmettez ce mot de passe par un canal sûr. Il ne sera plus affiché et devra être changé à la première connexion.',
+            'loginEmail' => $user->email,
+            'temporaryPassword' => $temporaryPassword,
+            'continueUrl' => route('users.index'),
+        ])->header('Cache-Control', 'no-store, private');
     }
 }

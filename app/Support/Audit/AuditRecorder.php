@@ -3,6 +3,7 @@
 namespace App\Support\Audit;
 
 use App\Models\AuditLog;
+use App\Models\Tenant;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -20,7 +21,13 @@ class AuditRecorder
         $context = app(TenantContext::class);
         $request = request();
 
-        return AuditLog::create([
+        $tenantId = $subject instanceof Tenant
+            ? $subject->getKey()
+            : $subject->getAttribute('tenant_id');
+        $tenantId ??= $context->hasTenant() ? $context->tenantId() : null;
+
+        return AuditLog::withoutGlobalScopes()->create([
+            'tenant_id' => $tenantId,
             'agency_id' => $subject->getAttribute('agency_id') ?? $context->agencyId(),
             'user_id' => $request->user()?->getKey(),
             'action' => $action,

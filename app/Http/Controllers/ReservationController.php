@@ -33,7 +33,16 @@ class ReservationController extends Controller
             ->when($request->string('q')->isNotEmpty(), fn ($query) => $query->where('reservation_number', 'ilike', '%'.$request->string('q').'%'))
             ->orderByDesc('starts_at')->paginate(20)->withQueryString();
 
-        return view('reservations.index', ['reservations' => $reservations, 'statuses' => ReservationStatus::cases(), 'agencies' => $this->agencies($request)]);
+        return view('reservations.index', [
+            'reservations' => $reservations,
+            'statuses' => ReservationStatus::cases(),
+            'agencies' => $this->agencies($request),
+            'categories' => VehicleCategory::where('is_active', true)->orderBy('name')->get(),
+            'vehicles' => Vehicle::query()
+                ->when($request->user()->agency_id, fn ($query, $id) => $query->where('agency_id', $id))
+                ->where('operational_status', 'active')
+                ->orderBy('registration_number')->get(),
+        ]);
     }
 
     public function create(Request $request): View

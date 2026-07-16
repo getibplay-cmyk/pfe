@@ -30,9 +30,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->user()->forceFill(['last_login_at' => now()])->saveQuietly();
 
-        $destination = $request->user()->is_platform_admin
-            ? route('platform.dashboard', absolute: false)
-            : route('dashboard', absolute: false);
+        $destination = match (true) {
+            $request->user()->is_platform_admin => route('platform.dashboard', absolute: false),
+            $request->user()->must_change_password => route('password.change-required', absolute: false),
+            default => route('dashboard', absolute: false),
+        };
 
         return redirect()->intended($destination);
     }

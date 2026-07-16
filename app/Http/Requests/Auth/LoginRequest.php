@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Enums\TenantStatus;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -51,6 +53,23 @@ class LoginRequest extends FormRequest
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
+        }
+
+        $user = Auth::user();
+        $tenantIsActive = $user->is_platform_admin || DB::table('tenants')
+            ->where('id', $user->tenant_id)
+            ->where('status', TenantStatus::Active->value)
+            ->exists();
+        $agencyIsActive = $user->agency_id === null || DB::table('agencies')
+            ->where('id', $user->agency_id)
+            ->where('tenant_id', $user->tenant_id)
+            ->where('is_active', true)
+            ->exists();
+        if (! $tenantIsActive || ! $agencyIsActive) {
+            Auth::guard('web')->logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages(['email' => trans('auth.failed')]);
         }
 
         RateLimiter::clear($this->throttleKey());

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DamageReportController;
@@ -10,10 +11,14 @@ use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\PlatformDashboardController;
+use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalContractController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\ReservationExportController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleCategoryController;
@@ -62,7 +67,7 @@ Route::get('/dashboard', function (Request $request) {
         'Maintenances proches' => $agencyScope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', today()->addDays(30))->count(),
         'Assurances expirant prochainement' => $agencyScope(InsurancePolicy::query())->where('status', 'active')->whereDate('ends_at', '<=', today()->addDays(30))->count(),
     ]]);
-})->middleware(['auth', 'tenant'])->name('dashboard');
+})->middleware(['auth', 'tenant', 'password.changed'])->name('dashboard');
 
 Route::get('/health', function () {
     try {
@@ -83,9 +88,16 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'tenant'])->group(function () {
+    Route::get('/password/change-required', [ChangeRequiredPasswordController::class, 'edit'])->name('password.change-required');
+    Route::put('/password/change-required', [ChangeRequiredPasswordController::class, 'update'])->name('password.change-required.update');
+});
+
+Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
-    Route::resource('agencies', AgencyController::class)->except('show');
+    Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
+    Route::resource('agencies', AgencyController::class);
     Route::resource('users', TenantUserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+    Route::post('/users/{user}/reset-password', [TenantUserController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     Route::resource('vehicle-categories', VehicleCategoryController::class)->except('show');
     Route::resource('vehicles', VehicleController::class)->except('destroy');
@@ -93,6 +105,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::resource('customers', CustomerController::class)->except('destroy');
     Route::resource('pricing-rules', PricingRuleController::class)->except(['show', 'destroy']);
     Route::get('/availability', AvailabilityController::class)->name('availability.index');
+    Route::get('/reservations/export', ReservationExportController::class)->name('reservations.export');
     Route::resource('reservations', ReservationController::class)->except('destroy');
     Route::post('/reservations/{reservation}/confirm', [ReservationController::class, 'confirm'])->name('reservations.confirm');
     Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
@@ -161,10 +174,14 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('/documents/{document}/versions', [DocumentController::class, 'addVersion'])->name('documents.versions.store');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 });
 
 Route::prefix('platform')->name('platform.')->middleware(['auth', 'platform'])->group(function () {
-    Route::view('/dashboard', 'platform.dashboard')->name('dashboard');
+    Route::get('/dashboard', PlatformDashboardController::class)->name('dashboard');
+    Route::resource('tenants', PlatformTenantController::class)->except('destroy');
+    Route::post('/tenants/{tenant}/suspend', [PlatformTenantController::class, 'suspend'])->name('tenants.suspend');
+    Route::post('/tenants/{tenant}/reactivate', [PlatformTenantController::class, 'reactivate'])->name('tenants.reactivate');
 });
 
 require __DIR__.'/auth.php';

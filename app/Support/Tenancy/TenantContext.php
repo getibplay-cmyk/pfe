@@ -2,10 +2,13 @@
 
 namespace App\Support\Tenancy;
 
+use App\Enums\TenantStatus;
+use App\Exceptions\InactiveTenantException;
 use App\Exceptions\MissingTenantContextException;
 use App\Models\Tenant;
 use App\Models\User;
 use Closure;
+use Illuminate\Support\Facades\DB;
 
 class TenantContext
 {
@@ -19,13 +22,22 @@ class TenantContext
             throw new MissingTenantContextException;
         }
 
+        if (! DB::table('tenants')->where('id', $user->tenant_id)->where('status', TenantStatus::Active->value)->whereNull('deleted_at')->exists()) {
+            throw new InactiveTenantException;
+        }
+
         $this->tenantId = $user->tenant_id;
         $this->agencyId = $user->agency_id;
     }
 
     public function set(Tenant|int $tenant, ?int $agencyId = null): void
     {
-        $this->tenantId = $tenant instanceof Tenant ? $tenant->getKey() : $tenant;
+        $resolved = $tenant instanceof Tenant ? $tenant : Tenant::findOrFail($tenant);
+        if ($resolved->status !== TenantStatus::Active) {
+            throw new InactiveTenantException;
+        }
+
+        $this->tenantId = $resolved->getKey();
         $this->agencyId = $agencyId;
     }
 

@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Tenancy\UpdateAgency;
+use App\Http\Requests\StoreAgencyRequest;
+use App\Http\Requests\UpdateAgencyRequest;
 use App\Models\Agency;
+use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AgencyController extends Controller
@@ -30,13 +34,28 @@ class AgencyController extends Controller
         return view('agencies.form', ['agency' => new Agency]);
     }
 
-    public function store(Request $request, AuditRecorder $audit): RedirectResponse
+    public function store(StoreAgencyRequest $request, AuditRecorder $audit): RedirectResponse
     {
-        $this->authorize('create', Agency::class);
-        $agency = Agency::create($this->validated($request));
+        $agency = Agency::create([...$request->validated(), 'is_active' => true]);
         $audit->record('agency.created', $agency, [], $agency->only(['code', 'name', 'is_active']));
 
         return redirect()->route('agencies.index')->with('status', 'Agence créée.');
+    }
+
+    public function show(Agency $agency): View
+    {
+        $this->authorize('view', $agency);
+
+        return view('agencies.show', [
+            'agency' => $agency,
+            'users' => User::query()->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->with('role')->orderBy('name')->get(),
+            'counts' => [
+                'Véhicules' => DB::table('vehicles')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
+                'Réservations' => DB::table('reservations')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
+                'Contrats' => DB::table('rental_contracts')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
+                'Maintenances' => DB::table('maintenance_orders')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
+            ],
+        ]);
     }
 
     public function edit(Agency $agency): View
@@ -46,35 +65,24 @@ class AgencyController extends Controller
         return view('agencies.form', compact('agency'));
     }
 
-    public function update(Request $request, Agency $agency, AuditRecorder $audit): RedirectResponse
+    public function update(UpdateAgencyRequest $request, Agency $agency, UpdateAgency $action): RedirectResponse
     {
-        $this->authorize('update', $agency);
-        $old = $agency->only(['code', 'name', 'email', 'phone', 'address', 'is_active']);
-        $agency->update($this->validated($request, $agency));
-        $audit->record('agency.updated', $agency, $old, $agency->only(array_keys($old)));
+        $action->handle($agency, $request->validated(), $request->user());
 
         return redirect()->route('agencies.index')->with('status', 'Agence mise à jour.');
     }
 
-    public function destroy(Agency $agency, AuditRecorder $audit): RedirectResponse
+    /**
+     * Backward-compatible endpoint: an agency is deactivated, never deleted.
+     */
+    public function destroy(Request $request, Agency $agency, UpdateAgency $action): RedirectResponse
     {
         $this->authorize('delete', $agency);
-        $audit->record('agency.deleted', $agency, $agency->only(['code', 'name']), []);
-        $agency->delete();
+        $action->handle($agency, [
+            ...$agency->only(['code', 'name', 'email', 'phone', 'address']),
+            'is_active' => false,
+        ], $request->user());
 
-        return redirect()->route('agencies.index')->with('status', 'Agence archivée.');
-    }
-
-    private function validated(Request $request, ?Agency $agency = null): array
-    {
-        return $request->validate([
-            'tenant_id' => ['prohibited'],
-            'code' => ['required', 'string', 'max:30', Rule::unique('agencies')->where('tenant_id', $request->user()->tenant_id)->ignore($agency)],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'address' => ['nullable', 'string', 'max:2000'],
-            'is_active' => ['required', 'boolean'],
-        ]);
+        return redirect()->route('agencies.index')->with('status', 'Agence désactivée.');
     }
 }

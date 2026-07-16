@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\RequestCorrelation;
 use App\Http\Middleware\ResolveTenantContext;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => ResolveTenantContext::class,
             'platform' => EnsurePlatformAdmin::class,
+            'password.changed' => EnsurePasswordChanged::class,
         ]);
 
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenantContext::class);

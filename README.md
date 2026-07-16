@@ -315,3 +315,43 @@ par `pgpass`/`PGPASSFILE`, jamais par un argument ou un fichier versionné.
 
 La release candidate reste volontairement sans IA. Les règles, modèles et
 prédictions relèvent des lots suivants et ne conditionnent aucun flux métier.
+
+## Lot 06D — administration SaaS et reporting minimal
+
+L’administration plateforme est isolée sous `/platform/*` et réservée aux
+comptes `is_platform_admin`. Elle fournit un dashboard global non sensible et
+le cycle de vie des tenants : recherche, création transactionnelle, détail,
+mise à jour, suspension motivée et réactivation.
+
+Le provisioning crée atomiquement le tenant, son agence initiale, ses paramètres
+et son premier Tenant Owner. Le mot de passe temporaire est aléatoire, affiché
+une seule fois avec une réponse `no-store`, absent des audits et doit être changé
+avant l’accès aux routes métier. Aucun service mail n’est requis pour ce flux.
+
+Dans un tenant actif, le Tenant Owner administre ses paramètres, agences et
+utilisateurs. Les Agency Managers restent bornés à leur agence et à une liste de
+rôles délégables. Désactiver une agence avec des réservations, contrats,
+maintenances ou blocs actifs est refusé ; le dernier Tenant Owner actif et la
+dernière agence active sont également protégés. Ces opérations ne font aucune
+suppression physique.
+
+Les écrans ajoutés sont :
+
+- `/platform/dashboard` et `/platform/tenants` pour l’administration SaaS ;
+- `/tenant`, `/agencies` et `/users` pour l’administration tenant ;
+- `/reports` pour le rapport opérationnel et financier minimal ;
+- `/reservations/export` pour l’export CSV filtré et streamé.
+
+Le CSV UTF-8 est compatible tableur, neutralise les cellules commençant comme
+une formule, utilise un nom déterministe et exclut numéros d’identité et permis.
+Les définitions, périmètres et limites des indicateurs sont documentés dans
+`docs/reporting/kpi-definitions.md`. Il ne s’agit ni d’une comptabilité générale,
+ni d’un reporting fiscal ou décisionnel avancé.
+
+Validation ciblée :
+
+```powershell
+php artisan test tests/Feature/Lot06DSaasAdministrationReportingTest.php
+php artisan route:list --path=platform
+php artisan route:list --path=reports
+```

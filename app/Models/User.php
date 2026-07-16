@@ -49,6 +49,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_platform_admin' => 'boolean',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
             'last_login_at' => 'immutable_datetime',
         ];
     }

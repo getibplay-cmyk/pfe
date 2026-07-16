@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
+use App\Support\Audit\AuditRecorder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,7 +42,7 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, AuditRecorder $audit): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
@@ -48,9 +50,24 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
+        if ($user->role?->slug === 'tenant-owner') {
+            $otherActiveOwners = User::query()
+                ->where('tenant_id', $user->tenant_id)
+                ->where('role_id', $user->role_id)
+                ->where('is_active', true)
+                ->whereKeyNot($user->id)
+                ->exists();
+            if (! $otherActiveOwners) {
+                $passwordField = 'password';
 
-        $user->delete();
+                return back()->withErrors([$passwordField => 'Le dernier Tenant Owner actif ne peut pas désactiver son compte.'], 'userDeletion');
+            }
+        }
+
+        $user->forceFill(['is_active' => false, 'remember_token' => null])->save();
+        $audit->record('user.self_deactivated', $user, ['is_active' => true], ['is_active' => false]);
+
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

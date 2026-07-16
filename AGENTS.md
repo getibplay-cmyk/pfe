@@ -54,3 +54,21 @@ modification architecturale ou tout nouveau module.
   corrélation et excluent secrets, identités, cartes et contenu documentaire.
 - Aucun module IA, table décisionnelle ou changement métier n’appartient au lot
   de release candidate.
+
+## Lot 06D — administration SaaS et reporting
+
+- Le provisioning d’un tenant est une transaction unique : tenant, agence
+  initiale, Tenant Owner et paramètres sont créés ensemble ou pas du tout.
+- Un mot de passe initial est aléatoire, montré une seule fois, jamais journalisé
+  et impose son remplacement avant toute route métier.
+- Une suspension invalide les sessions et bloque connexion, contexte tenant et
+  traitements applicatifs ; elle ne supprime aucune donnée.
+- Les tenants, agences et utilisateurs sont désactivés ou suspendus, jamais
+  supprimés physiquement depuis les interfaces d’administration.
+- Toute agence, tout rôle et tout tenant soumis par le navigateur sont revalidés
+  dans le périmètre serveur de l’acteur.
+- Les exports CSV sont streamés, limités au tenant/agence autorisé, sans donnée
+  d’identité sensible et neutralisent les formules tableur.
+- Les KPI financiers utilisent les colonnes `numeric` et `DecimalMoney`, jamais
+  des conversions `float`. Leur définition publique est tenue dans
+  `docs/reporting/kpi-definitions.md`.
