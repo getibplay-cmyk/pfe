@@ -12,6 +12,13 @@ if ($DatabaseName -ne 'rentfleet_restore_test') {
 }
 
 $root = Split-Path -Parent $PSScriptRoot
+$php = if ($env:PHP_BINARY) { $env:PHP_BINARY } else { 'php' }
+
+& $php -v
+if ($LASTEXITCODE -ne 0) {
+    throw "L'exécutable PHP configuré n'est pas utilisable."
+}
+
 $privateRoot = [System.IO.Path]::GetFullPath((Join-Path $root $PrivateDocumentsPath))
 $allowedPrivateRoot = [System.IO.Path]::GetFullPath((Join-Path $root 'storage/app/private-restore-test'))
 if ($privateRoot -ne $allowedPrivateRoot) {
@@ -87,7 +94,7 @@ foreach ($row in $documentRows) {
 $checks.private_documents_database_coherence = $true
 
 Set-Location -LiteralPath $root
-$routes = & php artisan route:list --json
+$routes = & $php artisan route:list --json
 if ($LASTEXITCODE -ne 0) {
     throw 'Impossible de contrôler les routes Laravel.'
 }

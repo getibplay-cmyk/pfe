@@ -81,7 +81,7 @@ class ReservationController extends Controller
     {
         $this->authorize('update', $reservation);
 
-        return view('reservations.form', [...$this->formData($request), 'reservation' => $reservation]);
+        return view('reservations.form', [...$this->formData($request, $reservation), 'reservation' => $reservation]);
     }
 
     public function update(Request $request, Reservation $reservation, UpdateDraftReservation $action): RedirectResponse
@@ -116,13 +116,16 @@ class ReservationController extends Controller
     private function validated(Request $request): array
     {
         $tenantId = $request->user()->tenant_id;
+        $agencyId = $request->integer('agency_id');
+        $customerId = $request->integer('customer_id');
+        $categoryId = $request->integer('vehicle_category_id');
         $data = $request->validate([
             'tenant_id' => ['prohibited'],
             'agency_id' => ['required', 'integer', Rule::exists('agencies', 'id')->where('tenant_id', $tenantId)],
-            'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->where('tenant_id', $tenantId)],
-            'driver_id' => ['nullable', 'integer', Rule::exists('drivers', 'id')->where('tenant_id', $tenantId)],
+            'customer_id' => ['required', 'integer', Rule::exists('customers', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('agency_id', $agencyId))],
+            'driver_id' => ['nullable', 'integer', Rule::exists('drivers', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('customer_id', $customerId))],
             'vehicle_category_id' => ['required', 'integer', Rule::exists('vehicle_categories', 'id')->where('tenant_id', $tenantId)],
-            'vehicle_id' => ['nullable', 'integer', Rule::exists('vehicles', 'id')->where('tenant_id', $tenantId)],
+            'vehicle_id' => ['nullable', 'integer', Rule::exists('vehicles', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('agency_id', $agencyId)->where('vehicle_category_id', $categoryId))],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'status' => ['required', Rule::enum(ReservationStatus::class), Rule::in(['draft', 'pending'])],
@@ -134,13 +137,24 @@ class ReservationController extends Controller
         return $data;
     }
 
-    private function formData(Request $request): array
+    private function formData(Request $request, ?Reservation $reservation = null): array
     {
+        $agencies = $this->agencies($request);
+        $selectedAgencyId = $request->user()->agency_id
+            ?? $request->integer('agency_id')
+            ?: $reservation?->agency_id
+            ?? $agencies->first()?->id;
+
+        if (! $agencies->contains('id', $selectedAgencyId)) {
+            abort(403, 'Cette agence ne fait pas partie du contexte actif.');
+        }
+
         return [
-            'agencies' => $this->agencies($request),
-            'customers' => Customer::query()->when($request->user()->agency_id, fn ($query, $id) => $query->where(fn ($scope) => $scope->whereNull('agency_id')->orWhere('agency_id', $id)))->with('drivers')->orderBy('last_name')->get(),
+            'agencies' => $agencies,
+            'selectedAgencyId' => $selectedAgencyId,
+            'customers' => Customer::query()->where('agency_id', $selectedAgencyId)->with('drivers')->orderBy('last_name')->get(),
             'categories' => VehicleCategory::where('is_active', true)->orderBy('name')->get(),
-            'vehicles' => Vehicle::query()->when($request->user()->agency_id, fn ($query, $id) => $query->where('agency_id', $id))->where('operational_status', 'active')->orderBy('registration_number')->get(),
+            'vehicles' => Vehicle::query()->where('agency_id', $selectedAgencyId)->where('operational_status', 'active')->orderBy('registration_number')->get(),
         ];
     }
 

@@ -18,10 +18,44 @@ class ProductionConfigurationTest extends TestCase
         $this->assertStringContainsString('SESSION_SECURE_COOKIE=true', $example);
         $this->assertStringContainsString('QUEUE_CONNECTION=database', $example);
         $this->assertStringContainsString('CACHE_STORE=database', $example);
-        $this->assertDoesNotMatchRegularExpression('/DB_PASSWORD=.+/', $example);
-        $this->assertDoesNotMatchRegularExpression('/APP_KEY=.+/', $example);
         $this->assertStringNotContainsString('sqlite', strtolower($example));
         $this->assertStringNotContainsString(':memory:', strtolower($example));
+    }
+
+    public function test_every_versioned_environment_example_has_only_empty_or_null_sensitive_values(): void
+    {
+        $violations = [];
+
+        foreach (File::glob(base_path('.env*.example')) as $path) {
+            foreach (file($path, FILE_IGNORE_NEW_LINES) ?: [] as $lineNumber => $line) {
+                $trimmed = trim($line);
+                if ($trimmed === '' || str_starts_with($trimmed, '#') || ! str_contains($trimmed, '=')) {
+                    continue;
+                }
+
+                [$key, $value] = array_map('trim', explode('=', $trimmed, 2));
+                if (! $this->isSensitiveEnvironmentKey($key)) {
+                    continue;
+                }
+
+                $unquoted = trim($value, "\"'");
+                if ($unquoted !== '' && strtolower($unquoted) !== 'null') {
+                    $violations[] = basename($path).':'.($lineNumber + 1).':'.$key;
+                }
+            }
+        }
+
+        $this->assertSame([], $violations, 'Valeurs sensibles non vides détectées : '.implode(', ', $violations));
+    }
+
+    public function test_production_smtp_example_uses_the_variable_read_by_mail_configuration(): void
+    {
+        $example = file_get_contents(base_path('.env.production.example'));
+        $mailConfig = file_get_contents(config_path('mail.php'));
+
+        $this->assertStringContainsString("env('MAIL_SCHEME')", $mailConfig);
+        $this->assertStringContainsString('MAIL_SCHEME=', $example);
+        $this->assertStringNotContainsString('MAIL_ENCRYPTION=', $example);
     }
 
     public function test_application_defaults_do_not_fall_back_to_sqlite(): void
@@ -86,5 +120,11 @@ class ProductionConfigurationTest extends TestCase
         }
 
         $this->assertSame([], $violations, 'Secrets potentiels détectés : '.implode(', ', $violations));
+    }
+
+    private function isSensitiveEnvironmentKey(string $key): bool
+    {
+        return $key === 'APP_KEY'
+            || preg_match('/(?:PASSWORD|SECRET|TOKEN|API_KEY|ACCESS_KEY|PRIVATE_KEY|CLIENT_SECRET)/i', $key) === 1;
     }
 }

@@ -94,8 +94,10 @@ class Lot06BRentalCycleInvariantsTest extends TestCase
 
             return [$customer, $driver];
         });
-        $foreignAgencyReservation = $this->inTenant($f, fn () => app(CreateReservation::class)->handle([...$this->reservationData($f), 'customer_id' => $otherCustomer->id, 'driver_id' => $otherDriver->id], $f['user']->id));
-        $this->expectValidation(fn () => $this->confirm($f, $foreignAgencyReservation), 'customer_id');
+        $this->expectValidation(
+            fn () => $this->inTenant($f, fn () => app(CreateReservation::class)->handle([...$this->reservationData($f), 'customer_id' => $otherCustomer->id, 'driver_id' => $otherDriver->id], $f['user']->id)),
+            'customer_id',
+        );
 
         $this->inTenant($f, fn () => $f['driver']->forceFill(['licence_expires_at' => $reservation->ends_at->toDateString()])->save());
         $confirmed = $this->confirm($f, $reservation);

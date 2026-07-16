@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Finance;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreExpenseRequest extends FormRequest
 {
@@ -21,11 +22,16 @@ class StoreExpenseRequest extends FormRequest
 
     public function rules(): array
     {
+        $tenantId = $this->user()->tenant_id;
+        $agencyId = $this->integer('agency_id');
+        $currency = $this->string('currency')->toString();
+
         return [
             'tenant_id' => ['prohibited'],
-            'agency_id' => ['required', 'integer'],
-            'vehicle_id' => ['nullable', 'integer'],
-            'rental_contract_id' => ['nullable', 'integer'],
+            'agency_id' => ['required', 'integer', Rule::exists('agencies', 'id')->where('tenant_id', $tenantId)],
+            'vehicle_id' => ['nullable', 'integer', Rule::exists('vehicles', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('agency_id', $agencyId))],
+            'rental_contract_id' => ['nullable', 'integer', Rule::exists('rental_contracts', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('agency_id', $agencyId)->where('currency', $currency))],
+            'maintenance_order_id' => ['nullable', 'integer', Rule::exists('maintenance_orders', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('agency_id', $agencyId))],
             'category' => ['required', 'in:maintenance,insurance,fuel,cleaning,administration,other'],
             'description' => ['required', 'string', 'max:5000'],
             'amount' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'],

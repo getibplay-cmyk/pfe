@@ -127,7 +127,7 @@ class Lot03PricingReservationConcurrencyTest extends TestCase
             try {
                 $this->inTenant($a, fn () => app(CreateReservation::class)->handle([...$this->reservationData($a, now()->addDays(2)->toImmutable()), ...$override], $a['user']->id));
                 $this->fail('Une relation étrangère a été acceptée.');
-            } catch (ModelNotFoundException) {
+            } catch (ModelNotFoundException|ValidationException) {
                 $this->assertTrue(true);
             }
         }
@@ -259,9 +259,15 @@ class Lot03PricingReservationConcurrencyTest extends TestCase
     {
         $f = $this->fixture('agency-manager');
         $otherAgency = $this->inTenant($f, fn () => Agency::factory()->create());
-        $otherVehicle = app(TenantContext::class)->run($f['tenant'], fn () => app(CreateVehicle::class)->handle([...$this->vehicleData($f, 'FOREIGN-'.uniqid()), 'agency_id' => $otherAgency->id], $f['user']->id));
+        [$otherVehicle, $otherCustomer, $otherDriver] = app(TenantContext::class)->run($f['tenant'], function () use ($f, $otherAgency) {
+            $vehicle = app(CreateVehicle::class)->handle([...$this->vehicleData($f, 'FOREIGN-'.uniqid()), 'agency_id' => $otherAgency->id], $f['user']->id);
+            $customer = app(CreateCustomer::class)->handle(['agency_id' => $otherAgency->id, 'customer_type' => CustomerType::Individual, 'first_name' => 'Client', 'last_name' => 'Autre agence', 'verification_status' => VerificationStatus::Verified]);
+            $driver = app(CreateDriver::class)->handle($customer, ['first_name' => 'Conducteur', 'last_name' => 'Autre agence', 'licence_number' => 'FOREIGN-'.uniqid(), 'licence_expires_at' => today()->addYear(), 'verification_status' => VerificationStatus::Verified, 'is_primary' => true]);
+
+            return [$vehicle, $customer, $driver];
+        });
         $own = $this->reservation($f, now()->addDays(2)->toImmutable());
-        $foreign = $this->inTenant($f, fn () => Reservation::create([...$this->rawReservation($f, now()->addDays(4), now()->addDays(5)), 'agency_id' => $otherAgency->id, 'vehicle_id' => $otherVehicle->id, 'reservation_number' => 'RES-2026-999999']));
+        $foreign = app(TenantContext::class)->run($f['tenant'], fn () => Reservation::create([...$this->rawReservation($f, now()->addDays(4), now()->addDays(5)), 'agency_id' => $otherAgency->id, 'customer_id' => $otherCustomer->id, 'driver_id' => $otherDriver->id, 'vehicle_id' => $otherVehicle->id, 'reservation_number' => 'RES-2026-999999']));
 
         $this->actingAs($f['user'])->get(route('reservations.index'))->assertOk()->assertSee($own->reservation_number)->assertDontSee($foreign->reservation_number);
         $this->actingAs($f['user'])->get(route('reservations.show', $foreign))->assertForbidden();

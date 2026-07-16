@@ -7,29 +7,59 @@ use App\Models\DepositTransaction;
 use App\Models\RentalContract;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Finance\DepositLedger;
+use App\Support\Finance\FinancialIdempotencyGuard;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ReverseDepositTransaction
 {
-    public function __construct(private GenerateBusinessNumber $numbers, private DepositLedger $ledger, private AuditRecorder $audit) {}
+    public function __construct(
+        private GenerateBusinessNumber $numbers,
+        private DepositLedger $ledger,
+        private AuditRecorder $audit,
+        private FinancialIdempotencyGuard $idempotency,
+    ) {}
 
     public function handle(DepositTransaction $transaction, string $idempotencyKey, string $reason, int $actorId): DepositTransaction
     {
         return DB::transaction(function () use ($transaction, $idempotencyKey, $reason, $actorId) {
+            $original = DepositTransaction::whereKey($transaction)->lockForUpdate()->firstOrFail();
+            $this->idempotency->lock($idempotencyKey);
             if ($existing = DepositTransaction::where('idempotency_key', $idempotencyKey)->lockForUpdate()->first()) {
+                $this->idempotency->assertSameOperation($existing, [
+                    'tenant_id' => app(TenantContext::class)->tenantId(),
+                    'agency_id' => $original->agency_id,
+                    'rental_contract_id' => $original->rental_contract_id,
+                    'transaction_type' => 'reversal',
+                    'amount' => $original->amount,
+                    'currency' => $original->currency,
+                    'payment_id' => null,
+                    'related_charge_id' => null,
+                    'reversal_of_id' => $original->id,
+                    'reason' => $reason,
+                ]);
+
                 return $existing;
             }
-            $original = DepositTransaction::whereKey($transaction)->lockForUpdate()->firstOrFail();
+
             if ($original->transaction_type === 'reversal' || DepositTransaction::where('reversal_of_id', $original->id)->exists()) {
                 throw ValidationException::withMessages(['transaction' => 'Ce mouvement ne peut pas être contrepassé.']);
             }
+
             $contract = RentalContract::whereKey($original->rental_contract_id)->lockForUpdate()->firstOrFail();
             $reversal = DepositTransaction::create([
-                'agency_id' => $original->agency_id, 'rental_contract_id' => $original->rental_contract_id,
-                'transaction_number' => $this->numbers->handle('deposit'), 'transaction_type' => 'reversal', 'amount' => $original->amount,
-                'currency' => $original->currency, 'reversal_of_id' => $original->id, 'idempotency_key' => $idempotencyKey,
-                'occurred_at' => now(), 'reason' => $reason, 'created_by' => $actorId,
+                'agency_id' => $original->agency_id,
+                'rental_contract_id' => $original->rental_contract_id,
+                'transaction_number' => $this->numbers->handle('deposit'),
+                'transaction_type' => 'reversal',
+                'amount' => $original->amount,
+                'currency' => $original->currency,
+                'reversal_of_id' => $original->id,
+                'idempotency_key' => $idempotencyKey,
+                'occurred_at' => now(),
+                'reason' => $reason,
+                'created_by' => $actorId,
             ]);
             $this->ledger->syncContract($contract);
             $this->audit->record('deposit.reversed', $reversal, [], ['original_transaction_id' => $original->id, 'amount' => $reversal->amount]);

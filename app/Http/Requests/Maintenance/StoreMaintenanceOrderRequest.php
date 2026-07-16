@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Maintenance;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMaintenanceOrderRequest extends FormRequest
 {
@@ -16,10 +17,13 @@ class StoreMaintenanceOrderRequest extends FormRequest
 
     public function rules(): array
     {
+        $tenantId = $this->user()->tenant_id;
+        $agencyId = $this->integer('agency_id');
+
         return [
             'tenant_id' => ['prohibited'],
-            'agency_id' => ['required', 'integer'],
-            'vehicle_id' => ['required', 'integer'],
+            'agency_id' => ['required', 'integer', Rule::exists('agencies', 'id')->where('tenant_id', $tenantId)],
+            'vehicle_id' => ['required', 'integer', Rule::exists('vehicles', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('agency_id', $agencyId))],
             'maintenance_type' => ['required', 'in:preventive,corrective,inspection,repair'],
             'priority' => ['required', 'in:low,normal,high,critical'],
             'title' => ['required', 'string', 'max:255'],

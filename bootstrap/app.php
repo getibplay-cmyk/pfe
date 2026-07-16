@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\RequestCorrelation;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'active.account' => EnsureActiveAccount::class,
             'tenant' => ResolveTenantContext::class,
             'platform' => EnsurePlatformAdmin::class,
             'password.changed' => EnsurePasswordChanged::class,

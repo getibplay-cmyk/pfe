@@ -48,7 +48,7 @@ Route::get('/health', function () {
     }
 })->name('health');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active.account'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
