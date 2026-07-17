@@ -342,12 +342,12 @@ class Lot03PricingReservationConcurrencyTest extends TestCase
 
     private function activeBlock(array $f, CarbonImmutable $start, CarbonImmutable $end): VehicleBlock
     {
-        return $this->inTenant($f, fn () => VehicleBlock::create(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'block_type' => VehicleBlockType::Manual, 'starts_at' => $start, 'ends_at' => $end, 'status' => VehicleBlockStatus::Active, 'created_by' => $f['user']->id]));
+        return $this->inTenant($f, fn () => VehicleBlock::create(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'block_type' => VehicleBlockType::Manual, 'starts_at' => $start, 'ends_at' => $end, 'status' => VehicleBlockStatus::Active, 'reason' => 'Bloc de test', 'created_by' => $f['user']->id]));
     }
 
     private function rawBlock(array $f, CarbonImmutable $start, CarbonImmutable $end): array
     {
-        return ['tenant_id' => $f['tenant']->id, 'agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'reservation_id' => null, 'block_type' => 'manual', 'starts_at' => $start, 'ends_at' => $end, 'status' => 'active', 'created_by' => $f['user']->id, 'created_at' => now(), 'updated_at' => now()];
+        return ['tenant_id' => $f['tenant']->id, 'agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'reservation_id' => null, 'block_type' => 'manual', 'starts_at' => $start, 'ends_at' => $end, 'status' => 'active', 'reason' => 'Bloc SQL de test', 'created_by' => $f['user']->id, 'created_at' => now(), 'updated_at' => now()];
     }
 
     private function rawReservation(array $f, $start, $end): array

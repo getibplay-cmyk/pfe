@@ -26,10 +26,10 @@ class Lot06EUxNavigationAuthorizationTest extends TestCase
     public function test_desktop_and_mobile_navigation_are_identical_and_filtered_for_six_tenant_roles(): void
     {
         $expected = [
-            'tenant-owner' => ['dashboard', 'reservations', 'availability', 'contracts', 'pricing', 'customers', 'vehicles', 'vehicle-categories', 'maintenance', 'insurance', 'finance', 'reports', 'tenant', 'agencies', 'users', 'audit'],
-            'agency-manager' => ['dashboard', 'reservations', 'availability', 'contracts', 'pricing', 'customers', 'vehicles', 'vehicle-categories', 'maintenance', 'insurance', 'finance', 'reports', 'agencies', 'users', 'audit'],
+            'tenant-owner' => ['dashboard', 'reservations', 'availability', 'contracts', 'pricing', 'customers', 'vehicles', 'vehicle-categories', 'vehicle-blocks', 'maintenance', 'insurance', 'finance', 'reports', 'tenant', 'agencies', 'users', 'audit'],
+            'agency-manager' => ['dashboard', 'reservations', 'availability', 'contracts', 'pricing', 'customers', 'vehicles', 'vehicle-categories', 'vehicle-blocks', 'maintenance', 'insurance', 'finance', 'reports', 'agencies', 'users', 'audit'],
             'rental-agent' => ['dashboard', 'reservations', 'availability', 'contracts', 'pricing', 'customers', 'maintenance', 'insurance', 'finance', 'agencies', 'users'],
-            'fleet-manager' => ['dashboard', 'reservations', 'availability', 'contracts', 'vehicles', 'vehicle-categories', 'maintenance', 'insurance', 'agencies'],
+            'fleet-manager' => ['dashboard', 'reservations', 'availability', 'contracts', 'vehicles', 'vehicle-categories', 'vehicle-blocks', 'maintenance', 'insurance', 'finance', 'agencies'],
             'accountant' => ['dashboard', 'reservations', 'availability', 'contracts', 'pricing', 'finance', 'reports', 'agencies'],
             'viewer-auditor' => ['dashboard', 'reservations', 'availability', 'contracts', 'pricing', 'customers', 'vehicles', 'vehicle-categories', 'maintenance', 'insurance', 'finance', 'reports', 'agencies', 'users', 'audit'],
         ];

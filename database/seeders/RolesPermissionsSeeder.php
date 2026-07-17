@@ -60,7 +60,7 @@ class RolesPermissionsSeeder extends Seeder
             'invoice.view' => 'Voir les factures', 'invoice.create' => 'Créer les factures', 'invoice.issue' => 'Émettre les factures', 'invoice.void' => 'Annuler une facture',
             'payment.view' => 'Voir les paiements', 'payment.create' => 'Saisir les paiements', 'payment.post' => 'Comptabiliser les paiements', 'payment.allocate' => 'Allouer les paiements', 'payment.reverse' => 'Contrepasser les paiements',
             'deposit.view' => 'Voir les cautions', 'deposit.create' => 'Saisir les mouvements de caution', 'deposit.reverse' => 'Contrepasser une caution',
-            'expense.view' => 'Voir les dépenses', 'expense.create' => 'Saisir les dépenses', 'expense.approve' => 'Approuver les dépenses',
+            'expense.view' => 'Voir les dépenses', 'expense.create' => 'Saisir les dépenses', 'expense.approve' => 'Approuver les dépenses', 'expense.reject' => 'Rejeter les dépenses',
             'contract.close' => 'Clôturer financièrement un contrat',
             'maintenance.create' => 'Créer une maintenance', 'maintenance.approve' => 'Approuver une maintenance', 'maintenance.start' => 'Démarrer une maintenance', 'maintenance.complete' => 'Terminer une maintenance', 'maintenance.cancel' => 'Annuler une maintenance',
             'insurance.view' => 'Voir les assurances', 'insurance.manage' => 'Gérer les assurances',
@@ -91,7 +91,7 @@ class RolesPermissionsSeeder extends Seeder
             'agency-manager' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
             'rental-agent' => ['invoice.view', 'payment.view', 'deposit.view', 'maintenance.view', 'insurance.view', 'claim.view'],
             'fleet-manager' => ['maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'expense.view', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
-            'accountant' => ['invoice.view', 'invoice.create', 'invoice.issue', 'invoice.void', 'payment.view', 'payment.create', 'payment.post', 'payment.allocate', 'payment.reverse', 'deposit.view', 'deposit.create', 'deposit.reverse', 'expense.view', 'expense.create', 'expense.approve', 'contract.close'],
+            'accountant' => ['invoice.view', 'invoice.create', 'invoice.issue', 'invoice.void', 'payment.view', 'payment.create', 'payment.post', 'payment.allocate', 'payment.reverse', 'deposit.view', 'deposit.create', 'deposit.reverse', 'expense.view', 'expense.create', 'expense.approve', 'expense.reject', 'contract.close'],
             'viewer-auditor' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'insurance.view', 'claim.view'],
         ];
         foreach ($grants as $roleSlug => $permissions) {

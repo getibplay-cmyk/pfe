@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Enums\VehicleBlockStatus;
+use App\Enums\VehicleBlockType;
 use App\Models\User;
 use App\Models\VehicleBlock;
 
@@ -24,6 +26,9 @@ class VehicleBlockPolicy
 
     public function update(User $user, VehicleBlock $block): bool
     {
-        return $this->view($user, $block) && $user->hasPermission('vehicle_block.manage');
+        return $this->view($user, $block)
+            && $user->hasPermission('vehicle_block.manage')
+            && $block->block_type === VehicleBlockType::Manual
+            && $block->status === VehicleBlockStatus::Active;
     }
 }

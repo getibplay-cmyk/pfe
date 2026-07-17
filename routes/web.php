@@ -22,6 +22,7 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ReservationExportController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantUserController;
+use App\Http\Controllers\VehicleBlockController;
 use App\Http\Controllers\VehicleCategoryController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleInspectionController;
@@ -68,6 +69,11 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::resource('vehicle-categories', VehicleCategoryController::class)->except('show');
     Route::resource('vehicles', VehicleController::class)->except('destroy');
     Route::post('/vehicles/{vehicle}/status', [VehicleController::class, 'changeStatus'])->name('vehicles.status');
+    Route::get('/vehicle-blocks', [VehicleBlockController::class, 'index'])->name('vehicle-blocks.index');
+    Route::get('/vehicle-blocks/create', [VehicleBlockController::class, 'create'])->name('vehicle-blocks.create');
+    Route::post('/vehicle-blocks', [VehicleBlockController::class, 'store'])->name('vehicle-blocks.store');
+    Route::post('/vehicle-blocks/{block}/release', [VehicleBlockController::class, 'release'])->name('vehicle-blocks.release');
+    Route::post('/vehicle-blocks/{block}/cancel', [VehicleBlockController::class, 'cancel'])->name('vehicle-blocks.cancel');
     Route::resource('customers', CustomerController::class);
     Route::post('/customers/{customer}/verify', [CustomerController::class, 'verify'])->name('customers.verify');
     Route::post('/customers/{customer}/reject-verification', [CustomerController::class, 'reject'])->name('customers.reject-verification');
@@ -109,6 +115,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::post('/finance/deposits/{deposit}/reverse', [FinanceController::class, 'reverseDeposit'])->name('finance.deposits.reverse');
     Route::post('/finance/expenses', [FinanceController::class, 'storeExpense'])->name('finance.expenses.store');
     Route::post('/finance/expenses/{expense}/approve', [FinanceController::class, 'approveExpense'])->name('finance.expenses.approve');
+    Route::post('/finance/expenses/{expense}/reject', [FinanceController::class, 'rejectExpense'])->name('finance.expenses.reject');
     Route::post('/contracts/{contract}/close', [FinanceController::class, 'close'])->name('finance.contracts.close');
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::get('/maintenance/create', [MaintenanceController::class, 'create'])->name('maintenance.create');

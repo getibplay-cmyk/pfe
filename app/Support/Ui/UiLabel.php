@@ -70,6 +70,10 @@ class UiLabel
         'platform.tenant.provisioned' => 'Tenant provisionné', 'platform.tenant.suspended' => 'Tenant suspendu',
         'platform.tenant.reactivated' => 'Tenant réactivé', 'customer.identity.viewed' => 'Identité client consultée',
         'profile.updated' => 'Profil mis à jour', 'profile.password_changed' => 'Mot de passe du profil modifié',
+        'vehicle_block.manual.created' => 'Bloc manuel créé',
+        'vehicle_block.manual.released' => 'Bloc manuel libéré',
+        'vehicle_block.manual.cancelled' => 'Bloc manuel annulé',
+        'expense.rejected' => 'Dépense rejetée',
     ];
 
     public static function get(mixed $value): string

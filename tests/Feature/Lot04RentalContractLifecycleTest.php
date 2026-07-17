@@ -276,7 +276,7 @@ class Lot04RentalContractLifecycleTest extends TestCase
         $f = $this->fixture();
         $contract = $this->returnPendingContract($f, 1310, '70.00');
         $charge = $this->inTenant($f, fn () => ContractCharge::create(['rental_contract_id' => $contract->id, 'charge_type' => 'other', 'description' => 'Frais validé', 'quantity' => '1.00', 'unit_amount' => '25.50', 'total_amount' => '25.50', 'status' => 'proposed']));
-        $future = $this->inTenant($f, fn () => VehicleBlock::create(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'block_type' => VehicleBlockType::Manual, 'starts_at' => $contract->expected_return_at->addDay(), 'ends_at' => $contract->expected_return_at->addDays(2), 'status' => VehicleBlockStatus::Active, 'created_by' => $f['user']->id]));
+        $future = $this->inTenant($f, fn () => VehicleBlock::create(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'block_type' => VehicleBlockType::Manual, 'starts_at' => $contract->expected_return_at->addDay(), 'ends_at' => $contract->expected_return_at->addDays(2), 'status' => VehicleBlockStatus::Active, 'reason' => 'Bloc futur de test', 'created_by' => $f['user']->id]));
         $returned = $this->inTenant($f, fn () => app(MarkRentalReturned::class)->handle($contract, ['approved_charge_ids' => [$charge->id]], $f['user']->id));
 
         $this->assertSame(RentalContractStatus::Returned, $returned->status);

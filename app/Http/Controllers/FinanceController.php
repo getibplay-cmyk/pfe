@@ -12,6 +12,7 @@ use App\Actions\Finance\PostPayment;
 use App\Actions\Finance\RecordDepositReceipt;
 use App\Actions\Finance\RecordPayment;
 use App\Actions\Finance\RefundDeposit;
+use App\Actions\Finance\RejectExpense;
 use App\Actions\Finance\RetainDeposit;
 use App\Actions\Finance\ReverseDepositTransaction;
 use App\Actions\Finance\ReversePayment;
@@ -19,6 +20,7 @@ use App\Actions\Finance\VoidInvoice;
 use App\Http\Requests\Finance\AllocatePaymentRequest;
 use App\Http\Requests\Finance\CreateInvoiceRequest;
 use App\Http\Requests\Finance\DepositMovementRequest;
+use App\Http\Requests\Finance\RejectExpenseRequest;
 use App\Http\Requests\Finance\ReverseDepositRequest;
 use App\Http\Requests\Finance\ReversePaymentRequest;
 use App\Http\Requests\Finance\StoreExpenseRequest;
@@ -38,23 +40,48 @@ class FinanceController extends Controller
 {
     public function index(Request $request): View
     {
-        $this->permit($request, 'invoice.view');
+        $financialPermissions = ['invoice.view', 'payment.view', 'deposit.view', 'expense.view'];
+        abort_unless(collect($financialPermissions)->contains(fn (string $permission) => $request->user()->hasPermission($permission)), 403);
+
+        $canViewInvoices = $request->user()->hasPermission('invoice.view');
+        $canViewPayments = $request->user()->hasPermission('payment.view');
+        $canViewDeposits = $request->user()->hasPermission('deposit.view');
+        $canViewExpenses = $request->user()->hasPermission('expense.view');
+        $canCreateExpenses = $request->user()->hasPermission('expense.create');
         $agency = $request->user()->agency_id;
         $scope = fn ($query) => $query->when($agency, fn ($builder) => $builder->where('agency_id', $agency));
 
         return view('finance.index', [
-            'invoices' => $scope(Invoice::with('rentalContract'))
-                ->when($request->string('invoice_status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('invoice_status')))
-                ->when($request->string('q')->isNotEmpty(), fn ($query) => $query->where('invoice_number', 'ilike', '%'.$request->string('q').'%'))
-                ->latest()->paginate(15, ['*'], 'invoices')->withQueryString(),
-            'payments' => $scope(Payment::with(['rentalContract', 'allocations.invoice']))->latest()->limit(20)->get(),
-            'deposits' => $scope(DepositTransaction::with('rentalContract'))->latest('occurred_at')->limit(20)->get(),
-            'expenses' => $scope(Expense::with(['vehicle', 'rentalContract', 'maintenanceOrder']))->latest('expense_date')->limit(20)->get(),
-            'agencies' => Agency::query()->when($agency, fn ($query) => $query->whereKey($agency))->orderBy('name')->get(),
-            'vehicles' => $request->user()->hasPermission('expense.create')
+            'invoices' => $canViewInvoices
+                ? $scope(Invoice::with('rentalContract'))
+                    ->when($request->string('invoice_status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('invoice_status')))
+                    ->when($request->string('q')->isNotEmpty(), fn ($query) => $query->where('invoice_number', 'ilike', '%'.$request->string('q').'%'))
+                    ->latest()->paginate(15, ['*'], 'invoices')->withQueryString()
+                : null,
+            'payments' => $canViewPayments
+                ? $scope(Payment::with(['rentalContract', 'allocations.invoice']))->latest()->limit(20)->get()
+                : null,
+            'deposits' => $canViewDeposits
+                ? $scope(DepositTransaction::with('rentalContract'))->latest('occurred_at')->limit(20)->get()
+                : null,
+            'expenses' => $canViewExpenses
+                ? $scope(Expense::with(['vehicle', 'rentalContract', 'maintenanceOrder', 'creator:id,name', 'rejector:id,name']))
+                    ->when($request->string('expense_status')->isNotEmpty(), fn ($query) => $query->where('status', $request->string('expense_status')))
+                    ->when($request->string('expense_q')->isNotEmpty(), fn ($query) => $query->where(function ($builder) use ($request) {
+                        $term = '%'.$request->string('expense_q').'%';
+                        $builder->where('expense_number', 'ilike', $term)
+                            ->orWhere('description', 'ilike', $term)
+                            ->orWhere('supplier', 'ilike', $term);
+                    }))
+                    ->latest('expense_date')->paginate(20, ['*'], 'expenses')->withQueryString()
+                : null,
+            'agencies' => $canCreateExpenses
+                ? Agency::query()->when($agency, fn ($query) => $query->whereKey($agency))->orderBy('name')->get()
+                : collect(),
+            'vehicles' => $canCreateExpenses
                 ? $scope(Vehicle::query())->orderBy('registration_number')->limit(200)->get()
                 : collect(),
-            'contracts' => $request->user()->hasPermission('expense.create')
+            'contracts' => $canCreateExpenses
                 ? $scope(RentalContract::with('customer'))->latest()->limit(100)->get()
                 : collect(),
         ]);
@@ -178,6 +205,13 @@ class FinanceController extends Controller
         $action->handle($expense, $request->user()->id);
 
         return back()->with('status', 'Dépense approuvée.');
+    }
+
+    public function rejectExpense(RejectExpenseRequest $request, Expense $expense, RejectExpense $action): RedirectResponse
+    {
+        $action->handle($expense, $request->validated('reason'), $request->user()->id);
+
+        return back()->with('status', 'Dépense rejetée sans suppression.');
     }
 
     public function close(Request $request, RentalContract $contract, CloseRentalContract $action): RedirectResponse

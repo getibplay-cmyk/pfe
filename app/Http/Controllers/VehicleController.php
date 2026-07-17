@@ -42,7 +42,13 @@ class VehicleController extends Controller
     public function show(Vehicle $vehicle): View
     {
         $this->authorize('view', $vehicle);
-        $vehicle->load(['agency', 'category', 'statusHistories', 'documents.currentVersion']);
+        $vehicle->load([
+            'agency',
+            'category',
+            'statusHistories',
+            'documents.currentVersion',
+            'blocks' => fn ($query) => $query->with('creator:id,name')->latest('starts_at')->limit(10),
+        ]);
 
         return view('vehicles.show', compact('vehicle'));
     }

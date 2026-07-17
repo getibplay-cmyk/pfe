@@ -32,11 +32,12 @@ class NavigationBuilder
             $this->section('Flotte', [
                 $this->when($user, 'vehicle.view', $this->item('vehicles', 'Véhicules', 'vehicles.index', 'vehicles.*')),
                 $this->when($user, 'vehicle.view', $this->item('vehicle-categories', 'Catégories', 'vehicle-categories.index', 'vehicle-categories.*')),
+                $this->when($user, 'vehicle_block.manage', $this->item('vehicle-blocks', 'Blocs véhicules', 'vehicle-blocks.index', 'vehicle-blocks.*')),
                 $this->when($user, 'maintenance.view', $this->item('maintenance', 'Maintenance', 'maintenance.index', 'maintenance.*')),
                 $this->when($user, 'insurance.view', $this->item('insurance', 'Assurance', 'insurance.index', 'insurance.*')),
             ]),
             $this->section('Finance et pilotage', [
-                $this->when($user, 'invoice.view', $this->item('finance', 'Finance', 'finance.index', 'finance.*')),
+                $this->whenAny($user, ['invoice.view', 'payment.view', 'deposit.view', 'expense.view'], $this->item('finance', 'Finance', 'finance.index', 'finance.*')),
                 $this->when($user, 'report.view', $this->item('reports', 'Rapports', 'reports.index', 'reports.*')),
             ]),
             $this->section('Administration tenant', [

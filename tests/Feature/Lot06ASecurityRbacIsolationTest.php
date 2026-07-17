@@ -68,7 +68,7 @@ class Lot06ASecurityRbacIsolationTest extends TestCase
             'invoice.view', 'invoice.create', 'invoice.issue', 'invoice.void',
             'payment.view', 'payment.create', 'payment.post', 'payment.allocate', 'payment.reverse',
             'deposit.view', 'deposit.create', 'deposit.reverse',
-            'expense.view', 'expense.create', 'expense.approve', 'contract.close',
+            'expense.view', 'expense.create', 'expense.approve', 'expense.reject', 'contract.close',
         ];
         $allowed = [
             'tenant-owner' => $permissions,
