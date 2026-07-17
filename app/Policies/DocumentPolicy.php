@@ -9,7 +9,7 @@ class DocumentPolicy
 {
     public function view(User $user, Document $document): bool
     {
-        return $this->sameScope($user, $document) && $user->hasPermission('document.view');
+        return ! $document->trashed() && $this->sameScope($user, $document) && $user->hasPermission('document.view');
     }
 
     public function upload(User $user, ?Document $document = null): bool
@@ -24,7 +24,7 @@ class DocumentPolicy
 
     public function delete(User $user, Document $document): bool
     {
-        return $this->sameScope($user, $document) && $user->hasPermission('document.delete');
+        return ! $document->trashed() && $this->sameScope($user, $document) && $user->hasPermission('document.delete');
     }
 
     private function sameScope(User $user, Document $document): bool

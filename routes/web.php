@@ -68,7 +68,10 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::resource('vehicle-categories', VehicleCategoryController::class)->except('show');
     Route::resource('vehicles', VehicleController::class)->except('destroy');
     Route::post('/vehicles/{vehicle}/status', [VehicleController::class, 'changeStatus'])->name('vehicles.status');
-    Route::resource('customers', CustomerController::class)->except('destroy');
+    Route::resource('customers', CustomerController::class);
+    Route::post('/customers/{customer}/verify', [CustomerController::class, 'verify'])->name('customers.verify');
+    Route::post('/customers/{customer}/reject-verification', [CustomerController::class, 'reject'])->name('customers.reject-verification');
+    Route::post('/customers/{customerId}/restore', [CustomerController::class, 'restore'])->whereNumber('customerId')->name('customers.restore');
     Route::resource('pricing-rules', PricingRuleController::class)->except(['show', 'destroy']);
     Route::get('/availability', AvailabilityController::class)->name('availability.index');
     Route::get('/reservations/export', ReservationExportController::class)->name('reservations.export');
@@ -132,6 +135,14 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::post('/insurance/claims/{claim}/close', [InsuranceController::class, 'close'])->name('insurance.claims.close');
     Route::get('/customers/{customer}/identity', [CustomerController::class, 'identity'])->name('customers.identity');
     Route::post('/customers/{customer}/drivers', [DriverController::class, 'store'])->name('customers.drivers.store');
+    Route::get('/drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
+    Route::get('/drivers/{driver}/edit', [DriverController::class, 'edit'])->name('drivers.edit');
+    Route::put('/drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
+    Route::post('/drivers/{driver}/verify', [DriverController::class, 'verify'])->name('drivers.verify');
+    Route::post('/drivers/{driver}/reject-verification', [DriverController::class, 'reject'])->name('drivers.reject-verification');
+    Route::delete('/drivers/{driver}', [DriverController::class, 'destroy'])->name('drivers.destroy');
+    Route::post('/drivers/{driverId}/restore', [DriverController::class, 'restore'])->whereNumber('driverId')->name('drivers.restore');
+    Route::get('/drivers/{driver}/licence', [DriverController::class, 'licence'])->name('drivers.licence');
     Route::post('/vehicles/{vehicle}/documents', [DocumentController::class, 'storeForVehicle'])->name('vehicles.documents.store');
     Route::post('/customers/{customer}/documents', [DocumentController::class, 'storeForCustomer'])->name('customers.documents.store');
     Route::post('/drivers/{driver}/documents', [DocumentController::class, 'storeForDriver'])->name('drivers.documents.store');
@@ -140,6 +151,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('/documents/{document}/versions', [DocumentController::class, 'addVersion'])->name('documents.versions.store');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 });
 

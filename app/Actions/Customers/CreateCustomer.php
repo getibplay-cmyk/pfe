@@ -2,6 +2,7 @@
 
 namespace App\Actions\Customers;
 
+use App\Enums\VerificationStatus;
 use App\Models\Customer;
 use App\Support\SensitiveData\IdentityProtector;
 use App\Support\Tenancy\AgencyAccess;
@@ -15,7 +16,10 @@ class CreateCustomer
 
     public function handle(array $data): Customer
     {
-        $data['agency_id'] = $this->agencyAccess->optional($data['agency_id'] ?? null);
+        $data['agency_id'] = $this->agencyAccess->required($data['agency_id'] ?? null);
+        $data['verification_status'] = ($data['verification_status'] ?? null) instanceof VerificationStatus
+            ? $data['verification_status']
+            : VerificationStatus::Pending;
         $identity = $data['identity_number'] ?? null;
         unset($data['identity_number']);
         $customer = Customer::create($data);

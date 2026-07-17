@@ -7,6 +7,13 @@
                 <div><dt class="text-slate-500">Échéance de conservation</dt><dd class="font-medium">{{ App\Support\Ui\UiLabel::date($document->retention_until) }}</dd></div>
             </dl>
             @can('download', $document)<a class="mt-5 inline-flex rounded-lg bg-slate-950 px-4 py-2 text-sm font-medium text-white" href="{{ route('documents.download', $document) }}">Télécharger la version courante</a>@endcan
+            @can('delete', $document)
+                <form class="mt-4" method="POST" action="{{ route('documents.destroy', $document) }}" onsubmit="return confirm('Archiver ce document sans supprimer son fichier ni ses versions ?')">
+                    @csrf @method('DELETE')
+                    <button class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700">Archiver le document</button>
+                </form>
+            @endcan
+            <x-input-error :messages="$errors->get('document')" />
             <h2 class="mt-8 font-semibold">Versions</h2>
             <div class="mt-3 divide-y rounded-lg border">
                 @forelse ($document->versions as $version)<div class="p-3 text-sm"><strong>Version {{ $version->version_number }}</strong><p class="text-slate-500">{{ $version->original_name }} · {{ App\Support\Ui\UiLabel::dateTime($version->created_at) }}</p></div>@empty <x-empty-state title="Aucune version disponible" /> @endforelse

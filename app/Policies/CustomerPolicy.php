@@ -24,7 +24,22 @@ class CustomerPolicy
 
     public function update(User $user, Customer $customer): bool
     {
-        return $this->sameScope($user, $customer) && $user->hasPermission('customer.update');
+        return ! $customer->trashed() && $this->sameScope($user, $customer) && $user->hasPermission('customer.update');
+    }
+
+    public function verify(User $user, Customer $customer): bool
+    {
+        return $this->update($user, $customer);
+    }
+
+    public function archive(User $user, Customer $customer): bool
+    {
+        return $this->update($user, $customer);
+    }
+
+    public function restore(User $user, Customer $customer): bool
+    {
+        return $customer->trashed() && $this->sameScope($user, $customer) && $user->hasPermission('customer.update');
     }
 
     public function viewIdentity(User $user, Customer $customer): bool

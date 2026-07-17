@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Documents\AddDocumentVersion;
+use App\Actions\Documents\ArchiveDocument;
 use App\Actions\Documents\DownloadPrivateDocument;
 use App\Actions\Documents\StorePrivateDocument;
 use App\Enums\DocumentType;
@@ -80,6 +81,21 @@ class DocumentController extends Controller
         $this->authorize('download', $document);
 
         return $action->handle($document, $request->user()->id);
+    }
+
+    public function destroy(Document $document, ArchiveDocument $action): RedirectResponse
+    {
+        $this->authorize('delete', $document);
+        $owner = $document->documentable;
+        $action->handle($document);
+
+        $redirect = match (true) {
+            $owner instanceof Customer => route('customers.show', $owner),
+            $owner instanceof Driver => route('drivers.show', $owner),
+            default => route('customers.index'),
+        };
+
+        return redirect($redirect)->with('status', 'Document archivé ; le fichier privé et ses versions sont conservés.');
     }
 
     private function store(Request $request, Model $documentable, StorePrivateDocument $action): RedirectResponse

@@ -16,4 +16,34 @@ class DriverPolicy
     {
         return $user->tenant_id === $driver->tenant_id && ($user->agency_id === null || $user->agency_id === $driver->customer?->agency_id) && $user->hasPermission('customer.view');
     }
+
+    public function update(User $user, Driver $driver): bool
+    {
+        return ! $driver->trashed() && $this->sameScope($user, $driver) && $user->hasPermission('customer.update');
+    }
+
+    public function verify(User $user, Driver $driver): bool
+    {
+        return $this->update($user, $driver);
+    }
+
+    public function archive(User $user, Driver $driver): bool
+    {
+        return $this->update($user, $driver);
+    }
+
+    public function restore(User $user, Driver $driver): bool
+    {
+        return $driver->trashed() && $this->sameScope($user, $driver) && $user->hasPermission('customer.update');
+    }
+
+    public function viewIdentity(User $user, Driver $driver): bool
+    {
+        return ! $driver->trashed() && $this->sameScope($user, $driver) && $user->hasPermission('customer.identity.view');
+    }
+
+    private function sameScope(User $user, Driver $driver): bool
+    {
+        return $user->tenant_id === $driver->tenant_id && ($user->agency_id === null || $user->agency_id === $driver->customer?->agency_id);
+    }
 }
