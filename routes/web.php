@@ -18,6 +18,7 @@ use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalContractController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ReservationExportController;
 use App\Http\Controllers\TenantController;
@@ -180,6 +181,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::post('/documents/{document}/versions', [DocumentController::class, 'addVersion'])->name('documents.versions.store');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::get('/reports/export', ReportExportController::class)->name('reports.export');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 });
 

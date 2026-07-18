@@ -386,3 +386,28 @@ La matrice complète est documentée dans `docs/roles-and-navigation.md`.
 php artisan test tests/Feature/Lot06EUxNavigationAuthorizationTest.php
 php artisan test tests/Feature/ProfileTest.php
 ```
+
+## Lot 06F-D1 — reporting exact et explicable
+
+Le rapport `/reports` utilise désormais une seule définition pour l’écran, son
+export `/reports/export` et les indicateurs mensuels repris sur le dashboard.
+Les filtres sont obligatoires, bornés à 366 jours, convertis en période
+semi-ouverte `[début, fin)` dans `Africa/Casablanca` et limités côté serveur aux
+agences autorisées.
+
+Les indicateurs couvrent réservations, contrats, flotte, utilisation,
+maintenance, assurance, échéances et finance. Les durées sont agrégées par
+PostgreSQL. Les montants restent en décimal et sur des lignes séparées pour
+chaque devise ; aucun taux de change n’est appliqué. Les exports CSV UTF-8 sont
+streamés, compatibles Excel francophone, neutralisés contre les formules et
+audités sans contenu ni donnée privée.
+
+Les formules et limites sont détaillées dans
+`docs/reporting/kpi-definitions.md` et la décision dans
+`docs/adr/0013-reporting-periods-and-currency.md`.
+
+```powershell
+php artisan rentfleet:doctor
+php artisan test tests/Feature/Lot06FD1ReportingDiagnosticsTest.php
+php artisan route:list --path=reports
+```

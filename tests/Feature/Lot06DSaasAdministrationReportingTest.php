@@ -323,14 +323,14 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
         $response = $this->actingAs($fixture['user'])->get(route('reports.index', ['date_from' => $from, 'date_to' => $to, 'agency_id' => $fixture['agency']->id]));
         $response->assertOk()->assertViewIs('reports.index');
         $report = $response->viewData('report');
-        $this->assertSame(1, $report['financial']['issued_invoices']);
-        $this->assertSame($finance['invoice']->total_amount, $report['financial']['invoiced_amount']);
-        $this->assertSame('100.00', $report['financial']['allocated_collections']);
-        $this->assertSame($finance['invoice']->balance_due, $report['financial']['outstanding_balance']);
-        $this->assertSame('50.00', $report['financial']['held_deposits']);
-        $this->assertSame('75.00', $report['financial']['approved_expenses']);
-        $this->assertSame(1, $report['operational']['contracts']['Retourné']);
-        $this->assertSame(1, $report['operational']['reservations']['Convertie']);
+        $mad = $report['financial']['currencies']['MAD'];
+        $this->assertSame(1, $mad['issued_invoices']);
+        $this->assertSame($finance['invoice']->total_amount, $mad['invoiced_amount']);
+        $this->assertSame('100.00', $mad['collected_net']);
+        $this->assertSame($finance['invoice']->balance_due, $mad['outstanding_balance']);
+        $this->assertSame('50.00', $mad['held_deposits']);
+        $this->assertSame('75.00', $mad['approved_expenses']);
+        $this->assertSame(1, $report['operational']['reservations']['confirmed']);
         $this->assertSame('pgsql', DB::connection()->getDriverName());
 
         $otherAgency = app(TenantContext::class)->run($fixture['tenant'], fn () => Agency::factory()->create());

@@ -28,6 +28,7 @@ class RentFleetDoctor extends Command
         $this->checkStorageAndBuild();
         $this->checkWorkers();
         $this->checkDatabaseInvariants();
+        $this->checkReportingIntegrity();
         $this->checkReferenceData();
 
         if ($this->option('json')) {
@@ -144,6 +145,65 @@ class RentFleetDoctor extends Command
             $this->add('Données de démonstration', $tenants >= 2 ? 'pass' : 'warn', $tenants.' tenant(s)');
         } catch (Throwable) {
             $this->add('Données de référence', 'fail', 'état non lisible');
+        }
+    }
+
+    private function checkReportingIntegrity(): void
+    {
+        try {
+            $periods = (int) DB::scalar(<<<'SQL'
+                SELECT
+                    (SELECT COUNT(*) FROM reservations WHERE starts_at >= ends_at)
+                  + (SELECT COUNT(*) FROM rental_contracts WHERE expected_start_at >= expected_return_at)
+                  + (SELECT COUNT(*) FROM vehicle_blocks WHERE starts_at >= ends_at)
+                SQL);
+            $this->add('Périodes du reporting', $periods === 0 ? 'pass' : 'fail', $periods.' période(s) invalide(s)');
+
+            $allocationMismatches = (int) DB::scalar(<<<'SQL'
+                SELECT COUNT(*)
+                FROM payment_allocations a
+                JOIN payments p ON p.id = a.payment_id
+                JOIN invoices i ON i.id = a.invoice_id
+                WHERE a.tenant_id <> p.tenant_id OR a.tenant_id <> i.tenant_id
+                   OR a.agency_id <> p.agency_id OR a.agency_id <> i.agency_id
+                   OR a.customer_id <> p.customer_id OR a.customer_id <> i.customer_id
+                   OR a.currency <> p.currency OR a.currency <> i.currency
+                SQL);
+            $this->add('Allocations financières', $allocationMismatches === 0 ? 'pass' : 'fail', $allocationMismatches.' allocation(s) hors périmètre ou cross-devise');
+
+            $invalidBlocks = (int) DB::scalar(<<<'SQL'
+                SELECT COUNT(*)
+                FROM vehicle_blocks b
+                LEFT JOIN vehicles v ON v.id = b.vehicle_id AND v.tenant_id = b.tenant_id AND v.agency_id = b.agency_id
+                WHERE b.status = 'active' AND (
+                    b.starts_at >= b.ends_at OR b.released_at IS NOT NULL OR v.id IS NULL OR v.deleted_at IS NOT NULL
+                    OR v.operational_status IN ('out_of_service', 'archived')
+                    OR (b.block_type = 'reservation' AND b.reservation_id IS NULL)
+                    OR (b.block_type = 'contract' AND b.rental_contract_id IS NULL)
+                    OR (b.block_type = 'maintenance' AND b.maintenance_order_id IS NULL)
+                    OR (b.block_type = 'manual' AND (b.reservation_id IS NOT NULL OR b.rental_contract_id IS NOT NULL OR b.maintenance_order_id IS NOT NULL))
+                )
+                SQL);
+            $this->add('Blocs actifs du reporting', $invalidBlocks === 0 ? 'pass' : 'fail', $invalidBlocks.' bloc(s) actif(s) invalide(s)');
+
+            $requiredIndexes = [
+                'reservations_reporting_created_idx',
+                'reservation_status_histories_reporting_events_idx',
+                'rental_contracts_reporting_returns_idx',
+                'vehicle_blocks_reporting_period_idx',
+                'invoices_reporting_issued_idx',
+                'payments_reporting_posted_idx',
+                'deposit_transactions_reporting_occurred_idx',
+                'expenses_reporting_date_idx',
+                'maintenance_orders_reporting_schedule_idx',
+                'insurance_claims_reporting_open_idx',
+                'documents_reporting_expiry_idx',
+                'drivers_reporting_licence_expiry_idx',
+            ];
+            $indexes = (int) DB::table('pg_indexes')->whereIn('indexname', $requiredIndexes)->count();
+            $this->add('Index du reporting', $indexes === count($requiredIndexes) ? 'pass' : 'fail', $indexes.'/'.count($requiredIndexes).' présents');
+        } catch (Throwable) {
+            $this->add('Cohérence du reporting', 'fail', 'état non lisible');
         }
     }
 

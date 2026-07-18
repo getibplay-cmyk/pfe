@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agency;
 use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\Driver;
@@ -12,6 +13,9 @@ use App\Models\MaintenanceOrder;
 use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\Vehicle;
+use App\Support\Reporting\BuildMinimalReport;
+use App\Support\Reporting\ReportCriteria;
+use App\Support\Tenancy\TenantContext;
 use App\Support\Ui\UiLabel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -19,7 +23,7 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, BuildMinimalReport $reports, TenantContext $context): View
     {
         $user = $request->user();
         $agencyId = $user->agency_id;
@@ -27,25 +31,56 @@ class DashboardController extends Controller
         $now = now();
         $soon = $now->copy()->addDays(30);
         $kpis = [];
-        $currency = $user->tenant?->settings['currency'] ?? 'MAD';
         $maintenanceSummary = null;
         $insuranceSummary = null;
+        $canonicalReport = null;
+
+        if ($user->hasPermission('report.view')) {
+            $agencyIds = $agencyId !== null
+                ? [$agencyId]
+                : Agency::query()->orderBy('id')->pluck('id')->map(fn ($id): int => (int) $id)->all();
+            if ($agencyIds !== []) {
+                $timezone = (string) ($user->tenant?->settings['timezone'] ?? config('app.timezone'));
+                $criteria = ReportCriteria::fromInclusiveDates(
+                    $context->tenantId(),
+                    $agencyIds,
+                    $now->copy()->startOfMonth()->toDateString(),
+                    $now->toDateString(),
+                    $timezone,
+                );
+                $canonicalReport = $reports->handle($criteria);
+                $kpis['Réservations confirmées (mois)'] = $canonicalReport['operational']['reservations']['confirmed'];
+                $kpis['Retours attendus (mois)'] = $canonicalReport['operational']['contracts']['expected_returns'];
+                $kpis['Taux d’utilisation (mois)'] = $canonicalReport['operational']['utilization']['rate'].' %';
+            }
+        }
 
         if ($user->hasPermission('vehicle.view')) {
             $kpis['Véhicules opérationnels'] = $scope(Vehicle::query())->where('operational_status', 'active')->count();
             $kpis['Véhicules indisponibles'] = $scope(Vehicle::query())->whereIn('operational_status', ['maintenance', 'out_of_service'])->count();
         }
-        if ($user->hasPermission('reservation.view')) {
+        if ($user->hasPermission('reservation.view') && $canonicalReport === null) {
             $kpis['Réservations confirmées'] = $scope(Reservation::query())->where('status', 'confirmed')->count();
             $kpis['Départs dans les 7 jours'] = $scope(Reservation::query())->where('status', 'confirmed')->whereBetween('starts_at', [$now, $now->copy()->addDays(7)])->count();
         }
-        if ($user->hasPermission('contract.view')) {
+        if ($user->hasPermission('contract.view') && $canonicalReport === null) {
             $kpis['Retours à traiter'] = $scope(RentalContract::query())->whereIn('status', ['active', 'return_pending'])->where('expected_return_at', '<=', $now->copy()->addDays(7))->count();
         }
         if ($user->hasPermission('invoice.view')) {
-            $invoices = $scope(Invoice::query())->whereIn('status', ['issued', 'partially_paid']);
-            $kpis['Factures impayées'] = (clone $invoices)->count();
-            $kpis['Solde client à recevoir'] = UiLabel::money((string) (clone $invoices)->sum('balance_due'), $currency);
+            if ($canonicalReport !== null) {
+                foreach ($canonicalReport['financial']['currencies'] as $reportCurrency => $values) {
+                    $kpis['Factures émises ('.$reportCurrency.', mois)'] = $values['issued_invoices'];
+                    $kpis['Solde dû ('.$reportCurrency.', mois)'] = UiLabel::money($values['outstanding_balance'], $reportCurrency);
+                }
+            } else {
+                $invoiceRows = $scope(Invoice::query())->whereIn('status', ['issued', 'partially_paid'])
+                    ->selectRaw('currency, COUNT(*) AS aggregate, SUM(balance_due) AS balance')
+                    ->groupBy('currency')->orderBy('currency')->get();
+                foreach ($invoiceRows as $row) {
+                    $kpis['Factures impayées ('.$row->currency.')'] = (int) $row->aggregate;
+                    $kpis['Solde client à recevoir ('.$row->currency.')'] = UiLabel::money((string) $row->balance, $row->currency);
+                }
+            }
         }
         if ($user->hasPermission('maintenance.view')) {
             $maintenanceSummary = [
@@ -56,8 +91,10 @@ class DashboardController extends Controller
                 'Échéances calendaires' => $scope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', $soon)->count(),
             ];
         }
-        if ($user->hasPermission('claim.view')) {
+        if ($user->hasPermission('claim.view') && $canonicalReport === null) {
             $kpis['Sinistres ouverts'] = $scope(InsuranceClaim::query())->whereNotIn('status', ['rejected', 'closed'])->count();
+        } elseif ($user->hasPermission('claim.view')) {
+            $kpis['Sinistres ouverts'] = $canonicalReport['operational']['insurance']['open_claims'];
         }
         if ($user->hasPermission('insurance.view')) {
             $insuranceSummary = [

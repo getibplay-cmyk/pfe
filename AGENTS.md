@@ -88,3 +88,23 @@ modification architecturale ou tout nouveau module.
   le périmètre tenant/agence et n’affichent que les sections permises.
 - Les composants Blade communs servent les titres, statuts, KPI, erreurs,
   résultats et états vides ; ne pas dupliquer ces conventions dans une vue.
+
+## Lot 06F-D1 — reporting canonique
+
+- `BuildMinimalReport` et `ReportCriteria` sont la source canonique des KPI du
+  dashboard, du rapport Blade et de l’export synthétique.
+- Toute période est semi-ouverte `[début, fin)` en `Africa/Casablanca` ; une
+  intersection exige strictement `starts_at < fin` et `ends_at > début`.
+- Le tenant et les agences viennent exclusivement de `TenantContext` et
+  `AgencyAccess`. Un filtre ou export ne fait jamais confiance à un périmètre
+  soumis par le navigateur.
+- Les durées d’utilisation sont calculées en secondes par PostgreSQL, bornées à
+  la période et aux intervalles de capacité issus des historiques véhicule.
+- Ne jamais additionner deux devises. Chaque agrégat financier et chaque export
+  conserve son code devise ; aucune conversion implicite n’existe.
+- Les encaissements reposent sur les allocations comptabilisées et leurs
+  contrepassations. Les paiements `pending` sont toujours exclus.
+- Les exports sont streamés, limités, neutralisés contre les formules tableur,
+  sans donnée privée et audités sans enregistrer leur contenu.
+- `rentfleet:doctor` contrôle en lecture seule les périodes, allocations, blocs
+  actifs et douze index de reporting ; il ne corrige aucune donnée.

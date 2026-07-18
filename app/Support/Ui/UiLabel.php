@@ -94,6 +94,43 @@ class UiLabel
         'insurance.policy.document.remediated' => 'Preuve de police de démonstration régularisée',
         'insurance.coverage.created' => 'Garantie créée', 'insurance.coverage.updated' => 'Garantie modifiée',
         'insurance.coverage.archived' => 'Garantie archivée',
+        'reservation.exported' => 'Export des réservations téléchargé',
+        'report.exported' => 'Export du rapport téléchargé',
+    ];
+
+    private const REPORT_LABELS = [
+        'reservations.created' => 'Réservations créées',
+        'reservations.confirmed' => 'Réservations confirmées',
+        'reservations.cancelled' => 'Réservations annulées',
+        'reservations.expired' => 'Réservations expirées',
+        'contracts.active' => 'Contrats actifs sur la période',
+        'contracts.expected_returns' => 'Retours attendus',
+        'contracts.overdue_returns' => 'Retours en retard',
+        'contracts.closed' => 'Contrats clôturés',
+        'fleet.available' => 'Véhicules disponibles',
+        'fleet.rented' => 'Véhicules loués',
+        'fleet.blocked' => 'Véhicules bloqués',
+        'fleet.maintenance' => 'Véhicules en maintenance',
+        'utilization.rate' => 'Taux d’utilisation',
+        'utilization.duration' => 'Durée louée ou bloquée',
+        'maintenance.planned' => 'Maintenances planifiées',
+        'maintenance.overdue' => 'Maintenances en retard',
+        'maintenance.in_progress' => 'Maintenances en cours',
+        'insurance.open_claims' => 'Sinistres ouverts',
+        'expirations.documents' => 'Documents arrivant à échéance',
+        'expirations.driving_licences' => 'Permis arrivant à échéance',
+        'expirations.total' => 'Documents et permis à échéance',
+        'finance.issued_invoices' => 'Factures émises',
+        'finance.invoiced_amount' => 'Montant facturé',
+        'finance.collected_net' => 'Montant encaissé net',
+        'finance.outstanding_balance' => 'Solde dû à fin de période',
+        'finance.held_deposits' => 'Cautions détenues',
+        'finance.retained_deposits' => 'Cautions retenues',
+        'finance.refunded_deposits' => 'Cautions remboursées',
+        'finance.approved_expenses' => 'Dépenses approuvées',
+        'expenses.draft' => 'Dépenses brouillon',
+        'expenses.approved' => 'Dépenses approuvées',
+        'expenses.rejected' => 'Dépenses rejetées',
     ];
 
     public static function get(mixed $value): string
@@ -117,6 +154,11 @@ class UiLabel
     public static function action(?string $action): string
     {
         return self::ACTIONS[$action ?? ''] ?? 'Activité enregistrée';
+    }
+
+    public static function report(string $metric): string
+    {
+        return self::REPORT_LABELS[$metric] ?? 'Indicateur non documenté';
     }
 
     public static function date(?CarbonInterface $date): string

@@ -83,6 +83,26 @@ présenter ni enregistrer son mot de passe dans une capture ou dans le dépôt.
 La démonstration ne désactive pas une agence portant un cycle de location actif
 et ne supprime physiquement ni tenant, ni agence, ni utilisateur.
 
+## Parcours reporting Lot 06F-D1
+
+1. Avec un Tenant Owner, ouvrir **Rapports** et choisir une période contenant
+   les scénarios de démonstration. Montrer le résumé exact des filtres et la fin
+   exclusive affichée avec son fuseau.
+2. Choisir une agence, puis tenter la même agence avec un Agency Manager : la
+   liste ne propose que son périmètre et une agence forgée est refusée côté
+   serveur.
+3. Expliquer le taux d’utilisation : secondes de blocs actifs intersectées avec
+   les intervalles de capacité véhicule, divisées par cette capacité. Montrer
+   la ventilation réservation, contrat, manuel et maintenance.
+4. Dans **Finance par devise**, rappeler qu’aucune ligne MAD/EUR n’est
+   additionnée. Les paiements en attente sont exclus et une contrepassation
+   diminue l’encaissement net.
+5. Parcourir la table de réservations paginée, sans identité ni document privé,
+   puis télécharger le résumé CSV. Vérifier le BOM UTF-8, le séparateur `;` et
+   l’entrée `report.exported` dans l’audit, sans contenu exporté.
+6. Terminer par `php artisan rentfleet:doctor` : périodes, allocations, blocs et
+   12 index de reporting doivent être au vert.
+
 ## Parcours UX et rôles Lot 06E
 
 La navigation desktop et le menu mobile présentent exactement les mêmes modules

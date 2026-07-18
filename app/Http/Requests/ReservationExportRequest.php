@@ -3,8 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Enums\ReservationStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class ReservationExportRequest extends FormRequest
 {
@@ -38,5 +40,20 @@ class ReservationExportRequest extends FormRequest
             'vehicle_category_id' => ['nullable', 'integer', Rule::exists('vehicle_categories', 'id')->where('tenant_id', $tenantId)],
             'vehicle_id' => ['nullable', 'integer', Rule::exists('vehicles', 'id')->where('tenant_id', $tenantId)],
         ];
+    }
+
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            if ($validator->errors()->hasAny(['date_from', 'date_to'])) {
+                return;
+            }
+
+            $from = CarbonImmutable::parse((string) $this->input('date_from'));
+            $to = CarbonImmutable::parse((string) $this->input('date_to'));
+            if ($from->diffInDays($to) > 365) {
+                $validator->errors()->add('date_to', 'La période exportée ne peut pas dépasser 366 jours.');
+            }
+        }];
     }
 }
