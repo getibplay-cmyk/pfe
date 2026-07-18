@@ -18,6 +18,10 @@ npm-debug.log
 yarn-error.log
 /auth.json
 /backups
+/*.dump
+/*.backup
+/storage/app/private-restore-*
+/storage/app/.rentfleet-restore-stage-*
 /.pgpass
 /pgpass.conf
 /.fleet

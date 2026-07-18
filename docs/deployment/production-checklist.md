@@ -3,59 +3,79 @@
 ## Infrastructure
 
 - [ ] PHP 8.5 et extensions `pdo_pgsql`, `pgsql`, `mbstring`, `openssl`,
-  `fileinfo` et `intl` disponibles.
-- [ ] PostgreSQL 18 accessible avec un rôle applicatif dédié et une base dont ce
-  rôle est propriétaire ; aucun rôle super-utilisateur dans `.env`.
-- [ ] Le document root du serveur web pointe exclusivement vers `public/`.
-- [ ] HTTPS est terminé par un proxy ou serveur maintenu et les redirections HTTP
-  vers HTTPS sont actives.
-- [ ] `storage/`, `storage/app/private` et `bootstrap/cache` sont inscriptibles
-  par le compte du service, sans être publiquement servis.
+  `fileinfo`, `intl`.
+- [ ] PostgreSQL 18 accessible avec le rôle propriétaire `rentfleet_app`, sans
+  privilège super-utilisateur applicatif.
+- [ ] `psql`, `pg_dump` et `pg_restore` correspondent à PostgreSQL 18.
+- [ ] Document root du serveur web limité à `public/` et HTTPS actif.
+- [ ] `storage/`, racine documentaire privée et `bootstrap/cache` sont
+  inscriptibles par le service, jamais servis publiquement.
+- [ ] Volume chiffré et restreint prévu pour les sauvegardes.
 
 ## Configuration
 
-- [ ] `.env.production.example` a été copié hors Git puis complété via un
-  gestionnaire de secrets.
-- [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` est en HTTPS et une
-  `APP_KEY` unique a été générée.
-- [ ] PostgreSQL, sessions chiffrées, cookies secure/httpOnly/SameSite, cache et
-  queue database sont configurés.
-- [ ] Les paramètres mail, logs, rétention et stockage persistant sont validés.
-- [ ] Aucun secret, dump ou document privé n’apparaît dans `git status`.
+- [ ] `.env.production.example` est complété hors Git par un gestionnaire de
+  secrets.
+- [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://...` et
+  `APP_TIMEZONE=Africa/Casablanca`.
+- [ ] `APP_KEY` unique est sauvegardée dans le gestionnaire de secrets, jamais
+  dans les archives de données.
+- [ ] `DB_CONNECTION=pgsql`, aucune connexion SQLite de repli.
+- [ ] sessions chiffrées, cookies secure/httpOnly/SameSite et cache database.
+- [ ] stockage local privé non servi ; aucun `storage:link` nécessaire.
+- [ ] logs quotidiens rotatifs et SMTP configuré avec `MAIL_SCHEME`.
+- [ ] HSTS activé seulement avec `APP_ENV=production` et HTTPS.
+- [ ] `DEMO_PASSWORD` vide ; seeders de démonstration interdits.
+- [ ] inscription publique et comptes par défaut absents.
 
-## Installation et bascule
+## Scheduler
+
+- [ ] Le cache database partagé permet `withoutOverlapping` et `onOneServer`.
+- [ ] Le système lance `php artisan schedule:run` chaque minute.
+- [ ] `schedule:list` montre : heartbeat et expiration des réservations chaque
+  minute, expiration des polices à 00:15 en `Africa/Casablanca`.
+- [ ] Le heartbeat a moins de cinq minutes et `rentfleet:doctor --production`
+  le considère sain.
+- [ ] Aucun worker de queue n’est lancé inutilement : cette release ne dépêche
+  aucune tâche applicative en queue.
+
+## Sauvegarde et preuve avant bascule
+
+- [ ] `pgpass.conf`/`.pgpass` protégé permet les connexions `--no-password`.
+- [ ] La base exacte `rentfleet_restore_test` existe et appartient à
+  `rentfleet_app`.
+- [ ] Une sauvegarde réelle de `rentfleet` a produit dump, archive privée et
+  manifeste complet hors Git.
+- [ ] Tailles et SHA-256 sont valides.
+- [ ] La restauration réelle n’a ciblé que `rentfleet_restore_test` et une
+  racine documentaire temporaire hors dépôt.
+- [ ] Les comptages agrégés, contraintes, triggers, index, documents et valeurs
+  chiffrées ont été vérifiés sans divulgation.
+- [ ] `rentfleet:doctor` est vert contre la restauration.
+- [ ] La source `rentfleet` est inchangée après la preuve.
+
+## Contrôle et bascule
 
 ```powershell
-composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction
-npm ci --no-audit --no-fund
-npm run build
-php artisan rentfleet:doctor --production
-powershell -ExecutionPolicy Bypass -File scripts/deploy-check.ps1 -SkipTests -KeepCaches
+$env:PHP_BINARY = 'C:\Users\pc\.config\herd\bin\php85\php.exe'
+$env:COMPOSER_BINARY = 'C:\Users\pc\.config\herd\bin\composer.bat'
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-check.ps1 -SkipTests -KeepCaches
 ```
 
-- [ ] Une sauvegarde PostgreSQL + documents privés a été créée et restaurée sur
-  `rentfleet_restore_test` avant la bascule.
-- [ ] `php artisan migrate --force` est exécuté seulement après approbation et
-  sauvegarde.
-- [ ] `php artisan optimize` réussit ; config, routes, vues et événements sont
-  en cache.
-- [ ] Un worker `php artisan queue:work` supervisé est redémarré après le code.
-- [ ] Le système appelle `php artisan schedule:run` chaque minute.
+- [ ] `composer install --no-dev`, `npm ci` et `npm run build` réussissent.
+- [ ] `composer validate`, audits Composer/npm et tests approuvés sont verts.
+- [ ] `config:cache`, `route:cache`, `view:cache`, `event:cache`, `optimize` et
+  `rentfleet:doctor --production` réussissent.
+- [ ] `register`, `signup`, `storage/*`, secrets et artefacts suivis sont absents.
+- [ ] Sauvegarde approuvée avant `php artisan migrate --force`.
+- [ ] Mode maintenance utilisé autour de la migration et de la bascule.
 
-## Vérifications post-déploiement
+## Après déploiement et rollback
 
-- [ ] `/health` répond sainement sans détail de connexion.
-- [ ] Connexion, dashboard tenant, refus cross-tenant et téléchargement privé
-  contrôlé ont été testés.
-- [ ] Les logs sont collectés, protégés, rotatifs et recherchables par
-  `X-Correlation-ID` ; espace disque, erreurs HTTP, queue et PostgreSQL sont
-  surveillés.
-- [ ] Les sauvegardes sont copiées vers un support chiffré avec une rétention
-  définie et un test de restauration planifié.
-
-## Rollback
-
-- [ ] L’artefact applicatif précédent et la sauvegarde validée sont disponibles.
-- [ ] Aucun rollback SQL automatique n’est utilisé sur des données réelles.
-- [ ] En cas d’échec, remettre le code précédent, restaurer base et fichiers
-  ensemble dans une nouvelle cible, vérifier, puis basculer explicitement.
+- [ ] `/health`, login, dashboard, isolation tenant/agence et document privé
+  sont vérifiés.
+- [ ] Logs, espace disque, PostgreSQL et ancienneté du heartbeat sont surveillés.
+- [ ] Commit précédent et assets associés sont disponibles.
+- [ ] Aucun `migrate:rollback` automatique n’est prévu sur données réelles.
+- [ ] La restauration base + fichiers reste le dernier recours après test isolé
+  et décision explicite.

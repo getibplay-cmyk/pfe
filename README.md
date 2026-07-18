@@ -411,3 +411,48 @@ php artisan rentfleet:doctor
 php artisan test tests/Feature/Lot06FD1ReportingDiagnosticsTest.php
 php artisan route:list --path=reports
 ```
+
+## Lot 06F-D2 — exploitation et préparation release
+
+Le scheduler exploite le fuseau `Africa/Casablanca`, les verrous PostgreSQL du
+cache partagé et trois événements idempotents : heartbeat et expiration des
+réservations chaque minute, expiration des polices chaque jour à 00:15. Le
+heartbeat non sensible est stocké dans `operational_heartbeats` ;
+`rentfleet:doctor` avertit en local et échoue en production lorsqu’il est trop
+ancien.
+
+La production exige PostgreSQL, HTTPS, debug désactivé, cookies sécurisés,
+stockage documentaire privé, logs quotidiens et absence de seeders de
+démonstration. Cette release ne dépêche aucune tâche applicative en queue : le
+pilote database reste configuré, mais aucun worker n’est requis.
+
+Contrôles locaux avec PHP Herd :
+
+```powershell
+$env:PHP_BINARY = 'C:\Users\pc\.config\herd\bin\php85\php.exe'
+& $env:PHP_BINARY artisan schedule:list
+& $env:PHP_BINARY artisan operations:scheduler-heartbeat
+& $env:PHP_BINARY artisan rentfleet:doctor
+```
+
+Les scripts `backup.ps1`, `restore.ps1` et `verify-restore.ps1` n’acceptent
+aucun mot de passe en ligne de commande. Ils utilisent `pgpass`, un dump custom,
+une archive privée et un manifeste avec tailles/SHA-256. Toute restauration est
+limitée au nom exact `rentfleet_restore_test` et à une racine documentaire
+temporaire hors du dépôt ; `rentfleet` et son stockage vivant ne sont jamais
+écrasés. La procédure reproductible est détaillée dans
+`docs/operations/backup-and-restore.md` et le déploiement manuel dans
+`docs/operations/deployment.md`.
+
+Validation ciblée :
+
+```powershell
+& $env:PHP_BINARY artisan test tests/Feature/Lot06FD2OperationsReleaseTest.php
+php vendor/bin/pint --test
+npm.cmd run build
+```
+
+Une sauvegarde n’est déclarée restaurable qu’après restauration réelle,
+comparaison agrégée et doctor vert sur `rentfleet_restore_test`. L’absence de
+`pgpass.conf` ou de cette base dédiée bloque donc honnêtement la preuve réelle,
+sans bloquer les contrôles statiques du lot.

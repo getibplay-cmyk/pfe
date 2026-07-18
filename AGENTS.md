@@ -108,3 +108,26 @@ modification architecturale ou tout nouveau module.
   sans donnée privée et audités sans enregistrer leur contenu.
 - `rentfleet:doctor` contrôle en lecture seule les périodes, allocations, blocs
   actifs et douze index de reporting ; il ne corrige aucune donnée.
+
+## Lot 06F-D2 — exploitation et restauration
+
+- Le scheduler utilise `Africa/Casablanca`, `withoutOverlapping` et
+  `onOneServer` avec le cache PostgreSQL partagé. Son heartbeat ne contient que
+  le composant et la dernière exécution réussie.
+- Les commandes d’expiration restent idempotentes, transactionnelles et
+  verrouillées ; une relance ne crée jamais une seconde transition ou un second
+  historique.
+- Aucun worker de queue ni Redis n’est requis tant qu’aucune tâche applicative
+  n’implémente réellement la queue.
+- Les scripts PostgreSQL utilisent `pgpass`/`PGPASSFILE` et `--no-password` ;
+  ne jamais accepter, lire, afficher ou journaliser un mot de passe.
+- Une sauvegarde associe dump custom, archive privée et manifeste JSON avec
+  tailles et SHA-256. `APP_KEY` reste séparée dans le gestionnaire de secrets.
+- Toute restauration automatisée cible exclusivement le nom exact
+  `rentfleet_restore_test`, exige une confirmation et restaure les documents
+  dans une racine temporaire hors du dépôt. Ne jamais toucher au stockage privé
+  vivant.
+- Avant toute suppression temporaire, résoudre, valider et afficher le chemin
+  exact. Refuser racines, dépôt, profil utilisateur, chemins vides ou larges.
+- Une archive non restaurée et non vérifiée ne constitue pas une preuve de
+  reprise. Documenter explicitement tout blocage pgpass ou base dédiée.

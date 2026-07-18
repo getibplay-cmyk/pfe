@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,8 @@ class RentFleetDoctor extends Command
 {
     protected $signature = 'rentfleet:doctor
                             {--json : Retourner un rapport JSON}
-                            {--production : Exiger les réglages de production}';
+                            {--production : Exiger les réglages de production}
+                            {--expect-database= : Exiger le nom exact d’une base sans afficher de secret}';
 
     protected $description = 'Vérifie les prérequis de fonctionnement de RentFleet sans modifier les données.';
 
@@ -21,15 +23,23 @@ class RentFleetDoctor extends Command
 
     public function handle(): int
     {
+        $this->checks = [];
         $this->checkEnvironment();
+        $this->checkProductionConfiguration();
         $this->checkRuntime();
         $this->checkDatabase();
-        $this->checkMigrations();
+        if (config('database.default') === 'pgsql') {
+            $this->checkMigrations();
+        } else {
+            $this->add('Migrations', 'fail', 'non vérifiables sans PostgreSQL');
+        }
         $this->checkStorageAndBuild();
         $this->checkWorkers();
-        $this->checkDatabaseInvariants();
-        $this->checkReportingIntegrity();
-        $this->checkReferenceData();
+        if (config('database.default') === 'pgsql') {
+            $this->checkDatabaseInvariants();
+            $this->checkReportingIntegrity();
+            $this->checkReferenceData();
+        }
 
         if ($this->option('json')) {
             $this->line(json_encode([
@@ -46,12 +56,50 @@ class RentFleetDoctor extends Command
     private function checkEnvironment(): void
     {
         $production = app()->environment('production');
+        $productionRequired = $production || $this->option('production');
         $this->add('Environnement', $production ? 'pass' : ($this->option('production') ? 'fail' : 'warn'), app()->environment());
         $this->add(
             'Mode debug',
-            $production && config('app.debug') ? 'fail' : 'pass',
+            $productionRequired && config('app.debug') ? 'fail' : 'pass',
             config('app.debug') ? 'activé' : 'désactivé'
         );
+    }
+
+    private function checkProductionConfiguration(): void
+    {
+        if (! app()->environment('production') && ! $this->option('production')) {
+            return;
+        }
+
+        $url = (string) config('app.url');
+        $this->add('URL de production', parse_url($url, PHP_URL_SCHEME) === 'https' ? 'pass' : 'fail', parse_url($url, PHP_URL_SCHEME) === 'https' ? 'HTTPS' : 'HTTPS requis');
+        $this->add('Clé applicative', filled(config('app.key')) ? 'pass' : 'fail', filled(config('app.key')) ? 'configurée' : 'absente');
+        $this->add('Base de données production', config('database.default') === 'pgsql' ? 'pass' : 'fail', (string) config('database.default'));
+
+        $disk = (string) config('filesystems.default');
+        $root = (string) config("filesystems.disks.{$disk}.root", '');
+        $publicRoot = rtrim(str_replace('\\', '/', public_path()), '/').'/';
+        $normalizedRoot = rtrim(str_replace('\\', '/', $root), '/').'/';
+        $privateDisk = $disk === 'local'
+            && $root !== ''
+            && ! str_starts_with(mb_strtolower($normalizedRoot), mb_strtolower($publicRoot))
+            && config("filesystems.disks.{$disk}.serve") === false
+            && config("filesystems.disks.{$disk}.visibility") !== 'public';
+        $this->add('Stockage documentaire production', $privateDisk ? 'pass' : 'fail', $privateDisk ? 'privé et non servi' : 'disque privé requis');
+
+        $sessionSecure = config('session.secure') === true
+            && config('session.http_only') === true
+            && in_array(config('session.same_site'), ['lax', 'strict'], true);
+        $this->add('Cookies de session production', $sessionSecure ? 'pass' : 'fail', $sessionSecure ? 'secure, httpOnly, SameSite' : 'configuration insuffisante');
+        $this->add('Cache partagé', config('cache.default') === 'database' ? 'pass' : 'fail', (string) config('cache.default'));
+
+        $logChannel = (string) config('logging.default');
+        $stackChannels = (array) config('logging.channels.stack.channels', []);
+        $rotatingLogs = $logChannel === 'daily' || ($logChannel === 'stack' && in_array('daily', $stackChannels, true));
+        $this->add('Rotation des logs', $rotatingLogs ? 'pass' : 'fail', $rotatingLogs ? 'daily' : 'canal daily requis');
+
+        $mailScheme = config('mail.mailers.smtp.scheme');
+        $this->add('Schéma SMTP', in_array($mailScheme, ['smtp', 'smtps'], true) ? 'pass' : 'fail', $mailScheme ?: 'absent');
     }
 
     private function checkRuntime(): void
@@ -63,10 +111,21 @@ class RentFleetDoctor extends Command
 
     private function checkDatabase(): void
     {
+        if (config('database.default') !== 'pgsql') {
+            $this->add('Connexion PostgreSQL', 'fail', 'moteur configuré non pris en charge');
+
+            return;
+        }
+
         try {
             $driver = DB::connection()->getDriverName();
             $server = DB::selectOne("select current_setting('server_version') as version");
             $this->add('Connexion PostgreSQL', $driver === 'pgsql' ? 'pass' : 'fail', $driver.' '.$server->version);
+            $expectedDatabase = $this->option('expect-database');
+            if (is_string($expectedDatabase) && $expectedDatabase !== '') {
+                $actualDatabase = DB::connection()->getDatabaseName();
+                $this->add('Base attendue', hash_equals($expectedDatabase, $actualDatabase) ? 'pass' : 'fail', hash_equals($expectedDatabase, $actualDatabase) ? $actualDatabase : 'base différente');
+            }
         } catch (Throwable) {
             $this->add('Connexion PostgreSQL', 'fail', 'indisponible');
         }
@@ -86,7 +145,7 @@ class RentFleetDoctor extends Command
 
     private function checkStorageAndBuild(): void
     {
-        $privatePath = storage_path('app/private');
+        $privatePath = (string) config('filesystems.disks.local.root');
         $privateReady = is_dir($privatePath) && is_writable($privatePath);
         $this->add('Stockage privé', $privateReady ? 'pass' : 'fail', $privateReady ? 'accessible en écriture' : 'absent ou non inscriptible');
         $cachePath = base_path('bootstrap/cache');
@@ -97,16 +156,48 @@ class RentFleetDoctor extends Command
 
     private function checkWorkers(): void
     {
-        $this->add('Queue', config('queue.default') === 'database' ? 'pass' : 'warn', (string) config('queue.default'));
+        $this->add('Queue', config('queue.default') === 'database' ? 'pass' : 'warn', (string) config('queue.default').' (aucune tâche applicative en queue)');
 
         try {
             $events = app(Schedule::class)->events();
+            $heartbeatScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'operations:scheduler-heartbeat'));
             $reservationScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'reservations:expire-pending'));
             $insuranceScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'insurance:expire-policies'));
-            $scheduled = $reservationScheduled && $insuranceScheduled;
-            $this->add('Scheduler', $scheduled ? 'pass' : 'fail', $scheduled ? 'expirations réservations et assurances planifiées' : 'une commande d’expiration attendue est absente');
+            $scheduled = $heartbeatScheduled && $reservationScheduled && $insuranceScheduled;
+            $this->add('Scheduler', $scheduled ? 'pass' : 'fail', $scheduled ? 'heartbeat et expirations planifiés' : 'une commande planifiée attendue est absente');
         } catch (Throwable) {
             $this->add('Scheduler', 'fail', 'état non lisible');
+        }
+
+        $this->checkSchedulerHeartbeat();
+    }
+
+    private function checkSchedulerHeartbeat(): void
+    {
+        $production = app()->environment('production') || $this->option('production');
+        $component = (string) config('operations.scheduler.heartbeat_component');
+        $maxAge = (int) config('operations.scheduler.heartbeat_max_age_minutes');
+
+        if (config('database.default') !== 'pgsql') {
+            $this->add('Heartbeat scheduler', $production ? 'fail' : 'warn', 'non vérifiable sans PostgreSQL');
+
+            return;
+        }
+
+        try {
+            $lastSucceededAt = DB::table('operational_heartbeats')->where('component', $component)->value('last_succeeded_at');
+            if (! $lastSucceededAt) {
+                $this->add('Heartbeat scheduler', $production ? 'fail' : 'warn', 'absent');
+
+                return;
+            }
+
+            $ageSeconds = CarbonImmutable::parse((string) $lastSucceededAt)->diffInSeconds(now(), true);
+            $fresh = $ageSeconds <= ($maxAge * 60);
+            $ageMinutes = (int) floor($ageSeconds / 60);
+            $this->add('Heartbeat scheduler', $fresh ? 'pass' : ($production ? 'fail' : 'warn'), $fresh ? 'récent' : "ancien de {$ageMinutes} minute(s)");
+        } catch (Throwable) {
+            $this->add('Heartbeat scheduler', $production ? 'fail' : 'warn', 'indisponible');
         }
     }
 

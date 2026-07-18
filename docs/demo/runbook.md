@@ -132,6 +132,33 @@ prouvés par les tests et ne sont pas provoqués sur la base de démonstration.
 Les documents sont toujours ouverts via leur fiche et leur contrôleur de
 téléchargement autorisé. Aucune URL `storage/*` ne fait partie du scénario.
 
+## Preuve d’exploitation Lot 06F-D2
+
+Préparer `pgpass.conf`, `rentfleet_restore_test`, un volume de sauvegarde
+chiffré et une racine documentaire temporaire avant la soutenance. Ne jamais
+afficher le contenu de pgpass, `.env`, `APP_KEY` ou un document privé.
+
+1. Exécuter avec PHP Herd 8.5.8 `schedule:list`, puis
+   `operations:scheduler-heartbeat` et `rentfleet:doctor`. Montrer uniquement
+   les fréquences, le fuseau et l’état récent du heartbeat.
+2. Présenter les refus automatisés : base de sauvegarde non autorisée, cible de
+   restauration vide, `rentfleet`, `rentfleet_test` et variante du nom dédié.
+3. Lancer une sauvegarde réelle de `rentfleet` vers le volume externe. Montrer
+   le manifeste sans ouvrir les documents : statut, tailles, nombre de fichiers
+   et présence des SHA-256.
+4. Restaurer exclusivement dans `rentfleet_restore_test` et une racine privée
+   temporaire hors dépôt avec `-ConfirmRestore`.
+5. Exécuter `verify-restore.ps1`. Montrer les comptages agrégés identiques,
+   contraintes/triggers/index et doctor vert, sans valeur chiffrée affichée.
+6. Confirmer que `rentfleet` possède toujours les mêmes comptages et que la
+   racine `storage/app/private` n’a pas été remplacée.
+7. Noter durées et tailles dans la preuve D2. Une étape non exécutée doit être
+   annoncée comme bloquée, jamais comme réussie.
+
+Les commandes exactes sont dans `docs/operations/backup-and-restore.md`. Après
+la démonstration, annoncer le chemin documentaire temporaire exact avant son
+nettoyage ; ne jamais supprimer un chemin calculé vide ou large.
+
 ## Script oral
 
 1. **0:00–0:45 — Santé et connexion.** Montrer `/health`, puis se connecter
