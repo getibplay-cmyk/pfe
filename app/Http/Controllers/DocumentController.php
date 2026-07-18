@@ -12,6 +12,7 @@ use App\Models\DamageReport;
 use App\Models\Document;
 use App\Models\DocumentAccessLog;
 use App\Models\Driver;
+use App\Models\MaintenanceOrder;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
 use Illuminate\Database\Eloquent\Model;
@@ -58,6 +59,26 @@ class DocumentController extends Controller
         return $this->store($request, $damage, $action);
     }
 
+    public function storeForMaintenance(Request $request, MaintenanceOrder $maintenance, StorePrivateDocument $action): RedirectResponse
+    {
+        $this->authorize('uploadDocument', $maintenance);
+        $allowedTypes = collect(DocumentType::maintenanceTypes())->map->value->all();
+        $data = $request->validate([
+            'tenant_id' => ['prohibited'],
+            'agency_id' => ['prohibited'],
+            'stored_path' => ['prohibited'],
+            'documentable_type' => ['prohibited'],
+            'document_type' => ['required', Rule::in($allowedTypes)],
+            'title' => ['required', 'string', 'max:255'],
+            'retention_until' => ['nullable', 'date'],
+            'is_sensitive' => ['required', 'boolean'],
+            'file' => ['required', 'file', 'max:'.config('documents.max_size_kb')],
+        ]);
+        $action->handle($maintenance, $data, $request->file('file'), $request->user()->id);
+
+        return back()->with('status', 'Document privé de maintenance ajouté.');
+    }
+
     public function show(Request $request, Document $document): View
     {
         $this->authorize('view', $document);
@@ -92,6 +113,7 @@ class DocumentController extends Controller
         $redirect = match (true) {
             $owner instanceof Customer => route('customers.show', $owner),
             $owner instanceof Driver => route('drivers.show', $owner),
+            $owner instanceof MaintenanceOrder => route('maintenance.show', $owner),
             default => route('customers.index'),
         };
 

@@ -12,6 +12,7 @@ use App\Actions\Finance\IssueInvoice;
 use App\Actions\Finance\PostPayment;
 use App\Actions\Finance\RecordDepositReceipt;
 use App\Actions\Finance\RecordPayment;
+use App\Actions\Maintenance\CancelMaintenanceOrder;
 use App\Actions\Platform\ProvisionTenant;
 use App\Actions\Rentals\CreateRentalContractFromReservation;
 use App\Actions\Reservations\ConfirmReservation;
@@ -249,7 +250,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
         $this->actingAs($fixture['user'])->put(route('agencies.update', $fixture['agency']), $payload)->assertSessionHasErrors('is_active');
         $this->assertTrue($fixture['agency']->refresh()->is_active);
 
-        app(TenantContext::class)->run($fixture['tenant'], fn () => MaintenanceOrder::where('maintenance_number', 'MNT-06D-ACTIVE')->firstOrFail()->forceFill(['status' => 'cancelled'])->save(), $fixture['agency']->id);
+        app(TenantContext::class)->run($fixture['tenant'], fn () => app(CancelMaintenanceOrder::class)->handle(MaintenanceOrder::where('maintenance_number', 'MNT-06D-ACTIVE')->firstOrFail(), 'Fin de la dépendance active du test', $fixture['user']->id), $fixture['agency']->id);
         $this->actingAs($fixture['user'])->put(route('agencies.update', $fixture['agency']), $payload)->assertRedirect(route('agencies.index'));
         $this->assertFalse($fixture['agency']->refresh()->is_active);
         $this->assertNotNull(Agency::withoutGlobalScopes()->find($fixture['agency']->id));

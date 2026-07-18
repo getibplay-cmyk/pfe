@@ -120,6 +120,10 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
     Route::get('/maintenance/create', [MaintenanceController::class, 'create'])->name('maintenance.create');
     Route::post('/maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');
+    Route::get('/maintenance/{maintenance}/edit', [MaintenanceController::class, 'edit'])->name('maintenance.edit');
+    Route::put('/maintenance/{maintenance}', [MaintenanceController::class, 'update'])->name('maintenance.update');
+    Route::get('/maintenance/{maintenance}/reschedule', [MaintenanceController::class, 'editSchedule'])->name('maintenance.reschedule.edit');
+    Route::patch('/maintenance/{maintenance}/reschedule', [MaintenanceController::class, 'reschedule'])->name('maintenance.reschedule');
     Route::get('/maintenance/{maintenance}', [MaintenanceController::class, 'show'])->name('maintenance.show');
     Route::post('/maintenance/{maintenance}/approve', [MaintenanceController::class, 'approve'])->name('maintenance.approve');
     Route::post('/maintenance/{maintenance}/start', [MaintenanceController::class, 'start'])->name('maintenance.start');
@@ -155,6 +159,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::post('/drivers/{driver}/documents', [DocumentController::class, 'storeForDriver'])->name('drivers.documents.store');
     Route::post('/inspections/{inspection}/documents', [DocumentController::class, 'storeForInspection'])->name('inspections.documents.store');
     Route::post('/damages/{damage}/documents', [DocumentController::class, 'storeForDamage'])->name('damages.documents.store');
+    Route::post('/maintenance/{maintenance}/documents', [DocumentController::class, 'storeForMaintenance'])->name('maintenance.documents.store');
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('/documents/{document}/versions', [DocumentController::class, 'addVersion'])->name('documents.versions.store');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');

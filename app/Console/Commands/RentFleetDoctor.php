@@ -113,8 +113,11 @@ class RentFleetDoctor extends Command
             $gist = DB::scalar("select count(*) from pg_constraint where conname = 'vehicle_blocks_no_active_overlap_excl'");
             $this->add('Contrainte GiST', (int) $gist === 1 ? 'pass' : 'fail', 'vehicle_blocks_no_active_overlap_excl');
 
-            $triggers = DB::scalar("select count(*) from pg_trigger where not tgisinternal and tgname in ('contract_versions_prevent_locked_update', 'vehicle_inspections_prevent_completed_update', 'invoices_financial_immutability', 'payments_financial_immutability', 'rental_contracts_prevent_closed_before_finance', 'expenses_terminal_immutability')");
-            $this->add('Immutabilité critique', (int) $triggers === 6 ? 'pass' : 'fail', ((int) $triggers).'/6 triggers');
+            $triggers = DB::scalar("select count(*) from pg_trigger where not tgisinternal and tgname in ('contract_versions_prevent_locked_update', 'vehicle_inspections_prevent_completed_update', 'invoices_financial_immutability', 'payments_financial_immutability', 'rental_contracts_prevent_closed_before_finance', 'expenses_terminal_immutability', 'maintenance_histories_append_only', 'maintenance_orders_cycle_immutability')");
+            $this->add('Immutabilité critique', (int) $triggers === 8 ? 'pass' : 'fail', ((int) $triggers).'/8 triggers');
+
+            $maintenanceIndexes = DB::scalar("select count(*) from pg_indexes where indexname in ('vehicle_blocks_one_per_maintenance_unique', 'expenses_one_per_maintenance_unique')");
+            $this->add('Unicité maintenance', (int) $maintenanceIndexes === 2 ? 'pass' : 'fail', ((int) $maintenanceIndexes).'/2 index uniques');
         } catch (Throwable) {
             $this->add('Contraintes PostgreSQL', 'fail', 'état non lisible');
         }

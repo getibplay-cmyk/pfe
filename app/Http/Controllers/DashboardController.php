@@ -27,6 +27,7 @@ class DashboardController extends Controller
         $soon = $now->copy()->addDays(30);
         $kpis = [];
         $currency = $user->tenant?->settings['currency'] ?? 'MAD';
+        $maintenanceSummary = null;
 
         if ($user->hasPermission('vehicle.view')) {
             $kpis['Véhicules opérationnels'] = $scope(Vehicle::query())->where('operational_status', 'active')->count();
@@ -45,7 +46,13 @@ class DashboardController extends Controller
             $kpis['Solde client à recevoir'] = UiLabel::money((string) (clone $invoices)->sum('balance_due'), $currency);
         }
         if ($user->hasPermission('maintenance.view')) {
-            $kpis['Maintenances à surveiller'] = $scope(MaintenanceOrder::query())->whereNotIn('status', ['completed', 'cancelled'])->where(fn (Builder $query) => $query->whereDate('next_due_date', '<=', $soon)->orWhere('scheduled_start_at', '<=', $soon))->count();
+            $maintenanceSummary = [
+                'Planifiées à venir' => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->whereBetween('scheduled_start_at', [$now, $soon])->count(),
+                'En retard' => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->where('scheduled_start_at', '<', $now)->count(),
+                'En cours' => $scope(MaintenanceOrder::query())->where('status', 'in_progress')->count(),
+                'Échéances kilométriques' => $scope(MaintenanceOrder::query())->whereNotNull('next_due_mileage')->whereHas('vehicle', fn (Builder $query) => $query->whereColumn('vehicles.current_mileage', '>=', 'maintenance_orders.next_due_mileage'))->count(),
+                'Échéances calendaires' => $scope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', $soon)->count(),
+            ];
         }
         if ($user->hasPermission('claim.view')) {
             $kpis['Sinistres ouverts'] = $scope(InsuranceClaim::query())->whereNotIn('status', ['rejected', 'closed'])->count();
@@ -53,6 +60,7 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'kpis' => $kpis,
+            'maintenanceSummary' => $maintenanceSummary,
             'recentActivity' => $user->hasPermission('audit.view')
                 ? $scope(AuditLog::query())->with('user:id,name')->latest('created_at')->limit(8)->get()
                 : null,
@@ -75,7 +83,7 @@ class DashboardController extends Controller
                 ? $scope(Invoice::query())->with('rentalContract:id,contract_number')->whereIn('status', ['issued', 'partially_paid'])->orderByRaw('due_at ASC NULLS LAST')->limit(6)->get()
                 : null,
             'upcomingMaintenance' => $user->hasPermission('maintenance.view')
-                ? $scope(MaintenanceOrder::query())->with('vehicle:id,registration_number')->whereNotIn('status', ['completed', 'cancelled'])->where(fn (Builder $query) => $query->whereDate('next_due_date', '<=', $soon)->orWhere('scheduled_start_at', '<=', $soon))->orderByRaw('next_due_date ASC NULLS LAST')->limit(6)->get()
+                ? $scope(MaintenanceOrder::query())->with('vehicle:id,registration_number')->whereNotIn('status', ['completed', 'cancelled'])->where(fn (Builder $query) => $query->where(fn (Builder $scheduled) => $scheduled->whereNotNull('scheduled_start_at')->where('scheduled_start_at', '<=', $soon))->orWhere(fn (Builder $due) => $due->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', $soon)))->orderByRaw('scheduled_start_at ASC NULLS LAST')->limit(6)->get()
                 : null,
             'openClaims' => $user->hasPermission('claim.view')
                 ? $scope(InsuranceClaim::query())->with('policy:id,vehicle_id')->whereNotIn('status', ['rejected', 'closed'])->latest('reported_at')->limit(6)->get()

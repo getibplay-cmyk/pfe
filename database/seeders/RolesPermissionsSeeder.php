@@ -62,7 +62,7 @@ class RolesPermissionsSeeder extends Seeder
             'deposit.view' => 'Voir les cautions', 'deposit.create' => 'Saisir les mouvements de caution', 'deposit.reverse' => 'Contrepasser une caution',
             'expense.view' => 'Voir les dépenses', 'expense.create' => 'Saisir les dépenses', 'expense.approve' => 'Approuver les dépenses', 'expense.reject' => 'Rejeter les dépenses',
             'contract.close' => 'Clôturer financièrement un contrat',
-            'maintenance.create' => 'Créer une maintenance', 'maintenance.approve' => 'Approuver une maintenance', 'maintenance.start' => 'Démarrer une maintenance', 'maintenance.complete' => 'Terminer une maintenance', 'maintenance.cancel' => 'Annuler une maintenance',
+            'maintenance.create' => 'Créer une maintenance', 'maintenance.update' => 'Modifier ou replanifier une maintenance', 'maintenance.approve' => 'Approuver une maintenance', 'maintenance.start' => 'Démarrer une maintenance', 'maintenance.complete' => 'Terminer une maintenance', 'maintenance.cancel' => 'Annuler une maintenance',
             'insurance.view' => 'Voir les assurances', 'insurance.manage' => 'Gérer les assurances',
             'claim.view' => 'Voir les sinistres assurance', 'claim.manage' => 'Gérer les sinistres assurance',
         ];
@@ -88,9 +88,9 @@ class RolesPermissionsSeeder extends Seeder
         }
 
         $grants = [
-            'agency-manager' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
+            'agency-manager' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'maintenance.create', 'maintenance.update', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
             'rental-agent' => ['invoice.view', 'payment.view', 'deposit.view', 'maintenance.view', 'insurance.view', 'claim.view'],
-            'fleet-manager' => ['maintenance.view', 'maintenance.create', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'expense.view', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
+            'fleet-manager' => ['maintenance.view', 'maintenance.create', 'maintenance.update', 'maintenance.approve', 'maintenance.start', 'maintenance.complete', 'maintenance.cancel', 'expense.view', 'insurance.view', 'insurance.manage', 'claim.view', 'claim.manage'],
             'accountant' => ['invoice.view', 'invoice.create', 'invoice.issue', 'invoice.void', 'payment.view', 'payment.create', 'payment.post', 'payment.allocate', 'payment.reverse', 'deposit.view', 'deposit.create', 'deposit.reverse', 'expense.view', 'expense.create', 'expense.approve', 'expense.reject', 'contract.close'],
             'viewer-auditor' => ['invoice.view', 'payment.view', 'deposit.view', 'expense.view', 'maintenance.view', 'insurance.view', 'claim.view'],
         ];

@@ -10,9 +10,7 @@ class CompleteMaintenanceOrderRequest extends FormRequest
     {
         $order = $this->route('maintenance');
 
-        return $this->user()?->hasPermission('maintenance.complete')
-            && $order
-            && ($this->user()->agency_id === null || $this->user()->agency_id === $order->agency_id);
+        return $order && ($this->user()?->can('complete', $order) ?? false);
     }
 
     protected function prepareForValidation(): void

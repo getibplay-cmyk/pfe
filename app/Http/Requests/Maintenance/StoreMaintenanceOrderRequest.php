@@ -22,6 +22,9 @@ class StoreMaintenanceOrderRequest extends FormRequest
 
         return [
             'tenant_id' => ['prohibited'],
+            'status' => ['prohibited'],
+            'actual_cost' => ['prohibited'],
+            'created_by' => ['prohibited'],
             'agency_id' => ['required', 'integer', Rule::exists('agencies', 'id')->where('tenant_id', $tenantId)],
             'vehicle_id' => ['required', 'integer', Rule::exists('vehicles', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('agency_id', $agencyId))],
             'maintenance_type' => ['required', 'in:preventive,corrective,inspection,repair'],
@@ -29,7 +32,8 @@ class StoreMaintenanceOrderRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'scheduled_start_at' => ['nullable', 'date'],
-            'scheduled_end_at' => ['nullable', 'date', 'after:scheduled_start_at'],
+            'scheduled_end_at' => ['nullable', 'required_with:scheduled_start_at', 'date', 'after:scheduled_start_at', 'after:now'],
+            'mileage_at_opening' => ['nullable', 'integer', 'min:0'],
             'estimated_cost' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/'],
             'supplier' => ['nullable', 'string', 'max:255'],
         ];

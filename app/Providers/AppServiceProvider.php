@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Customer;
 use App\Models\DamageReport;
 use App\Models\Driver;
+use App\Models\MaintenanceOrder;
 use App\Models\RentalContract;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
@@ -41,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
             'rental_contract' => RentalContract::class,
             'vehicle_inspection' => VehicleInspection::class,
             'damage_report' => DamageReport::class,
+            'maintenance_order' => MaintenanceOrder::class,
         ]);
     }
 }

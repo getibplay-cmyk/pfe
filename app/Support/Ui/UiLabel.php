@@ -28,6 +28,8 @@ class UiLabel
         'vehicle_photo' => 'Photo du véhicule', 'contract_acceptance' => 'Acceptation du contrat',
         'contract_signature' => 'Signature du contrat', 'inspection_photo' => 'Photo d’inspection',
         'damage_photo' => 'Photo de dommage', 'other' => 'Autre',
+        'maintenance_quote' => 'Devis de maintenance', 'maintenance_repair_order' => 'Ordre de réparation',
+        'maintenance_supplier_invoice' => 'Facture fournisseur non comptabilisée', 'maintenance_intervention_report' => 'Rapport d’intervention',
         'cash' => 'Espèces', 'bank_transfer' => 'Virement bancaire', 'cheque' => 'Chèque', 'card' => 'Carte (référence externe)',
         'incoming' => 'Encaissement', 'outgoing' => 'Décaissement',
         'preventive' => 'Préventive', 'corrective' => 'Corrective', 'inspection' => 'Contrôle', 'repair' => 'Réparation',
@@ -74,6 +76,10 @@ class UiLabel
         'vehicle_block.manual.released' => 'Bloc manuel libéré',
         'vehicle_block.manual.cancelled' => 'Bloc manuel annulé',
         'expense.rejected' => 'Dépense rejetée',
+        'maintenance.created' => 'Maintenance créée', 'maintenance.updated' => 'Maintenance modifiée',
+        'maintenance.rescheduled' => 'Maintenance replanifiée', 'maintenance.approved' => 'Maintenance approuvée',
+        'maintenance.started' => 'Maintenance démarrée', 'maintenance.completed' => 'Maintenance terminée',
+        'maintenance.cancelled' => 'Maintenance annulée',
     ];
 
     public static function get(mixed $value): string

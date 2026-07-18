@@ -7,6 +7,9 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-2">
+            @if ($maintenanceSummary !== null)
+                <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2"><div class="flex items-center justify-between gap-3"><h2 class="font-semibold">Pilotage maintenance</h2><a href="{{ route('maintenance.index') }}" class="text-sm font-medium text-indigo-700">Voir le module</a></div><div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">@foreach($maintenanceSummary as $label => $value)<x-stat-card :label="$label" :value="$value" />@endforeach</div></section>
+            @endif
             @if ($upcomingReservations !== null)
                 <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3"><h2 class="font-semibold">Réservations à venir</h2><a href="{{ route('reservations.index') }}" class="text-sm font-medium text-indigo-700">Voir tout</a></div>

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MaintenanceOrder extends Model
@@ -25,6 +26,11 @@ class MaintenanceOrder extends Model
         return $this->belongsTo(Vehicle::class);
     }
 
+    public function agency(): BelongsTo
+    {
+        return $this->belongsTo(Agency::class);
+    }
+
     public function histories(): HasMany
     {
         return $this->hasMany(MaintenanceStatusHistory::class);
@@ -38,5 +44,10 @@ class MaintenanceOrder extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
     }
 }

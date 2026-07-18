@@ -10,9 +10,7 @@ class CancelMaintenanceOrderRequest extends FormRequest
     {
         $order = $this->route('maintenance');
 
-        return $this->user()?->hasPermission('maintenance.cancel')
-            && $order
-            && ($this->user()->agency_id === null || $this->user()->agency_id === $order->agency_id);
+        return $order && ($this->user()?->can('cancel', $order) ?? false);
     }
 
     public function rules(): array
