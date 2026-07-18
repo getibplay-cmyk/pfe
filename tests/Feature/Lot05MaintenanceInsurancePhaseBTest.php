@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Insurance\ActivateInsurancePolicy;
 use App\Actions\Insurance\ApproveInsuranceClaim;
+use App\Actions\Insurance\AttachDemoInsurancePolicyProof;
 use App\Actions\Insurance\CreateInsuranceClaim;
+use App\Actions\Insurance\CreateInsuranceCompany;
+use App\Actions\Insurance\CreateInsuranceCoverage;
+use App\Actions\Insurance\CreateInsurancePolicy;
 use App\Actions\Insurance\StartInsuranceClaimReview;
 use App\Actions\Maintenance\ApproveMaintenanceOrder;
 use App\Actions\Maintenance\CompleteMaintenanceOrder;
@@ -12,7 +17,6 @@ use App\Actions\Maintenance\StartMaintenanceOrder;
 use App\Actions\Vehicles\CreateVehicle;
 use App\Enums\VehicleOperationalStatus;
 use App\Models\Agency;
-use App\Models\InsuranceCompany;
 use App\Models\InsurancePolicy;
 use App\Models\MaintenanceOrder;
 use App\Models\Role;
@@ -25,6 +29,7 @@ use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -35,6 +40,7 @@ class Lot05MaintenanceInsurancePhaseBTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake(config('documents.disk'));
         $this->seed(RolesPermissionsSeeder::class);
     }
 
@@ -95,16 +101,16 @@ class Lot05MaintenanceInsurancePhaseBTest extends TestCase
         $this->assertStringNotContainsString('POLICE-SECRET-1234', json_encode($policy));
         $this->assertStringEndsWith('1234', $policy->maskedPolicyNumber());
         $this->assertSame(1, $this->inTenant($f, fn () => InsurancePolicy::expiring(30)->count()));
-        $this->assertNull($policy->document_id);
+        $this->assertNotNull($policy->document_id);
     }
 
     public function test_policy_coverages_are_configurable_and_claim_amounts_remain_human_entered(): void
     {
         $f = $this->fixture();
         $policy = $this->policy($f, today()->addYear());
-        $coverage = $this->inTenant($f, fn () => $policy->coverages()->create(['coverage_type' => 'collision', 'label' => 'Collision choisie', 'limit_amount' => '50000.00', 'deductible_amount' => '2500.00', 'terms' => ['decision' => 'assureur']]));
+        $coverage = $this->inTenant($f, fn () => $policy->coverages()->firstOrFail());
         $claim = $this->inTenant($f, function () use ($f, $policy) {
-            $claim = app(CreateInsuranceClaim::class)->handle(['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'reported_at' => now(), 'claimed_amount' => '7000.00', 'insurer_reference' => 'REF-SENSIBLE', 'notes' => 'Décision réservée à l’assureur et aux humains.'], $f['user']->id);
+            $claim = app(CreateInsuranceClaim::class)->handle(['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'incident_at' => now()->subMinute(), 'reported_at' => now(), 'claimed_amount' => '7000.00', 'insurer_reference' => 'REF-SENSIBLE', 'notes' => 'Décision réservée à l’assureur et aux humains.'], $f['user']->id);
             app(StartInsuranceClaimReview::class)->handle($claim, $f['user']->id);
 
             return app(ApproveInsuranceClaim::class)->handle($claim, '4500.00', $f['user']->id);
@@ -156,11 +162,12 @@ class Lot05MaintenanceInsurancePhaseBTest extends TestCase
     private function policy(array $f, mixed $endsAt): InsurancePolicy
     {
         return $this->inTenant($f, function () use ($f, $endsAt) {
-            $company = InsuranceCompany::create(['name' => 'Assureur '.uniqid(), 'is_active' => true]);
-            $policy = new InsurancePolicy(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'insurance_company_id' => $company->id, 'policy_type' => 'comprehensive', 'starts_at' => today(), 'ends_at' => $endsAt, 'premium_amount' => '5000.00', 'deductible_amount' => '2500.00', 'currency' => 'MAD', 'status' => 'active']);
-            $policy->setPolicyNumber('POLICE-SECRET-1234')->save();
+            $company = app(CreateInsuranceCompany::class)->handle(['name' => 'Assureur '.uniqid()]);
+            $policy = app(CreateInsurancePolicy::class)->handle(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'insurance_company_id' => $company->id, 'policy_number' => 'POLICE-SECRET-1234', 'policy_type' => 'comprehensive', 'starts_at' => today(), 'ends_at' => $endsAt, 'premium_amount' => '5000.00', 'deductible_amount' => '2500.00', 'currency' => 'MAD'], $f['user']->id);
+            app(CreateInsuranceCoverage::class)->handle($policy, ['coverage_type' => 'collision', 'label' => 'Collision choisie', 'limit_amount' => '50000.00', 'deductible_amount' => '2500.00', 'terms' => ['decision' => 'assureur']]);
+            app(AttachDemoInsurancePolicyProof::class)->handle($policy, $f['user']->id, 'insurance.policy.document.tested');
 
-            return $policy;
+            return app(ActivateInsurancePolicy::class)->handle($policy, $f['user']->id);
         });
     }
 

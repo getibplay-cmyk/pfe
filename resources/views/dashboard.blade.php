@@ -10,6 +10,9 @@
             @if ($maintenanceSummary !== null)
                 <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2"><div class="flex items-center justify-between gap-3"><h2 class="font-semibold">Pilotage maintenance</h2><a href="{{ route('maintenance.index') }}" class="text-sm font-medium text-indigo-700">Voir le module</a></div><div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">@foreach($maintenanceSummary as $label => $value)<x-stat-card :label="$label" :value="$value" />@endforeach</div></section>
             @endif
+            @if ($insuranceSummary !== null)
+                <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2"><div class="flex items-center justify-between gap-3"><div><h2 class="font-semibold">Pilotage assurance</h2><p class="text-sm text-slate-500">Alertes administratives uniquement, sans décision juridique automatique.</p></div><a href="{{ route('insurance.index') }}" class="text-sm font-medium text-indigo-700">Voir le module</a></div><div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">@foreach($insuranceSummary as $label => $value)<x-stat-card :label="$label" :value="$value" />@endforeach</div></section>
+            @endif
             @if ($upcomingReservations !== null)
                 <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3"><h2 class="font-semibold">Réservations à venir</h2><a href="{{ route('reservations.index') }}" class="text-sm font-medium text-indigo-700">Voir tout</a></div>
@@ -62,6 +65,12 @@
                     <div class="flex items-center justify-between gap-3"><h2 class="font-semibold">Sinistres ouverts</h2><a href="{{ route('insurance.index') }}" class="text-sm font-medium text-indigo-700">Voir l’assurance</a></div>
                     <div class="mt-4 divide-y">@forelse ($openClaims as $claim)<a href="{{ route('insurance.claims.show', $claim) }}" class="flex items-center justify-between gap-3 py-3"><span>{{ $claim->claim_number }}</span><x-status-badge :value="$claim->status" /></a>@empty <x-empty-state title="Aucun sinistre ouvert" /> @endforelse</div>
                 </section>
+            @endif
+            @if ($expiringPolicies !== null)
+                <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-semibold">Polices proches de l’échéance</h2><div class="mt-4 divide-y">@forelse($expiringPolicies as $policy)<a href="{{ route('insurance.policies.show',$policy) }}" class="flex items-center justify-between gap-3 py-3 text-sm"><span>{{ $policy->vehicle->registration_number }} · {{ $policy->company->name }}</span><span>{{ App\Support\Ui\UiLabel::date($policy->ends_at) }}</span></a>@empty<x-empty-state title="Aucune échéance proche" />@endforelse</div></section>
+            @endif
+            @if ($uninsuredVehicles !== null)
+                <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 class="font-semibold">Véhicules sans police active</h2><div class="mt-4 divide-y">@forelse($uninsuredVehicles as $vehicle)<a href="{{ route('vehicles.show',$vehicle) }}" class="block py-3 text-sm">{{ $vehicle->registration_number }} · {{ $vehicle->brand }} {{ $vehicle->model }}</a>@empty<x-empty-state title="Tous les véhicules actifs sont couverts" />@endforelse</div></section>
             @endif
 
             @if ($expiringDocuments !== null || $expiringLicences !== null)

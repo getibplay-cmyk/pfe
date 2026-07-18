@@ -40,6 +40,10 @@ class RequireValidCurrentDocument
 
     public function isValid(Document $document): bool
     {
+        if ($document->retention_until?->isPast()) {
+            return false;
+        }
+
         $version = $document->currentVersion;
         if (! $version) {
             return false;

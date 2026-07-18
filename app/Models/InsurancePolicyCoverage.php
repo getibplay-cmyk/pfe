@@ -5,12 +5,13 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class InsurancePolicyCoverage extends Model
 {
-    use BelongsToTenant;
+    use BelongsToTenant, SoftDeletes;
 
-    protected $fillable = ['insurance_policy_id', 'coverage_type', 'label', 'limit_amount', 'deductible_amount', 'terms'];
+    protected $fillable = ['insurance_policy_id', 'coverage_type', 'label', 'limit_amount', 'deductible_amount', 'terms', 'archived_by'];
 
     protected function casts(): array
     {

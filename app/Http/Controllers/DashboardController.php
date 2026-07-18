@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\Driver;
 use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\Invoice;
 use App\Models\MaintenanceOrder;
 use App\Models\RentalContract;
@@ -28,6 +29,7 @@ class DashboardController extends Controller
         $kpis = [];
         $currency = $user->tenant?->settings['currency'] ?? 'MAD';
         $maintenanceSummary = null;
+        $insuranceSummary = null;
 
         if ($user->hasPermission('vehicle.view')) {
             $kpis['Véhicules opérationnels'] = $scope(Vehicle::query())->where('operational_status', 'active')->count();
@@ -57,10 +59,25 @@ class DashboardController extends Controller
         if ($user->hasPermission('claim.view')) {
             $kpis['Sinistres ouverts'] = $scope(InsuranceClaim::query())->whereNotIn('status', ['rejected', 'closed'])->count();
         }
+        if ($user->hasPermission('insurance.view')) {
+            $insuranceSummary = [
+                'Polices expirant sous 30 jours' => $scope(InsurancePolicy::query())->where('status', 'active')->whereBetween('ends_at', [$now->toDateString(), $soon->toDateString()])->count(),
+                'Polices expirées non renouvelées' => $scope(InsurancePolicy::query())->where('status', 'expired')->whereDoesntHave('renewals')->count(),
+                'Véhicules actifs sans police' => $scope(Vehicle::query())->where('operational_status', 'active')->whereDoesntHave('insurancePolicies', fn (Builder $query) => $query->where('status', 'active'))->count(),
+                'Documents de police manquants ou expirants' => $scope(InsurancePolicy::query())->where('status', 'active')->where(function (Builder $query) use ($soon): void {
+                    $query->whereNull('document_id')->orWhereHas('currentDocument', fn (Builder $document) => $document->whereNotNull('retention_until')->whereDate('retention_until', '<=', $soon));
+                })->count(),
+            ];
+            if ($user->hasPermission('claim.view')) {
+                $insuranceSummary['Sinistres en revue'] = $scope(InsuranceClaim::query())->where('status', 'under_review')->count();
+                $insuranceSummary['Sinistres approuvés non réglés'] = $scope(InsuranceClaim::query())->where('status', 'approved')->count();
+            }
+        }
 
         return view('dashboard', [
             'kpis' => $kpis,
             'maintenanceSummary' => $maintenanceSummary,
+            'insuranceSummary' => $insuranceSummary,
             'recentActivity' => $user->hasPermission('audit.view')
                 ? $scope(AuditLog::query())->with('user:id,name')->latest('created_at')->limit(8)->get()
                 : null,
@@ -87,6 +104,12 @@ class DashboardController extends Controller
                 : null,
             'openClaims' => $user->hasPermission('claim.view')
                 ? $scope(InsuranceClaim::query())->with('policy:id,vehicle_id')->whereNotIn('status', ['rejected', 'closed'])->latest('reported_at')->limit(6)->get()
+                : null,
+            'expiringPolicies' => $user->hasPermission('insurance.view')
+                ? $scope(InsurancePolicy::query())->with(['vehicle:id,registration_number', 'company:id,name'])->where('status', 'active')->whereBetween('ends_at', [$now->toDateString(), $soon->toDateString()])->orderBy('ends_at')->limit(6)->get()
+                : null,
+            'uninsuredVehicles' => $user->hasPermission('insurance.view')
+                ? $scope(Vehicle::query())->where('operational_status', 'active')->whereDoesntHave('insurancePolicies', fn (Builder $query) => $query->where('status', 'active'))->orderBy('registration_number')->limit(6)->get()
                 : null,
         ]);
     }

@@ -1,0 +1,12 @@
+<x-app-layout>
+    <div class="mx-auto max-w-6xl space-y-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div><a href="{{ route('insurance.index') }}" class="text-sm text-indigo-700">← Assurance</a><h1 class="mt-2 text-3xl font-bold">{{ $company->name }}</h1><p class="text-slate-600">{{ $company->policies_count }} police(s) visible(s)</p></div>
+            <div class="flex items-center gap-2"><x-status-badge :value="$company->is_active ? 'active' : 'inactive'" />@can('update', $company)<a href="{{ route('insurance.companies.edit', $company) }}" class="rounded-lg border px-3 py-2 text-sm">Modifier</a>@endcan</div>
+        </div>
+        <x-form-errors />
+        <section class="rounded-xl bg-white p-5 shadow-sm"><dl class="grid gap-4 text-sm md:grid-cols-3"><div><dt class="text-slate-500">E-mail</dt><dd>{{ $company->email ?: '—' }}</dd></div><div><dt class="text-slate-500">Téléphone</dt><dd>{{ $company->phone ?: '—' }}</dd></div><div><dt class="text-slate-500">Désactivation</dt><dd>{{ App\Support\Ui\UiLabel::dateTime($company->deactivated_at) }}</dd></div></dl></section>
+        @can('changeState', $company)<section class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">État de la compagnie</h2><div class="mt-4">@if($company->is_active)<form method="POST" action="{{ route('insurance.companies.deactivate', $company) }}" onsubmit="return confirm('Désactiver cette compagnie ? Les polices brouillon ou actives bloqueront cette action.')">@csrf<button class="rounded-lg border border-red-300 px-4 py-2 text-red-700">Désactiver</button></form>@else<form method="POST" action="{{ route('insurance.companies.reactivate', $company) }}" onsubmit="return confirm('Réactiver cette compagnie ?')">@csrf<button class="rounded-lg bg-emerald-700 px-4 py-2 text-white">Réactiver</button></form>@endif</div></section>@endcan
+        <section class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Polices</h2><div class="mt-4 divide-y text-sm">@forelse($policies as $policy)<a href="{{ route('insurance.policies.show', $policy) }}" class="flex items-center justify-between gap-3 py-3"><span>{{ $policy->maskedPolicyNumber() }} · {{ $policy->vehicle->registration_number }}</span><x-status-badge :value="$policy->status" /></a>@empty<x-empty-state title="Aucune police visible" />@endforelse</div><div class="mt-4">{{ $policies->links() }}</div></section>
+    </div>
+</x-app-layout>

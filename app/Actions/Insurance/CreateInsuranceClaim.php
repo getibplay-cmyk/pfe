@@ -4,6 +4,7 @@ namespace App\Actions\Insurance;
 
 use App\Actions\Rentals\GenerateBusinessNumber;
 use App\Enums\InsuranceClaimStatus;
+use App\Enums\InsurancePolicyStatus;
 use App\Models\DamageReport;
 use App\Models\InsuranceClaim;
 use App\Models\InsuranceClaimStatusHistory;
@@ -12,6 +13,7 @@ use App\Models\RentalContract;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Pricing\DecimalMoney;
 use App\Support\Tenancy\AgencyAccess;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -42,6 +44,30 @@ class CreateInsuranceClaim
         if ($policy->agency_id !== $data['agency_id']) {
             throw ValidationException::withMessages(['insurance_policy_id' => 'Police incompatible avec cette agence.']);
         }
+        if ($policy->status === InsurancePolicyStatus::Draft) {
+            throw ValidationException::withMessages(['insurance_policy_id' => 'Un sinistre ne peut pas être rattaché à une police brouillon.']);
+        }
+
+        if (! isset($data['incident_at'])) {
+            throw ValidationException::withMessages(['incident_at' => 'La date réelle de l’incident est obligatoire.']);
+        }
+        try {
+            $incidentAt = CarbonImmutable::parse($data['incident_at']);
+            $reportedAt = isset($data['reported_at']) ? CarbonImmutable::parse($data['reported_at']) : CarbonImmutable::now();
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['incident_at' => 'La date de l’incident est invalide.']);
+        }
+        if ($incidentAt->greaterThan($reportedAt)) {
+            throw ValidationException::withMessages(['incident_at' => 'L’incident ne peut pas être postérieur à sa déclaration.']);
+        }
+        if ($incidentAt->toDateString() < $policy->starts_at->toDateString() || $incidentAt->toDateString() > $policy->ends_at->toDateString()) {
+            throw ValidationException::withMessages(['incident_at' => 'L’incident doit appartenir à la période de couverture.']);
+        }
+        if ($policy->status === InsurancePolicyStatus::Cancelled && $policy->cancelled_at && $incidentAt->greaterThan($policy->cancelled_at)) {
+            throw ValidationException::withMessages(['incident_at' => 'L’incident est postérieur à l’annulation de la police.']);
+        }
+        $data['incident_at'] = $incidentAt;
+        $data['reported_at'] = $reportedAt;
 
         $contract = $this->contract($data['rental_contract_id'] ?? null);
         $damage = $this->damage($data['damage_report_id'] ?? null);

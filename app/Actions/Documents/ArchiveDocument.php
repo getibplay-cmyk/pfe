@@ -3,10 +3,14 @@
 namespace App\Actions\Documents;
 
 use App\Enums\DocumentType;
+use App\Enums\InsuranceClaimStatus;
+use App\Enums\InsurancePolicyStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Customer;
 use App\Models\Document;
 use App\Models\Driver;
+use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\RentalContract;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Tenancy\AgencyAccess;
@@ -35,6 +39,9 @@ class ArchiveDocument
             }
             if ($this->isLastRequiredVerificationDocument($locked)) {
                 $this->blocked('Ce document est la dernière pièce valide requise pour une personne vérifiée.');
+            }
+            if ($this->isLastRequiredInsuranceProof($locked)) {
+                $this->blocked('Ce document est la dernière preuve privée requise par le cycle d’assurance.');
             }
 
             $locked->delete();
@@ -79,6 +86,23 @@ class ArchiveDocument
             && $owner->verification_status === VerificationStatus::Verified
             && $document->document_type === DocumentType::DrivingLicence) {
             return ! $this->documents->hasAnotherValid($owner, DocumentType::DrivingLicence, $document->id);
+        }
+
+        return false;
+    }
+
+    private function isLastRequiredInsuranceProof(Document $document): bool
+    {
+        $owner = $document->documentable;
+        if ($owner instanceof InsurancePolicy
+            && $owner->status === InsurancePolicyStatus::Active
+            && $document->document_type === DocumentType::InsurancePolicySigned) {
+            return ! $this->documents->hasAnotherValid($owner, DocumentType::InsurancePolicySigned, $document->id);
+        }
+        if ($owner instanceof InsuranceClaim
+            && $owner->status === InsuranceClaimStatus::Closed
+            && $document->document_type === DocumentType::InsuranceClaimSettlementProof) {
+            return ! $this->documents->hasAnotherValid($owner, DocumentType::InsuranceClaimSettlementProof, $document->id);
         }
 
         return false;

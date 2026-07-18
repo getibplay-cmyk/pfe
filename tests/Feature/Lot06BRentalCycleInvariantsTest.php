@@ -8,9 +8,14 @@ use App\Actions\Documents\AddDocumentVersion;
 use App\Actions\Documents\StorePrivateDocument;
 use App\Actions\Finance\RecordDepositReceipt;
 use App\Actions\Finance\RefundDeposit;
+use App\Actions\Insurance\ActivateInsurancePolicy;
 use App\Actions\Insurance\ApproveInsuranceClaim;
+use App\Actions\Insurance\AttachDemoInsurancePolicyProof;
 use App\Actions\Insurance\CloseInsuranceClaim;
 use App\Actions\Insurance\CreateInsuranceClaim;
+use App\Actions\Insurance\CreateInsuranceCompany;
+use App\Actions\Insurance\CreateInsuranceCoverage;
+use App\Actions\Insurance\CreateInsurancePolicy;
 use App\Actions\Insurance\RejectInsuranceClaim;
 use App\Actions\Insurance\SettleInsuranceClaim;
 use App\Actions\Insurance\StartInsuranceClaimReview;
@@ -32,7 +37,6 @@ use App\Enums\VerificationStatus;
 use App\Models\Agency;
 use App\Models\Document;
 use App\Models\InsuranceClaim;
-use App\Models\InsuranceCompany;
 use App\Models\InsurancePolicy;
 use App\Models\PricingRule;
 use App\Models\RentalContract;
@@ -227,6 +231,7 @@ class Lot06BRentalCycleInvariantsTest extends TestCase
         $claim = $this->inTenant($f, fn () => app(StartInsuranceClaimReview::class)->handle($claim, $f['user']->id, 'Instruction humaine'));
         $claim = $this->inTenant($f, fn () => app(ApproveInsuranceClaim::class)->handle($claim, '400.00', $f['user']->id, 'Décision humaine'));
         $claim = $this->inTenant($f, fn () => app(SettleInsuranceClaim::class)->handle($claim, '350.00', $f['user']->id, 'Règlement assureur'));
+        $this->inTenant($f, fn () => app(StorePrivateDocument::class)->handle($claim, ['document_type' => DocumentType::InsuranceClaimSettlementProof, 'title' => 'Preuve fictive de règlement', 'is_sensitive' => true], UploadedFile::fake()->createWithContent('reglement-lot06b.pdf', "%PDF-1.4\nLot 06B\n%%EOF"), $f['user']->id));
         $claim = $this->inTenant($f, fn () => app(CloseInsuranceClaim::class)->handle($claim, $f['user']->id, 'Dossier terminé'));
 
         $this->assertSame(InsuranceClaimStatus::Closed, $claim->status);
@@ -347,17 +352,18 @@ class Lot06BRentalCycleInvariantsTest extends TestCase
     private function policy(array $f): InsurancePolicy
     {
         return $this->inTenant($f, function () use ($f) {
-            $company = InsuranceCompany::create(['name' => 'Assureur Lot 06B', 'is_active' => true]);
-            $policy = new InsurancePolicy(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'insurance_company_id' => $company->id, 'policy_type' => 'comprehensive', 'starts_at' => today()->subMonth(), 'ends_at' => today()->addYear(), 'premium_amount' => '1000.00', 'deductible_amount' => '500.00', 'currency' => 'MAD', 'status' => 'active']);
-            $policy->setPolicyNumber('L06B-'.uniqid())->save();
+            $company = app(CreateInsuranceCompany::class)->handle(['name' => 'Assureur Lot 06B']);
+            $policy = app(CreateInsurancePolicy::class)->handle(['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'insurance_company_id' => $company->id, 'policy_number' => 'L06B-'.uniqid(), 'policy_type' => 'comprehensive', 'starts_at' => today()->subMonth(), 'ends_at' => today()->addYear(), 'premium_amount' => '1000.00', 'deductible_amount' => '500.00', 'currency' => 'MAD'], $f['user']->id);
+            app(CreateInsuranceCoverage::class)->handle($policy, ['coverage_type' => 'collision', 'label' => 'Collision Lot 06B', 'limit_amount' => '50000.00', 'deductible_amount' => '500.00']);
+            app(AttachDemoInsurancePolicyProof::class)->handle($policy, $f['user']->id, 'insurance.policy.document.tested');
 
-            return $policy;
+            return app(ActivateInsurancePolicy::class)->handle($policy, $f['user']->id);
         });
     }
 
     private function claimData(array $f, InsurancePolicy $policy): array
     {
-        return ['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'reported_at' => now(), 'claimed_amount' => '500.00', 'notes' => 'Décision exclusivement humaine.'];
+        return ['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'incident_at' => now()->subMinute(), 'reported_at' => now(), 'claimed_amount' => '500.00', 'notes' => 'Décision exclusivement humaine.'];
     }
 
     private function createClaim(array $f, InsurancePolicy $policy): InsuranceClaim

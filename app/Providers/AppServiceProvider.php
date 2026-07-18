@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\Customer;
 use App\Models\DamageReport;
 use App\Models\Driver;
+use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\MaintenanceOrder;
 use App\Models\RentalContract;
 use App\Models\Vehicle;
@@ -43,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
             'vehicle_inspection' => VehicleInspection::class,
             'damage_report' => DamageReport::class,
             'maintenance_order' => MaintenanceOrder::class,
+            'insurance_policy' => InsurancePolicy::class,
+            'insurance_claim' => InsuranceClaim::class,
         ]);
     }
 }

@@ -33,7 +33,7 @@ class StoreInsurancePolicyRequest extends FormRequest
             'premium_amount' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'],
             'deductible_amount' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'],
             'currency' => ['required', 'size:3', 'alpha:ascii'],
-            'status' => ['required', 'in:draft,active,expired,cancelled'],
+            'status' => ['prohibited'],
         ];
     }
 }

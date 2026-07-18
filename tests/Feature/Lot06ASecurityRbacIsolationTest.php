@@ -4,7 +4,11 @@ namespace Tests\Feature;
 
 use App\Actions\Customers\CreateCustomer;
 use App\Actions\Finance\AllocatePaymentToInvoice;
+use App\Actions\Insurance\ActivateInsurancePolicy;
+use App\Actions\Insurance\AttachDemoInsurancePolicyProof;
 use App\Actions\Insurance\CreateInsuranceClaim;
+use App\Actions\Insurance\CreateInsuranceCoverage;
+use App\Actions\Insurance\CreateInsurancePolicy;
 use App\Actions\Rentals\GenerateBusinessNumber;
 use App\Actions\Vehicles\CreateVehicle;
 use App\Enums\CustomerType;
@@ -163,9 +167,9 @@ class Lot06ASecurityRbacIsolationTest extends TestCase
             $damage = DamageReport::with('rentalContract')->firstOrFail();
             $contract = $damage->rentalContract;
             $company = InsuranceCompany::create(['name' => 'Assureur Lot 06A', 'is_active' => true]);
-            $validPolicy = $this->policy($company, $contract->vehicle, 'L06A-VALID');
+            $validPolicy = $this->policy($company, $contract->vehicle, 'L06A-VALID', $owner->id);
             $otherVehicle = Vehicle::where('agency_id', '!=', $contract->agency_id)->firstOrFail();
-            $otherPolicy = $this->policy($company, $otherVehicle, 'L06A-OTHER');
+            $otherPolicy = $this->policy($company, $otherVehicle, 'L06A-OTHER', $owner->id);
             $invoice = Invoice::whereIn('status', ['issued', 'partially_paid'])->firstOrFail();
             $otherAgency = Agency::where('id', '!=', $invoice->agency_id)->firstOrFail();
             $payment = Payment::create([
@@ -214,6 +218,7 @@ class Lot06ASecurityRbacIsolationTest extends TestCase
                 'rental_contract_id' => $fixtures['contract']->id,
                 'claim_number' => 'CLM-L06A-INVALID',
                 'status' => 'reported',
+                'incident_at' => now()->subMinute(),
                 'reported_at' => now(),
                 'claimed_amount' => '100.00',
                 'created_by' => $fixtures['owner']->id,
@@ -255,28 +260,29 @@ class Lot06ASecurityRbacIsolationTest extends TestCase
         return ['first_name' => 'Conducteur', 'last_name' => 'Interdit', 'licence_number' => 'L06A-LICENCE', 'licence_expires_at' => today()->addYear()->toDateString(), 'verification_status' => VerificationStatus::Pending->value, 'is_primary' => '0'];
     }
 
-    private function policy(InsuranceCompany $company, Vehicle $vehicle, string $number): InsurancePolicy
+    private function policy(InsuranceCompany $company, Vehicle $vehicle, string $number, int $actorId): InsurancePolicy
     {
-        $policy = new InsurancePolicy([
+        $policy = app(CreateInsurancePolicy::class)->handle([
             'agency_id' => $vehicle->agency_id,
             'vehicle_id' => $vehicle->id,
             'insurance_company_id' => $company->id,
-            'policy_type' => 'comprehensive',
+            'policy_number' => $number,
+            'policy_type' => 'other',
             'starts_at' => today()->subMonth(),
             'ends_at' => today()->addYear(),
             'premium_amount' => '1000.00',
             'deductible_amount' => '500.00',
             'currency' => 'MAD',
-            'status' => 'active',
-        ]);
-        $policy->setPolicyNumber($number)->save();
+        ], $actorId);
+        app(CreateInsuranceCoverage::class)->handle($policy, ['coverage_type' => 'collision', 'label' => 'Collision Lot 06A', 'limit_amount' => '10000.00', 'deductible_amount' => '500.00']);
+        app(AttachDemoInsurancePolicyProof::class)->handle($policy, $actorId, 'insurance.policy.document.tested');
 
-        return $policy;
+        return app(ActivateInsurancePolicy::class)->handle($policy, $actorId);
     }
 
     private function claimData(InsurancePolicy $policy, RentalContract $contract, DamageReport $damage): array
     {
-        return ['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'damage_report_id' => $damage->id, 'rental_contract_id' => $contract->id, 'status' => 'reported', 'reported_at' => now(), 'claimed_amount' => '100.00'];
+        return ['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'damage_report_id' => $damage->id, 'rental_contract_id' => $contract->id, 'status' => 'reported', 'incident_at' => now()->subMinute(), 'reported_at' => now(), 'claimed_amount' => '100.00'];
     }
 
     private function expectValidation(callable $callback, string $key): void

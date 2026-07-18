@@ -11,13 +11,17 @@ use App\Actions\Finance\RecordDepositReceipt;
 use App\Actions\Finance\RecordPayment;
 use App\Actions\Finance\RefundDeposit;
 use App\Actions\Finance\RetainDeposit;
+use App\Actions\Insurance\ActivateInsurancePolicy;
+use App\Actions\Insurance\AttachDemoInsurancePolicyProof;
 use App\Actions\Insurance\CreateInsuranceClaim;
+use App\Actions\Insurance\CreateInsuranceCompany;
+use App\Actions\Insurance\CreateInsuranceCoverage;
+use App\Actions\Insurance\CreateInsurancePolicy;
 use App\Actions\Insurance\StartInsuranceClaimReview;
 use App\Actions\Maintenance\ApproveMaintenanceOrder;
 use App\Actions\Maintenance\CreateMaintenanceOrder;
 use App\Actions\Maintenance\StartMaintenanceOrder;
 use App\Enums\RentalContractStatus;
-use App\Models\InsuranceCompany;
 use App\Models\InsurancePolicy;
 use App\Models\Invoice;
 use App\Models\RentalContract;
@@ -50,16 +54,26 @@ class Lot05DemoSeeder extends Seeder
         StartMaintenanceOrder $startMaintenance,
         CreateInsuranceClaim $createClaim,
         StartInsuranceClaimReview $startClaimReview,
+        AttachDemoInsurancePolicyProof $attachDemoInsuranceProof,
+        CreateInsuranceCompany $createInsuranceCompany,
+        CreateInsurancePolicy $createInsurancePolicy,
+        CreateInsuranceCoverage $createInsuranceCoverage,
+        ActivateInsurancePolicy $activateInsurancePolicy,
         DepositLedger $depositLedger,
     ): void {
         $this->ensureDemoSeedingIsAllowed();
 
         $tenant = Tenant::where('slug', 'atlas-location-demo')->firstOrFail();
-        app(TenantContext::class)->run($tenant, function () use ($createInvoice, $issueInvoice, $recordPayment, $allocate, $postPayment, $receiveDeposit, $retainDeposit, $refundDeposit, $closeContract, $createMaintenance, $approveMaintenance, $startMaintenance, $createClaim, $startClaimReview, $depositLedger) {
+        app(TenantContext::class)->run($tenant, function () use ($createInvoice, $issueInvoice, $recordPayment, $allocate, $postPayment, $receiveDeposit, $retainDeposit, $refundDeposit, $closeContract, $createMaintenance, $approveMaintenance, $startMaintenance, $createClaim, $startClaimReview, $attachDemoInsuranceProof, $createInsuranceCompany, $createInsurancePolicy, $createInsuranceCoverage, $activateInsurancePolicy, $depositLedger) {
+            $owner = User::whereHas('role', fn ($query) => $query->where('slug', 'tenant-owner'))->firstOrFail();
             if (Invoice::exists()) {
+                $existingPolicy = InsurancePolicy::whereHas('company', fn ($query) => $query->where('name', 'Atlas Assurance Démo'))->first();
+                if ($existingPolicy) {
+                    $attachDemoInsuranceProof->handle($existingPolicy, $owner->id, 'insurance.policy.document.seeded');
+                }
+
                 return;
             }
-            $owner = User::whereHas('role', fn ($query) => $query->where('slug', 'tenant-owner'))->firstOrFail();
             $contracts = RentalContract::where('status', RentalContractStatus::Returned)->orderBy('id')->take(2)->get();
 
             $partial = $issueInvoice->handle($createInvoice->handle($contracts[0], $owner->id), $owner->id);
@@ -89,11 +103,12 @@ class Lot05DemoSeeder extends Seeder
             $approveMaintenance->handle($progress, $owner->id);
             $startMaintenance->handle($progress, $owner->id);
 
-            $company = InsuranceCompany::create(['name' => 'Atlas Assurance Démo', 'email' => 'demo@assurance.test', 'is_active' => true]);
-            $policy = new InsurancePolicy(['agency_id' => $vehicles[0]->agency_id, 'vehicle_id' => $vehicles[0]->id, 'insurance_company_id' => $company->id, 'policy_type' => 'comprehensive', 'starts_at' => today()->subYear(), 'ends_at' => today()->addDays(20), 'premium_amount' => '4800.00', 'deductible_amount' => '2500.00', 'currency' => 'MAD', 'status' => 'active']);
-            $policy->setPolicyNumber('DEMO-POLICY-0001')->save();
-            $policy->coverages()->create(['coverage_type' => 'collision', 'label' => 'Collision fictive', 'limit_amount' => '50000.00', 'deductible_amount' => '2500.00', 'terms' => ['demo' => true]]);
-            $claim = $createClaim->handle(['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'reported_at' => now(), 'claimed_amount' => '5000.00', 'notes' => 'Scénario fictif, décision humaine en attente.'], $owner->id);
+            $company = $createInsuranceCompany->handle(['name' => 'Atlas Assurance Démo', 'email' => 'demo@assurance.test']);
+            $policy = $createInsurancePolicy->handle(['agency_id' => $vehicles[0]->agency_id, 'vehicle_id' => $vehicles[0]->id, 'insurance_company_id' => $company->id, 'policy_number' => 'DEMO-POLICY-0001', 'policy_type' => 'comprehensive', 'starts_at' => today()->subYear(), 'ends_at' => today()->addDays(20), 'premium_amount' => '4800.00', 'deductible_amount' => '2500.00', 'currency' => 'MAD'], $owner->id);
+            $createInsuranceCoverage->handle($policy, ['coverage_type' => 'collision', 'label' => 'Collision fictive', 'limit_amount' => '50000.00', 'deductible_amount' => '2500.00', 'terms' => ['demo' => true]]);
+            $attachDemoInsuranceProof->handle($policy, $owner->id, 'insurance.policy.document.seeded');
+            $policy = $activateInsurancePolicy->handle($policy, $owner->id);
+            $claim = $createClaim->handle(['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'incident_at' => now()->subHour(), 'reported_at' => now(), 'claimed_amount' => '5000.00', 'notes' => 'Scénario fictif, décision humaine en attente.'], $owner->id);
             $startClaimReview->handle($claim, $owner->id, 'Revue humaine de démonstration en cours.');
         });
     }

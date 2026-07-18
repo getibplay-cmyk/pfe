@@ -10,11 +10,11 @@ class InsuranceCompany extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['name', 'email', 'phone', 'is_active'];
+    protected $fillable = ['name', 'email', 'phone', 'is_active', 'deactivated_at', 'deactivated_by'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'deactivated_at' => 'immutable_datetime'];
     }
 
     public function policies(): HasMany

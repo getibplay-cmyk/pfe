@@ -12,6 +12,8 @@ use App\Models\DamageReport;
 use App\Models\Document;
 use App\Models\DocumentAccessLog;
 use App\Models\Driver;
+use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\MaintenanceOrder;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
@@ -79,6 +81,22 @@ class DocumentController extends Controller
         return back()->with('status', 'Document privé de maintenance ajouté.');
     }
 
+    public function storeForInsurancePolicy(Request $request, InsurancePolicy $policy, StorePrivateDocument $action): RedirectResponse
+    {
+        $this->authorize('uploadDocument', $policy);
+        $this->storeInsuranceDocument($request, $policy, DocumentType::insurancePolicyTypes(), $action);
+
+        return back()->with('status', 'Document privé de police ajouté.');
+    }
+
+    public function storeForInsuranceClaim(Request $request, InsuranceClaim $claim, StorePrivateDocument $action): RedirectResponse
+    {
+        $this->authorize('uploadDocument', $claim);
+        $this->storeInsuranceDocument($request, $claim, DocumentType::insuranceClaimTypes(), $action);
+
+        return back()->with('status', 'Document privé de sinistre ajouté.');
+    }
+
     public function show(Request $request, Document $document): View
     {
         $this->authorize('view', $document);
@@ -114,6 +132,8 @@ class DocumentController extends Controller
             $owner instanceof Customer => route('customers.show', $owner),
             $owner instanceof Driver => route('drivers.show', $owner),
             $owner instanceof MaintenanceOrder => route('maintenance.show', $owner),
+            $owner instanceof InsurancePolicy => route('insurance.policies.show', $owner),
+            $owner instanceof InsuranceClaim => route('insurance.claims.show', $owner),
             default => route('customers.index'),
         };
 
@@ -127,5 +147,16 @@ class DocumentController extends Controller
         $action->handle($documentable, $data, $request->file('file'), $request->user()->id);
 
         return back()->with('status', 'Document privé ajouté.');
+    }
+
+    private function storeInsuranceDocument(Request $request, Model $owner, array $types, StorePrivateDocument $action): void
+    {
+        $data = $request->validate([
+            'tenant_id' => ['prohibited'], 'agency_id' => ['prohibited'], 'stored_path' => ['prohibited'], 'documentable_type' => ['prohibited'],
+            'document_type' => ['required', Rule::in(collect($types)->map->value->all())],
+            'title' => ['required', 'string', 'max:255'], 'retention_until' => ['nullable', 'date'],
+            'is_sensitive' => ['required', 'boolean'], 'file' => ['required', 'file', 'max:'.config('documents.max_size_kb')],
+        ]);
+        $action->handle($owner, $data, $request->file('file'), $request->user()->id);
     }
 }

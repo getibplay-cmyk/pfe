@@ -166,22 +166,25 @@ class Lot06CWebWorkflowsTest extends TestCase
         $this->post(route('insurance.companies.store'), ['name' => 'Assureur Web', 'email' => 'web@example.test'])->assertRedirect();
         $company = $this->inTenant($f, fn () => InsuranceCompany::where('name', 'Assureur Web')->firstOrFail());
         $this->get(route('insurance.policies.create'))->assertOk()->assertSee('Créer une police');
-        $this->post(route('insurance.policies.store'), ['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'insurance_company_id' => $company->id, 'policy_number' => 'POL-WEB-SECRET-1234', 'policy_type' => 'comprehensive', 'starts_at' => today()->toDateString(), 'ends_at' => today()->addYear()->toDateString(), 'premium_amount' => '5000.00', 'deductible_amount' => '2500.00', 'currency' => 'MAD', 'status' => 'active'])->assertRedirect();
+        $this->post(route('insurance.policies.store'), ['agency_id' => $f['agency']->id, 'vehicle_id' => $f['vehicle']->id, 'insurance_company_id' => $company->id, 'policy_number' => 'POL-WEB-SECRET-1234', 'policy_type' => 'comprehensive', 'starts_at' => today()->toDateString(), 'ends_at' => today()->addYear()->toDateString(), 'premium_amount' => '5000.00', 'deductible_amount' => '2500.00', 'currency' => 'MAD'])->assertRedirect();
         $policy = $this->inTenant($f, fn () => InsurancePolicy::latest('id')->firstOrFail());
         $this->post(route('insurance.coverages.store', $policy), ['coverage_type' => 'collision', 'label' => 'Collision Web', 'limit_amount' => '50000.00', 'deductible_amount' => '2500.00'])->assertRedirect();
+        $this->post(route('insurance.policies.documents.store', $policy), ['document_type' => DocumentType::InsurancePolicySigned->value, 'title' => 'Police signée Web', 'is_sensitive' => true, 'file' => $this->pdf('police-web.pdf')])->assertRedirect();
+        $this->post(route('insurance.policies.activate', $policy))->assertRedirect();
         $this->get(route('insurance.policies.show', $policy))->assertOk()->assertSee('Collision Web')->assertSee($policy->maskedPolicyNumber())->assertDontSee('POL-WEB-SECRET-1234');
 
-        $claimData = ['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'rental_contract_id' => $contract->id, 'claimed_amount' => '7000.00', 'insurer_reference' => 'REF-WEB-SENSIBLE', 'notes' => 'Déclaration humaine'];
+        $claimData = ['agency_id' => $f['agency']->id, 'insurance_policy_id' => $policy->id, 'rental_contract_id' => $contract->id, 'incident_at' => now()->toDateTimeString(), 'claimed_amount' => '7000.00', 'insurer_reference' => 'REF-WEB-SENSIBLE', 'notes' => 'Déclaration humaine'];
         $this->post(route('insurance.claims.store'), [...$claimData, 'status' => 'approved'])->assertSessionHasErrors('status');
         $this->post(route('insurance.claims.store'), $claimData)->assertRedirect();
         $claim = $this->inTenant($f, fn () => InsuranceClaim::latest('id')->firstOrFail());
         $this->assertSame('reported', $claim->status->value);
-        $this->get(route('insurance.claims.show', $claim))->assertOk()->assertSee('Historique immuable')->assertDontSee('REF-WEB-SENSIBLE');
+        $this->get(route('insurance.claims.show', $claim))->assertOk()->assertSee('Chronologie immuable')->assertDontSee('REF-WEB-SENSIBLE');
         $this->post(route('insurance.claims.approve', $claim), ['approved_amount' => '4500.00'])->assertSessionHasErrors('status');
         $this->post(route('insurance.claims.submit', $claim), ['note' => 'Soumission'])->assertRedirect();
         $this->post(route('insurance.claims.review', $claim), ['note' => 'Revue humaine'])->assertRedirect();
         $this->post(route('insurance.claims.approve', $claim), ['approved_amount' => '4500.00', 'note' => 'Décision humaine'])->assertRedirect();
         $this->post(route('insurance.claims.settle', $claim), ['settled_amount' => '4000.00', 'note' => 'Règlement assureur'])->assertRedirect();
+        $this->post(route('insurance.claims.documents.store', $claim), ['document_type' => DocumentType::InsuranceClaimSettlementProof->value, 'title' => 'Preuve de règlement Web', 'is_sensitive' => true, 'file' => $this->pdf('reglement-web.pdf')])->assertRedirect();
         $this->post(route('insurance.claims.close', $claim), ['note' => 'Dossier terminé'])->assertRedirect();
         $closed = $this->inTenant($f, fn () => $claim->refresh());
         $this->assertSame('closed', $closed->status->value);

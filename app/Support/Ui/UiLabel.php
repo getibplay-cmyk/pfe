@@ -30,6 +30,11 @@ class UiLabel
         'damage_photo' => 'Photo de dommage', 'other' => 'Autre',
         'maintenance_quote' => 'Devis de maintenance', 'maintenance_repair_order' => 'Ordre de réparation',
         'maintenance_supplier_invoice' => 'Facture fournisseur non comptabilisée', 'maintenance_intervention_report' => 'Rapport d’intervention',
+        'insurance_policy_signed' => 'Police signée', 'insurance_policy_certificate' => 'Attestation d’assurance',
+        'insurance_policy_endorsement' => 'Avenant de police', 'insurance_policy_receipt' => 'Quittance d’assurance',
+        'insurance_claim_declaration' => 'Déclaration de sinistre', 'insurance_claim_report' => 'Constat de sinistre',
+        'insurance_claim_correspondence' => 'Correspondance assureur', 'insurance_claim_expertise' => 'Rapport d’expertise',
+        'insurance_claim_settlement_proof' => 'Preuve de règlement du sinistre',
         'cash' => 'Espèces', 'bank_transfer' => 'Virement bancaire', 'cheque' => 'Chèque', 'card' => 'Carte (référence externe)',
         'incoming' => 'Encaissement', 'outgoing' => 'Décaissement',
         'preventive' => 'Préventive', 'corrective' => 'Corrective', 'inspection' => 'Contrôle', 'repair' => 'Réparation',
@@ -47,6 +52,7 @@ class UiLabel
         'manual' => 'Manuelle', 'automatic' => 'Automatique', 'low' => 'Basse', 'normal' => 'Normale', 'high' => 'Haute', 'urgent' => 'Urgente',
         'liability' => 'Responsabilité civile', 'collision' => 'Collision', 'theft' => 'Vol', 'fire' => 'Incendie',
         'glass' => 'Bris de glace', 'assistance' => 'Assistance', 'legal_defence' => 'Protection juridique',
+        'mandatory_liability' => 'Responsabilité civile obligatoire', 'comprehensive' => 'Tous risques', 'third_party' => 'Au tiers',
         'received' => 'Caution reçue', 'retained' => 'Caution retenue', 'refunded' => 'Caution remboursée',
         'adjustment_in' => 'Ajustement entrant', 'adjustment_out' => 'Ajustement sortant', 'reversal' => 'Contrepassation',
     ];
@@ -80,6 +86,14 @@ class UiLabel
         'maintenance.rescheduled' => 'Maintenance replanifiée', 'maintenance.approved' => 'Maintenance approuvée',
         'maintenance.started' => 'Maintenance démarrée', 'maintenance.completed' => 'Maintenance terminée',
         'maintenance.cancelled' => 'Maintenance annulée',
+        'insurance.company.created' => 'Compagnie d’assurance créée', 'insurance.company.updated' => 'Compagnie d’assurance modifiée',
+        'insurance.company.deactivated' => 'Compagnie d’assurance désactivée', 'insurance.company.reactivated' => 'Compagnie d’assurance réactivée',
+        'insurance.policy.created' => 'Police d’assurance créée', 'insurance.policy.updated' => 'Police d’assurance modifiée',
+        'insurance.policy.activated' => 'Police d’assurance activée', 'insurance.policy.cancelled' => 'Police d’assurance annulée',
+        'insurance.policy.expired' => 'Police d’assurance expirée', 'insurance.policy.renewed' => 'Police d’assurance renouvelée',
+        'insurance.policy.document.remediated' => 'Preuve de police de démonstration régularisée',
+        'insurance.coverage.created' => 'Garantie créée', 'insurance.coverage.updated' => 'Garantie modifiée',
+        'insurance.coverage.archived' => 'Garantie archivée',
     ];
 
     public static function get(mixed $value): string

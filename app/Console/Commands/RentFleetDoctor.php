@@ -100,8 +100,10 @@ class RentFleetDoctor extends Command
 
         try {
             $events = app(Schedule::class)->events();
-            $scheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'reservations:expire-pending'));
-            $this->add('Scheduler', $scheduled ? 'pass' : 'fail', $scheduled ? 'expiration des réservations planifiée' : 'commande attendue absente');
+            $reservationScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'reservations:expire-pending'));
+            $insuranceScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'insurance:expire-policies'));
+            $scheduled = $reservationScheduled && $insuranceScheduled;
+            $this->add('Scheduler', $scheduled ? 'pass' : 'fail', $scheduled ? 'expirations réservations et assurances planifiées' : 'une commande d’expiration attendue est absente');
         } catch (Throwable) {
             $this->add('Scheduler', 'fail', 'état non lisible');
         }
@@ -118,6 +120,11 @@ class RentFleetDoctor extends Command
 
             $maintenanceIndexes = DB::scalar("select count(*) from pg_indexes where indexname in ('vehicle_blocks_one_per_maintenance_unique', 'expenses_one_per_maintenance_unique')");
             $this->add('Unicité maintenance', (int) $maintenanceIndexes === 2 ? 'pass' : 'fail', ((int) $maintenanceIndexes).'/2 index uniques');
+
+            $insuranceGist = DB::scalar("select count(*) from pg_constraint where conname = 'insurance_policies_no_active_overlap_excl'");
+            $this->add('Exclusion polices actives', (int) $insuranceGist === 1 ? 'pass' : 'fail', 'insurance_policies_no_active_overlap_excl');
+            $insuranceTriggers = DB::scalar("select count(*) from pg_trigger where not tgisinternal and tgname in ('insurance_companies_lifecycle','insurance_policies_cycle_immutability','insurance_policy_histories_append_only','insurance_coverages_draft_only','insurance_claims_incident_integrity')");
+            $this->add('Intégrité assurance', (int) $insuranceTriggers === 5 ? 'pass' : 'fail', ((int) $insuranceTriggers).'/5 triggers');
         } catch (Throwable) {
             $this->add('Contraintes PostgreSQL', 'fail', 'état non lisible');
         }

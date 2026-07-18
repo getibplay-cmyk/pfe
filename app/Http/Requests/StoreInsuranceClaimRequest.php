@@ -23,6 +23,7 @@ class StoreInsuranceClaimRequest extends FormRequest
             'damage_report_id' => ['nullable', 'integer'],
             'rental_contract_id' => ['nullable', 'integer'],
             'status' => ['prohibited'],
+            'incident_at' => ['required', 'date'],
             'reported_at' => ['nullable', 'date'],
             'claimed_amount' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'],
             'approved_amount' => ['prohibited'],
