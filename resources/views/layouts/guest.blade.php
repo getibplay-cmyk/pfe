@@ -24,7 +24,7 @@
                     <li class="flex gap-2"><span aria-hidden="true" class="text-fleet-500">✓</span> Données privées protégées</li>
                 </ul>
             </div>
-            <p class="text-xs text-slate-500">Accès réservé aux organisations clientes et à leurs collaborateurs autorisés.</p>
+            <p class="text-xs text-slate-400">Accès réservé aux organisations clientes et à leurs collaborateurs autorisés.</p>
         </section>
         <section class="flex items-center justify-center bg-slate-50 px-4 py-10 sm:px-8 lg:px-12">
             <div class="w-full max-w-md">

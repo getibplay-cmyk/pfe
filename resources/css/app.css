@@ -7,10 +7,12 @@
 
     html {
         @apply scroll-smooth bg-slate-50;
+        overflow-x: clip;
     }
 
     body {
         @apply min-w-0 bg-slate-50 text-slate-900;
+        overflow-x: clip;
     }
 
     :focus-visible {
@@ -42,7 +44,7 @@
     }
 
     .rf-page { @apply mx-auto w-full max-w-7xl space-y-6; }
-    .rf-panel { @apply rounded-2xl border border-slate-200 bg-white shadow-panel; }
+    .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white shadow-panel; }
     .rf-panel-body { @apply p-4 sm:p-6; }
     .rf-panel-heading { @apply border-b border-slate-100 px-4 py-4 sm:px-6; }
 
@@ -59,7 +61,7 @@
     .rf-filter-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4; }
 
     .rf-table-scroll {
-        @apply overflow-x-auto overscroll-x-contain;
+        @apply max-w-full overflow-x-auto overscroll-x-contain;
         scrollbar-gutter: stable;
     }
     .rf-table-scroll > table { @apply min-w-full divide-y divide-slate-200 text-sm; }

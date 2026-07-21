@@ -36,3 +36,12 @@ document.addEventListener('alpine:init', () => {
 });
 
 Alpine.start();
+
+document.addEventListener('DOMContentLoaded', () => {
+    const invalidField = document.querySelector('[aria-invalid="true"]');
+
+    if (invalidField instanceof HTMLElement) {
+        invalidField.focus({ preventScroll: true });
+        invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});

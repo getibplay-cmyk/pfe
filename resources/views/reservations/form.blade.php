@@ -18,11 +18,7 @@
             </form>
         @endif
 
-        @if ($errors->any())
-            <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800">
-                <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-            </div>
-        @endif
+        <x-form-errors />
 
         <form method="POST" action="{{ $reservation->exists ? route('reservations.update', $reservation) : route('reservations.store') }}" class="grid gap-4 rounded-xl bg-white p-6 shadow-sm md:grid-cols-2">
             @csrf
@@ -33,23 +29,25 @@
                 <span class="text-slate-500">Agence</span>
                 <p class="font-medium">{{ $agencies->firstWhere('id', $selectedAgencyId)?->name }}</p>
             </div>
-            <label>Catégorie
-                <select name="vehicle_category_id" required class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-category">Catégorie
+                <select id="reservation-category" name="vehicle_category_id" required class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('vehicle_category_id')) aria-invalid="true" @endif aria-describedby="reservation-category-error">
                     @foreach ($categories as $category)
                         <option value="{{ $category->id }}" @selected(old('vehicle_category_id', $reservation->vehicle_category_id ?? request('vehicle_category_id')) == $category->id)>{{ $category->name }}</option>
                     @endforeach
                 </select>
+                <x-field-error id="reservation-category-error" :messages="$errors->get('vehicle_category_id')" class="mt-2" />
             </label>
-            <label>Client
-                <select name="customer_id" required class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-customer">Client
+                <select id="reservation-customer" name="customer_id" required class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('customer_id')) aria-invalid="true" @endif aria-describedby="reservation-customer-error">
                     <option value="">Sélectionner</option>
                     @foreach ($customers as $customer)
                         <option value="{{ $customer->id }}" @selected(old('customer_id', $reservation->customer_id) == $customer->id)>{{ $customer->displayName() }}</option>
                     @endforeach
                 </select>
+                <x-field-error id="reservation-customer-error" :messages="$errors->get('customer_id')" class="mt-2" />
             </label>
-            <label>Conducteur
-                <select name="driver_id" class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-driver">Conducteur
+                <select id="reservation-driver" name="driver_id" class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('driver_id')) aria-invalid="true" @endif aria-describedby="reservation-driver-error">
                     <option value="">À sélectionner avant confirmation</option>
                     @foreach ($customers as $customer)
                         @foreach ($customer->drivers as $driver)
@@ -57,32 +55,39 @@
                         @endforeach
                     @endforeach
                 </select>
+                <x-field-error id="reservation-driver-error" :messages="$errors->get('driver_id')" class="mt-2" />
             </label>
-            <label>Début
-                <input type="datetime-local" name="starts_at" value="{{ old('starts_at', $reservation->starts_at?->timezone(config('reservations.display_timezone'))->format('Y-m-d\TH:i') ?? request('starts_at')) }}" required class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-start">Début
+                <input id="reservation-start" type="datetime-local" name="starts_at" value="{{ old('starts_at', $reservation->starts_at?->timezone(config('reservations.display_timezone'))->format('Y-m-d\TH:i') ?? request('starts_at')) }}" required class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('starts_at')) aria-invalid="true" @endif aria-describedby="reservation-start-error">
+                <x-field-error id="reservation-start-error" :messages="$errors->get('starts_at')" class="mt-2" />
             </label>
-            <label>Fin
-                <input type="datetime-local" name="ends_at" value="{{ old('ends_at', $reservation->ends_at?->timezone(config('reservations.display_timezone'))->format('Y-m-d\TH:i') ?? request('ends_at')) }}" required class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-end">Fin
+                <input id="reservation-end" type="datetime-local" name="ends_at" value="{{ old('ends_at', $reservation->ends_at?->timezone(config('reservations.display_timezone'))->format('Y-m-d\TH:i') ?? request('ends_at')) }}" required class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('ends_at')) aria-invalid="true" @endif aria-describedby="reservation-end-error">
+                <x-field-error id="reservation-end-error" :messages="$errors->get('ends_at')" class="mt-2" />
             </label>
-            <label>Véhicule
-                <select name="vehicle_id" class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-vehicle">Véhicule
+                <select id="reservation-vehicle" name="vehicle_id" class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('vehicle_id')) aria-invalid="true" @endif aria-describedby="reservation-vehicle-error">
                     <option value="">À affecter</option>
                     @foreach ($vehicles as $vehicle)
                         <option value="{{ $vehicle->id }}" @selected(old('vehicle_id', $reservation->vehicle_id ?? request('vehicle_id')) == $vehicle->id)>{{ $vehicle->registration_number }} — {{ $vehicle->brand }} {{ $vehicle->model }}</option>
                     @endforeach
                 </select>
+                <x-field-error id="reservation-vehicle-error" :messages="$errors->get('vehicle_id')" class="mt-2" />
             </label>
-            <label>État initial
-                <select name="status" class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-status">État initial
+                <select id="reservation-status" name="status" class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('status')) aria-invalid="true" @endif aria-describedby="reservation-status-error">
                     <option value="draft" @selected(old('status', $reservation->status?->value ?? 'draft') === 'draft')>Brouillon</option>
                     <option value="pending" @selected(old('status', $reservation->status?->value) === 'pending')>En attente</option>
                 </select>
+                <x-field-error id="reservation-status-error" :messages="$errors->get('status')" class="mt-2" />
             </label>
-            <label>Expiration de l’attente
-                <input type="datetime-local" name="expires_at" value="{{ old('expires_at', $reservation->expires_at?->timezone(config('reservations.display_timezone'))->format('Y-m-d\TH:i')) }}" class="mt-1 w-full rounded-lg border-slate-300">
+            <label for="reservation-expiry">Expiration de l’attente
+                <input id="reservation-expiry" type="datetime-local" name="expires_at" value="{{ old('expires_at', $reservation->expires_at?->timezone(config('reservations.display_timezone'))->format('Y-m-d\TH:i')) }}" class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('expires_at')) aria-invalid="true" @endif aria-describedby="reservation-expiry-error">
+                <x-field-error id="reservation-expiry-error" :messages="$errors->get('expires_at')" class="mt-2" />
             </label>
-            <label class="md:col-span-2">Notes
-                <textarea name="notes" rows="3" class="mt-1 w-full rounded-lg border-slate-300">{{ old('notes', $reservation->notes) }}</textarea>
+            <label for="reservation-notes" class="md:col-span-2">Notes
+                <textarea id="reservation-notes" name="notes" rows="3" class="mt-1 w-full rounded-lg border-slate-300" @if($errors->has('notes')) aria-invalid="true" @endif aria-describedby="reservation-notes-error">{{ old('notes', $reservation->notes) }}</textarea>
+                <x-field-error id="reservation-notes-error" :messages="$errors->get('notes')" class="mt-2" />
             </label>
             <p class="md:col-span-2 text-sm text-slate-500">Le tarif est résolu et affiché avant confirmation. Seule la confirmation crée un bloc ferme.</p>
             <div class="md:col-span-2 flex justify-end gap-3">

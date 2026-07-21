@@ -15,9 +15,10 @@
                 <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-white">Filtrer les factures</button>
             </form>
 
-            <section class="rounded-xl bg-white p-6 shadow-sm">
+            <section class="min-w-0 max-w-full overflow-hidden rounded-xl bg-white p-6 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="text-lg font-semibold">Factures</h2><x-result-count :paginator="$invoices" /></div>
-                <div class="mt-4 overflow-x-auto">
+                <p class="rf-mobile-scroll-hint -mx-6 mt-4">Faites défiler horizontalement pour consulter toutes les colonnes.</p>
+                <div class="rf-table-scroll -mx-6 sm:mx-0">
                     <table class="min-w-full text-sm">
                         <thead><tr class="text-left text-slate-500"><th class="p-3">Numéro</th><th class="p-3">Contrat</th><th class="p-3">Statut</th><th class="p-3">Total</th><th class="p-3">Payé</th><th class="p-3">Solde</th></tr></thead>
                         <tbody>@forelse($invoices as $invoice)<tr class="border-t"><td class="p-3"><a class="font-medium text-indigo-700" href="{{ route('finance.invoices.show', $invoice) }}">{{ $invoice->invoice_number }}</a></td><td class="p-3"><a class="underline" href="{{ route('contracts.show', $invoice->rentalContract) }}">{{ $invoice->rentalContract->contract_number }}</a></td><td class="p-3"><x-status-badge :value="$invoice->status" /></td><td class="p-3">{{ App\Support\Ui\UiLabel::money($invoice->total_amount, $invoice->currency) }}</td><td class="p-3">{{ App\Support\Ui\UiLabel::money($invoice->paid_amount, $invoice->currency) }}</td><td class="p-3">{{ App\Support\Ui\UiLabel::money($invoice->balance_due, $invoice->currency) }}</td></tr>@empty<tr><td colspan="6" class="p-8 text-slate-500">Aucune facture ne correspond aux filtres.</td></tr>@endforelse</tbody>
@@ -71,9 +72,10 @@
                 <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-white">Filtrer les dépenses</button>
             </form>
 
-            <section class="rounded-xl bg-white p-6 shadow-sm">
+            <section class="min-w-0 max-w-full overflow-hidden rounded-xl bg-white p-6 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-semibold">Dépenses</h2><x-result-count :paginator="$expenses" /></div>
-                <div class="mt-4 overflow-x-auto">
+                <p class="rf-mobile-scroll-hint -mx-6 mt-4">Faites défiler horizontalement pour consulter toutes les colonnes.</p>
+                <div class="rf-table-scroll -mx-6 sm:mx-0">
                     <table class="min-w-full text-sm">
                         <thead><tr class="text-left text-slate-500"><th class="p-3">Numéro</th><th class="p-3">Catégorie</th><th class="p-3">Montant</th><th class="p-3">Référence</th><th class="p-3">Statut</th><th class="p-3">Décision</th><th class="p-3"><span class="sr-only">Actions</span></th></tr></thead>
                         <tbody>

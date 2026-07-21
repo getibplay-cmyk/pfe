@@ -228,3 +228,28 @@ modèle ML dans cette release candidate.
 E1 valide la structure par PHPUnit, Blade et Vite. Les captures 1440×900 et
 390×844, les navigateurs réels, les contrastes mesurés et l’audit WCAG final
 doivent être exécutés et archivés uniquement pendant le Lot 06F-E2.
+
+## Parcours de soutenance validé au Lot 06F-E2
+
+Les preuves réelles sont dans `docs/evidence/screenshots/lot06f-e2/`. Pour une
+démonstration cohérente, utiliser les mêmes écrans dans cet ordre :
+
+1. connexion desktop puis mobile, sans saisir un mot de passe pendant une
+   capture ;
+2. dashboard Tenant Owner et menu mobile ouvert au clavier ;
+3. disponibilité, création d’une réservation et fiche confirmée ;
+4. contrat clôturé avec prérequis et timeline ;
+5. véhicule puis client avec identité masquée ;
+6. finance, maintenance et assurance en insistant sur les scrollers mobiles ;
+7. rapports et utilisateurs ;
+8. pages 403/404/419 uniquement à partir des captures, sans perturber la session
+   de démonstration.
+
+Chrome et Edge système ont été validés. Firefox et lecteur d’écran restent des
+limites annoncées. Le zoom 200 % a été couvert par un reflow automatisé
+équivalent ; ne pas le présenter comme un test de zoom natif Firefox.
+
+Le harnais reproductible `tests/Browser/lot06f_e2_browser.py` doit viser
+exclusivement `rentfleet_test`. Il génère son secret QA en mémoire et refuse de
+continuer si PostgreSQL retourne un autre nom de base. Ne jamais l’exécuter sur
+la base de démonstration vivante ou pendant une présentation.

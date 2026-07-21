@@ -27,7 +27,7 @@
         <nav aria-label="Navigation principale" class="mt-8 flex-1 space-y-6 overflow-y-auto pe-1">
             @foreach ($navigationSections as $section)
                 <section>
-                    <h2 class="px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-slate-500">{{ $section['label'] }}</h2>
+                    <h2 class="px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-slate-400">{{ $section['label'] }}</h2>
                     <div class="mt-2 space-y-1">
                         @foreach ($section['items'] as $item)<x-navigation-item :item="$item" surface="desktop" />@endforeach
                     </div>
@@ -53,13 +53,13 @@
                         <p class="truncate text-xs text-slate-500">{{ $user->tenant?->name ?? 'Administration plateforme' }}@if($user->agency) · {{ $user->agency->name }}@endif</p>
                     </div>
                 </div>
-                <div class="relative" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.window="open = false">
-                    <button type="button" @click="open = ! open" class="flex min-h-10 items-center gap-3 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left hover:bg-slate-50" :aria-expanded="open.toString()" aria-haspopup="menu">
+                <div class="relative" x-data="{ open: false, close(returnFocus = false) { this.open = false; if (returnFocus) this.$nextTick(() => this.$refs.userMenuButton.focus()) } }" @click.outside="close()" @keydown.escape.window="if (open) close(true)">
+                    <button x-ref="userMenuButton" type="button" @click="open = ! open" class="flex min-h-10 items-center gap-3 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left hover:bg-slate-50" :aria-expanded="open.toString()" aria-haspopup="menu" aria-controls="menu-utilisateur">
                         <span aria-hidden="true" class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
                         <span class="hidden min-w-0 sm:block"><span class="block max-w-40 truncate text-xs font-semibold text-slate-900">{{ $user->name }}</span><span class="block max-w-40 truncate text-[0.68rem] text-slate-500">{{ $roleLabel }}</span></span>
                         <svg aria-hidden="true" class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
                     </button>
-                    <div x-cloak x-show="open" x-transition role="menu" class="absolute end-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                    <div id="menu-utilisateur" x-cloak x-show="open" x-transition role="menu" aria-label="Menu utilisateur" class="absolute end-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                         <a role="menuitem" href="{{ route('profile.edit') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Mon profil</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf<button role="menuitem" type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">Déconnexion</button></form>
                     </div>
@@ -67,7 +67,7 @@
             </div>
         </header>
 
-        <div x-cloak x-show="mobileMenu" id="navigation-mobile" class="fixed inset-0 z-50 lg:hidden" @keydown.escape.window="closeMenu()">
+        <div x-cloak x-show="mobileMenu" id="navigation-mobile" class="fixed inset-0 z-50 lg:hidden" @keydown.escape.window="if (mobileMenu) closeMenu()">
             <button type="button" aria-label="Fermer le menu" class="absolute inset-0 bg-slate-950/60" @click="closeMenu()"></button>
             <div x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="h-full">
                 <x-mobile-navigation :sections="$navigationSections" :user="$user" />

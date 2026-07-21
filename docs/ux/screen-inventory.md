@@ -1,9 +1,9 @@
-# Inventaire des écrans — Lot 06F-E1
+# Inventaire des écrans — Lots 06F-E1 et 06F-E2
 
 Les rôles indiqués sont des familles de visibilité ; les policies et le
 périmètre agence restent déterminants pour chaque enregistrement.
 
-| Domaine | Route ou écran | Rôles | État avant E1 | Correction E1 | À valider en E2 |
+| Domaine | Route ou écran | Rôles | État avant E1 | Correction E1 | Plan de validation E2 |
 |---|---|---|---|---|---|
 | Auth | `/login` | public | Breeze anglais, logo Laravel | identité B2B française, mot de passe visible/masqué, sans register | clavier, zoom, captures |
 | Auth | mot de passe oublié/reset | public | texte Breeze anglais | parcours français cohérent | e-mail réel et navigateurs |
@@ -35,3 +35,24 @@ périmètre agence restent déterminants pour chaque enregistrement.
 Les anciennes vues `register`, `welcome`, navigation Breeze et composants
 orphelins associés ont été supprimés après vérification de leur absence de route
 et d’usage.
+
+## État après validation E2
+
+Le plan de la dernière colonne a été exécuté sur Chrome et Edge disponibles.
+Les écrans prioritaires ont été capturés en 1440 × 900 et 390 × 844 ; dashboard,
+réservations, contrat et finance ont aussi été contrôlés à 1024 × 768,
+768 × 1024, 320 × 720 et en reflow équivalent 200 %.
+
+| Groupe | Résultat E2 |
+|---|---|
+| authentification et erreurs | connexion, reset, confirmation, 403/404/419, focus et messages français réussis |
+| shell et rôles | sept rôles, parité desktop/mobile, route active, profil, refus directs et déconnexion réussis |
+| locations et contrats | cycle réservation QA complet et sept états contractuels observés |
+| flotte, clients et documents | responsive, identité masquée et labels des fichiers validés |
+| finance, maintenance, assurance | tableaux internes défilables, montants/devise et restrictions visibles validés |
+| rapports et administration | filtres, tables, reflow et absence de champ tenant contrôlable validés |
+| accessibilité | 51 audits sans violation majeure finale ; clavier essentiel réussi |
+
+La matrice détaillée se trouve dans `docs/ux/browser-validation-matrix.md` et
+les limites dans `docs/ux/accessibility-audit.md`. Firefox, lecteur d’écran,
+axe et Lighthouse n’étaient pas disponibles et ne sont pas déclarés validés.

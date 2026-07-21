@@ -16,7 +16,7 @@
             @can('verify', $customer)
                 <div class="mt-5 flex flex-wrap gap-3">
                     <form method="POST" action="{{ route('customers.verify', $customer) }}">@csrf<button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm text-white">Vérifier le client</button></form>
-                    <form method="POST" action="{{ route('customers.reject-verification', $customer) }}" class="flex gap-2">@csrf<input name="reason" required maxlength="1000" placeholder="Motif obligatoire" class="min-w-48"><button class="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700">Rejeter</button></form>
+                    <form method="POST" action="{{ route('customers.reject-verification', $customer) }}" class="flex min-w-0 flex-wrap gap-2">@csrf<label class="sr-only" for="customer-rejection-reason">Motif du rejet</label><input id="customer-rejection-reason" name="reason" required maxlength="1000" placeholder="Motif obligatoire" class="min-w-0 flex-1"><button class="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700">Rejeter</button></form>
                 </div>
             @endcan
         </section>
@@ -46,7 +46,7 @@
                                 @can('upload', App\Models\Document::class)
                                     <form class="mt-3 grid gap-2" method="POST" enctype="multipart/form-data" action="{{ route('drivers.documents.store', $driver) }}">@csrf
                                         <input type="hidden" name="document_type" value="driving_licence"><input type="hidden" name="is_sensitive" value="1">
-                                        <input name="title" value="Permis de conduire" required class="w-full"><input type="file" name="file" required class="text-sm">
+                                        <label class="rf-field-label" for="driver-document-title-{{ $driver->id }}">Titre du document</label><input id="driver-document-title-{{ $driver->id }}" name="title" value="Permis de conduire" required class="w-full"><label class="rf-field-label" for="driver-document-file-{{ $driver->id }}">Fichier privé</label><input id="driver-document-file-{{ $driver->id }}" type="file" name="file" required class="max-w-full text-sm">
                                         <button class="justify-self-start rounded-lg border px-3 py-1.5 text-xs">Ajouter un permis privé</button>
                                     </form>
                                 @endcan
@@ -77,7 +77,7 @@
                     <form class="my-4 grid gap-3" method="POST" enctype="multipart/form-data" action="{{ route('customers.documents.store', $customer) }}">@csrf
                         <label class="text-sm">Titre *<input name="title" value="{{ old('title') }}" required class="mt-1 w-full"><x-input-error :messages="$errors->get('title')" /></label>
                         <label class="text-sm">Type<select name="document_type" class="mt-1 w-full"><option value="customer_identity">Pièce d’identité</option><option value="other">Autre</option></select></label>
-                        <input type="hidden" name="is_sensitive" value="1"><input type="file" name="file" required class="text-sm"><x-input-error :messages="$errors->get('file')" />
+                        <input type="hidden" name="is_sensitive" value="1"><label class="rf-field-label" for="customer-document-file">Fichier privé *</label><input id="customer-document-file" type="file" name="file" required class="max-w-full text-sm"><x-input-error :messages="$errors->get('file')" />
                         <button type="submit" class="rounded-lg bg-slate-950 px-4 py-2 text-sm text-white">Ajouter le document</button>
                     </form>
                 @endcan
