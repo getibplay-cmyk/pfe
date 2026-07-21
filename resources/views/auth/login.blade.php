@@ -1,47 +1,28 @@
 <x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <header>
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-brand-700">Espace sécurisé</p>
+        <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-950">Connexion à RentFleet</h1>
+        <p class="mt-2 text-sm leading-6 text-slate-600">Accédez à l’espace de travail de votre organisation avec le compte fourni par votre administrateur.</p>
+    </header>
 
-    <form method="POST" action="{{ route('login') }}">
+    <x-auth-session-status class="mt-5" :status="session('status')" />
+    <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5">
         @csrf
-
-        <!-- Email Address -->
+        <x-form-errors />
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <x-input-label for="email" value="Adresse e-mail" required />
+            <x-text-input id="email" class="mt-1" type="email" name="email" :value="old('email')" :invalid="$errors->has('email')" required autofocus autocomplete="username" aria-describedby="email-error" />
+            <x-field-error id="email-error" :messages="$errors->get('email')" class="mt-2" />
         </div>
-
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+        <x-password-field id="password" name="password" label="Mot de passe" :messages="$errors->get('password')" autocomplete="current-password" />
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <label for="remember_me" class="inline-flex items-center gap-2 text-sm text-slate-600">
+                <input id="remember_me" type="checkbox" class="rounded" name="remember" @checked(old('remember'))>
+                Se souvenir de moi
             </label>
+            @if (Route::has('password.request'))<a class="rf-button-link -me-3" href="{{ route('password.request') }}">Mot de passe oublié ?</a>@endif
         </div>
-
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
+        <x-primary-button class="w-full">Se connecter</x-primary-button>
     </form>
+    <p class="mt-6 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-600"><strong class="text-slate-800">Accès B2B :</strong> les comptes sont créés par l’administrateur plateforme ou le propriétaire de votre organisation. Aucun compte ne peut être ouvert publiquement.</p>
 </x-guest-layout>

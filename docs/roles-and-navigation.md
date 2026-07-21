@@ -29,3 +29,19 @@ Seul le rôle Accountant, ainsi que le Tenant Owner qui possède explicitement
 les permissions, voit les actions d’émission, allocation, comptabilisation,
 contrepassation, caution, dépense et clôture. Agency Manager, Rental Agent,
 Fleet Manager et Viewer/Auditor ne reçoivent pas ces contrôles.
+
+## Groupes de navigation E1
+
+`NavigationBuilder` ordonne les destinations autorisées dans sept groupes
+stables : **Vue d’ensemble**, **Exploitation**, **Locations**, **Flotte**,
+**Finance**, **Pilotage** et **Administration**. Les groupes vides disparaissent
+pour le rôle courant ; aucune entrée factice n’est ajoutée pour remplir un menu.
+
+L’en-tête rappelle l’organisation, l’agence et le rôle. Le menu utilisateur ne
+contient que le profil et la déconnexion. Le profil ne permet jamais de modifier
+le périmètre, le rôle ou l’état du compte. Le menu mobile est un dialogue avec
+fermeture par Échap, boucle de focus et retour du focus sur son déclencheur.
+
+Les routes actives utilisent `aria-current="page"`. Les icônes sont décoratives,
+le texte du lien reste toujours présent et les badges combinent libellé et
+couleur. Les autorisations serveur restent la référence en cas d’appel direct.

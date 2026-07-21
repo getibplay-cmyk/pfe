@@ -1,3 +1,15 @@
 <x-app-layout>
-    <div class="mx-auto max-w-xl"><section class="rounded-xl bg-white p-8 shadow-sm"><p class="text-sm font-semibold text-amber-700">Sécurité du compte</p><h1 class="mt-2 text-3xl font-bold">Choisissez votre mot de passe</h1><p class="mt-3 text-sm text-slate-600">Le mot de passe temporaire ne peut être utilisé qu’avant cette étape.</p><form method="POST" action="{{ route('password.change-required.update') }}" class="mt-6 space-y-4">@csrf @method('PUT')<label class="block text-sm">Mot de passe temporaire<input type="password" name="current_password" required autocomplete="current-password" class="mt-1 w-full rounded border-slate-300"></label><label class="block text-sm">Nouveau mot de passe<input type="password" name="password" required autocomplete="new-password" class="mt-1 w-full rounded border-slate-300"></label><label class="block text-sm">Confirmation<input type="password" name="password_confirmation" required autocomplete="new-password" class="mt-1 w-full rounded border-slate-300"></label>@if($errors->any())<div class="rounded bg-red-50 p-3 text-sm text-red-800">{{ $errors->first() }}</div>@endif<button class="rounded bg-slate-950 px-5 py-2 text-white">Enregistrer et continuer</button></form></section></div>
+    <div class="mx-auto max-w-xl space-y-6">
+        <x-page-header title="Choisissez votre mot de passe" eyebrow="Sécurité du compte" description="Le mot de passe temporaire doit être remplacé avant d’accéder aux fonctions RentFleet." />
+        <x-section-card title="Créer un mot de passe personnel" description="Utilisez au moins 12 caractères avec majuscules, minuscules et chiffres.">
+            <form method="POST" action="{{ route('password.change-required.update') }}" class="space-y-5">
+                @csrf @method('PUT')
+                <x-form-errors />
+                <x-password-field id="current_password" name="current_password" label="Mot de passe temporaire" :messages="$errors->get('current_password')" autocomplete="current-password" />
+                <x-password-field id="password" name="password" label="Nouveau mot de passe" :messages="$errors->get('password')" autocomplete="new-password" />
+                <x-password-field id="password_confirmation" name="password_confirmation" label="Confirmation du mot de passe" :messages="$errors->get('password_confirmation')" autocomplete="new-password" />
+                <x-primary-button>Enregistrer et continuer</x-primary-button>
+            </form>
+        </x-section-card>
+    </div>
 </x-app-layout>

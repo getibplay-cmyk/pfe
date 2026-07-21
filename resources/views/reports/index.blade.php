@@ -98,7 +98,7 @@
                     <div class="border-b border-slate-100 px-5 py-4"><h3 class="font-semibold">Durée par type de bloc</h3></div>
                     <dl class="divide-y divide-slate-100">
                         @foreach ($report['operational']['utilization']['block_types'] as $type => $seconds)
-                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt>{{ \App\Support\Ui\UiLabel::get($type) }}</dt><dd class="font-medium">{{ intdiv($seconds, 3600) }} h {{ str_pad((string) intdiv($seconds % 3600, 60), 2, '0', STR_PAD_LEFT) }} min</dd></div>
+                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt>{{ \App\Support\Ui\UiLabel::blockType($type) }}</dt><dd class="font-medium">{{ intdiv($seconds, 3600) }} h {{ str_pad((string) intdiv($seconds % 3600, 60), 2, '0', STR_PAD_LEFT) }} min</dd></div>
                         @endforeach
                     </dl>
                 </article>

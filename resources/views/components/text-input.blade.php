@@ -1,3 +1,2 @@
-@props(['disabled' => false])
-
-<input @disabled($disabled) {{ $attributes->merge(['class' => 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm']) }}>
+@props(['disabled' => false, 'invalid' => false])
+<input @disabled($disabled) @if($invalid) aria-invalid="true" @endif {{ $attributes->class('w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-600 focus:ring-brand-600') }}>

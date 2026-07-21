@@ -131,3 +131,30 @@ modification architecturale ou tout nouveau module.
   exact. Refuser racines, dépôt, profil utilisateur, chemins vides ou larges.
 - Une archive non restaurée et non vérifiée ne constitue pas une preuve de
   reprise. Documenter explicitement tout blocage pgpass ou base dédiée.
+
+## Lot 06F-E1 — système visuel et UX professionnelle
+
+- Conserver Blade, Tailwind et Alpine. Ne pas introduire de CDN, image distante,
+  framework SPA ou bibliothèque graphique pour une évolution d’interface.
+- `NavigationBuilder` demeure la seule source des menus desktop et mobile. Une
+  entrée visible exige la permission serveur correspondante et les deux surfaces
+  doivent conserver les mêmes `data-nav-key`.
+- Utiliser les composants `brand-logo`, `page-header`, `section-card`,
+  `filter-panel`, `responsive-table`, `status-badge`, `flash-message`,
+  `form-errors`, `field-error`, `metadata-list`, `timeline` et les boutons
+  partagés avant d’ajouter un style local.
+- Toute page rend un seul titre principal, des labels associés, un focus visible,
+  une erreur par champ et un état vide utile. Une couleur ou une icône seule ne
+  communique jamais un statut ou une action.
+- Les statuts, types, dates et montants visibles passent par `UiLabel` ou le
+  label d’enum. `UiLabel::blockType()` distingue le bloc `manual` de la
+  transmission `manual` sans modifier les valeurs stockées.
+- Les montants affichent toujours leur devise. Les horaires utilisent le fuseau
+  applicatif. Ne jamais exposer hash technique, JSON de snapshot, chemin privé,
+  identité non masquée, trace ou secret dans une page utilisateur.
+- L’inscription publique reste absente. Ne pas recréer `register`, `signup`,
+  `profile.destroy`, les vues Breeze mortes ou le logo Laravel par défaut.
+- Toute confirmation visuelle d’une action sensible complète les policies et
+  Form Requests ; elle ne les remplace jamais.
+- E1 ne prouve pas le rendu multi-navigateurs. Les captures réelles et l’audit
+  d’accessibilité formel appartiennent exclusivement au Lot 06F-E2.

@@ -9,25 +9,34 @@ class NavigationBuilder
     public function for(User $user): array
     {
         if ($user->is_platform_admin) {
-            return [[
-                'label' => 'Administration plateforme',
-                'items' => [
-                    $this->item('platform-dashboard', 'Vue plateforme', 'platform.dashboard', 'platform.dashboard'),
-                    $this->item('platform-tenants', 'Tenants', 'platform.tenants.index', 'platform.tenants.*'),
+            return [
+                [
+                    'label' => 'Vue d’ensemble',
+                    'items' => [
+                        $this->item('platform-dashboard', 'Vue plateforme', 'platform.dashboard', 'platform.dashboard'),
+                    ],
                 ],
-            ]];
+                [
+                    'label' => 'Administration',
+                    'items' => [
+                        $this->item('platform-tenants', 'Tenants', 'platform.tenants.index', 'platform.tenants.*'),
+                    ],
+                ],
+            ];
         }
 
         return array_values(array_filter([
-            $this->section('Exploitation', [
+            $this->section('Vue d’ensemble', [
                 $this->item('dashboard', 'Tableau de bord', 'dashboard', 'dashboard'),
+            ]),
+            $this->section('Exploitation', [
+                $this->when($user, 'reservation.view', $this->item('availability', 'Disponibilité', 'availability.index', 'availability.*')),
+                $this->when($user, 'customer.view', $this->item('customers', 'Clients et conducteurs', 'customers.index', 'customers.*')),
             ]),
             $this->section('Locations', [
                 $this->when($user, 'reservation.view', $this->item('reservations', 'Réservations', 'reservations.index', 'reservations.*')),
-                $this->when($user, 'reservation.view', $this->item('availability', 'Disponibilité', 'availability.index', 'availability.*')),
                 $this->when($user, 'contract.view', $this->item('contracts', 'Contrats', 'contracts.index', 'contracts.*')),
                 $this->when($user, 'pricing.view', $this->item('pricing', 'Tarification', 'pricing-rules.index', 'pricing-rules.*')),
-                $this->when($user, 'customer.view', $this->item('customers', 'Clients et conducteurs', 'customers.index', 'customers.*')),
             ]),
             $this->section('Flotte', [
                 $this->when($user, 'vehicle.view', $this->item('vehicles', 'Véhicules', 'vehicles.index', 'vehicles.*')),
@@ -36,11 +45,13 @@ class NavigationBuilder
                 $this->when($user, 'maintenance.view', $this->item('maintenance', 'Maintenance', 'maintenance.index', 'maintenance.*')),
                 $this->when($user, 'insurance.view', $this->item('insurance', 'Assurance', 'insurance.index', 'insurance.*')),
             ]),
-            $this->section('Finance et pilotage', [
+            $this->section('Finance', [
                 $this->whenAny($user, ['invoice.view', 'payment.view', 'deposit.view', 'expense.view'], $this->item('finance', 'Finance', 'finance.index', 'finance.*')),
+            ]),
+            $this->section('Pilotage', [
                 $this->when($user, 'report.view', $this->item('reports', 'Rapports', 'reports.index', 'reports.*')),
             ]),
-            $this->section('Administration tenant', [
+            $this->section('Administration', [
                 $this->when($user, 'tenant.manage', $this->item('tenant', 'Entreprise', 'tenant.show', 'tenant.*')),
                 $this->whenAny($user, ['agency.view', 'agency.manage'], $this->item('agencies', 'Agences', 'agencies.index', 'agencies.*')),
                 $this->whenAny($user, ['user.view', 'user.manage'], $this->item('users', 'Utilisateurs', 'users.index', 'users.*')),

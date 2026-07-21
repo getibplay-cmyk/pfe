@@ -456,3 +456,38 @@ Une sauvegarde n’est déclarée restaurable qu’après restauration réelle,
 comparaison agrégée et doctor vert sur `rentfleet_restore_test`. L’absence de
 `pgpass.conf` ou de cette base dédiée bloque donc honnêtement la preuve réelle,
 sans bloquer les contrôles statiques du lot.
+
+## Lot 06F-E1 — interface professionnelle RentFleet
+
+L’interface Blade/Tailwind/Alpine dispose désormais d’une identité RentFleet
+native, sans CDN ni ressource graphique externe. Le shell partagé fournit une
+sidebar desktop, un menu mobile avec gestion du focus, un en-tête de contexte,
+un menu utilisateur, un lien d’évitement et les mêmes destinations filtrées par
+`NavigationBuilder` sur les deux surfaces.
+
+Les pages de connexion et de récupération sont entièrement en français et
+présentent explicitement le modèle B2B : les comptes sont créés par
+l’administrateur plateforme ou le Tenant Owner et l’inscription publique reste
+désactivée. Les composants partagés couvrent boutons, champs, erreurs, flash,
+états vides, filtres, tableaux responsives, métadonnées, timeline et
+confirmations sensibles.
+
+Les parcours de soutenance — dashboard, disponibilité, réservations, contrats,
+véhicules, finance, maintenance, assurance et rapports — conservent leurs
+policies, leur isolation et leurs formules métier. Les statuts et montants sont
+présentés par `UiLabel`; aucune migration ni nouvelle fonctionnalité métier
+n’appartient à E1. Le système visuel est décrit dans
+`docs/ux/design-system.md` et l’état des écrans dans
+`docs/ux/screen-inventory.md`.
+
+Validation ciblée :
+
+```powershell
+& 'C:\Users\pc\.config\herd\bin\php85\php.exe' artisan test tests/Feature/Lot06FE1ProfessionalUxTest.php
+& 'C:\Users\pc\.config\herd\bin\php85\php.exe' artisan view:cache
+& 'C:\Users\pc\.config\herd\bin\php85\php.exe' vendor/bin/pint --test
+npm.cmd run build
+```
+
+La validation visuelle réelle multi-navigateurs, les captures desktop/mobile et
+l’audit formel WCAG sont volontairement réservés au Lot 06F-E2.

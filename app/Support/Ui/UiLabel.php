@@ -47,7 +47,7 @@ class UiLabel
         'good' => 'Bon état', 'damaged' => 'Endommagé', 'missing' => 'Manquant', 'not_checked' => 'Non vérifié',
         'departure' => 'Départ', 'return' => 'Retour', 'individual' => 'Particulier', 'company' => 'Entreprise',
         'verified' => 'Vérifié', 'out_of_service' => 'Hors service', 'reservation' => 'Réservation',
-        'manual' => 'Bloc manuel', 'contract' => 'Contrat', 'released' => 'Libéré',
+        'manual_block' => 'Bloc manuel', 'contract' => 'Contrat', 'released' => 'Libéré',
         'petrol' => 'Essence', 'diesel' => 'Diesel', 'hybrid' => 'Hybride', 'electric' => 'Électrique',
         'manual' => 'Manuelle', 'automatic' => 'Automatique', 'low' => 'Basse', 'normal' => 'Normale', 'high' => 'Haute', 'urgent' => 'Urgente',
         'liability' => 'Responsabilité civile', 'collision' => 'Collision', 'theft' => 'Vol', 'fire' => 'Incendie',
@@ -180,5 +180,12 @@ class UiLabel
         [$units, $decimals] = array_pad(explode('.', (string) $amount, 2), 2, '');
 
         return $units.','.str_pad(substr($decimals, 0, 2), 2, '0').' '.strtoupper($currency);
+    }
+
+    public static function blockType(mixed $value): string
+    {
+        $key = mb_strtolower(trim((string) ($value instanceof BackedEnum ? $value->value : $value)));
+
+        return $key === 'manual' ? self::LABELS['manual_block'] : self::get($value);
     }
 }

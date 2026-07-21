@@ -1,27 +1,13 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
-    </div>
-
-    <form method="POST" action="{{ route('password.confirm') }}">
+    <header>
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-brand-700">Action sensible</p>
+        <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-950">Confirmer votre mot de passe</h1>
+        <p class="mt-2 text-sm leading-6 text-slate-600">Cette vérification protège l’accès à une opération sensible de RentFleet.</p>
+    </header>
+    <form method="POST" action="{{ route('password.confirm') }}" class="mt-6 space-y-5">
         @csrf
-
-        <!-- Password -->
-        <div>
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <div class="flex justify-end mt-4">
-            <x-primary-button>
-                {{ __('Confirm') }}
-            </x-primary-button>
-        </div>
+        <x-form-errors />
+        <x-password-field id="password" name="password" label="Mot de passe actuel" :messages="$errors->get('password')" autocomplete="current-password" />
+        <x-primary-button class="w-full">Confirmer et continuer</x-primary-button>
     </form>
 </x-guest-layout>

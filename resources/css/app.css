@@ -5,17 +5,74 @@
 @layer base {
     [x-cloak] { display: none !important; }
 
+    html {
+        @apply scroll-smooth bg-slate-50;
+    }
+
+    body {
+        @apply min-w-0 bg-slate-50 text-slate-900;
+    }
+
     :focus-visible {
-        @apply outline-none ring-2 ring-indigo-500 ring-offset-2;
+        @apply outline-none ring-2 ring-brand-600 ring-offset-2;
     }
 
     input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
     select,
     textarea {
-        @apply rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500;
+        @apply min-h-11 rounded-lg border-slate-300 bg-white text-slate-950 shadow-sm placeholder:text-slate-400 focus:border-brand-600 focus:ring-brand-600;
+    }
+
+    input[type='checkbox'], input[type='radio'] {
+        @apply border-slate-300 text-brand-700 focus:ring-brand-600;
+    }
+
+    label {
+        @apply text-slate-700;
     }
 
     button, [role='button'] {
         @apply disabled:cursor-not-allowed disabled:opacity-60;
+    }
+}
+
+@layer components {
+    .rf-skip-link {
+        @apply fixed left-4 top-3 z-[100] -translate-y-20 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-brand-900 shadow-lg transition focus:translate-y-0;
+    }
+
+    .rf-page { @apply mx-auto w-full max-w-7xl space-y-6; }
+    .rf-panel { @apply rounded-2xl border border-slate-200 bg-white shadow-panel; }
+    .rf-panel-body { @apply p-4 sm:p-6; }
+    .rf-panel-heading { @apply border-b border-slate-100 px-4 py-4 sm:px-6; }
+
+    .rf-button {
+        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 disabled:pointer-events-none;
+    }
+    .rf-button-primary { @apply rf-button border-brand-700 bg-brand-700 text-white hover:border-brand-800 hover:bg-brand-800; }
+    .rf-button-secondary { @apply rf-button border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-950; }
+    .rf-button-danger { @apply rf-button border-red-700 bg-red-700 text-white hover:border-red-800 hover:bg-red-800; }
+    .rf-button-link { @apply inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 hover:text-brand-900; }
+
+    .rf-field-label { @apply block text-sm font-semibold text-slate-700; }
+    .rf-field-help { @apply mt-1 text-xs leading-5 text-slate-500; }
+    .rf-filter-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4; }
+
+    .rf-table-scroll {
+        @apply overflow-x-auto overscroll-x-contain;
+        scrollbar-gutter: stable;
+    }
+    .rf-table-scroll > table { @apply min-w-full divide-y divide-slate-200 text-sm; }
+    .rf-table-scroll thead { @apply bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600; }
+    .rf-table-scroll th { @apply whitespace-nowrap px-4 py-3; }
+    .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-white; }
+    .rf-table-scroll td { @apply px-4 py-3 align-top text-slate-700; }
+    .rf-mobile-scroll-hint { @apply border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-500 sm:hidden; }
+    .rf-kbd { @apply rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-[0.7rem] text-slate-600; }
+
+    main section[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
+    main article[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
+    main div[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'] {
+        @apply border border-slate-200 shadow-panel;
     }
 }

@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="mx-auto max-w-7xl space-y-8">
+    <div class="rf-page">
         <x-page-header title="Tableau de bord" eyebrow="Vue d’ensemble" description="Priorités opérationnelles de votre périmètre actuel, sans donnée sensible." />
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

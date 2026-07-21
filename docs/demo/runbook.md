@@ -172,7 +172,7 @@ nettoyage ; ne jamais supprimer un chemin calculé vide ou large.
 5. **3:15–4:00 — Concurrence.** Expliquer la contrainte GiST et présenter le
    test qui refuse un second bloc chevauchant sans dépendre de l’interface.
 6. **4:00–5:15 — Contrat.** Convertir ou ouvrir le contrat préparé, présenter
-   version SHA-256, acceptation, inspection de départ et statut actif.
+   version vérifiable, acceptation, inspection de départ et statut actif.
 7. **5:15–6:30 — Retour.** Montrer l’inspection retour, les écarts, un dommage
    en revue humaine et les frais calculés sans `float`.
 8. **6:30–7:45 — Finance.** Montrer facture, allocation, paiement et registre de
@@ -192,7 +192,7 @@ financière ajoute une écriture, elle ne réécrit pas l’historique » et « 
 lot 07 assistera la revue humaine sans bloquer ce SaaS fonctionnel ».
 
 Captures à préparer : dashboard Atlas, refus de chevauchement, version de
-contrat et empreinte, inspection retour/dommage, facture payée, contrat fermé,
+contrat et preuve d’intégrité, inspection retour/dommage, facture payée, contrat fermé,
 audit corrélé, refus cross-tenant et sortie de `rentfleet:doctor`.
 
 ## Plan de secours
@@ -204,3 +204,27 @@ d’aucun accès Internet, service mail ou passerelle de paiement.
 Limites à annoncer honnêtement : pas de paiement réel, signature qualifiée,
 comptabilité générale, décision juridique automatisée, cloud obligatoire ou
 modèle ML dans cette release candidate.
+
+## Parcours visuel Lot 06F-E1
+
+1. Ouvrir la connexion en largeur desktop puis mobile. Montrer l’identité
+   RentFleet, le message B2B, l’affichage/masquage du mot de passe et l’absence
+   de lien d’inscription.
+2. Se connecter avec un compte de démonstration préparé hors production. Ne
+   jamais afficher ni dicter son mot de passe pendant la capture.
+3. Sur le dashboard, montrer le contexte organisation/agence/rôle, les KPI, les
+   sections autorisées et les états vides utiles.
+4. Ouvrir le menu mobile au clavier, parcourir les mêmes destinations que sur la
+   sidebar, fermer avec Échap et vérifier le retour du focus.
+5. Rechercher une disponibilité, ouvrir une réservation, puis le contrat. Faire
+   lire la période, la devise, le statut courant, les prérequis et l’étape
+   suivante sans ouvrir de snapshot JSON ni donnée privée.
+6. Ouvrir un véhicule, Finance, Maintenance, Assurance et Rapports. Montrer les
+   badges traduits, tableaux défilables, filtres et actions conditionnées par le
+   rôle.
+7. Terminer par le profil : rattachement en lecture seule, champs personnels et
+   changement de mot de passe avec contrôle afficher/masquer.
+
+E1 valide la structure par PHPUnit, Blade et Vite. Les captures 1440×900 et
+390×844, les navigateurs réels, les contrastes mesurés et l’audit WCAG final
+doivent être exécutés et archivés uniquement pendant le Lot 06F-E2.
