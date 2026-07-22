@@ -53,6 +53,30 @@
                         <p class="truncate text-xs text-slate-500">{{ $user->tenant?->name ?? 'Administration plateforme' }}@if($user->agency) · {{ $user->agency->name }}@endif</p>
                     </div>
                 </div>
+                <div class="flex items-center gap-2">
+                @unless ($user->is_platform_admin)
+                    <div class="relative" x-data="{ open: false, close(returnFocus = false) { this.open = false; if (returnFocus) this.$nextTick(() => this.$refs.notificationButton.focus()) } }" @click.outside="close()" @keydown.escape.window="if (open) close(true)">
+                        <button x-ref="notificationButton" type="button" @click="open = ! open" class="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50" aria-label="Ouvrir les notifications{{ $unreadNotificationCount ? ' — '.$unreadNotificationCount.' non lues' : '' }}" :aria-expanded="open.toString()" aria-haspopup="dialog" aria-controls="apercu-notifications">
+                            <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0" /></svg>
+                            @if ($unreadNotificationCount)<span aria-hidden="true" class="absolute -end-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[0.65rem] font-bold leading-5 text-white">{{ min($unreadNotificationCount, 99) }}</span>@endif
+                        </button>
+                        <section id="apercu-notifications" x-cloak x-show="open" x-transition role="dialog" aria-label="Aperçu des notifications" class="absolute end-0 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white shadow-xl">
+                            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3"><h2 class="text-sm font-semibold text-slate-950">Notifications</h2><span class="text-xs text-slate-500">{{ $unreadNotificationCount }} non lue(s)</span></div>
+                            <div class="max-h-80 divide-y divide-slate-100 overflow-y-auto">
+                                @forelse ($notificationPreview as $notification)
+                                    <a href="{{ route('notifications.open', $notification) }}" class="block px-4 py-3 hover:bg-slate-50">
+                                        <div class="flex items-start justify-between gap-3"><p class="text-sm font-semibold text-slate-900">{{ $notification->title }}</p>@unless($notification->recipient_read_at)<span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-600"><span class="sr-only">Non lue</span></span>@endunless</div>
+                                        <p class="mt-1 line-clamp-2 text-xs text-slate-600">{{ $notification->summary }}</p>
+                                        <p class="mt-1 text-xs text-slate-500">{{ App\Support\Ui\UiLabel::dateTime($notification->occurred_at) }}</p>
+                                    </a>
+                                @empty
+                                    <p class="px-4 py-6 text-center text-sm text-slate-500">Aucune notification pour le moment.</p>
+                                @endforelse
+                            </div>
+                            <a href="{{ route('notifications.index') }}" class="block border-t border-slate-100 px-4 py-3 text-center text-sm font-semibold text-brand-700 hover:bg-slate-50">Voir toutes les notifications</a>
+                        </section>
+                    </div>
+                @endunless
                 <div class="relative" x-data="{ open: false, close(returnFocus = false) { this.open = false; if (returnFocus) this.$nextTick(() => this.$refs.userMenuButton.focus()) } }" @click.outside="close()" @keydown.escape.window="if (open) close(true)">
                     <button x-ref="userMenuButton" type="button" @click="open = ! open" class="flex min-h-10 items-center gap-3 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left hover:bg-slate-50" :aria-expanded="open.toString()" aria-haspopup="menu" aria-controls="menu-utilisateur">
                         <span aria-hidden="true" class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
@@ -63,6 +87,7 @@
                         <a role="menuitem" href="{{ route('profile.edit') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Mon profil</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf<button role="menuitem" type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">Déconnexion</button></form>
                     </div>
+                </div>
                 </div>
             </div>
         </header>

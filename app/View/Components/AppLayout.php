@@ -2,20 +2,26 @@
 
 namespace App\View\Components;
 
+use App\Support\Notifications\NotificationInbox;
 use App\Support\Ui\NavigationBuilder;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
 class AppLayout extends Component
 {
-    public function __construct(private readonly NavigationBuilder $navigation) {}
+    public function __construct(
+        private readonly NavigationBuilder $navigation,
+        private readonly NotificationInbox $notifications,
+    ) {}
 
     /**
      * Get the view / contents that represents the component.
      */
     public function render(): View
     {
-        $sections = $this->navigation->for(request()->user());
+        $user = request()->user();
+        $sections = $this->navigation->for($user);
+        $notificationPreview = $user->is_platform_admin ? collect() : $this->notifications->recent($user);
         $pageTitle = collect($sections)
             ->flatMap(fn (array $section) => $section['items'])
             ->first(fn (array $item) => request()->routeIs($item['pattern']))['label'] ?? match (true) {
@@ -27,6 +33,8 @@ class AppLayout extends Component
         return view('layouts.app', [
             'navigationSections' => $sections,
             'pageTitle' => $pageTitle,
+            'notificationPreview' => $notificationPreview,
+            'unreadNotificationCount' => $user->is_platform_admin ? 0 : $this->notifications->unreadCount($user),
         ]);
     }
 }

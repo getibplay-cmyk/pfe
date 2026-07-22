@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -71,6 +72,21 @@ class DemoTenancySeeder extends Seeder
             'password' => $password,
             'is_active' => true,
         ]);
+
+        foreach ($primaryAgencies->push($secondaryAgency) as $agency) {
+            $tenantId = $agency->tenant_id;
+            $delegatedBy = User::query()->where('tenant_id', $tenantId)->where('role_id', $roles['tenant-owner']->id)->value('id');
+            foreach (['rental-agent', 'fleet-manager', 'viewer-auditor'] as $roleSlug) {
+                DB::table('role_agency_delegations')->insert([
+                    'tenant_id' => $tenantId,
+                    'agency_id' => $agency->id,
+                    'role_id' => $roles[$roleSlug]->id,
+                    'delegated_by' => $delegatedBy,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
 
         User::forceCreate([
             'tenant_id' => $secondary->id,

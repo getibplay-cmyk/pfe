@@ -7,8 +7,10 @@ use App\Models\DamageReport;
 use App\Models\Driver;
 use App\Models\InsuranceClaim;
 use App\Models\InsurancePolicy;
+use App\Models\Invoice;
 use App\Models\MaintenanceOrder;
 use App\Models\RentalContract;
+use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
 use App\Support\Tenancy\TenantContext;
@@ -42,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
             'driver' => Driver::class,
             'vehicle' => Vehicle::class,
             'rental_contract' => RentalContract::class,
+            'reservation' => Reservation::class,
+            'invoice' => Invoice::class,
             'vehicle_inspection' => VehicleInspection::class,
             'damage_report' => DamageReport::class,
             'maintenance_order' => MaintenanceOrder::class,

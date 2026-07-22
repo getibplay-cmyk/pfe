@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\Notifications\GenerateOperationalNotifications;
 use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
 use Illuminate\Database\Seeder;
 
@@ -24,5 +25,7 @@ class DatabaseSeeder extends Seeder
             Lot04DemoSeeder::class,
             Lot05DemoSeeder::class,
         ]);
+
+        app(GenerateOperationalNotifications::class)->handle();
     }
 }

@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -71,11 +72,23 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
-        return $this->role?->permissions->contains('slug', $permission) ?? false;
+        return ($this->role?->is_active ?? false)
+            && ($this->role?->permissions->contains('slug', $permission) ?? false);
     }
 
     public function isAgencyManager(): bool
     {
         return $this->role?->slug === 'agency-manager';
+    }
+
+    public function isTenantOwner(): bool
+    {
+        return $this->role?->slug === 'tenant-owner';
+    }
+
+    public function internalNotifications(): BelongsToMany
+    {
+        return $this->belongsToMany(InternalNotification::class, 'internal_notification_recipients')
+            ->withPivot(['tenant_id', 'read_at', 'created_at']);
     }
 }

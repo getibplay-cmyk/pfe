@@ -21,7 +21,14 @@ class UpdateTenantUser
         return DB::transaction(function () use ($subject, $data, $actor): User {
             $locked = User::query()->lockForUpdate()->findOrFail($subject->id);
             abort_unless($locked->tenant_id === $actor->tenant_id, 403);
-            [$role, $agencyId] = $this->assignment->resolve($actor, (int) $data['role_id'], $data['agency_id'] ?? null);
+            if (! $actor->isTenantOwner() && ! $actor->isAgencyManager()) {
+                abort_unless((int) $data['role_id'] === (int) $locked->role_id, 403);
+                abort_unless(($data['agency_id'] ?? null) === $locked->agency_id, 403);
+                $role = $locked->role;
+                $agencyId = $locked->agency_id;
+            } else {
+                [$role, $agencyId] = $this->assignment->resolve($actor, (int) $data['role_id'], $data['agency_id'] ?? null);
+            }
             $this->protectLastOwner($locked, $role, $data['is_active']);
 
             $old = $locked->only(['name', 'email', 'agency_id', 'role_id', 'is_active']);
@@ -37,6 +44,12 @@ class UpdateTenantUser
                 DB::table('sessions')->where('user_id', $locked->id)->delete();
             }
             $this->audit->record('user.updated', $locked, $old, $locked->only(array_keys($old)));
+            if ((int) $old['role_id'] !== (int) $locked->role_id || (int) $old['agency_id'] !== (int) $locked->agency_id) {
+                $this->audit->record('user.role.assigned', $locked, ['role_id' => $old['role_id'], 'agency_id' => $old['agency_id']], ['role_id' => $locked->role_id, 'agency_id' => $locked->agency_id]);
+            }
+            if ((bool) $old['is_active'] !== (bool) $locked->is_active) {
+                $this->audit->record($locked->is_active ? 'user.activated' : 'user.deactivated', $locked, ['is_active' => $old['is_active']], ['is_active' => $locked->is_active]);
+            }
 
             return $locked;
         });

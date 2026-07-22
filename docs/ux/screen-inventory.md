@@ -56,3 +56,11 @@ réservations, contrat et finance ont aussi été contrôlés à 1024 × 768,
 La matrice détaillée se trouve dans `docs/ux/browser-validation-matrix.md` et
 les limites dans `docs/ux/accessibility-audit.md`. Firefox, lecteur d’écran,
 axe et Lighthouse n’étaient pas disponibles et ne sont pas déclarés validés.
+
+## Extension Lot 06F-F
+
+| Domaine | Écran | Utilisateurs | Résultat |
+|---|---|---|---|
+| Notifications | cloche, aperçu et `/notifications` | comptes tenant autorisés | centre filtré, paginé, accessible et destinations serveur sûres |
+| Administration | `/roles` et délégations | Tenant Owner | rôles personnalisés, matrice de permissions et délégation agence |
+| Administration | affectation utilisateur | Tenant Owner et Agency Manager borné | rôles filtrés côté serveur et plafond de permissions contrôlé |

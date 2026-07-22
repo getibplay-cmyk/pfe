@@ -28,6 +28,7 @@ class NavigationBuilder
         return array_values(array_filter([
             $this->section('Vue d’ensemble', [
                 $this->item('dashboard', 'Tableau de bord', 'dashboard', 'dashboard'),
+                $this->item('notifications', 'Notifications', 'notifications.index', 'notifications.*'),
             ]),
             $this->section('Exploitation', [
                 $this->when($user, 'reservation.view', $this->item('availability', 'Disponibilité', 'availability.index', 'availability.*')),
@@ -55,6 +56,7 @@ class NavigationBuilder
                 $this->when($user, 'tenant.manage', $this->item('tenant', 'Entreprise', 'tenant.show', 'tenant.*')),
                 $this->whenAny($user, ['agency.view', 'agency.manage'], $this->item('agencies', 'Agences', 'agencies.index', 'agencies.*')),
                 $this->whenAny($user, ['user.view', 'user.manage'], $this->item('users', 'Utilisateurs', 'users.index', 'users.*')),
+                $this->when($user, 'role.view', $this->item('roles', 'Rôles et permissions', 'roles.index', 'roles.*')),
                 $this->when($user, 'audit.view', $this->item('audit', 'Journal d’audit', 'audit-logs.index', 'audit-logs.*')),
             ]),
         ]));

@@ -55,6 +55,8 @@ class UiLabel
         'mandatory_liability' => 'Responsabilité civile obligatoire', 'comprehensive' => 'Tous risques', 'third_party' => 'Au tiers',
         'received' => 'Caution reçue', 'retained' => 'Caution retenue', 'refunded' => 'Caution remboursée',
         'adjustment_in' => 'Ajustement entrant', 'adjustment_out' => 'Ajustement sortant', 'reversal' => 'Contrepassation',
+        'information' => 'Information', 'warning' => 'Avertissement',
+        'fleet' => 'Flotte', 'finance' => 'Finance',
     ];
 
     private const TONES = [
@@ -65,6 +67,7 @@ class UiLabel
         'cancelled' => 'danger', 'expired' => 'danger', 'rejected' => 'danger', 'void' => 'danger',
         'out_of_service' => 'danger', 'critical' => 'danger', 'inactive' => 'muted', 'archived' => 'muted',
         'draft' => 'muted', 'closed' => 'muted', 'returned' => 'info', 'in_progress' => 'info',
+        'information' => 'info', 'warning' => 'warning', 'urgent' => 'danger',
     ];
 
     private const ACTIONS = [
@@ -96,6 +99,47 @@ class UiLabel
         'insurance.coverage.archived' => 'Garantie archivée',
         'reservation.exported' => 'Export des réservations téléchargé',
         'report.exported' => 'Export du rapport téléchargé',
+        'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
+        'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
+        'role.created' => 'Rôle personnalisé créé', 'role.updated' => 'Rôle personnalisé modifié',
+        'role.assignments.replaced' => 'Affectations du rôle remplacées', 'role.delegations.updated' => 'Délégations de rôle mises à jour',
+        'user.role.assigned' => 'Rôle utilisateur affecté', 'user.activated' => 'Compte utilisateur activé',
+        'user.deactivated' => 'Compte utilisateur désactivé', 'user.assignment.denied' => 'Tentative d’affectation refusée',
+        'customer.updated' => 'Client modifié', 'customer.archived' => 'Client archivé', 'customer.restored' => 'Client restauré',
+        'customer.verification.verified' => 'Client vérifié', 'customer.verification.rejected' => 'Vérification du client refusée',
+        'driver.updated' => 'Conducteur modifié', 'driver.archived' => 'Conducteur archivé', 'driver.restored' => 'Conducteur restauré',
+        'driver.verification.verified' => 'Conducteur vérifié', 'driver.verification.rejected' => 'Vérification du conducteur refusée',
+        'driver.licence.viewed' => 'Permis du conducteur consulté', 'document.archived' => 'Document archivé',
+        'pricing_rule.created' => 'Règle tarifaire créée', 'pricing_rule.versioned' => 'Règle tarifaire versionnée',
+        'reservation.updated' => 'Réservation modifiée', 'contract.version.created' => 'Version contractuelle créée',
+        'contract.ready' => 'Contrat déclaré prêt', 'contract.accepted' => 'Contrat accepté', 'contract.activated' => 'Contrat activé',
+        'contract.returned' => 'Retour du contrat confirmé', 'contract.cancelled' => 'Contrat annulé', 'contract.closed' => 'Contrat clôturé',
+        'inspection.departure.completed' => 'Inspection de départ terminée', 'inspection.return.completed' => 'Inspection de retour terminée',
+        'inspection.return.future_blocks_impacted' => 'Blocs futurs signalés après retour', 'damage.reported' => 'Dommage signalé',
+        'damage.review.started' => 'Revue du dommage commencée', 'damage.reviewed' => 'Dommage revu',
+        'invoice.created' => 'Facture créée', 'invoice.issued' => 'Facture émise', 'invoice.voided' => 'Facture annulée',
+        'payment.recorded' => 'Paiement saisi', 'payment.posted' => 'Paiement comptabilisé', 'payment.reversed' => 'Paiement contrepassé',
+        'deposit.received' => 'Caution encaissée', 'deposit.retained' => 'Caution retenue', 'deposit.refunded' => 'Caution remboursée',
+        'deposit.reversed' => 'Mouvement de caution contrepassé', 'expense.created' => 'Dépense créée', 'expense.approved' => 'Dépense approuvée',
+        'insurance_claim.reported' => 'Sinistre déclaré', 'insurance_claim.status.changed' => 'État du sinistre modifié',
+        'platform.tenant.updated' => 'Tenant mis à jour',
+    ];
+
+    private const PERMISSION_GROUPS = [
+        'tenant' => 'Entreprise', 'agency' => 'Agences', 'user' => 'Utilisateurs', 'role' => 'Rôles et délégations',
+        'vehicle' => 'Véhicules', 'vehicle_block' => 'Disponibilité', 'customer' => 'Clients', 'document' => 'Documents privés',
+        'pricing' => 'Tarification', 'reservation' => 'Réservations', 'contract' => 'Contrats', 'inspection' => 'Inspections',
+        'damage' => 'Dommages', 'charge' => 'Frais', 'invoice' => 'Factures', 'payment' => 'Paiements',
+        'deposit' => 'Cautions', 'expense' => 'Dépenses', 'maintenance' => 'Maintenance', 'insurance' => 'Assurance',
+        'claim' => 'Sinistres', 'report' => 'Rapports', 'audit' => 'Audit',
+    ];
+
+    private const ENTITIES = [
+        'Agency' => 'Agence', 'User' => 'Utilisateur', 'Role' => 'Rôle', 'Tenant' => 'Entreprise',
+        'Reservation' => 'Réservation', 'RentalContract' => 'Contrat', 'Customer' => 'Client', 'Driver' => 'Conducteur',
+        'Vehicle' => 'Véhicule', 'VehicleBlock' => 'Bloc véhicule', 'Document' => 'Document privé', 'Invoice' => 'Facture',
+        'Payment' => 'Paiement', 'DepositTransaction' => 'Caution', 'Expense' => 'Dépense', 'MaintenanceOrder' => 'Maintenance',
+        'InsurancePolicy' => 'Police d’assurance', 'InsuranceClaim' => 'Sinistre', 'InternalNotification' => 'Notification',
     ];
 
     private const REPORT_LABELS = [
@@ -159,6 +203,23 @@ class UiLabel
     public static function report(string $metric): string
     {
         return self::REPORT_LABELS[$metric] ?? 'Indicateur non documenté';
+    }
+
+    public static function permissionGroup(string $group): string
+    {
+        return self::PERMISSION_GROUPS[$group] ?? 'Autres permissions';
+    }
+
+    public static function permissionRisk(string $permission): string
+    {
+        return str_ends_with($permission, '.view') ? 'Consultation uniquement.' : 'Autorise une action ou une modification contrôlée.';
+    }
+
+    public static function entity(?string $class): string
+    {
+        $basename = class_basename((string) $class);
+
+        return self::ENTITIES[$basename] ?? 'Élément métier';
     }
 
     public static function date(?CarbonInterface $date): string

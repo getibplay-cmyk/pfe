@@ -18,7 +18,8 @@ class UserPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission('user.manage');
+        return ($user->isTenantOwner() || $user->isAgencyManager())
+            && $user->hasPermission('user.manage');
     }
 
     public function update(User $user, User $subject): bool

@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateTenantUserRequest;
 use App\Models\Agency;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Tenancy\TenantUserAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 
 class TenantUserController extends Controller
 {
+    public function __construct(private readonly TenantUserAssignment $assignment) {}
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', User::class);
@@ -30,7 +33,12 @@ class TenantUserController extends Controller
 
         return view('users.index', [
             'users' => $users,
-            'filterRoles' => Role::query()->whereNull('tenant_id')->orderBy('name')->get(),
+            'filterRoles' => Role::query()
+                ->where('is_active', true)
+                ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $request->user()->tenant_id))
+                ->where('slug', '!=', 'platform-admin')
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 
@@ -85,10 +93,10 @@ class TenantUserController extends Controller
                 ->where('is_active', true)
                 ->when($request->user()->agency_id, fn ($query, $agencyId) => $query->whereKey($agencyId))
                 ->orderBy('name')->get(),
-            'roles' => Role::query()
-                ->whereNull('tenant_id')
-                ->when($request->user()->isAgencyManager(), fn ($query) => $query->whereIn('slug', ['rental-agent', 'fleet-manager', 'viewer-auditor']))
-                ->orderBy('name')->get(),
+            'roles' => $this->assignment->availableRoles(
+                $request->user(),
+                $request->user()->agency_id ?? $user->agency_id,
+            ),
         ];
     }
 

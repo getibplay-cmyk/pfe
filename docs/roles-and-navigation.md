@@ -45,3 +45,15 @@ fermeture par Échap, boucle de focus et retour du focus sur son déclencheur.
 Les routes actives utilisent `aria-current="page"`. Les icônes sont décoratives,
 le texte du lien reste toujours présent et les badges combinent libellé et
 couleur. Les autorisations serveur restent la référence en cas d’appel direct.
+
+## Gouvernance Lot 06F-F
+
+Le Tenant Owner dispose du menu **Rôles et permissions** pour créer les rôles
+personnalisés et du panneau **Délégations par agence**. L’Agency Manager ne voit
+pas ces écrans : il utilise uniquement la liste déléguée lors de la création ou
+modification d’un utilisateur de sa propre agence. Le plafond de permissions
+est recalculé côté serveur à chaque affectation.
+
+La destination **Notifications** est présente pour tous les comptes tenant. Son
+contenu est ensuite filtré par tenant, agence et permission. La cloche du header
+et le menu mobile utilisent toujours les mêmes autorisations de navigation.

@@ -302,7 +302,7 @@ class Lot06FB2ManualBlocksExpenseRejectionTest extends TestCase
         $this->assertContains('finance', $keys);
         $this->assertContains('vehicle-blocks', $keys);
 
-        $emptyRole = Role::create(['tenant_id' => $f['tenant']->id, 'slug' => 'no-finance-'.uniqid(), 'name' => 'Sans finance', 'is_system' => false]);
+        $emptyRole = Role::forceCreate(['tenant_id' => $f['tenant']->id, 'slug' => 'no-finance-'.uniqid(), 'name' => 'Sans finance', 'is_system' => false, 'is_active' => true]);
         $withoutFinance = User::factory()->create(['tenant_id' => $f['tenant']->id, 'agency_id' => $f['agency']->id, 'role_id' => $emptyRole->id]);
         $this->actingAs($withoutFinance)->get(route('finance.index'))->assertForbidden();
     }

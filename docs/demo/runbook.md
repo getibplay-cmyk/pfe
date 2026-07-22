@@ -253,3 +253,21 @@ Le harnais reproductible `tests/Browser/lot06f_e2_browser.py` doit viser
 exclusivement `rentfleet_test`. Il génère son secret QA en mémoire et refuse de
 continuer si PostgreSQL retourne un autre nom de base. Ne jamais l’exécuter sur
 la base de démonstration vivante ou pendant une présentation.
+
+## Parcours notifications et gouvernance Lot 06F-F
+
+1. Avec le Tenant Owner, ouvrir la cloche puis la page **Notifications**.
+   Filtrer les alertes urgentes, ouvrir une réservation et revenir marquer une
+   notification non lue.
+2. Ouvrir **Rôles et permissions**, créer un rôle personnalisé de consultation
+   sans permission de plateforme, puis vérifier la matrice lisible.
+3. Ouvrir **Délégations par agence** et autoriser le rôle Agent de location dans
+   une agence préparée.
+4. Avec l’Agency Manager de cette agence, créer un utilisateur avec ce rôle.
+   Une autre agence et un rôle au-dessus de son plafond ne sont pas proposés.
+5. Revenir avec le Tenant Owner et consulter le journal d’audit traduit pour la
+   création, la délégation et l’affectation.
+
+La génération temporelle peut être démontrée sans doublon avec
+`php artisan notifications:generate-operational`. Elle ne contacte aucun
+service externe.

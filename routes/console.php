@@ -25,3 +25,9 @@ Schedule::command('insurance:expire-policies')
     ->timezone(config('app.timezone'))
     ->withoutOverlapping(30)
     ->onOneServer();
+
+Schedule::command('notifications:generate-operational')
+    ->everyFifteenMinutes()
+    ->timezone(config('app.timezone'))
+    ->withoutOverlapping(10)
+    ->onOneServer();

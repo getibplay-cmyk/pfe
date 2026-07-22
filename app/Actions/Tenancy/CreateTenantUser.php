@@ -35,6 +35,7 @@ class CreateTenantUser
                 'is_platform_admin' => false,
             ]);
             $this->audit->record('user.created', $user, [], $user->only(['name', 'email', 'agency_id', 'role_id', 'is_active', 'must_change_password']));
+            $this->audit->record('user.role.assigned', $user, [], ['role_id' => $role->id, 'agency_id' => $agencyId]);
 
             return ['user' => $user, 'temporary_password' => $temporaryPassword];
         });

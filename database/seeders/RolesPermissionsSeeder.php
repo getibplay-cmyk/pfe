@@ -47,10 +47,10 @@ class RolesPermissionsSeeder extends Seeder
         }
 
         $lotFourPermissions = [
-            'contract.create' => 'CrÃ©er un contrat', 'contract.version' => 'Versionner un contrat', 'contract.accept' => 'Accepter un contrat',
+            'contract.create' => 'Créer un contrat', 'contract.version' => 'Versionner un contrat', 'contract.accept' => 'Accepter un contrat',
             'contract.activate' => 'Activer un contrat', 'contract.return' => 'Traiter le retour', 'contract.cancel' => 'Annuler un contrat brouillon',
-            'inspection.manage' => 'GÃ©rer les inspections', 'damage.view' => 'Voir les dommages', 'damage.report' => 'Signaler un dommage',
-            'damage.review' => 'DÃ©cider la responsabilitÃ©', 'charge.review' => 'Revoir les frais',
+            'inspection.manage' => 'Gérer les inspections', 'damage.view' => 'Voir les dommages', 'damage.report' => 'Signaler un dommage',
+            'damage.review' => 'Décider la responsabilité', 'charge.review' => 'Revoir les frais',
         ];
         foreach ($lotFourPermissions as $slug => $name) {
             Permission::firstOrCreate(['slug' => $slug], ['name' => $name, 'group' => Str::before($slug, '.')]);

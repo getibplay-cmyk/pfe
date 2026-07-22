@@ -491,3 +491,18 @@ npm.cmd run build
 
 La validation visuelle réelle multi-navigateurs, les captures desktop/mobile et
 l’audit formel WCAG sont volontairement réservés au Lot 06F-E2.
+
+## Lot 06F-F — notifications et gouvernance RBAC
+
+Le centre `/notifications` fournit une cloche, un compteur non lu, des filtres,
+la lecture/non-lecture et des destinations contrôlées. Sa génération temporelle
+est idempotente et ne contacte aucun service externe :
+
+```powershell
+php artisan notifications:generate-operational
+```
+
+Le Tenant Owner administre les rôles personnalisés dans `/roles` et délègue
+explicitement les rôles autorisés à chaque agence. Les rôles système restent
+protégés, aucune route de suppression n’est exposée et l’Agency Manager demeure
+borné à son agence et à son plafond de permissions.
