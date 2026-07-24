@@ -27,6 +27,11 @@
 - [ ] HSTS activé seulement avec `APP_ENV=production` et HTTPS.
 - [ ] `DEMO_PASSWORD` vide ; seeders de démonstration interdits.
 - [ ] inscription publique et comptes par défaut absents.
+- [ ] premier administrateur créé interactivement avec
+      `rentfleet:bootstrap-platform-admin`, sans seeder ni mot de passe transmis
+      en argument.
+- [ ] `rentfleet:audit-password-hashes` ne signale aucune empreinte
+      incompatible avant ouverture du service.
 
 ## Scheduler
 

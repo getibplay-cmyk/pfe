@@ -3,14 +3,18 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\TenantStatus;
+use App\Models\User;
+use App\Support\Auth\PasswordHashInspector;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class LoginRequest extends FormRequest
 {
@@ -44,10 +48,34 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt([
+        $credentials = [
             ...$this->only('email', 'password'),
             'is_active' => true,
-        ], $this->boolean('remember'))) {
+        ];
+        $candidate = User::query()
+            ->where('email', $this->string('email')->toString())
+            ->where('is_active', true)
+            ->first(['id', 'password']);
+        $inspector = app(PasswordHashInspector::class);
+
+        if ($candidate && ! $inspector->isCompatible($candidate->getAuthPassword())) {
+            $this->recordIncompatibleHash($candidate);
+            $authenticated = false;
+        } else {
+            try {
+                $authenticated = Auth::attempt($credentials, $this->boolean('remember'));
+            } catch (RuntimeException $exception) {
+                $currentHash = $candidate?->fresh(['id', 'password'])?->getAuthPassword();
+                if ($candidate === null || $inspector->isCompatible($currentHash)) {
+                    throw $exception;
+                }
+
+                $this->recordIncompatibleHash($candidate);
+                $authenticated = false;
+            }
+        }
+
+        if (! $authenticated) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -104,5 +132,13 @@ class LoginRequest extends FormRequest
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+    }
+
+    private function recordIncompatibleHash(User $user): void
+    {
+        Log::warning('Authentification refusée : empreinte de mot de passe incompatible.', [
+            'event' => 'auth.password_hash_incompatible',
+            'user_id' => $user->id,
+        ]);
     }
 }

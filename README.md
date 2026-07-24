@@ -91,9 +91,42 @@ L’application est disponible sur `http://localhost:8000`. L’inscription
 publique est désactivée ; un utilisateur doit être créé localement avant la
 connexion. Le dashboard est protégé par le middleware `auth`.
 
-## Tests, formatage et frontend
+### Premier administrateur plateforme
+
+Après les migrations d’une installation neuve, créer le premier compte sans
+seeder et sans mot de passe par défaut :
 
 ```powershell
+php artisan rentfleet:bootstrap-platform-admin
+```
+
+La commande demande le nom, l’e-mail et deux saisies masquées du mot de passe,
+applique la politique forte, utilise le pilote de hash configuré et crée un
+audit sans secret. Elle refuse un second compte par défaut. L’option
+`--allow-additional` exige une confirmation explicite et doit rester réservée à
+une décision d’exploitation.
+
+Pour contrôler les empreintes existantes sans les afficher ni les modifier :
+
+```powershell
+php artisan rentfleet:audit-password-hashes
+```
+
+Une réinitialisation administrative exige un périmètre exact :
+
+```powershell
+php artisan rentfleet:reset-user-password utilisateur@entreprise.test --tenant=slug-tenant
+php artisan rentfleet:reset-user-password administrateur@plateforme.test --platform
+```
+
+## Tests, formatage et frontend
+
+Supprimer d’abord un éventuel cache de configuration local : la garde refuse
+volontairement PHPUnit si ce cache désigne une autre base que
+`rentfleet_test`.
+
+```powershell
+php artisan config:clear
 php artisan test
 php vendor/bin/pint --test
 npm.cmd run build
@@ -134,8 +167,11 @@ persistante, créer une base dédiée `rentfleet_demo`, vérifier sa configurati
 avec `php artisan db:show`, puis suivre le runbook. Les seeders créent deux
 tenants fictifs, trois agences, les six rôles initiaux et des utilisateurs de
 démonstration avec les domaines `@atlas-demo.test` et `@rif-demo.test`. Le mot
-de passe de démonstration peut être fourni localement avec `DEMO_PASSWORD` ;
-aucun mot de passe réel n’est documenté ou versionné.
+de passe de démonstration doit être créé dans un gestionnaire de secrets puis
+injecté localement avec `DEMO_PASSWORD` avant le seeding. La valeur conservée
+dans ce gestionnaire est celle à utiliser pour les comptes fictifs ; aucun mot
+de passe fonctionnel n’est documenté ou versionné. Sans cette variable, le
+seeder génère une valeur forte aléatoire qu’il n’affiche et ne journalise pas.
 
 Routes principales :
 
@@ -506,3 +542,16 @@ Le Tenant Owner administre les rôles personnalisés dans `/roles` et délègue
 explicitement les rôles autorisés à chaque agence. Les rôles système restent
 protégés, aucune route de suppression n’est exposée et l’Agency Manager demeure
 borné à son agence et à son plafond de permissions.
+
+## Lot 06F-G1 — blocages de sécurité
+
+Le bootstrap du premier administrateur plateforme ne dépend plus des données de
+démonstration. Une empreinte de mot de passe incompatible avec le pilote
+configuré produit le même refus générique qu’un compte inconnu, conserve la
+limitation de débit et ne provoque jamais de réponse HTTP 500.
+
+La classe `TestDatabaseGuard` est appelée lors de la création de toute
+application PHPUnit, avant `RefreshDatabase`, et avant les commandes
+destructives `migrate:fresh`, `migrate:refresh`, `migrate:reset` et `db:wipe`.
+Elle exige simultanément `APP_ENV=testing`, PostgreSQL et le nom exact
+`rentfleet_test`, y compris lorsque `DB_URL` ou `DATABASE_URL` est présent.

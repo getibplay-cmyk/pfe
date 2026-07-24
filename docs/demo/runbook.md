@@ -17,8 +17,13 @@ Pour une démonstration web persistante, créer séparément `rentfleet_demo`,
 copier la configuration vers un fichier local non versionné, vérifier le nom
 avec `php artisan db:show`, puis seulement exécuter `migrate:fresh --seed` sur
 cette base dédiée. Aucun raccourci destructif n’est fourni par le dépôt.
-Définir localement `DEMO_PASSWORD` avant le seeding ; aucun mot de passe fixe
-n’est versionné. Les seeders refusent l’environnement `production`.
+Créer une valeur forte dans le gestionnaire de secrets de l’opérateur, puis
+l’injecter localement dans `DEMO_PASSWORD` avant le seeding. La récupérer
+ensuite depuis ce même gestionnaire pour la connexion, sans l’afficher dans le
+terminal, une capture ou un journal. Aucun mot de passe fixe n’est versionné.
+Si la variable est absente, le seeder génère une valeur aléatoire forte qu’il
+n’affiche pas ; ce mode convient aux tests automatisés, pas à une démonstration
+interactive. Les seeders refusent l’environnement `production`.
 
 ## Comptes et données attendues
 
@@ -39,8 +44,9 @@ sinistre fictif en revue. Vérifier ces ordres de grandeur avec le dashboard et
 ## Parcours navigateur Lot 06C
 
 Ce parcours nominal ne nécessite ni Tinker, ni SQL manuel, ni appel direct à
-une API. Se connecter avec `tenant-owner@atlas-demo.test` et la valeur locale
-de `DEMO_PASSWORD`, puis utiliser exclusivement les écrans suivants :
+une API. Se connecter avec `tenant-owner@atlas-demo.test` et la valeur récupérée
+depuis le gestionnaire de secrets local, puis utiliser exclusivement les écrans
+suivants :
 
 1. Ouvrir **Contrats**, filtrer sur `ready`, puis ouvrir le contrat préparé.
 2. Dans **Prérequis du cycle**, vérifier l’identité et le permis, téléverser un

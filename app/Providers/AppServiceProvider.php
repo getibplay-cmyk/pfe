@@ -14,7 +14,10 @@ use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Testing\TestDatabaseGuard;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -38,6 +41,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Password::defaults(fn () => Password::min(12)->mixedCase()->numbers());
+
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            if (TestDatabaseGuard::protects($event->command)) {
+                TestDatabaseGuard::assertSafe(app());
+            }
+        });
 
         Relation::enforceMorphMap([
             'customer' => Customer::class,

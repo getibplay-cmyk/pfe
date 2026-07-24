@@ -91,6 +91,11 @@ class ProductionConfigurationTest extends TestCase
         $this->assertStringContainsString("env('DEMO_PASSWORD')", $tenancySeeder);
         $this->assertStringContainsString('Str::password(24)', $tenancySeeder);
         $this->assertDoesNotMatchRegularExpression('/Hash::make\(\s*[\'\"][^\'\"]+[\'\"]\s*\)/', $tenancySeeder);
+
+        foreach (['.env.example', '.env.production.example'] as $example) {
+            $source = file_get_contents(base_path($example));
+            $this->assertMatchesRegularExpression('/^DEMO_PASSWORD=\s*$/m', $source, $example);
+        }
     }
 
     public function test_versioned_runtime_sources_have_no_hard_coded_password_or_secret(): void
