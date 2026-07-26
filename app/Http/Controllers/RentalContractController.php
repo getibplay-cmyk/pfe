@@ -155,7 +155,9 @@ class RentalContractController extends Controller
     public function returned(Request $request, RentalContract $contract, MarkRentalReturned $action): RedirectResponse
     {
         $this->authorize('return', $contract);
-        abort_unless($request->user()->hasPermission('charge.review'), 403);
+        $submitsChargeDecisions = $request->filled('approved_charge_ids')
+            || $request->filled('rejected_charge_ids');
+        abort_if($submitsChargeDecisions && ! $request->user()->hasPermission('charge.review'), 403);
         $data = $request->validate(['approved_charge_ids' => ['array'], 'approved_charge_ids.*' => ['integer'], 'rejected_charge_ids' => ['array'], 'rejected_charge_ids.*' => ['integer'], 'reason' => ['nullable', 'string', 'max:1000']]);
         $action->handle($contract, $data, $request->user()->id);
 

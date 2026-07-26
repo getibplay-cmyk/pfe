@@ -37,8 +37,50 @@
         <div class="grid gap-6 lg:grid-cols-2">
             <section class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Dommages</h2>@foreach($contract->damages as $damage)<div class="mt-4 border-t pt-3 text-sm"><p class="font-medium">{{ $damage->damage_number }} — {{ $damage->description }}</p><div class="mt-2 flex flex-wrap gap-2"><x-status-badge :value="$damage->severity" /><x-status-badge :value="$damage->responsibility" /><x-status-badge :value="$damage->status" /></div>@if(in_array($damage->severity->value, ['major','critical']))<p class="mt-2 rounded bg-amber-50 p-2 text-amber-900">Mise hors service recommandée. Une confirmation humaine reste requise depuis la fiche véhicule.</p>@endif @can('review', $damage)<form method="POST" action="{{ route('damages.review', $damage) }}" class="mt-2 grid gap-2">@csrf<select name="responsibility" aria-label="Responsabilité"><option value="customer">Client</option><option value="agency">Agence</option><option value="insurance">Assurance</option><option value="unknown">Indéterminée</option></select><select name="status" aria-label="Décision"><option value="resolved">Résolu</option><option value="dismissed">Écarté</option></select><input name="approved_cost" type="number" step="0.01" min="0" aria-label="Coût approuvé" placeholder="Coût approuvé ({{ $contract->currency }})"><input name="reason" required aria-label="Justification humaine" placeholder="Justification humaine"><x-primary-button>Enregistrer la revue</x-primary-button></form>@endcan</div>@endforeach
             @if(auth()->user()->hasPermission('damage.report'))@can('return', $contract)<form method="POST" action="{{ route('contracts.damages.store', $contract) }}" class="mt-5 grid gap-2">@csrf<input type="hidden" name="return_inspection_id" value="{{ $return?->id }}"><div><x-input-label for="damage-description" value="Description du dommage" required /><input id="damage-description" name="description" required placeholder="Décrire le dommage constaté" class="mt-1 w-full rounded border-slate-300"></div><div><x-input-label for="damage-vehicle-area" value="Zone du véhicule" /><input id="damage-vehicle-area" name="vehicle_area" placeholder="Ex. aile avant droite" class="mt-1 w-full rounded border-slate-300"></div><div><x-input-label for="damage-severity" value="Gravité" required /><select id="damage-severity" name="severity" class="mt-1 w-full rounded border-slate-300"><option value="minor">Mineur</option><option value="moderate">Modéré</option><option value="major">Majeur</option><option value="critical">Critique</option></select></div><div><x-input-label for="damage-estimated-cost" :value="'Estimation indicative ('.$contract->currency.')'" /><input id="damage-estimated-cost" name="estimated_cost" type="number" step="0.01" min="0" placeholder="0,00" class="mt-1 w-full rounded border-slate-300"></div><button class="rounded border px-3 py-2">Signaler — responsabilité en attente</button></form>@endcan @endif</section>
-            <section class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Frais de retour</h2>@if(auth()->user()->hasPermission('charge.review'))@can('return', $contract)<form method="POST" action="{{ route('contracts.charges', $contract) }}" class="mt-3 flex flex-wrap items-end gap-2">@csrf<label class="pb-2 text-sm"><input type="checkbox" name="cleaning_approved" value="1"> Nettoyage constaté et approuvé</label><div class="min-w-40 flex-1"><x-input-label for="cleaning-amount" :value="'Montant du nettoyage ('.$contract->currency.')'" /><input id="cleaning-amount" name="cleaning_amount" type="number" step="0.01" min="0" placeholder="0,00" class="mt-1 w-full rounded border-slate-300"></div><button class="rounded border px-3 py-2">Calculer les propositions</button></form>@endcan
-            @can('return', $contract)<form method="POST" action="{{ route('contracts.returned', $contract) }}" class="mt-5 space-y-3">@csrf @forelse($contract->charges as $charge)<div class="rounded border p-3 text-sm"><p class="font-medium">{{ $charge->description }} — {{ App\Support\Ui\UiLabel::money($charge->total_amount, $contract->currency) }}</p><label class="mr-4"><input type="checkbox" name="approved_charge_ids[]" value="{{ $charge->id }}" @checked($charge->status->value === 'approved')> Approuver</label><label><input type="checkbox" name="rejected_charge_ids[]" value="{{ $charge->id }}" @checked($charge->status->value === 'rejected')> Rejeter</label></div>@empty<p class="text-sm text-slate-500">Aucun frais proposé.</p>@endforelse<div><x-input-label for="return-reason" value="Note de retour" /><input id="return-reason" name="reason" placeholder="Ajouter une note facultative" class="mt-1 w-full"></div><x-primary-button>Finaliser le retour</x-primary-button></form>@endcan @endif</section>
+            @php($canReviewCharges = auth()->user()->hasPermission('charge.review'))
+            @php($returnInspectionCompleted = $return?->status->value === 'completed')
+            @php($hasProposedCharges = $contract->charges->contains(fn ($charge) => $charge->status->value === 'proposed'))
+            @php($hasBlockingDamage = $contract->damages->contains(fn ($damage) => in_array($damage->status->value, ['reported', 'under_review'], true) || $damage->responsibility->value === 'pending'))
+            <section class="rounded-xl bg-white p-5 shadow-sm">
+                <h2 class="font-semibold">Frais de retour</h2>
+                @if($canReviewCharges)
+                    @can('return', $contract)
+                        <form method="POST" action="{{ route('contracts.charges', $contract) }}" class="mt-3 flex flex-wrap items-end gap-2">
+                            @csrf
+                            <label class="pb-2 text-sm"><input type="checkbox" name="cleaning_approved" value="1"> Nettoyage constaté et approuvé</label>
+                            <div class="min-w-40 flex-1"><x-input-label for="cleaning-amount" :value="'Montant du nettoyage ('.$contract->currency.')'" /><input id="cleaning-amount" name="cleaning_amount" type="number" step="0.01" min="0" placeholder="0,00" class="mt-1 w-full rounded border-slate-300"></div>
+                            <button class="rounded border px-3 py-2">Calculer les propositions</button>
+                        </form>
+                    @endcan
+                @endif
+
+                @if($returnInspectionCompleted && ! $hasBlockingDamage && ($canReviewCharges || ! $hasProposedCharges))
+                    @can('return', $contract)
+                        <form method="POST" action="{{ route('contracts.returned', $contract) }}" class="mt-5 space-y-3">
+                            @csrf
+                            @forelse($contract->charges as $charge)
+                                <div class="rounded border p-3 text-sm">
+                                    <p class="font-medium">{{ $charge->description }} — {{ App\Support\Ui\UiLabel::money($charge->total_amount, $contract->currency) }}</p>
+                                    @if($canReviewCharges && $charge->status->value === 'proposed')
+                                        <label class="mr-4"><input type="checkbox" name="approved_charge_ids[]" value="{{ $charge->id }}"> Approuver</label>
+                                        <label><input type="checkbox" name="rejected_charge_ids[]" value="{{ $charge->id }}"> Rejeter</label>
+                                    @else
+                                        <x-status-badge :value="$charge->status" />
+                                    @endif
+                                </div>
+                            @empty
+                                <p class="text-sm text-slate-500">Aucun frais proposé.</p>
+                            @endforelse
+                            <div><x-input-label for="return-reason" value="Note de retour" /><input id="return-reason" name="reason" placeholder="Ajouter une note facultative" class="mt-1 w-full"></div>
+                            <x-primary-button>Finaliser le retour</x-primary-button>
+                        </form>
+                    @endcan
+                @elseif($hasBlockingDamage)
+                    <p class="mt-4 text-sm text-amber-800">La finalisation attend la revue humaine des dommages signalés.</p>
+                @elseif($hasProposedCharges && ! $canReviewCharges)
+                    <p class="mt-4 text-sm text-amber-800">La finalisation attend la décision d’une personne autorisée sur les frais proposés.</p>
+                @endif
+            </section>
         </div>
         @endif
 
