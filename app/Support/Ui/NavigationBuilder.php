@@ -19,7 +19,7 @@ class NavigationBuilder
                 [
                     'label' => 'Administration',
                     'items' => [
-                        $this->item('platform-tenants', 'Tenants', 'platform.tenants.index', 'platform.tenants.*'),
+                        $this->item('platform-tenants', 'Entreprises clientes', 'platform.tenants.index', 'platform.tenants.*'),
                     ],
                 ],
             ];

@@ -54,7 +54,7 @@ class DemoTenancySeeder extends Seeder
                 'tenant_id' => $primary->id,
                 'agency_id' => $slug === 'tenant-owner' ? null : $primaryAgencies->first()->id,
                 'role_id' => $role->id,
-                'name' => $role->name.' Démo',
+                'name' => $role->displayName().' — démonstration',
                 'email' => $slug.'@atlas-demo.test',
                 'email_verified_at' => now(),
                 'password' => $password,
@@ -66,7 +66,7 @@ class DemoTenancySeeder extends Seeder
             'tenant_id' => $secondary->id,
             'agency_id' => null,
             'role_id' => $roles['tenant-owner']->id,
-            'name' => 'Tenant Owner Rif Démo',
+            'name' => 'Administrateur de l’entreprise — démonstration Rif',
             'email' => 'owner@rif-demo.test',
             'email_verified_at' => now(),
             'password' => $password,
@@ -92,7 +92,7 @@ class DemoTenancySeeder extends Seeder
             'tenant_id' => $secondary->id,
             'agency_id' => $secondaryAgency->id,
             'role_id' => $roles['agency-manager']->id,
-            'name' => 'Agency Manager Rif Démo',
+            'name' => 'Responsable d’agence — démonstration Rif',
             'email' => 'manager@rif-demo.test',
             'email_verified_at' => now(),
             'password' => $password,
@@ -100,7 +100,7 @@ class DemoTenancySeeder extends Seeder
         ]);
 
         User::forceCreate([
-            'name' => 'Platform Admin Démo',
+            'name' => 'Administrateur de la plateforme — démonstration',
             'email' => 'platform@rentfleet.test',
             'email_verified_at' => now(),
             'password' => $password,

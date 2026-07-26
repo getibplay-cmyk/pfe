@@ -40,7 +40,7 @@ class TenantUserAssignment
         }
 
         $agencyId = $effectiveAgencyId;
-        abort_unless($agencyId, 422, 'Une agence active du tenant est obligatoire.');
+        abort_unless($agencyId, 422, 'Une agence active de l’entreprise est obligatoire.');
         Agency::query()->whereKey($agencyId)->where('is_active', true)->firstOrFail();
 
         return [$role, (int) $agencyId];

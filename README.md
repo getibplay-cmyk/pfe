@@ -538,10 +538,28 @@ est idempotente et ne contacte aucun service externe :
 php artisan notifications:generate-operational
 ```
 
-Le Tenant Owner administre les rôles personnalisés dans `/roles` et délègue
+L’administrateur de l’entreprise administre les rôles personnalisés dans `/roles` et délègue
 explicitement les rôles autorisés à chaque agence. Les rôles système restent
-protégés, aucune route de suppression n’est exposée et l’Agency Manager demeure
+protégés, aucune route de suppression n’est exposée et le responsable d’agence demeure
 borné à son agence et à son plafond de permissions.
+
+## Lot 06F-G2 — cycle des notifications et intégrité RBAC
+
+Une notification opérationnelle possède désormais un incident stable, une
+échéance évolutive et deux états indépendants : lecture par utilisateur et
+résolution métier. Une cause disparue sort de la cloche active tout en restant
+consultable dans l’historique ; sa réapparition réactive la même ligne sans
+doublon.
+
+PostgreSQL contrôle directement la cohérence utilisateur/rôle/agence et refuse
+les mélanges entre plateforme et entreprise, les rôles personnalisés
+inter-entreprises, les rôles inactifs et les délégations incohérentes. La
+désactivation d’un rôle attribué exige un remplacement explicitement confirmé,
+délégué dans toutes les agences concernées et sans augmentation de permissions.
+
+```powershell
+php artisan test tests/Feature/Lot06FG2NotificationsRbacAccessibilityTest.php
+```
 
 ## Lot 06F-G1 — blocages de sécurité
 

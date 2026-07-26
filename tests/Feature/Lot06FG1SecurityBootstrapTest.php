@@ -187,7 +187,7 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
             'slug' => 'tenant-g1',
             'status' => TenantStatus::Active,
         ]);
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = $this->tenantOwner($tenant);
         $previousHash = $user->getAuthPassword();
         $password = Str::password(24, true, true, true, false);
 
@@ -225,7 +225,7 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
             'slug' => 'tenant-different',
             'status' => TenantStatus::Active,
         ]);
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = $this->tenantOwner($tenant);
         $before = $user->getAuthPassword();
 
         $this->artisan('rentfleet:reset-user-password', [
@@ -270,6 +270,27 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
             $source = file_get_contents($path);
             $this->assertDoesNotMatchRegularExpression('/DEMO_PASSWORD\s*=\s*\S+/', $source, $path);
         }
+    }
+
+    private function tenantOwner(Tenant $tenant): User
+    {
+        $role = Role::query()
+            ->whereNull('tenant_id')
+            ->where('slug', 'tenant-owner')
+            ->first()
+            ?? Role::query()->forceCreate([
+                'tenant_id' => null,
+                'name' => 'Administrateur de l’entreprise',
+                'slug' => 'tenant-owner',
+                'is_system' => true,
+                'is_active' => true,
+            ]);
+
+        return User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'agency_id' => null,
+            'role_id' => $role->id,
+        ]);
     }
 
     private function bootstrapPlatformAdmin(string $password)

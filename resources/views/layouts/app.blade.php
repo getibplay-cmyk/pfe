@@ -50,7 +50,7 @@
                     </button>
                     <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-slate-950">{{ $pageTitle }}</p>
-                        <p class="truncate text-xs text-slate-500">{{ $user->tenant?->name ?? 'Administration plateforme' }}@if($user->agency) · {{ $user->agency->name }}@endif</p>
+                        <p class="truncate text-xs text-slate-500">{{ $user->tenant?->name ?? 'Administration de la plateforme' }}@if($user->agency) · {{ $user->agency->name }}@endif</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">

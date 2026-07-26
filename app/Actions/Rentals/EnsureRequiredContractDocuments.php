@@ -39,7 +39,7 @@ class EnsureRequiredContractDocuments
             ->first();
 
         if (! $document) {
-            throw ValidationException::withMessages(['documents' => 'Les documents requis doivent appartenir au tenant et à l’agence du contrat.']);
+            throw ValidationException::withMessages(['documents' => 'Les documents requis doivent appartenir à l’entreprise et à l’agence du contrat.']);
         }
 
         $this->validateStoredVersion($contract, $document);
@@ -48,7 +48,7 @@ class EnsureRequiredContractDocuments
     private function validateStoredVersion(RentalContract $contract, Document $document): void
     {
         if ((int) $document->tenant_id !== (int) $contract->tenant_id || (int) $document->agency_id !== (int) $contract->agency_id) {
-            throw ValidationException::withMessages(['documents' => 'Un document requis ne correspond pas au tenant et à l’agence du contrat.']);
+            throw ValidationException::withMessages(['documents' => 'Un document requis ne correspond pas à l’entreprise et à l’agence du contrat.']);
         }
         if ($document->trashed() || $document->retention_until?->isPast()) {
             throw ValidationException::withMessages(['documents' => 'Un document requis est obsolète.']);

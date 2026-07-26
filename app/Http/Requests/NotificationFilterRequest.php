@@ -16,7 +16,7 @@ class NotificationFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['nullable', Rule::in(['all', 'unread'])],
+            'status' => ['nullable', Rule::in(['active', 'unread', 'resolved', 'all'])],
             'priority' => ['nullable', Rule::in(['information', 'warning', 'urgent'])],
             'category' => ['nullable', Rule::in(['reservation', 'contract', 'fleet', 'insurance', 'maintenance', 'finance'])],
         ];

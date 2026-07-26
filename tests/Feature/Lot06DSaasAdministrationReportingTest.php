@@ -173,11 +173,11 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
 
         $adminRole = Role::forceCreate(['tenant_id' => $fixture['tenant']->id, 'name' => 'Administrateur utilisateurs', 'slug' => 'user-admin', 'is_system' => false]);
         $adminRole->permissions()->attach(Permission::where('slug', 'user.manage')->value('id'));
-        $admin = User::factory()->create(['tenant_id' => $fixture['tenant']->id, 'agency_id' => null, 'role_id' => $adminRole->id]);
+        $admin = User::factory()->create(['tenant_id' => $fixture['tenant']->id, 'agency_id' => $fixture['agency']->id, 'role_id' => $adminRole->id]);
         $this->actingAs($admin)->put(route('users.update', $fixture['user']), [
             'name' => $fixture['user']->name, 'email' => $fixture['user']->email, 'role_id' => $fixture['user']->role_id,
             'agency_id' => null, 'is_active' => '0',
-        ])->assertSessionHasErrors('is_active');
+        ])->assertForbidden();
         $this->assertTrue($fixture['user']->refresh()->is_active);
 
         $this->actingAs($fixture['user'])->put(route('users.update', $agent), [
@@ -220,7 +220,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
 
         $response = $this->actingAs($platform)->get(route('platform.dashboard'));
         $response->assertOk()->assertViewIs('platform.dashboard');
-        $this->assertSame(1, $response->viewData('metrics')['Tenants']);
+        $this->assertSame(1, $response->viewData('metrics')['Entreprises clientes']);
         $this->assertTrue($response->viewData('alerts')->contains(fn (array $alert) => $alert['tenant']->is($tenantWithoutOwner) && $alert['missing_owner']));
         $response->assertDontSee('password')->assertDontSee('DB_PASSWORD');
     }

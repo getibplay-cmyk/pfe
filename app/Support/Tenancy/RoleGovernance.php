@@ -29,6 +29,51 @@ class RoleGovernance
             ->get();
     }
 
+    public function replacementRoles(Role $role, User $actor): Collection
+    {
+        abort_unless(! $role->is_system && $role->tenant_id === $actor->tenant_id, 403);
+
+        $permissionIds = $role->permissions()->pluck('permissions.id');
+        $agencyIds = $role->users()
+            ->whereNotNull('agency_id')
+            ->distinct()
+            ->pluck('agency_id');
+
+        return Role::query()
+            ->whereKeyNot($role->id)
+            ->where('is_active', true)
+            ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $actor->tenant_id))
+            ->whereNotIn('slug', ['platform-admin', 'tenant-owner'])
+            ->whereDoesntHave('permissions', fn ($query) => $query->whereNotIn('permissions.id', $permissionIds))
+            ->withCount(['delegations as matching_delegations_count' => fn ($query) => $query
+                ->where('tenant_id', $actor->tenant_id)
+                ->whereIn('agency_id', $agencyIds)])
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (Role $candidate): bool => $candidate->matching_delegations_count === $agencyIds->count())
+            ->values();
+    }
+
+    public function replacementImpact(Role $role): array
+    {
+        $users = $role->users()
+            ->select(['id', 'agency_id'])
+            ->with('agency:id,name')
+            ->orderBy('id')
+            ->get();
+
+        return [
+            'user_count' => $users->count(),
+            'agencies' => $users
+                ->groupBy('agency_id')
+                ->map(fn (Collection $items): array => [
+                    'name' => $items->first()->agency?->name ?? 'Sans agence',
+                    'user_count' => $items->count(),
+                ])
+                ->values(),
+        ];
+    }
+
     public function assignableRoles(User $actor, ?int $agencyId): Collection
     {
         if ($actor->isTenantOwner()) {
@@ -97,21 +142,43 @@ class RoleGovernance
             $permissions = $this->validatedPermissions($data['permission_ids'] ?? []);
             $oldPermissionIds = $locked->permissions()->pluck('permissions.id')->all();
             $willBeActive = (bool) $data['is_active'];
+            $affected = $locked->users()
+                ->select(['id', 'tenant_id', 'agency_id', 'role_id'])
+                ->lockForUpdate()
+                ->get();
 
-            if (! $willBeActive && $locked->users()->exists()) {
+            if (! $willBeActive && $affected->isNotEmpty()) {
                 $replacementId = $data['replacement_role_id'] ?? null;
                 if (! $replacementId) {
                     throw ValidationException::withMessages(['replacement_role_id' => 'Un rôle de remplacement est obligatoire car ce rôle est encore attribué.']);
                 }
-                $replacement = Role::query()->whereKey($replacementId)->where('is_active', true)
-                    ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $actor->tenant_id))
-                    ->where('slug', '!=', 'platform-admin')->firstOrFail();
-                $affected = $locked->users()->pluck('id');
-                User::query()->whereIn('id', $affected)->update(['role_id' => $replacement->id]);
-                $this->audit->record('role.assignments.replaced', $locked, ['role_id' => $locked->id], ['replacement_role_id' => $replacement->id, 'user_count' => $affected->count()]);
+
+                if (! ($data['confirm_replacement'] ?? false)) {
+                    throw ValidationException::withMessages(['confirm_replacement' => 'Confirmez explicitement le remplacement des utilisateurs concernés.']);
+                }
+
+                $replacement = Role::query()->whereKey($replacementId)->lockForUpdate()->first();
+                $this->validateReplacement($locked, $replacement, $affected, $oldPermissionIds, $actor);
+                $this->audit->record('role.replacement.requested', $locked, [], [
+                    'replacement_role_id' => $replacement->id,
+                    'user_count' => $affected->count(),
+                    'agency_count' => $affected->pluck('agency_id')->unique()->count(),
+                ]);
+                User::query()->whereIn('id', $affected->modelKeys())->update(['role_id' => $replacement->id]);
+                $this->audit->record('role.assignments.replaced', $locked, ['role_id' => $locked->id], [
+                    'replacement_role_id' => $replacement->id,
+                    'user_count' => $affected->count(),
+                    'agency_count' => $affected->pluck('agency_id')->unique()->count(),
+                ]);
             }
 
             $old = ['name' => $locked->name, 'is_active' => $locked->is_active, 'permission_ids' => $oldPermissionIds];
+            if (! $willBeActive) {
+                DB::table('role_agency_delegations')
+                    ->where('tenant_id', $actor->tenant_id)
+                    ->where('role_id', $locked->id)
+                    ->delete();
+            }
             $locked->forceFill(['name' => $data['name'], 'is_active' => $willBeActive])->save();
             $locked->permissions()->sync($permissions->modelKeys());
             $this->audit->record('role.updated', $locked, $old, ['name' => $locked->name, 'is_active' => $locked->is_active, 'permission_ids' => $permissions->modelKeys()]);
@@ -157,6 +224,38 @@ class RoleGovernance
         }
 
         return $permissions;
+    }
+
+    private function validateReplacement(Role $source, ?Role $replacement, Collection $affected, array $sourcePermissionIds, User $actor): void
+    {
+        if (! $replacement
+            || ! $replacement->is_active
+            || $replacement->id === $source->id
+            || $replacement->slug === 'platform-admin'
+            || $replacement->slug === 'tenant-owner'
+            || ($replacement->tenant_id !== null && $replacement->tenant_id !== $actor->tenant_id)) {
+            throw ValidationException::withMessages(['replacement_role_id' => 'Le rôle de remplacement est inactif, réservé ou hors de votre entreprise.']);
+        }
+
+        if ($replacement->permissions()->whereNotIn('permissions.id', $sourcePermissionIds)->exists()) {
+            throw ValidationException::withMessages(['replacement_role_id' => 'Le rôle de remplacement accorderait des permissions supplémentaires.']);
+        }
+
+        $agencyIds = $affected->pluck('agency_id')->filter()->unique()->values();
+        if ($affected->contains(fn (User $user): bool => $user->agency_id === null)) {
+            throw ValidationException::withMessages(['replacement_role_id' => 'Chaque utilisateur concerné doit appartenir à une agence avant le remplacement.']);
+        }
+
+        $delegatedAgencyIds = DB::table('role_agency_delegations')
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('role_id', $replacement->id)
+            ->whereIn('agency_id', $agencyIds)
+            ->pluck('agency_id')
+            ->unique();
+
+        if ($delegatedAgencyIds->count() !== $agencyIds->count()) {
+            throw ValidationException::withMessages(['replacement_role_id' => 'Le rôle de remplacement doit être explicitement délégué dans chaque agence concernée.']);
+        }
     }
 
     private function ensureUniqueName(string $name, int $tenantId, ?int $exceptRoleId = null): void

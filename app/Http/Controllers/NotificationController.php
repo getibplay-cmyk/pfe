@@ -19,7 +19,7 @@ class NotificationController extends Controller
         return view('notifications.index', [
             'notifications' => $inbox->paginate(
                 $request->user(),
-                ($filters['status'] ?? 'all') === 'unread' ? 'unread' : null,
+                $filters['status'] ?? 'active',
                 $filters['priority'] ?? null,
                 $filters['category'] ?? null,
             ),

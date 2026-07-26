@@ -433,7 +433,7 @@ class BuildMinimalReport
     private function assertCriteria(ReportCriteria $criteria): void
     {
         if (! $this->context->hasTenant() || $this->context->tenantId() !== $criteria->tenantId) {
-            throw new AuthorizationException('Le tenant du rapport ne correspond pas au contexte actif.');
+            throw new AuthorizationException('L’entreprise du rapport ne correspond pas au contexte actif.');
         }
 
         if ($this->context->agencyId() !== null && $criteria->agencyIds !== [$this->context->agencyId()]) {
@@ -445,7 +445,7 @@ class BuildMinimalReport
             ->whereIn('id', $criteria->agencyIds)
             ->count();
         if ($authorized !== count($criteria->agencyIds)) {
-            throw new AuthorizationException('Une agence du rapport ne correspond pas au tenant actif.');
+            throw new AuthorizationException('Une agence du rapport ne correspond pas à l’entreprise active.');
         }
     }
 

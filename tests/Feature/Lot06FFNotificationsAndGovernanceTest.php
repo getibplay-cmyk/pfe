@@ -116,9 +116,14 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $this->assertSame($f['tenant']->id, $role->tenant_id);
         $this->assertEqualsCanonicalizing($permissionIds, $role->permissions()->pluck('permissions.id')->all());
 
-        $replacement = Role::query()->where('slug', 'viewer-auditor')->firstOrFail();
+        $replacement = $this->customRole($f, 'Accueil limité', $permissionIds);
+        $this->inTenant($f, fn () => RoleAgencyDelegation::create([
+            'agency_id' => $f['agency']->id,
+            'role_id' => $replacement->id,
+            'delegated_by' => $f['user']->id,
+        ]));
         $assigned = User::factory()->create(['tenant_id' => $f['tenant']->id, 'agency_id' => $f['agency']->id, 'role_id' => $role->id]);
-        $this->actingAs($f['user'])->put(route('roles.update', $role), ['name' => 'Accueil agence', 'permission_ids' => $permissionIds, 'is_active' => '0', 'replacement_role_id' => $replacement->id])->assertRedirect(route('roles.index'));
+        $this->actingAs($f['user'])->put(route('roles.update', $role), ['name' => 'Accueil agence', 'permission_ids' => $permissionIds, 'is_active' => '0', 'replacement_role_id' => $replacement->id, 'confirm_replacement' => '1'])->assertRedirect(route('roles.index'));
         $this->assertFalse($role->refresh()->is_active);
         $this->assertSame($replacement->id, $assigned->refresh()->role_id);
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $f['tenant']->id, 'action' => 'role.assignments.replaced', 'auditable_id' => $role->id]);
@@ -196,7 +201,7 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $this->assertSame('Avertissement', UiLabel::get('warning'));
 
         $this->actingAs($f['user'])->post(route('roles.store'), ['permission_ids' => []])->assertSessionHasErrors('name');
-        $this->actingAs($f['user'])->get(route('roles.index'))->assertOk()->assertSee('Propriétaire du tenant')->assertDontSee('tenant-owner');
+        $this->actingAs($f['user'])->get(route('roles.index'))->assertOk()->assertSee('Administrateur de l’entreprise')->assertDontSee('tenant-owner');
         $this->actingAs($f['user'])->get(route('notifications.index', ['priority' => 'invalid']))->assertSessionHasErrors('priority');
         $this->assertSame('fr', app()->getLocale());
         $this->assertSame('pgsql', DB::connection()->getDriverName());

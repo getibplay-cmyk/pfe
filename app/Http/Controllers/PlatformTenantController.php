@@ -46,7 +46,7 @@ class PlatformTenantController extends Controller
         $result = $action->handle($request->validated(), $request->user()->id);
 
         return response()->view('shared.temporary-password', [
-            'title' => 'Tenant provisionné',
+            'title' => 'Entreprise cliente créée',
             'message' => 'Transmettez ces identifiants au propriétaire par un canal sûr. Le mot de passe ne sera plus affiché.',
             'loginEmail' => $request->validated('owner_email'),
             'temporaryPassword' => $result['temporary_password'],
@@ -92,20 +92,20 @@ class PlatformTenantController extends Controller
         ]);
         $audit->record('platform.tenant.updated', $tenant, $old, $tenant->only(array_keys($old)));
 
-        return redirect()->route('platform.tenants.show', $tenant)->with('status', 'Tenant mis à jour.');
+        return redirect()->route('platform.tenants.show', $tenant)->with('status', 'Entreprise cliente mise à jour.');
     }
 
     public function suspend(SuspendTenantRequest $request, Tenant $tenant, SuspendTenant $action): RedirectResponse
     {
         $action->handle($tenant, $request->validated('reason'), $request->user()->id);
 
-        return back()->with('status', 'Tenant suspendu et sessions révoquées.');
+        return back()->with('status', 'Entreprise cliente suspendue et sessions révoquées.');
     }
 
     public function reactivate(Tenant $tenant, ReactivateTenant $action): RedirectResponse
     {
         $action->handle($tenant);
 
-        return back()->with('status', 'Tenant réactivé.');
+        return back()->with('status', 'Entreprise cliente réactivée.');
     }
 }

@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,7 +11,7 @@ class PasswordConfirmationTest extends TestCase
 
     public function test_confirm_password_screen_can_be_rendered(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create();
+        $user = $this->createTenantOwner();
 
         $response = $this->actingAs($user)->get('/confirm-password');
 
@@ -22,7 +20,7 @@ class PasswordConfirmationTest extends TestCase
 
     public function test_password_can_be_confirmed(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create();
+        $user = $this->createTenantOwner();
 
         $response = $this->actingAs($user)->post('/confirm-password', [
             'password' => 'password',
@@ -34,7 +32,7 @@ class PasswordConfirmationTest extends TestCase
 
     public function test_password_is_not_confirmed_with_invalid_password(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create();
+        $user = $this->createTenantOwner();
 
         $response = $this->actingAs($user)->post('/confirm-password', [
             'password' => 'wrong-password',

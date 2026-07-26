@@ -57,7 +57,9 @@ class RoleController extends Controller
         $agencies = Agency::query()->where('is_active', true)->with('users:id,agency_id,role_id')->orderBy('name')->get();
         $roles = Role::query()->where('is_active', true)
             ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', $request->user()->tenant_id))
-            ->whereNotIn('slug', ['platform-admin', 'tenant-owner'])->orderBy('name')->get();
+            ->whereNotIn('slug', ['platform-admin', 'tenant-owner'])
+            ->with('permissions:id')
+            ->orderBy('name')->get();
         $delegations = RoleAgencyDelegation::query()->get()->groupBy('agency_id')->map->pluck('role_id');
 
         return view('roles.delegations', compact('agencies', 'roles', 'delegations'));
@@ -77,10 +79,14 @@ class RoleController extends Controller
             ->where('group', '!=', 'platform')->where('slug', 'not like', 'platform.%')
             ->whereNotIn('slug', ['role.manage', 'role.delegate'])
             ->orderBy('group')->orderBy('name')->get()->groupBy('group');
-        $replacementRoles = Role::query()->where('is_active', true)->whereKeyNot($role->id)
-            ->where(fn ($query) => $query->whereNull('tenant_id')->orWhere('tenant_id', auth()->user()->tenant_id))
-            ->where('slug', '!=', 'platform-admin')->orderBy('name')->get();
+        $governance = app(RoleGovernance::class);
+        $replacementRoles = $role->exists
+            ? $governance->replacementRoles($role, auth()->user())
+            : collect();
+        $replacementImpact = $role->exists
+            ? $governance->replacementImpact($role)
+            : ['user_count' => 0, 'agencies' => collect()];
 
-        return compact('role', 'permissions', 'replacementRoles');
+        return compact('role', 'permissions', 'replacementRoles', 'replacementImpact');
     }
 }

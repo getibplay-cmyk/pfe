@@ -26,7 +26,7 @@ class ReservationRelationships
 
         $category = VehicleCategory::whereKey($data['vehicle_category_id'] ?? null)->first();
         if (! $category) {
-            throw ValidationException::withMessages(['vehicle_category_id' => 'La catégorie est introuvable dans le tenant actif.']);
+            throw ValidationException::withMessages(['vehicle_category_id' => 'La catégorie est introuvable dans l’entreprise active.']);
         }
 
         $driver = null;

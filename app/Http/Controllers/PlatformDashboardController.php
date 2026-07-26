@@ -26,9 +26,9 @@ class PlatformDashboardController extends Controller
 
         return view('platform.dashboard', [
             'metrics' => [
-                'Tenants' => Tenant::query()->count(),
-                'Tenants actifs' => Tenant::query()->where('status', TenantStatus::Active->value)->count(),
-                'Tenants suspendus' => Tenant::query()->where('status', TenantStatus::Suspended->value)->count(),
+                'Entreprises clientes' => Tenant::query()->count(),
+                'Entreprises clientes actives' => Tenant::query()->where('status', TenantStatus::Active->value)->count(),
+                'Entreprises clientes suspendues' => Tenant::query()->where('status', TenantStatus::Suspended->value)->count(),
                 'Agences' => DB::table('agencies')->whereNull('deleted_at')->count(),
                 'Utilisateurs actifs' => DB::table('users')->whereNotNull('tenant_id')->where('is_active', true)->count(),
             ],

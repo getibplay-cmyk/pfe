@@ -126,7 +126,7 @@ class CreateInsuranceClaim
         }
 
         return RentalContract::find($contractId)
-            ?? throw ValidationException::withMessages(['rental_contract_id' => 'Contrat introuvable dans le tenant actif.']);
+            ?? throw ValidationException::withMessages(['rental_contract_id' => 'Contrat introuvable dans l’entreprise active.']);
     }
 
     private function damage(mixed $damageId): ?DamageReport
@@ -136,6 +136,6 @@ class CreateInsuranceClaim
         }
 
         return DamageReport::find($damageId)
-            ?? throw ValidationException::withMessages(['damage_report_id' => 'Dommage introuvable dans le tenant actif.']);
+            ?? throw ValidationException::withMessages(['damage_report_id' => 'Dommage introuvable dans l’entreprise active.']);
     }
 }

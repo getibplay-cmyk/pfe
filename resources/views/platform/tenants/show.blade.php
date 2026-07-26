@@ -1,8 +1,54 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
-        <x-page-header :title="$tenant->name" :eyebrow="'Tenant · '.$tenant->slug" description="Configuration structurelle et état de service du tenant."><x-slot:actions><x-status-badge :value="$tenant->status" /><a href="{{ route('platform.tenants.edit', $tenant) }}" class="rf-button-primary">Modifier</a></x-slot:actions></x-page-header>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">@foreach($counts as $label => $value)<section class="rounded-xl bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">{{ $label }}</p><p class="mt-2 text-2xl font-bold">{{ $value }}</p></section>@endforeach</div>
-        <div class="grid gap-6 lg:grid-cols-2"><section class="rounded-xl bg-white p-6 shadow-sm"><h2 class="font-semibold">Informations</h2><dl class="mt-4 grid grid-cols-2 gap-3 text-sm"><dt class="text-slate-500">Raison sociale</dt><dd>{{ $tenant->legal_name ?? '—' }}</dd><dt class="text-slate-500">E-mail</dt><dd>{{ $tenant->email ?? '—' }}</dd><dt class="text-slate-500">Propriétaire actif</dt><dd>{{ $owner?->name ?? 'Absent' }} @if($owner)<br><span class="text-slate-500">{{ $owner->email }}</span>@endif</dd><dt class="text-slate-500">Devise / timezone</dt><dd>{{ $tenant->settings['currency'] ?? 'MAD' }} / {{ $tenant->settings['timezone'] ?? 'Africa/Casablanca' }}</dd></dl></section><section class="rounded-xl bg-white p-6 shadow-sm"><h2 class="font-semibold">Agences</h2><div class="mt-4 divide-y">@forelse($agencies as $agency)<div class="flex justify-between py-3 text-sm"><span><strong>{{ $agency->name }}</strong><br><span class="text-slate-500">{{ $agency->code }}</span></span><span>{{ $agency->is_active ? 'Active' : 'Inactive' }}</span></div>@empty<p class="text-sm text-slate-500">Aucune agence.</p>@endforelse</div></section></div>
-        <section class="rounded-xl bg-white p-6 shadow-sm"><h2 class="font-semibold">État de service</h2>@if($tenant->status->value === 'active')<form method="POST" action="{{ route('platform.tenants.suspend', $tenant) }}" class="mt-4 flex flex-wrap gap-3" onsubmit="return confirm('Suspendre ce tenant et révoquer ses sessions ?')">@csrf<input name="reason" required maxlength="2000" placeholder="Motif obligatoire" class="min-w-72 flex-1 rounded border-slate-300"><button class="rounded bg-red-700 px-4 py-2 text-white">Suspendre</button></form>@elseif($tenant->status->value === 'suspended')<div class="mt-4 rounded bg-amber-50 p-4 text-sm"><p><strong>Motif :</strong> {{ $tenant->suspension_reason }}</p><p class="mt-1 text-slate-600">Suspendu le {{ $tenant->suspended_at?->format('d/m/Y H:i') }}</p></div><form method="POST" action="{{ route('platform.tenants.reactivate', $tenant) }}" class="mt-4" onsubmit="return confirm('Réactiver ce tenant ?')">@csrf<button class="rounded bg-emerald-700 px-4 py-2 text-white">Réactiver</button></form>@else<p class="mt-3 text-sm text-slate-500">Ce tenant archivé ne peut pas être modifié depuis ce parcours.</p>@endif</section>
+        <x-page-header :title="$tenant->name" :eyebrow="'Entreprise cliente · '.$tenant->slug" description="Configuration structurelle et état de service de l’entreprise cliente.">
+            <x-slot:actions><x-status-badge :value="$tenant->status" /><a href="{{ route('platform.tenants.edit', $tenant) }}" class="rf-button-primary">Modifier</a></x-slot:actions>
+        </x-page-header>
+
+        <x-form-errors />
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            @foreach($counts as $label => $value)
+                <x-stat-card :label="$label" :value="$value" />
+            @endforeach
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <x-section-card title="Informations">
+                <x-metadata-list>
+                    <x-metadata-item label="Raison sociale">{{ $tenant->legal_name ?? '—' }}</x-metadata-item>
+                    <x-metadata-item label="E-mail">{{ $tenant->email ?? '—' }}</x-metadata-item>
+                    <x-metadata-item label="Administrateur actif">{{ $owner?->name ?? 'Absent' }} @if($owner)<span class="block text-slate-500">{{ $owner->email }}</span>@endif</x-metadata-item>
+                    <x-metadata-item label="Devise / fuseau">{{ $tenant->settings['currency'] ?? 'MAD' }} / {{ $tenant->settings['timezone'] ?? 'Africa/Casablanca' }}</x-metadata-item>
+                </x-metadata-list>
+            </x-section-card>
+            <x-section-card title="Agences">
+                <div class="divide-y">
+                    @forelse($agencies as $agency)
+                        <div class="flex justify-between py-3 text-sm"><span><strong>{{ $agency->name }}</strong><span class="block text-slate-500">{{ $agency->code }}</span></span><x-status-badge :value="$agency->is_active ? 'active' : 'inactive'" /></div>
+                    @empty
+                        <x-empty-state title="Aucune agence" />
+                    @endforelse
+                </div>
+            </x-section-card>
+        </div>
+
+        <x-section-card title="État de service">
+            @if($tenant->status->value === 'active')
+                <form method="POST" action="{{ route('platform.tenants.suspend', $tenant) }}" class="space-y-3" onsubmit="return confirm('Suspendre cette entreprise cliente et révoquer ses sessions ?')">
+                    @csrf
+                    <div>
+                        <x-input-label for="tenant-suspension-reason" value="Motif de suspension" required />
+                        <textarea id="tenant-suspension-reason" name="reason" required maxlength="2000" rows="3" aria-describedby="tenant-suspension-help tenant-suspension-error" class="mt-1 w-full">{{ old('reason') }}</textarea>
+                        <p id="tenant-suspension-help" class="mt-1 text-xs text-slate-500">Ce motif administratif ne doit contenir aucune donnée personnelle sensible.</p>
+                        <x-field-error id="tenant-suspension-error" :messages="$errors->get('reason')" />
+                    </div>
+                    <x-confirmation-button message="Suspendre cette entreprise cliente et révoquer ses sessions ?">Suspendre l’entreprise cliente</x-confirmation-button>
+                </form>
+            @elseif($tenant->status->value === 'suspended')
+                <div class="rounded bg-amber-50 p-4 text-sm"><p><strong>Motif :</strong> {{ $tenant->suspension_reason }}</p><p class="mt-1 text-slate-600">Suspendue le {{ App\Support\Ui\UiLabel::dateTime($tenant->suspended_at) }}</p></div>
+                <form method="POST" action="{{ route('platform.tenants.reactivate', $tenant) }}" class="mt-4">@csrf<x-confirmation-button message="Réactiver cette entreprise cliente ?">Réactiver l’entreprise cliente</x-confirmation-button></form>
+            @else
+                <p class="text-sm text-slate-500">Cette entreprise cliente archivée ne peut pas être modifiée depuis ce parcours.</p>
+            @endif
+        </x-section-card>
     </div>
 </x-app-layout>

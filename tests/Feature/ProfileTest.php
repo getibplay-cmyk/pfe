@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,7 +11,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_page_is_displayed(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create();
+        $user = $this->createTenantOwner();
 
         $response = $this
             ->actingAs($user)
@@ -24,7 +22,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_information_can_be_updated(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create();
+        $user = $this->createTenantOwner();
 
         $response = $this
             ->actingAs($user)
@@ -46,7 +44,7 @@ class ProfileTest extends TestCase
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create();
+        $user = $this->createTenantOwner();
 
         $response = $this
             ->actingAs($user)
@@ -64,7 +62,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_cannot_change_tenant_role_agency_or_status(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create(['is_active' => true]);
+        $user = $this->createTenantOwner(['is_active' => true]);
         $original = $user->only(['tenant_id', 'agency_id', 'role_id', 'is_active']);
 
         $this->actingAs($user)->patch('/profile', [
@@ -83,7 +81,7 @@ class ProfileTest extends TestCase
 
     public function test_profile_deletion_route_is_absent(): void
     {
-        $user = User::factory()->for(Tenant::factory())->create();
+        $user = $this->createTenantOwner();
 
         $this->actingAs($user)->delete('/profile')->assertMethodNotAllowed();
         $this->actingAs($user)->get('/profile')->assertOk()->assertDontSee('Supprimer le compte')->assertDontSee('Désactiver le compte');

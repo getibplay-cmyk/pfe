@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Tenant;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -25,8 +23,7 @@ class Lot00Test extends TestCase
 
     public function test_authenticated_user_can_view_dashboard(): void
     {
-        $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user = $this->createTenantOwner();
 
         $this->actingAs($user)->get('/dashboard')->assertOk()->assertSee('0');
     }

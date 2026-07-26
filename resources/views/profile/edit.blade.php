@@ -7,7 +7,7 @@
             </x-section-card>
             <x-section-card title="Rattachement" as="aside">
                 <x-metadata-list class="sm:grid-cols-1">
-                    <x-metadata-item label="Organisation">{{ $user->tenant?->name ?? 'Administration plateforme' }}</x-metadata-item>
+                    <x-metadata-item label="Organisation">{{ $user->tenant?->name ?? 'Administration de la plateforme' }}</x-metadata-item>
                     <x-metadata-item label="Agence">{{ $user->agency?->name ?? ($user->is_platform_admin ? '—' : 'Toutes les agences autorisées') }}</x-metadata-item>
                     <x-metadata-item label="Rôle">{{ $user->is_platform_admin ? 'Administrateur plateforme' : App\Support\Ui\UiLabel::get($user->role?->slug) }}</x-metadata-item>
                     <x-metadata-item label="État du compte"><x-status-badge :value="$user->is_active ? 'active' : 'inactive'" /></x-metadata-item>

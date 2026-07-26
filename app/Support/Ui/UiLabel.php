@@ -17,12 +17,12 @@ class UiLabel
         'planned' => 'Planifiée', 'in_progress' => 'En cours', 'completed' => 'Terminée',
         'reported' => 'Déclaré', 'submitted' => 'Soumis', 'under_review' => 'En revue', 'settled' => 'Réglé',
         'resolved' => 'Résolu', 'dismissed' => 'Écarté',
-        'tenant-owner' => 'Propriétaire du tenant', 'tenant owner' => 'Propriétaire du tenant',
+        'tenant-owner' => 'Administrateur de l’entreprise', 'tenant owner' => 'Administrateur de l’entreprise',
         'agency-manager' => 'Responsable d’agence', 'agency manager' => 'Responsable d’agence',
         'rental-agent' => 'Agent de location', 'rental agent' => 'Agent de location',
         'fleet-manager' => 'Responsable de flotte', 'fleet manager' => 'Responsable de flotte',
         'accountant' => 'Comptable', 'viewer-auditor' => 'Lecteur / auditeur', 'viewer/auditor' => 'Lecteur / auditeur',
-        'platform-admin' => 'Administrateur plateforme', 'platform admin' => 'Administrateur plateforme',
+        'platform-admin' => 'Administrateur de la plateforme', 'platform admin' => 'Administrateur de la plateforme',
         'customer_identity' => 'Pièce d’identité client', 'driving_licence' => 'Permis de conduire',
         'vehicle_registration' => 'Carte grise', 'vehicle_insurance' => 'Assurance du véhicule',
         'vehicle_photo' => 'Photo du véhicule', 'contract_acceptance' => 'Acceptation du contrat',
@@ -78,8 +78,8 @@ class UiLabel
         'tenant.settings.updated' => 'Paramètres de l’entreprise mis à jour',
         'reservation.created' => 'Réservation créée', 'reservation.confirmed' => 'Réservation confirmée',
         'reservation.cancelled' => 'Réservation annulée', 'contract.created' => 'Contrat créé',
-        'platform.tenant.provisioned' => 'Tenant provisionné', 'platform.tenant.suspended' => 'Tenant suspendu',
-        'platform.tenant.reactivated' => 'Tenant réactivé', 'customer.identity.viewed' => 'Identité client consultée',
+        'platform.tenant.provisioned' => 'Entreprise cliente créée', 'platform.tenant.suspended' => 'Entreprise cliente suspendue',
+        'platform.tenant.reactivated' => 'Entreprise cliente réactivée', 'customer.identity.viewed' => 'Identité client consultée',
         'profile.updated' => 'Profil mis à jour', 'profile.password_changed' => 'Mot de passe du profil modifié',
         'vehicle_block.manual.created' => 'Bloc manuel créé',
         'vehicle_block.manual.released' => 'Bloc manuel libéré',
@@ -101,7 +101,10 @@ class UiLabel
         'report.exported' => 'Export du rapport téléchargé',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
+        'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
+        'notification.reactivated' => 'Notification réactivée',
         'role.created' => 'Rôle personnalisé créé', 'role.updated' => 'Rôle personnalisé modifié',
+        'role.replacement.requested' => 'Remplacement de rôle confirmé',
         'role.assignments.replaced' => 'Affectations du rôle remplacées', 'role.delegations.updated' => 'Délégations de rôle mises à jour',
         'user.role.assigned' => 'Rôle utilisateur affecté', 'user.activated' => 'Compte utilisateur activé',
         'user.deactivated' => 'Compte utilisateur désactivé', 'user.assignment.denied' => 'Tentative d’affectation refusée',
@@ -122,7 +125,7 @@ class UiLabel
         'deposit.received' => 'Caution encaissée', 'deposit.retained' => 'Caution retenue', 'deposit.refunded' => 'Caution remboursée',
         'deposit.reversed' => 'Mouvement de caution contrepassé', 'expense.created' => 'Dépense créée', 'expense.approved' => 'Dépense approuvée',
         'insurance_claim.reported' => 'Sinistre déclaré', 'insurance_claim.status.changed' => 'État du sinistre modifié',
-        'platform.tenant.updated' => 'Tenant mis à jour',
+        'platform.tenant.updated' => 'Entreprise cliente mise à jour',
     ];
 
     private const PERMISSION_GROUPS = [
@@ -132,6 +135,76 @@ class UiLabel
         'damage' => 'Dommages', 'charge' => 'Frais', 'invoice' => 'Factures', 'payment' => 'Paiements',
         'deposit' => 'Cautions', 'expense' => 'Dépenses', 'maintenance' => 'Maintenance', 'insurance' => 'Assurance',
         'claim' => 'Sinistres', 'report' => 'Rapports', 'audit' => 'Audit',
+    ];
+
+    private const PERMISSION_ENTITIES = [
+        'tenant' => 'les paramètres de l’entreprise',
+        'agency' => 'les agences',
+        'user' => 'les utilisateurs',
+        'role' => 'les rôles',
+        'vehicle' => 'les véhicules',
+        'vehicle_block' => 'les blocs de disponibilité',
+        'customer' => 'les clients',
+        'document' => 'les documents privés',
+        'pricing' => 'la tarification',
+        'reservation' => 'les réservations',
+        'contract' => 'les contrats',
+        'inspection' => 'les inspections',
+        'damage' => 'les dommages',
+        'charge' => 'les frais',
+        'invoice' => 'les factures',
+        'payment' => 'les paiements',
+        'deposit' => 'les cautions',
+        'expense' => 'les dépenses',
+        'maintenance' => 'la maintenance',
+        'insurance' => 'les assurances',
+        'claim' => 'les sinistres',
+        'report' => 'les rapports',
+        'audit' => 'le journal d’audit',
+        'prediction' => 'les prédictions',
+        'platform' => 'les entreprises clientes de la plateforme',
+    ];
+
+    private const PERMISSION_ACTIONS = [
+        'view' => 'Consulter',
+        'manage' => 'Gérer',
+        'create' => 'Créer',
+        'update' => 'Modifier',
+        'archive' => 'Archiver',
+        'upload' => 'Ajouter',
+        'download' => 'Télécharger',
+        'delete' => 'Archiver',
+        'confirm' => 'Confirmer',
+        'cancel' => 'Annuler',
+        'export' => 'Exporter',
+        'version' => 'Créer une version de',
+        'accept' => 'Accepter',
+        'activate' => 'Activer',
+        'return' => 'Traiter le retour de',
+        'report' => 'Signaler',
+        'review' => 'Examiner',
+        'issue' => 'Émettre',
+        'void' => 'Annuler',
+        'post' => 'Comptabiliser',
+        'allocate' => 'Allouer',
+        'reverse' => 'Contrepasser',
+        'approve' => 'Approuver',
+        'reject' => 'Rejeter',
+        'close' => 'Clôturer',
+        'start' => 'Démarrer',
+        'complete' => 'Terminer',
+        'delegate' => 'Déléguer',
+    ];
+
+    private const SPECIAL_PERMISSIONS = [
+        'customer.identity.view' => 'Consulter une identité client complète',
+        'contract.version' => 'Créer une version contractuelle',
+        'contract.return' => 'Traiter le retour d’un contrat',
+        'contract.close' => 'Clôturer financièrement un contrat',
+        'damage.review' => 'Décider explicitement la responsabilité d’un dommage',
+        'charge.review' => 'Examiner les frais contractuels',
+        'payment.allocate' => 'Allouer un paiement à une facture',
+        'platform.tenants.manage' => 'Administrer les entreprises clientes de la plateforme',
     ];
 
     private const ENTITIES = [
@@ -210,9 +283,57 @@ class UiLabel
         return self::PERMISSION_GROUPS[$group] ?? 'Autres permissions';
     }
 
+    public static function permission(string $permission): string
+    {
+        if (isset(self::SPECIAL_PERMISSIONS[$permission])) {
+            return self::SPECIAL_PERMISSIONS[$permission];
+        }
+
+        $parts = explode('.', $permission);
+        $action = array_pop($parts);
+        $entity = implode('_', $parts);
+
+        if (! isset(self::PERMISSION_ENTITIES[$entity], self::PERMISSION_ACTIONS[$action])) {
+            return 'Permission non documentée';
+        }
+
+        return self::PERMISSION_ACTIONS[$action].' '.self::PERMISSION_ENTITIES[$entity];
+    }
+
     public static function permissionRisk(string $permission): string
     {
-        return str_ends_with($permission, '.view') ? 'Consultation uniquement.' : 'Autorise une action ou une modification contrôlée.';
+        return self::permissionDescription($permission);
+    }
+
+    public static function permissionDescription(string $permission): string
+    {
+        return str_ends_with($permission, '.view')
+            ? 'Effet : consultation des informations autorisées, sans modification.'
+            : 'Effet : exécution d’une action métier contrôlée et auditée lorsque nécessaire.';
+    }
+
+    public static function permissionScope(string $permission): string
+    {
+        $group = explode('.', $permission)[0];
+
+        return in_array($group, ['tenant', 'role', 'report', 'audit'], true)
+            ? 'Portée : entreprise cliente.'
+            : 'Portée : agence autorisée ou ensemble des agences pour l’administrateur de l’entreprise.';
+    }
+
+    public static function permissionCriticality(string $permission): string
+    {
+        $critical = [
+            'customer.identity.view', 'document.download', 'document.delete',
+            'role.manage', 'role.delegate', 'invoice.issue', 'invoice.void',
+            'payment.post', 'payment.allocate', 'payment.reverse',
+            'deposit.create', 'deposit.reverse', 'expense.approve',
+            'expense.reject', 'contract.close', 'damage.review',
+        ];
+
+        return in_array($permission, $critical, true)
+            ? 'Criticité : élevée.'
+            : (str_ends_with($permission, '.view') ? 'Criticité : lecture.' : 'Criticité : standard.');
     }
 
     public static function entity(?string $class): string

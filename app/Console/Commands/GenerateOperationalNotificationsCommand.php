@@ -14,7 +14,14 @@ class GenerateOperationalNotificationsCommand extends Command
     public function handle(GenerateOperationalNotifications $generator): int
     {
         $result = $generator->handle();
-        $this->info(sprintf('%d tenant(s) contrôlé(s), %d notification(s) créée(s).', $result['tenants'], $result['created']));
+        $this->info(sprintf(
+            '%d entreprise(s) contrôlée(s) : %d créée(s), %d mise(s) à jour, %d résolue(s), %d réactivée(s).',
+            $result['tenants'],
+            $result['created'],
+            $result['updated'],
+            $result['resolved'],
+            $result['reactivated'],
+        ));
 
         return self::SUCCESS;
     }

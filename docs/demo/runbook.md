@@ -29,13 +29,13 @@ interactive. Les seeders refusent l’environnement `production`.
 
 | Usage | Compte fictif |
 |---|---|
-| Tenant Owner principal | `tenant-owner@atlas-demo.test` |
+| Administrateur principal de l’entreprise | `tenant-owner@atlas-demo.test` |
 | Agent de location | `rental-agent@atlas-demo.test` |
 | Gestionnaire de flotte | `fleet-manager@atlas-demo.test` |
-| Second tenant | `owner@rif-demo.test` |
+| Seconde entreprise cliente | `owner@rif-demo.test` |
 | Administration plateforme | `platform@rentfleet.test` |
 
-Le jeu attendu contient deux tenants, trois agences, six rôles métier, au moins
+Le jeu attendu contient deux entreprises clientes, trois agences, six rôles métier, au moins
 seize véhicules, douze clients/conducteurs, réservations variées, huit contrats,
 factures et cautions, deux maintenances, une police proche d’échéance et un
 sinistre fictif en revue. Vérifier ces ordres de grandeur avec le dashboard et
@@ -277,3 +277,24 @@ la base de démonstration vivante ou pendant une présentation.
 La génération temporelle peut être démontrée sans doublon avec
 `php artisan notifications:generate-operational`. Elle ne contacte aucun
 service externe.
+
+## Parcours de validation Lot 06F-G2
+
+1. Avec l’administrateur de l’entreprise, ouvrir la cloche puis filtrer
+   **Actives** et **Historique résolu**. La lecture ne doit jamais résoudre
+   l’incident métier.
+2. Exécuter deux fois `notifications:generate-operational` : la seconde relance
+   ne crée aucun doublon. Une échéance modifiée actualise la même notification.
+3. Ouvrir **Rôles et permissions**. Vérifier pour chaque permission le libellé,
+   l’effet, la portée et la criticité, sans code technique visible.
+4. Désactiver un rôle personnalisé préparé : contrôler le nombre
+   d’utilisateurs et la ventilation par agence, choisir uniquement un rôle
+   délégué sans permission supplémentaire, puis cocher la confirmation.
+5. Tester le formulaire utilisateur avec le responsable d’agence : les rôles
+   hors délégation et les autres agences restent absents.
+6. Avec l’administrateur de la plateforme, ouvrir **Entreprises clientes** et
+   vérifier le motif étiqueté de suspension.
+
+Le harnais `tests/Browser/lot06f_g2_browser.py` utilise un secret aléatoire en
+mémoire et cible exclusivement `rentfleet_test`. Ses captures G2 ne doivent
+contenir ni secret, ni document privé, ni identité réelle.

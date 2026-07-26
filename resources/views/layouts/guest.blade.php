@@ -14,11 +14,11 @@
         <section class="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-16" aria-label="Présentation de RentFleet">
             <x-brand-logo surface="dark" />
             <div class="max-w-xl">
-                <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-300">SaaS B2B multitenant</p>
+                <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-300">SaaS B2B multi-entreprises</p>
                 <h2 class="mt-4 text-4xl font-bold leading-tight tracking-tight xl:text-5xl">Pilotez votre activité de location avec clarté.</h2>
                 <p class="mt-5 max-w-lg text-base leading-7 text-slate-300">RentFleet réunit flotte, réservations, contrats, finance, maintenance et assurance dans un espace sécurisé adapté à chaque rôle.</p>
                 <ul class="mt-8 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
-                    <li class="flex gap-2"><span aria-hidden="true" class="text-fleet-500">✓</span> Périmètre tenant et agence</li>
+                    <li class="flex gap-2"><span aria-hidden="true" class="text-fleet-500">✓</span> Périmètre entreprise et agence</li>
                     <li class="flex gap-2"><span aria-hidden="true" class="text-fleet-500">✓</span> Autorisations par rôle</li>
                     <li class="flex gap-2"><span aria-hidden="true" class="text-fleet-500">✓</span> Historique et audit</li>
                     <li class="flex gap-2"><span aria-hidden="true" class="text-fleet-500">✓</span> Données privées protégées</li>

@@ -5,13 +5,13 @@ affectée réduit toujours les données à cette agence, même si le menu est vi
 
 | Rôle | Menus principaux | Actions caractéristiques |
 |---|---|---|
-| Administrateur plateforme | Vue plateforme, tenants | Provisionner, modifier, suspendre et réactiver un tenant |
-| Tenant Owner | Tous les modules tenant, entreprise, agences, utilisateurs, audit | Administration tenant et toutes les actions métier permises |
-| Agency Manager | Locations, flotte, maintenance, assurance, rapports, administration d’agence | Gérer son agence ; finance sensible en lecture seule |
-| Rental Agent | Clients, disponibilité, réservations, contrats, finance en lecture | Créer et traiter la location ; aucune écriture financière sensible |
-| Fleet Manager | Véhicules, catégories, réservations en lecture, contrats, maintenance, assurance | Gérer flotte, inspections, dommages et maintenance |
-| Accountant | Réservations et contrats en lecture, tarification, finance, rapports | Factures, paiements, allocations, cautions, dépenses et clôture |
-| Viewer/Auditor | Modules de consultation, rapports et audit | Lecture seule ; aucune mutation visible ou autorisée |
+| Administrateur de la plateforme | Vue plateforme, entreprises clientes | Créer, modifier, suspendre et réactiver une entreprise cliente |
+| Administrateur de l’entreprise | Tous les modules autorisés de l’entreprise, agences, utilisateurs et audit | Administration de l’entreprise et actions métier permises |
+| Responsable d’agence | Locations, flotte, maintenance, assurance, rapports, administration d’agence | Gérer son agence ; finance sensible en lecture seule |
+| Agent de location | Clients, disponibilité, réservations, contrats, finance en lecture | Créer et traiter la location ; aucune écriture financière sensible |
+| Responsable de flotte | Véhicules, catégories, réservations en lecture, contrats, maintenance, assurance | Gérer flotte, inspections, dommages et maintenance |
+| Comptable | Réservations et contrats en lecture, tarification, finance, rapports | Factures, paiements, allocations, cautions, dépenses et clôture |
+| Lecteur / auditeur | Modules de consultation, rapports et audit | Lecture seule ; aucune mutation visible ou autorisée |
 
 ## Principes d’interface
 
@@ -19,16 +19,17 @@ affectée réduit toujours les données à cette agence, même si le menu est vi
 - Les éléments stables `data-nav-key` permettent des tests sans dépendre du CSS.
 - Une action de mutation est rendue uniquement si la policy ou la permission
   correspondante l’autorise ; un appel direct interdit retourne toujours 403.
-- Le profil ne propose jamais la modification du rôle, tenant, agence ou statut.
+- Le profil ne propose jamais la modification du rôle, de l’entreprise, de l’agence ou du statut.
 - Les valeurs techniques restent en anglais dans PostgreSQL et sont présentées
   en français par `UiLabel`.
 
 ## Séparation financière
 
-Seul le rôle Accountant, ainsi que le Tenant Owner qui possède explicitement
+Seul le rôle Comptable, ainsi que l’administrateur de l’entreprise qui possède explicitement
 les permissions, voit les actions d’émission, allocation, comptabilisation,
-contrepassation, caution, dépense et clôture. Agency Manager, Rental Agent,
-Fleet Manager et Viewer/Auditor ne reçoivent pas ces contrôles.
+contrepassation, caution, dépense et clôture. Le responsable d’agence, l’agent
+de location, le responsable de flotte et le lecteur/auditeur ne reçoivent pas
+ces contrôles.
 
 ## Groupes de navigation E1
 
@@ -48,12 +49,12 @@ couleur. Les autorisations serveur restent la référence en cas d’appel direc
 
 ## Gouvernance Lot 06F-F
 
-Le Tenant Owner dispose du menu **Rôles et permissions** pour créer les rôles
-personnalisés et du panneau **Délégations par agence**. L’Agency Manager ne voit
+L’administrateur de l’entreprise dispose du menu **Rôles et permissions** pour créer les rôles
+personnalisés et du panneau **Délégations par agence**. Le responsable d’agence ne voit
 pas ces écrans : il utilise uniquement la liste déléguée lors de la création ou
 modification d’un utilisateur de sa propre agence. Le plafond de permissions
 est recalculé côté serveur à chaque affectation.
 
-La destination **Notifications** est présente pour tous les comptes tenant. Son
-contenu est ensuite filtré par tenant, agence et permission. La cloche du header
+La destination **Notifications** est présente pour tous les comptes d’entreprise. Son
+contenu est ensuite filtré par entreprise, agence et permission. La cloche du header
 et le menu mobile utilisent toujours les mêmes autorisations de navigation.

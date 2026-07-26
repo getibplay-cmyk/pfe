@@ -1,0 +1,749 @@
+{
+  "lot": "06F-G2",
+  "generated_at": "2026-07-26T02:24:50.361097+01:00",
+  "database": "rentfleet_test",
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 900
+    },
+    "desktop-compact": {
+      "width": 1024,
+      "height": 768
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "mobile-small": {
+      "width": 320,
+      "height": 568
+    }
+  },
+  "browsers": {
+    "chrome": {
+      "available": true,
+      "version": "150.0.7871.182"
+    },
+    "edge": {
+      "available": true,
+      "version": "150.0.4078.99"
+    }
+  },
+  "checks": [
+    {
+      "name": "Garde et comptes navigateur",
+      "passed": true,
+      "details": "rentfleet_test ; sept rôles"
+    },
+    {
+      "name": "Configuration HTTP de test",
+      "passed": true,
+      "details": "rentfleet_test"
+    },
+    {
+      "name": "Serveur navigateur",
+      "passed": true,
+      "details": "GET /health = 200"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion platform-admin",
+      "passed": true,
+      "details": "/platform/dashboard"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /roles",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Titre unique platform-admin desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement platform-admin desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés platform-admin desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Navigation cohérente tenant-owner",
+      "passed": true,
+      "details": "0 entrées"
+    },
+    {
+      "name": "Titre unique tenant-owner desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement tenant-owner desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés tenant-owner desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion agency-manager",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Navigation cohérente agency-manager",
+      "passed": true,
+      "details": "0 entrées"
+    },
+    {
+      "name": "Titre unique agency-manager desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement agency-manager desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés agency-manager desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion rental-agent",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Navigation cohérente rental-agent",
+      "passed": true,
+      "details": "0 entrées"
+    },
+    {
+      "name": "Titre unique rental-agent desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement rental-agent desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés rental-agent desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion fleet-manager",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Navigation cohérente fleet-manager",
+      "passed": true,
+      "details": "0 entrées"
+    },
+    {
+      "name": "Titre unique fleet-manager desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement fleet-manager desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés fleet-manager desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion accountant",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Navigation cohérente accountant",
+      "passed": true,
+      "details": "0 entrées"
+    },
+    {
+      "name": "Titre unique accountant desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement accountant desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés accountant desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion viewer-auditor",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Navigation cohérente viewer-auditor",
+      "passed": true,
+      "details": "0 entrées"
+    },
+    {
+      "name": "Titre unique viewer-auditor desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement viewer-auditor desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés viewer-auditor desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Titre unique notifications actives",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement notifications actives",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés notifications actives",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "Historique résolu visible",
+      "passed": true,
+      "details": "/notifications?status=resolved&priority=&category="
+    },
+    {
+      "name": "HTTP /roles",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Titre unique matrice des rôles",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement matrice des rôles",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés matrice des rôles",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /roles/1382/edit",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Impact de remplacement visible",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Candidat de remplacement filtré",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Titre unique remplacement de rôle",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement remplacement de rôle",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés remplacement de rôle",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "Remplacement atomique par l’interface",
+      "passed": true,
+      "details": "http://127.0.0.1:8092/roles"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Titre unique notifications desktop-compact",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement notifications desktop-compact",
+      "passed": true,
+      "details": "largeur={'width': 1024, 'height': 768}"
+    },
+    {
+      "name": "Champs nommés notifications desktop-compact",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Menu mobile mobile",
+      "passed": true,
+      "details": "{'width': 390, 'height': 844}"
+    },
+    {
+      "name": "Titre unique notifications mobile",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement notifications mobile",
+      "passed": true,
+      "details": "largeur={'width': 390, 'height': 844}"
+    },
+    {
+      "name": "Champs nommés notifications mobile",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Menu mobile mobile-small",
+      "passed": true,
+      "details": "{'width': 320, 'height': 568}"
+    },
+    {
+      "name": "État synchronisé du menu à 320 px",
+      "passed": true,
+      "details": "aria-expanded=true"
+    },
+    {
+      "name": "Navigation clavier du menu à 320 px",
+      "passed": true,
+      "details": "focus initial et suivant contenus dans le dialogue"
+    },
+    {
+      "name": "Fermeture clavier du menu à 320 px",
+      "passed": true,
+      "details": "Échap ferme et restitue le focus"
+    },
+    {
+      "name": "Fermeture explicite du menu à 320 px",
+      "passed": true,
+      "details": "bouton de fermeture fonctionnel"
+    },
+    {
+      "name": "Titre unique notifications mobile-small",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement notifications mobile-small",
+      "passed": true,
+      "details": "largeur={'width': 320, 'height': 568}"
+    },
+    {
+      "name": "Champs nommés notifications mobile-small",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion platform-admin",
+      "passed": true,
+      "details": "/platform/dashboard"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /roles",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Titre unique platform-admin desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement platform-admin desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés platform-admin desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "HTTP /platform/tenants",
+      "passed": true,
+      "details": "statut=403"
+    },
+    {
+      "name": "Navigation cohérente tenant-owner",
+      "passed": true,
+      "details": "0 entrées"
+    },
+    {
+      "name": "Titre unique tenant-owner desktop",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement tenant-owner desktop",
+      "passed": true,
+      "details": "largeur={'width': 1440, 'height': 900}"
+    },
+    {
+      "name": "Champs nommés tenant-owner desktop",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Titre unique notifications desktop-compact",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement notifications desktop-compact",
+      "passed": true,
+      "details": "largeur={'width': 1024, 'height': 768}"
+    },
+    {
+      "name": "Champs nommés notifications desktop-compact",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Menu mobile mobile",
+      "passed": true,
+      "details": "{'width': 390, 'height': 844}"
+    },
+    {
+      "name": "Titre unique notifications mobile",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement notifications mobile",
+      "passed": true,
+      "details": "largeur={'width': 390, 'height': 844}"
+    },
+    {
+      "name": "Champs nommés notifications mobile",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "HTTP /login",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Connexion tenant-owner",
+      "passed": true,
+      "details": "/dashboard"
+    },
+    {
+      "name": "HTTP /notifications",
+      "passed": true,
+      "details": "statut=200"
+    },
+    {
+      "name": "Menu mobile mobile-small",
+      "passed": true,
+      "details": "{'width': 320, 'height': 568}"
+    },
+    {
+      "name": "État synchronisé du menu à 320 px",
+      "passed": true,
+      "details": "aria-expanded=true"
+    },
+    {
+      "name": "Navigation clavier du menu à 320 px",
+      "passed": true,
+      "details": "focus initial et suivant contenus dans le dialogue"
+    },
+    {
+      "name": "Fermeture clavier du menu à 320 px",
+      "passed": true,
+      "details": "Échap ferme et restitue le focus"
+    },
+    {
+      "name": "Fermeture explicite du menu à 320 px",
+      "passed": true,
+      "details": "bouton de fermeture fonctionnel"
+    },
+    {
+      "name": "Titre unique notifications mobile-small",
+      "passed": true,
+      "details": "h1=1"
+    },
+    {
+      "name": "Sans débordement notifications mobile-small",
+      "passed": true,
+      "details": "largeur={'width': 320, 'height': 568}"
+    },
+    {
+      "name": "Champs nommés notifications mobile-small",
+      "passed": true,
+      "details": "sans_label=0"
+    },
+    {
+      "name": "Preuve serveur du remplacement",
+      "passed": true,
+      "details": ""
+    }
+  ],
+  "screenshots": [
+    "docs/evidence/screenshots/lot06f-g2/g2-chrome-notifications-active-1440x900.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-chrome-notifications-resolved-1440x900.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-chrome-roles-matrix-1440x900.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-chrome-role-replacement-1440x900.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-chrome-notifications-1024x768.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-chrome-notifications-390x844.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-chrome-notifications-320x568.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-edge-notifications-1024x768.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-edge-notifications-390x844.png",
+    "docs/evidence/screenshots/lot06f-g2/g2-edge-notifications-320x568.png"
+  ],
+  "issues": [],
+  "passed": true
+}

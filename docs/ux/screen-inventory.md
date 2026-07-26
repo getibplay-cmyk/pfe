@@ -61,6 +61,9 @@ axe et Lighthouse n’étaient pas disponibles et ne sont pas déclarés validé
 
 | Domaine | Écran | Utilisateurs | Résultat |
 |---|---|---|---|
-| Notifications | cloche, aperçu et `/notifications` | comptes tenant autorisés | centre filtré, paginé, accessible et destinations serveur sûres |
-| Administration | `/roles` et délégations | Tenant Owner | rôles personnalisés, matrice de permissions et délégation agence |
-| Administration | affectation utilisateur | Tenant Owner et Agency Manager borné | rôles filtrés côté serveur et plafond de permissions contrôlé |
+| Notifications | cloche, aperçu et `/notifications` | comptes d’entreprise autorisés | centre filtré, paginé, accessible et destinations serveur sûres |
+| Administration | `/roles` et délégations | administrateur de l’entreprise | rôles personnalisés, matrice de permissions et délégation agence |
+| Administration | affectation utilisateur | administrateur de l’entreprise et responsable d’agence borné | rôles filtrés côté serveur et plafond de permissions contrôlé |
+| Notifications G2 | cloche, aperçu et `/notifications` | comptes d’entreprise autorisés | incidents actifs distincts de la lecture, historique résolu et réactivation sans doublon |
+| Gouvernance G2 | rôle personnalisé et délégations | administrateur de l’entreprise | libellé, effet, portée, criticité, résumé d’impact et confirmation de remplacement |
+| Plateforme G2 | entreprises clientes | administrateur de la plateforme | terminologie française, suspension étiquetée et erreurs reliées |

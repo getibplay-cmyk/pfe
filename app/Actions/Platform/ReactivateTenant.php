@@ -17,7 +17,7 @@ class ReactivateTenant
         return DB::transaction(function () use ($tenant): Tenant {
             $locked = Tenant::query()->lockForUpdate()->findOrFail($tenant->id);
             if ($locked->status !== TenantStatus::Suspended) {
-                throw ValidationException::withMessages(['status' => 'Seul un tenant suspendu peut être réactivé.']);
+                throw ValidationException::withMessages(['status' => 'Seule une entreprise cliente suspendue peut être réactivée.']);
             }
 
             $reason = $locked->suspension_reason;

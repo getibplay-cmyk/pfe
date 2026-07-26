@@ -17,7 +17,7 @@ class SuspendTenant
         return DB::transaction(function () use ($tenant, $reason, $actorId): Tenant {
             $locked = Tenant::query()->lockForUpdate()->findOrFail($tenant->id);
             if ($locked->status !== TenantStatus::Active) {
-                throw ValidationException::withMessages(['status' => 'Seul un tenant actif peut être suspendu.']);
+                throw ValidationException::withMessages(['status' => 'Seule une entreprise cliente active peut être suspendue.']);
             }
 
             $old = ['status' => $locked->status->value];

@@ -26,7 +26,7 @@ class EnsureActiveAccount
                 ->where('status', TenantStatus::Active->value)
                 ->whereNull('deleted_at')
                 ->exists();
-        abort_unless($tenantIsActive, 403, 'Le tenant associé à ce compte est indisponible.');
+        abort_unless($tenantIsActive, 403, 'L’entreprise cliente associée à ce compte est indisponible.');
 
         $agencyIsActive = $user->agency_id === null
             || DB::table('agencies')

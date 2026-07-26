@@ -36,7 +36,7 @@ class CreateInsurancePolicy
             });
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23505') {
-                throw ValidationException::withMessages(['policy_number' => 'Ce numéro de police est déjà utilisé dans le tenant.']);
+                throw ValidationException::withMessages(['policy_number' => 'Ce numéro de police est déjà utilisé dans l’entreprise.']);
             }
             throw $exception;
         }

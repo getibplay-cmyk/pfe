@@ -29,6 +29,7 @@ class UpdateRoleRequest extends FormRequest
             'permission_ids.*' => ['integer', 'distinct'],
             'is_active' => ['required', 'boolean'],
             'replacement_role_id' => ['nullable', 'integer', 'different:'.$role->id],
+            'confirm_replacement' => ['nullable', 'accepted'],
         ];
     }
 }

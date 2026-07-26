@@ -20,7 +20,7 @@
             @can('verify', $driver)
                 <div class="mt-5 flex flex-wrap gap-3">
                     <form method="POST" action="{{ route('drivers.verify', $driver) }}">@csrf<button class="rounded-lg bg-emerald-700 px-4 py-2 text-sm text-white">Vérifier le conducteur</button></form>
-                    <form method="POST" action="{{ route('drivers.reject-verification', $driver) }}" class="flex gap-2">@csrf<input name="reason" required maxlength="1000" placeholder="Motif obligatoire" class="min-w-48"><button class="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700">Rejeter</button></form>
+                    <form method="POST" action="{{ route('drivers.reject-verification', $driver) }}" class="min-w-64 space-y-2">@csrf<label for="driver-rejection-reason" class="text-sm font-medium">Motif du rejet</label><textarea id="driver-rejection-reason" name="reason" required maxlength="1000" rows="2" aria-describedby="driver-rejection-help driver-rejection-error" class="w-full">{{ old('reason') }}</textarea><p id="driver-rejection-help" class="text-xs text-slate-500">Expliquez la décision sans recopier le numéro de permis.</p><x-field-error id="driver-rejection-error" :messages="$errors->get('reason')" /><button class="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700">Rejeter la vérification</button></form>
                 </div>
             @endcan
         </section>

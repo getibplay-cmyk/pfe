@@ -20,7 +20,7 @@ final readonly class ReportCriteria
         public ?string $currency = null,
     ) {
         if ($tenantId <= 0) {
-            throw new InvalidArgumentException('Le tenant du rapport est obligatoire.');
+            throw new InvalidArgumentException('L’entreprise du rapport est obligatoire.');
         }
 
         if ($agencyIds === [] || collect($agencyIds)->contains(fn (mixed $id): bool => ! is_int($id) || $id <= 0)) {

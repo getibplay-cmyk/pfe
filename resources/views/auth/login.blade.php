@@ -24,5 +24,5 @@
         </div>
         <x-primary-button class="w-full">Se connecter</x-primary-button>
     </form>
-    <p class="mt-6 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-600"><strong class="text-slate-800">Accès B2B :</strong> les comptes sont créés par l’administrateur plateforme ou le propriétaire de votre organisation. Aucun compte ne peut être ouvert publiquement.</p>
+    <p class="mt-6 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-600"><strong class="text-slate-800">Accès B2B :</strong> les comptes sont créés par l’administrateur de la plateforme ou l’administrateur de votre organisation. Aucun compte ne peut être ouvert publiquement.</p>
 </x-guest-layout>

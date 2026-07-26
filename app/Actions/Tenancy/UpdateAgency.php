@@ -52,7 +52,7 @@ class UpdateAgency
             throw ValidationException::withMessages(['is_active' => 'Cette agence possède encore des réservations, contrats, maintenances ou blocs actifs.']);
         }
         if (Agency::query()->whereKeyNot($agency->id)->where('is_active', true)->doesntExist()) {
-            throw ValidationException::withMessages(['is_active' => 'Le tenant doit conserver au moins une agence active.']);
+            throw ValidationException::withMessages(['is_active' => 'L’entreprise doit conserver au moins une agence active.']);
         }
     }
 }

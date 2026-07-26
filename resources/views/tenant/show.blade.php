@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="mx-auto max-w-4xl space-y-6">
-        <x-page-header title="Paramètres de l’entreprise" eyebrow="Administration tenant" description="Le slug et l’état de service sont gérés uniquement par l’administration plateforme." />
+        <x-page-header title="Paramètres de l’entreprise" eyebrow="Administration de l’entreprise" description="L’identifiant et l’état de service sont gérés uniquement par l’administration de la plateforme." />
         @can('update', $tenant)
             <form method="POST" action="{{ route('tenant.update') }}" class="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">@csrf @method('PATCH')
                 <x-form-errors />

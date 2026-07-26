@@ -16,7 +16,7 @@
                             <x-status-badge :value="$role->is_active ? 'active' : 'inactive'" />
                         </div>
                         <ul class="mt-4 flex flex-wrap gap-2" aria-label="Permissions du rôle">
-                            @forelse ($role->permissions as $permission)<li class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{{ $permission->name }}</li>@empty<li class="text-sm text-slate-500">Aucune permission.</li>@endforelse
+                            @forelse ($role->permissions as $permission)<li class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{{ App\Support\Ui\UiLabel::permission($permission->slug) }}</li>@empty<li class="text-sm text-slate-500">Aucune permission.</li>@endforelse
                         </ul>
                         @can('update', $role)<a href="{{ route('roles.edit', $role) }}" class="mt-4 inline-flex text-sm font-semibold text-brand-700">Modifier ce rôle</a>@endcan
                     </article>

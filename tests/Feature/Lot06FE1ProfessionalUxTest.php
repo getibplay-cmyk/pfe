@@ -32,7 +32,7 @@ class Lot06FE1ProfessionalUxTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Connexion à RentFleet')
-            ->assertSee('SaaS B2B multitenant')
+            ->assertSee('SaaS B2B multi-entreprises')
             ->assertSee('inscription publique est désactivée')
             ->assertSee('Afficher le mot de passe')
             ->assertSee('Se souvenir de moi')

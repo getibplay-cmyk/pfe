@@ -36,7 +36,10 @@ class NotificationInbox
     {
         return $this->query($user)
             ->with('agency:id,name')
+            ->when($status === 'active', fn (Builder $query) => $query->whereNull('internal_notifications.resolved_at'))
+            ->when($status === 'resolved', fn (Builder $query) => $query->whereNotNull('internal_notifications.resolved_at'))
             ->when($status === 'unread', fn (Builder $query) => $query->whereNull('internal_notification_recipients.read_at'))
+            ->when($status === 'unread', fn (Builder $query) => $query->whereNull('internal_notifications.resolved_at'))
             ->when($priority, fn (Builder $query, string $value) => $query->where('internal_notifications.priority', $value))
             ->when($category, fn (Builder $query, string $value) => $query->where('internal_notifications.category', $value))
             ->orderByDesc('internal_notifications.occurred_at')
@@ -47,13 +50,17 @@ class NotificationInbox
 
     public function unreadCount(User $user): int
     {
-        return $this->query($user)->whereNull('internal_notification_recipients.read_at')->count();
+        return $this->query($user)
+            ->whereNull('internal_notifications.resolved_at')
+            ->whereNull('internal_notification_recipients.read_at')
+            ->count();
     }
 
     public function recent(User $user, int $limit = 5)
     {
         return $this->query($user)
             ->with('agency:id,name')
+            ->whereNull('internal_notifications.resolved_at')
             ->orderByDesc('internal_notifications.occurred_at')
             ->limit($limit)
             ->get();
@@ -77,6 +84,7 @@ class NotificationInbox
     public function markAllRead(User $user): int
     {
         $ids = $this->query($user)
+            ->whereNull('internal_notifications.resolved_at')
             ->whereNull('internal_notification_recipients.read_at')
             ->pluck('internal_notifications.id');
 
