@@ -37,8 +37,8 @@ ROLE_ACCOUNTS = {
 QA_ACCOUNTS = [*ROLE_ACCOUNTS.values(), "owner@rif-demo.test"]
 
 ROLE_LABELS = {
-    "platform-admin": "Administrateur plateforme",
-    "tenant-owner": "Propriétaire du tenant",
+    "platform-admin": "Administrateur de la plateforme",
+    "tenant-owner": "Administrateur de l’entreprise",
     "agency-manager": "Responsable d’agence",
     "rental-agent": "Agent de location",
     "fleet-manager": "Responsable de flotte",
@@ -67,6 +67,25 @@ VIEWPORTS = {
 
 CHROME = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 EDGE = Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
+DEFAULT_QA_DATABASE = "rentfleet_test"
+ACCEPTANCE_QA_DATABASE = "rentfleet_06g_acceptance"
+
+
+def resolve_qa_database() -> str:
+    database = os.environ.get("RENTFLEET_QA_DATABASE", DEFAULT_QA_DATABASE)
+    if database == DEFAULT_QA_DATABASE:
+        return database
+    if (
+        database == ACCEPTANCE_QA_DATABASE
+        and os.environ.get("RENTFLEET_ACCEPTANCE_MODE") == "1"
+        and os.environ.get("APP_ENV") == "testing"
+        and os.environ.get("DB_CONNECTION") == "pgsql"
+    ):
+        return database
+    raise RuntimeError("La base QA demandée n’est pas autorisée.")
+
+
+QA_DATABASE = resolve_qa_database()
 
 
 class BrowserAudit:
@@ -77,6 +96,7 @@ class BrowserAudit:
         self.screenshots = screenshots
         self.php = php
         self.password = secrets.token_urlsafe(32)
+        self.active_browser = "browser"
         self.qa_agency_id: str | None = None
         self.qa_customer_id: str | None = None
         self.qa_driver_id: str | None = None
@@ -84,7 +104,7 @@ class BrowserAudit:
             "lot": "06F-E2",
             "generated_at": datetime.now().astimezone().isoformat(),
             "base_url": self.base_url,
-            "qa_database": "rentfleet_test",
+            "qa_database": QA_DATABASE,
             "browsers": {},
             "viewports": VIEWPORTS,
             "checks": [],
@@ -125,9 +145,25 @@ class BrowserAudit:
     def prepare_qa(self, env: dict[str, str]) -> None:
         self.artisan("optimize:clear", "--env=testing", env=env)
         emails = ",".join(f"'{email}'" for email in QA_ACCOUNTS)
+        account_guard = (
+            "$db=DB::selectOne('select current_database() as db')->db;"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('QA database guard failed.');}}"
+            f"$emails=[{emails}];"
+            "$count=App\\Models\\User::withoutGlobalScopes()->whereIn('email',$emails)->count();"
+            "echo 'qa_account_count='.$count;"
+        )
+        guarded = self.artisan("tinker", "--env=testing", f"--execute={account_guard}", env=env)
+        account_count = re.search(r"qa_account_count=(\d+)", guarded.stdout)
+        if not account_count:
+            raise RuntimeError("Le garde des comptes E2 n’a pas produit de compteur.")
+        if account_count.group(1) == "0":
+            self.artisan("db:seed", "--env=testing", "--no-interaction", env=env, timeout=300)
+        elif account_count.group(1) != str(len(QA_ACCOUNTS)):
+            raise RuntimeError("Le jeu de comptes E2 est partiel ; aucune correction automatique appliquée.")
+
         code = (
             "$db=DB::selectOne('select current_database() as db')->db;"
-            "if($db!=='rentfleet_test'){throw new RuntimeException('QA database guard failed.');}"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('QA database guard failed.');}}"
             "$hash=Hash::make((string)getenv('E2_QA_PASSWORD'));"
             f"$emails=[{emails}];"
             "$count=App\\Models\\User::withoutGlobalScopes()->whereIn('email',$emails)"
@@ -148,22 +184,24 @@ class BrowserAudit:
         )
         completed = self.artisan("tinker", "--env=testing", f"--execute={code}", env=env)
         prepared = "qa_setup=ok" in completed.stdout
-        self.check("Garde base QA et huit comptes", prepared, "rentfleet_test, 8 comptes")
+        self.check("Garde base QA et huit comptes", prepared, f"{QA_DATABASE}, 8 comptes")
         if not prepared:
-            raise RuntimeError("La préparation des comptes QA a échoué après la garde rentfleet_test.")
+            raise RuntimeError(f"La préparation des comptes QA a échoué après la garde {QA_DATABASE}.")
         eligible = re.search(r"eligible=(\d+),(\d+),(\d+)", completed.stdout)
         if not eligible:
-            raise RuntimeError("Aucun triplet agence/client/conducteur éligible n’a été confirmé dans rentfleet_test.")
+            raise RuntimeError(f"Aucun triplet agence/client/conducteur éligible n’a été confirmé dans {QA_DATABASE}.")
         self.qa_agency_id, self.qa_customer_id, self.qa_driver_id = eligible.groups()
         self.artisan("config:cache", "--env=testing", env=env)
         cached_guard = self.artisan(
             "tinker",
-            "--execute=$db=DB::selectOne('select current_database() as db')->db; if($db!=='rentfleet_test'){throw new RuntimeException('Cached QA database guard failed.');} echo 'cached_qa=ok';",
+            "--execute=$db=DB::selectOne('select current_database() as db')->db; "
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('Cached QA database guard failed.');}} "
+            "echo 'cached_qa=ok';",
             env=env,
         )
         if "cached_qa=ok" not in cached_guard.stdout:
-            raise RuntimeError("La configuration HTTP en cache ne cible pas rentfleet_test.")
-        self.check("Configuration HTTP QA", True, "cache vérifié sur rentfleet_test")
+            raise RuntimeError(f"La configuration HTTP en cache ne cible pas {QA_DATABASE}.")
+        self.check("Configuration HTTP QA", True, f"cache vérifié sur {QA_DATABASE}")
 
     def start_server(self, env: dict[str, str], port: int) -> None:
         creation_flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -237,9 +275,13 @@ class BrowserAudit:
         self.check(f"Connexion {role}", page.url.endswith(expected), arrived)
 
     def screenshot(self, page: Page, name: str) -> None:
-        path = self.screenshots / name
+        path = self.screenshots / f"{self.active_browser}-{name}"
         page.screenshot(path=path, full_page=False, animations="disabled")
-        self.results["screenshots"].append(str(path.relative_to(self.root)).replace("\\", "/"))
+        try:
+            recorded = path.relative_to(self.root)
+        except ValueError:
+            recorded = path.relative_to(self.output.parent)
+        self.results["screenshots"].append(str(recorded).replace("\\", "/"))
 
     def audit_contrast(self, page: Page, label: str, browser_name: str, viewport: str) -> None:
         result = page.evaluate(
@@ -513,7 +555,7 @@ class BrowserAudit:
             self.check(f"Parité navigation {role}", sorted(desktop_keys) == sorted(mobile_keys), f"entrées={len(desktop_keys)}")
             self.check(f"Destinations interdites absentes {role}", FORBIDDEN_NAVIGATION[role].isdisjoint(desktop_keys), f"interdites={sorted(FORBIDDEN_NAVIGATION[role])}")
             self.check(f"Route active {role}", page.locator('[aria-current="page"]').count() >= 1)
-            expected_scope = "Administration plateforme" if role == "platform-admin" else "Atlas Location Démo"
+            expected_scope = "Plateforme RentFleet" if role == "platform-admin" else "Atlas Location Démo"
             self.check(f"Identité organisation {role}", expected_scope in body, expected_scope)
             if role == "agency-manager":
                 self.check("Identité agence Agency Manager", "Casablanca Centre" in body)
@@ -572,6 +614,7 @@ class BrowserAudit:
         trigger.focus()
         page.keyboard.press("Enter")
         dialog = page.get_by_role("dialog", name="Menu principal")
+        dialog.wait_for(state="visible")
         self.check("Menu mobile ouvert au clavier", dialog.is_visible())
         self.screenshot(page, "13-navigation-mobile-ouverte.png")
         first_focus = page.evaluate("document.activeElement && (document.activeElement.getAttribute('aria-label') || document.activeElement.innerText || document.activeElement.tagName)")
@@ -593,7 +636,7 @@ class BrowserAudit:
         page.keyboard.press("Enter")
         reservations_link = page.get_by_role("dialog", name="Menu principal").get_by_role("link", name="Réservations", exact=True)
         reservations_link.focus()
-        with page.expect_navigation(wait_until="networkidle"):
+        with page.expect_navigation(wait_until="load"):
             page.keyboard.press("Enter")
         self.check("Navigation principale au clavier", page.url.endswith("/reservations"))
         search = page.locator('#reservation-q')
@@ -685,6 +728,152 @@ class BrowserAudit:
         with page.expect_navigation(wait_until="networkidle"):
             page.get_by_role("button", name="Filtrer").click()
         self.check("Recherche réservation", number in page.locator("body").inner_text())
+        context.close()
+
+    def continuous_rental_cycle(self, browser: Browser, browser_name: str) -> None:
+        if not self.qa_agency_id or not self.qa_customer_id or not self.qa_driver_id:
+            raise RuntimeError("Le triplet QA du cycle continu n’est pas disponible.")
+
+        fixture = self.output.parent / "qa-private-fixture.pdf"
+        fixture.write_bytes(b"%PDF-1.4\n% RentFleet QA fictive\n%%EOF")
+
+        context = self.new_context(browser, VIEWPORTS["desktop"])
+        page = context.new_page()
+        page.on("dialog", lambda dialog: dialog.accept())
+        self.login(page, "rental-agent")
+
+        self.goto(page, f"/customers/{self.qa_customer_id}")
+        customer_document = page.locator(
+            f'form[action$="/customers/{self.qa_customer_id}/documents"]'
+        )
+        customer_document.locator('input[name="title"]').fill("Identité fictive recette 06G")
+        customer_document.locator('input[name="file"]').set_input_files(fixture)
+        with page.expect_navigation(wait_until="networkidle"):
+            customer_document.get_by_role("button", name="Ajouter le document").click()
+        self.check("Cycle — document client privé", "Identité fictive recette 06G" in page.locator("body").inner_text())
+
+        self.goto(page, f"/drivers/{self.qa_driver_id}")
+        driver_document = page.locator(
+            f'form[action$="/drivers/{self.qa_driver_id}/documents"]'
+        )
+        driver_document.locator('input[name="title"]').fill("Permis fictif recette 06G")
+        driver_document.locator('input[name="file"]').set_input_files(fixture)
+        with page.expect_navigation(wait_until="networkidle"):
+            driver_document.get_by_role("button", name="Ajouter le permis privé").click()
+        self.check("Cycle — document conducteur privé", "Permis fictif recette 06G" in page.locator("body").inner_text())
+
+        self.goto(page, "/availability")
+        page.locator("#availability-agency").select_option(self.qa_agency_id)
+        start = (datetime.now() + timedelta(days=130)).replace(hour=10, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=2)
+        page.locator("#availability-start").fill(start.strftime("%Y-%m-%dT%H:%M"))
+        page.locator("#availability-end").fill(end.strftime("%Y-%m-%dT%H:%M"))
+        page.get_by_role("button", name="Rechercher").click()
+        page.wait_for_load_state("networkidle")
+        page.get_by_role("link", name="Créer une réservation").first.click()
+        page.wait_for_load_state("networkidle")
+        page.locator('select[name="customer_id"]').select_option(self.qa_customer_id)
+        page.locator('select[name="driver_id"]').select_option(self.qa_driver_id)
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Enregistrer").click()
+        self.check("Cycle — réservation créée", bool(re.search(r"/reservations/\d+$", page.url)))
+
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Confirmer et bloquer").click()
+        self.check("Cycle — réservation confirmée", "Confirmée" in page.locator("body").inner_text())
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Créer le contrat depuis cette réservation").click()
+        contract_match = re.search(r"(/contracts/\d+)$", page.url)
+        if not contract_match:
+            raise RuntimeError("Le contrat du cycle continu n’a pas été créé.")
+        contract_path = contract_match.group(1)
+
+        page.locator("#contract-version-file").set_input_files(fixture)
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Associer le fichier").click()
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Marquer prêt").click()
+        page.locator('input[name="accepted_by_name"]').fill("Signataire fictif recette 06G")
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Enregistrer l’acceptation").click()
+        self.check("Cycle — contrat accepté", "Accepté" in page.locator("body").inner_text())
+
+        departure_mileage = 500000 if browser_name == "chrome" else 600000
+        page.locator("#departure-mileage").fill(str(departure_mileage))
+        page.locator("#departure-fuel").fill("75")
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Terminer l’inspection").click()
+        self.check("Cycle — inspection de départ", page.get_by_role("button", name="Activer le contrat et remettre le véhicule").count() == 1)
+        self.check("Cycle — séparation financière agent", page.get_by_role("button", name="Recevoir").count() == 0)
+        context.close()
+
+        context = self.new_context(browser, VIEWPORTS["desktop"])
+        page = context.new_page()
+        page.on("dialog", lambda dialog: dialog.accept())
+        self.login(page, "accountant")
+        self.goto(page, contract_path)
+        receive = page.locator(f'form[action$="{contract_path}/deposit/receive"]')
+        self.check("Cycle — caution réservée au comptable", receive.count() == 1)
+        with page.expect_navigation(wait_until="networkidle"):
+            receive.get_by_role("button", name="Recevoir").click()
+        context.close()
+
+        context = self.new_context(browser, VIEWPORTS["desktop"])
+        page = context.new_page()
+        page.on("dialog", lambda dialog: dialog.accept())
+        self.login(page, "rental-agent")
+        self.goto(page, contract_path)
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Activer le contrat et remettre le véhicule").click()
+        page.locator("#return-mileage").fill(str(departure_mileage + 100))
+        page.locator("#return-fuel").fill("75")
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Terminer le retour").click()
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Finaliser le retour").click()
+        self.check("Cycle — retour finalisé", "Retourné" in page.locator("body").inner_text())
+        context.close()
+
+        context = self.new_context(browser, VIEWPORTS["desktop"])
+        page = context.new_page()
+        page.on("dialog", lambda dialog: dialog.accept())
+        self.login(page, "accountant")
+        self.goto(page, contract_path)
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Créer la facture").click()
+        invoice_match = re.search(r"(/finance/invoices/\d+)$", page.url)
+        if not invoice_match:
+            raise RuntimeError("La facture du cycle continu n’a pas été créée.")
+        invoice_path = invoice_match.group(1)
+
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Émettre").click()
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Enregistrer").click()
+        latest_payment = page.locator("article").first
+        with page.expect_navigation(wait_until="networkidle"):
+            latest_payment.get_by_role("button", name="Allouer").click()
+        with page.expect_navigation(wait_until="networkidle"):
+            latest_payment.get_by_role("button", name="Comptabiliser").click()
+        self.check("Cycle — facture payée", "Payée" in page.locator("body").inner_text())
+
+        self.goto(page, contract_path)
+        refund = page.locator(f'form[action$="{contract_path}/deposit/refund"]')
+        refund.locator('input[name="reason"]').fill("Remboursement fictif recette 06G")
+        with page.expect_navigation(wait_until="networkidle"):
+            refund.get_by_role("button", name="Rembourser").click()
+        with page.expect_navigation(wait_until="networkidle"):
+            page.get_by_role("button", name="Vérifier et clôturer").click()
+        body = page.locator("body").inner_text()
+        self.check("Cycle continu clôturé", "Clôturé" in body and "Solde caution" in body)
+        self.audit_page(page, "Contrat clôturé recette 06G", browser_name, "desktop")
+        self.screenshot(page, "30-cycle-continu-cloture.png")
+        self.results.setdefault("continuous_cycles", {})[browser_name] = {
+            "status": "passed",
+            "contract_path": contract_path,
+            "invoice_path": invoice_path,
+            "roles": ["rental-agent", "accountant"],
+        }
         context.close()
 
     def core_routes(self, page: Page) -> list[tuple[str, str]]:
@@ -796,7 +985,7 @@ class BrowserAudit:
         env["E2_QA_PASSWORD"] = self.password
         code = (
             "$db=DB::selectOne('select current_database() as db')->db;"
-            "if($db!=='rentfleet_test'){throw new RuntimeException('QA database guard failed.');}"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('QA database guard failed.');}}"
             "$count=App\\Models\\User::withoutGlobalScopes()->where('email','agency-manager@atlas-demo.test')"
             "->update(['must_change_password'=>true]);"
             "if($count!==1){throw new RuntimeException('QA account guard failed.');}"
@@ -817,6 +1006,8 @@ class BrowserAudit:
         self.output.parent.mkdir(parents=True, exist_ok=True)
         env = os.environ.copy()
         env["APP_ENV"] = "testing"
+        env["DB_CONNECTION"] = "pgsql"
+        env["DB_DATABASE"] = QA_DATABASE
         env["E2_QA_PASSWORD"] = self.password
         env["SESSION_DRIVER"] = "database"
         env["CACHE_STORE"] = "database"
@@ -825,24 +1016,37 @@ class BrowserAudit:
         env["APP_TIMEZONE"] = "Africa/Casablanca"
         env.pop("PHP_CLI_SERVER_WORKERS", None)
         try:
-            self.prepare_qa(env)
-            self.start_server(env, port)
             with sync_playwright() as playwright:
-                if not CHROME.exists():
-                    raise RuntimeError("Google Chrome n’est pas disponible.")
-                chrome = playwright.chromium.launch(executable_path=str(CHROME), headless=True)
-                self.results["browsers"]["chrome"] = chrome.version
-                try:
-                    self.auth_checks(chrome, "chrome")
-                    self.role_matrix(chrome, "chrome")
-                    self.mobile_keyboard(chrome, "chrome")
-                    self.reservation_flow(chrome, "chrome")
-                    self.captures_and_responsive(chrome, "chrome")
-                    self.contracts_and_errors(chrome, "chrome")
-                    self.mandatory_password_change(chrome)
-                finally:
-                    chrome.close()
-                self.edge_smoke(playwright)
+                requested = {
+                    name.strip()
+                    for name in os.environ.get("RENTFLEET_QA_BROWSERS", "chrome,edge").split(",")
+                    if name.strip()
+                }
+                available = [("chrome", CHROME), ("edge", EDGE)]
+                for browser_name, executable in available:
+                    if browser_name not in requested:
+                        continue
+                    if not executable.exists():
+                        raise RuntimeError(f"{browser_name} n’est pas disponible.")
+
+                    self.active_browser = browser_name
+                    self.prepare_qa(env)
+                    if self.server is None:
+                        self.start_server(env, port)
+
+                    browser = playwright.chromium.launch(executable_path=str(executable), headless=True)
+                    self.results["browsers"][browser_name] = browser.version
+                    try:
+                        self.auth_checks(browser, browser_name)
+                        self.role_matrix(browser, browser_name)
+                        self.mobile_keyboard(browser, browser_name)
+                        self.reservation_flow(browser, browser_name)
+                        self.continuous_rental_cycle(browser, browser_name)
+                        self.captures_and_responsive(browser, browser_name)
+                        self.contracts_and_errors(browser, browser_name)
+                        self.mandatory_password_change(browser)
+                    finally:
+                        browser.close()
             self.results["limits"].extend([
                 "Firefox n’est pas installé sur cette machine.",
                 "Aucun lecteur d’écran pilotable n’est disponible.",

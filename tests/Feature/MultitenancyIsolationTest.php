@@ -11,7 +11,6 @@ use App\Support\Tenancy\TenantContext;
 use Database\Seeders\DemoTenancySeeder;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
@@ -160,8 +159,7 @@ class MultitenancyIsolationTest extends TestCase
 
     public function test_suite_still_uses_dedicated_postgresql_database(): void
     {
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
     }
 
     public function test_demo_seeder_creates_two_tenants_three_agencies_and_users_for_roles(): void

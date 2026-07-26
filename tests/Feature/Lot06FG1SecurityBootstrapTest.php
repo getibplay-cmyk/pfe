@@ -242,7 +242,7 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
 
     public function test_destructive_console_event_stops_before_command_execution_on_unsafe_database(): void
     {
-        $this->assertSame('rentfleet_test', config('database.connections.pgsql.database'));
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
         config(['database.connections.pgsql.database' => 'rentfleet']);
 
         $this->expectException(RuntimeException::class);

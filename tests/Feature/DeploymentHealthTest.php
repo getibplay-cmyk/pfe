@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class DeploymentHealthTest extends TestCase
@@ -23,8 +22,7 @@ class DeploymentHealthTest extends TestCase
             ->expectsOutputToContain('"status": "ok"')
             ->assertSuccessful();
 
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
     }
 
     public function test_release_commands_and_build_artifact_are_present(): void

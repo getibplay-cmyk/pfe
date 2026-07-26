@@ -164,8 +164,7 @@ class Lot02ReferencesAndPrivateDocumentsTest extends TestCase
 
     public function test_sensitive_values_never_reach_general_audit_and_tests_use_postgresql(): void
     {
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
         $audit = json_encode(DB::table('audit_logs')->get());
         $this->assertStringNotContainsString('CIN', $audit);
         $this->assertStringNotContainsString('PERMIS', $audit);

@@ -21,6 +21,41 @@ class TestDatabaseGuardTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    public function test_exact_acceptance_database_requires_explicit_mode_and_resolved_database(): void
+    {
+        TestDatabaseGuard::assertSafeConfiguration(
+            'testing',
+            'pgsql',
+            $this->connection(TestDatabaseGuard::ACCEPTANCE_DATABASE),
+            [
+                'DB_CONNECTION' => 'pgsql',
+                'DB_DATABASE' => TestDatabaseGuard::ACCEPTANCE_DATABASE,
+                TestDatabaseGuard::ACCEPTANCE_MODE_VARIABLE => '1',
+            ],
+            TestDatabaseGuard::ACCEPTANCE_DATABASE,
+        );
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_acceptance_database_refuses_a_different_resolved_database(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Exécution destructive refusée');
+
+        TestDatabaseGuard::assertSafeConfiguration(
+            'testing',
+            'pgsql',
+            $this->connection(TestDatabaseGuard::ACCEPTANCE_DATABASE),
+            [
+                'DB_CONNECTION' => 'pgsql',
+                'DB_DATABASE' => TestDatabaseGuard::ACCEPTANCE_DATABASE,
+                TestDatabaseGuard::ACCEPTANCE_MODE_VARIABLE => '1',
+            ],
+            'rentfleet_test',
+        );
+    }
+
     #[DataProvider('unsafeConfigurations')]
     public function test_every_other_database_or_environment_is_refused(
         string $environment,
@@ -86,6 +121,27 @@ class TestDatabaseGuardTest extends TestCase
             'base postgres' => [
                 'testing', 'pgsql', [...$connection, 'database' => 'postgres'], [],
             ],
+            'nom approchant' => [
+                'testing', 'pgsql', [...$connection, 'database' => 'rentfleet_06g_acceptance_copy'], [],
+            ],
+            'acceptance sans mode explicite' => [
+                'testing', 'pgsql', [...$connection, 'database' => TestDatabaseGuard::ACCEPTANCE_DATABASE],
+                ['DB_DATABASE' => TestDatabaseGuard::ACCEPTANCE_DATABASE],
+            ],
+            'acceptance avec mode erroné' => [
+                'testing', 'pgsql', [...$connection, 'database' => TestDatabaseGuard::ACCEPTANCE_DATABASE],
+                [
+                    'DB_DATABASE' => TestDatabaseGuard::ACCEPTANCE_DATABASE,
+                    TestDatabaseGuard::ACCEPTANCE_MODE_VARIABLE => 'true',
+                ],
+            ],
+            'acceptance sans base PostgreSQL résolue' => [
+                'testing', 'pgsql', [...$connection, 'database' => TestDatabaseGuard::ACCEPTANCE_DATABASE],
+                [
+                    'DB_DATABASE' => TestDatabaseGuard::ACCEPTANCE_DATABASE,
+                    TestDatabaseGuard::ACCEPTANCE_MODE_VARIABLE => '1',
+                ],
+            ],
             'nom vide' => [
                 'testing', 'pgsql', [...$connection, 'database' => ''], [],
             ],
@@ -106,11 +162,11 @@ class TestDatabaseGuardTest extends TestCase
         ];
     }
 
-    private function connection(): array
+    private function connection(string $database = 'rentfleet_test'): array
     {
         return [
             'driver' => 'pgsql',
-            'database' => 'rentfleet_test',
+            'database' => $database,
             'url' => null,
         ];
     }

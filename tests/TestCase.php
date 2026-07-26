@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\Testing\TestDatabaseGuard;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -17,6 +18,26 @@ abstract class TestCase extends BaseTestCase
         TestDatabaseGuard::assertSafe($app);
 
         return $app;
+    }
+
+    protected function assertUsesAuthorizedPostgreSqlTestDatabase(): string
+    {
+        TestDatabaseGuard::assertSafe($this->app);
+
+        $this->assertSame('testing', app()->environment());
+        $this->assertSame(TestDatabaseGuard::REQUIRED_CONNECTION, DB::connection()->getDriverName());
+
+        $database = DB::connection()->getDatabaseName();
+        $this->assertContains($database, [
+            TestDatabaseGuard::REQUIRED_DATABASE,
+            TestDatabaseGuard::ACCEPTANCE_DATABASE,
+        ]);
+
+        if ($database === TestDatabaseGuard::ACCEPTANCE_DATABASE) {
+            $this->assertSame('1', env(TestDatabaseGuard::ACCEPTANCE_MODE_VARIABLE));
+        }
+
+        return $database;
     }
 
     /** @param array<string, mixed> $attributes */

@@ -42,6 +42,25 @@ VIEWPORTS = {
 
 CHROME = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 EDGE = Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe")
+DEFAULT_QA_DATABASE = "rentfleet_test"
+ACCEPTANCE_QA_DATABASE = "rentfleet_06g_acceptance"
+
+
+def resolve_qa_database() -> str:
+    database = os.environ.get("RENTFLEET_QA_DATABASE", DEFAULT_QA_DATABASE)
+    if database == DEFAULT_QA_DATABASE:
+        return database
+    if (
+        database == ACCEPTANCE_QA_DATABASE
+        and os.environ.get("RENTFLEET_ACCEPTANCE_MODE") == "1"
+        and os.environ.get("APP_ENV") == "testing"
+        and os.environ.get("DB_CONNECTION") == "pgsql"
+    ):
+        return database
+    raise RuntimeError("La base QA demandée n’est pas autorisée.")
+
+
+QA_DATABASE = resolve_qa_database()
 
 
 class Campaign:
@@ -59,7 +78,7 @@ class Campaign:
         self.results: dict[str, Any] = {
             "lot": "06F-G2",
             "generated_at": datetime.now().astimezone().isoformat(),
-            "database": "rentfleet_test",
+            "database": QA_DATABASE,
             "viewports": VIEWPORTS,
             "browsers": {},
             "checks": [],
@@ -90,7 +109,7 @@ class Campaign:
         emails = ",".join(f"'{email}'" for email in ACCOUNTS.values())
         account_guard = (
             "$db=DB::selectOne('select current_database() as db')->db;"
-            "if($db!=='rentfleet_test'){throw new RuntimeException('Browser database guard failed.');}"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('Browser database guard failed.');}}"
             f"$emails=[{emails}];"
             "$count=App\\Models\\User::withoutGlobalScopes()->whereIn('email',$emails)->count();"
             "echo 'demo_account_count='.$count;"
@@ -107,7 +126,7 @@ class Campaign:
         suffix = secrets.token_hex(4)
         setup = (
             "$db=DB::selectOne('select current_database() as db')->db;"
-            "if($db!=='rentfleet_test'){throw new RuntimeException('Browser database guard failed.');}"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('Browser database guard failed.');}}"
             "$password=(string)getenv('G2_QA_PASSWORD');"
             "$hash=Hash::make($password);"
             f"$emails=[{emails}];"
@@ -140,12 +159,12 @@ class Campaign:
         if not fixture:
             raise RuntimeError("La préparation QA G2 n’a pas produit les identifiants attendus.")
         self.source_role_id, self.replacement_role_id, self.employee_id = fixture.groups()
-        self.check("Garde et comptes navigateur", True, "rentfleet_test ; sept rôles")
+        self.check("Garde et comptes navigateur", True, f"{QA_DATABASE} ; sept rôles")
 
         self.artisan("notifications:generate-operational", "--env=testing", env=env)
         history = (
             "$db=DB::selectOne('select current_database() as db')->db;"
-            "if($db!=='rentfleet_test'){throw new RuntimeException('Notification guard failed.');}"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('Notification guard failed.');}}"
             "$tenant=App\\Models\\Tenant::where('slug','atlas-location-demo')->firstOrFail();"
             "$notification=App\\Models\\InternalNotification::withoutGlobalScopes()"
             "->where('tenant_id',$tenant->id)->whereNull('resolved_at')->orderBy('id')->first();"
@@ -157,11 +176,11 @@ class Campaign:
         guard = self.artisan(
             "tinker",
             "--execute=$db=DB::selectOne('select current_database() as db')->db;"
-            "if($db!=='rentfleet_test'){throw new RuntimeException('Cached database guard failed.');}"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('Cached database guard failed.');}}"
             "echo 'cached_guard=ok';",
             env=env,
         )
-        self.check("Configuration HTTP de test", "cached_guard=ok" in guard.stdout, "rentfleet_test")
+        self.check("Configuration HTTP de test", "cached_guard=ok" in guard.stdout, QA_DATABASE)
 
     def start_server(self, env: dict[str, str], port: int) -> None:
         router = self.root / "vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"
@@ -238,7 +257,11 @@ class Campaign:
     def screenshot(self, page: Page, name: str) -> None:
         target = self.screenshots / name
         page.screenshot(path=str(target), full_page=False)
-        self.results["screenshots"].append(str(target.relative_to(self.root)).replace("\\", "/"))
+        try:
+            recorded = target.relative_to(self.root)
+        except ValueError:
+            recorded = target.relative_to(self.output.parent)
+        self.results["screenshots"].append(str(recorded).replace("\\", "/"))
 
     def role_smoke(self, browser: Browser, role: str) -> None:
         context = self.context(browser, VIEWPORTS["desktop"])
@@ -356,32 +379,30 @@ class Campaign:
             self.screenshot(page, f"g2-{browser_name}-notifications-{size['width']}x{size['height']}.png")
             context.close()
 
-    def run_browsers(self) -> None:
+    def run_browsers(self, env: dict[str, str]) -> None:
         with sync_playwright() as playwright:
             available = [("chrome", CHROME), ("edge", EDGE)]
             for name, executable in available:
                 if not executable.exists():
                     self.results["browsers"][name] = {"available": False}
                     continue
+                if name == "edge":
+                    self.prepare(env)
                 browser = playwright.chromium.launch(executable_path=str(executable), headless=True)
                 self.results["browsers"][name] = {"available": True, "version": browser.version}
                 try:
-                    if name == "chrome":
-                        for role in ACCOUNTS:
-                            self.role_smoke(browser, role)
-                        self.owner_workflows(browser, name)
-                        self.responsive(browser, name)
-                    else:
-                        self.role_smoke(browser, "platform-admin")
-                        self.role_smoke(browser, "tenant-owner")
-                        self.responsive(browser, name)
+                    for role in ACCOUNTS:
+                        self.role_smoke(browser, role)
+                    self.owner_workflows(browser, name)
+                    self.responsive(browser, name)
+                    self.verify_replacement(env)
                 finally:
                     browser.close()
 
     def verify_replacement(self, env: dict[str, str]) -> None:
         code = (
             "$db=DB::selectOne('select current_database() as db')->db;"
-            "if($db!=='rentfleet_test'){throw new RuntimeException('Replacement guard failed.');}"
+            f"if($db!=='{QA_DATABASE}'){{throw new RuntimeException('Replacement guard failed.');}}"
             f"$source=App\\Models\\Role::withoutGlobalScopes()->findOrFail({self.source_role_id});"
             f"$user=App\\Models\\User::withoutGlobalScopes()->findOrFail({self.employee_id});"
             f"if($source->is_active||$user->role_id!=={self.replacement_role_id})"
@@ -413,6 +434,8 @@ def main() -> int:
 
     env = os.environ.copy()
     env["APP_ENV"] = "testing"
+    env["DB_CONNECTION"] = "pgsql"
+    env["DB_DATABASE"] = QA_DATABASE
     env["G2_QA_PASSWORD"] = secrets.token_urlsafe(32)
     env["SESSION_DRIVER"] = "database"
     env["CACHE_STORE"] = "database"
@@ -428,8 +451,7 @@ def main() -> int:
     try:
         campaign.prepare(env)
         campaign.start_server(env, port)
-        campaign.run_browsers()
-        campaign.verify_replacement(env)
+        campaign.run_browsers(env)
     except Exception as exception:
         campaign.check("Exécution de la campagne", False, f"{type(exception).__name__}: {exception}")
     finally:

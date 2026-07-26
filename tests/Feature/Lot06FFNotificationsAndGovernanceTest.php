@@ -204,8 +204,7 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $this->actingAs($f['user'])->get(route('roles.index'))->assertOk()->assertSee('Administrateur de l’entreprise')->assertDontSee('tenant-owner');
         $this->actingAs($f['user'])->get(route('notifications.index', ['priority' => 'invalid']))->assertSessionHasErrors('priority');
         $this->assertSame('fr', app()->getLocale());
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
     }
 
     private function fixture(string $roleSlug): array

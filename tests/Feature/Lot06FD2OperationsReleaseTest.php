@@ -189,7 +189,8 @@ class Lot06FD2OperationsReleaseTest extends TestCase
 
     public function test_doctor_can_guard_the_exact_testing_database_before_destructive_tests(): void
     {
-        $this->assertSame('pass', $this->doctorCheck('Base attendue', ['--expect-database' => 'rentfleet_test'])['status']);
+        $database = $this->assertUsesAuthorizedPostgreSqlTestDatabase();
+        $this->assertSame('pass', $this->doctorCheck('Base attendue', ['--expect-database' => $database])['status']);
         $this->assertSame('fail', $this->doctorCheck('Base attendue', ['--expect-database' => 'rentfleet'])['status']);
     }
 

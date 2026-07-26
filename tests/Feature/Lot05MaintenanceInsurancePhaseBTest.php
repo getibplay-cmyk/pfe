@@ -131,8 +131,7 @@ class Lot05MaintenanceInsurancePhaseBTest extends TestCase
 
         $this->assertNull($this->inTenant($b, fn () => MaintenanceOrder::find($order->id)));
         $this->assertNull($this->inTenant($b, fn () => InsurancePolicy::find($policy->id)));
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
     }
 
     private function fixture(): array

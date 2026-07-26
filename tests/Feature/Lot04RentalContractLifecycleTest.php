@@ -368,8 +368,7 @@ class Lot04RentalContractLifecycleTest extends TestCase
 
         $this->actingAs($a['user'])->get(route('contracts.index'))->assertOk()->assertSee($contract->contract_number)->assertViewHas('contracts', fn ($contracts) => $contracts->total() === 1);
         $this->actingAs($a['user'])->get(route('contracts.show', $foreign))->assertNotFound();
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
     }
 
     private function fixture(string $roleSlug = 'tenant-owner', bool $withDocuments = true): array

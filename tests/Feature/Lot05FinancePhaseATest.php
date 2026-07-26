@@ -193,8 +193,7 @@ class Lot05FinancePhaseATest extends TestCase
     public function test_database_rejects_direct_unsettled_closure_and_suite_is_tenant_scoped_postgresql(): void
     {
         $f = $this->fixture();
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
         $other = $this->fixture();
         $invoice = $this->inTenant($f, fn () => app(CreateInvoiceFromReturnedContract::class)->handle($f['contract'], $f['user']->id));
         $this->assertNull($this->inTenant($other, fn () => Invoice::find($invoice->id)));

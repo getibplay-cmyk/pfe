@@ -44,9 +44,7 @@ class Lot00Test extends TestCase
 
     public function test_suite_uses_the_dedicated_postgresql_database(): void
     {
-        $this->assertSame('testing', app()->environment());
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
         $this->assertSame(1, DB::scalar('select 1'));
     }
 }

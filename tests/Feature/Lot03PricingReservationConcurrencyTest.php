@@ -297,8 +297,7 @@ class Lot03PricingReservationConcurrencyTest extends TestCase
 
         $this->assertSame(ReservationStatus::Expired, $this->inTenant($f, fn () => $reservation->refresh()->status));
         $this->assertDatabaseHas('reservation_status_histories', ['reservation_id' => $reservation->id, 'to_status' => 'expired']);
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertUsesAuthorizedPostgreSqlTestDatabase();
     }
 
     private function fixture(string $roleSlug = 'tenant-owner'): array

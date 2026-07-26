@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Support\Testing\TestDatabaseGuard;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -10,7 +11,23 @@ class PrivateDocumentSecurityTest extends TestCase
     public function test_private_disk_is_not_served_and_has_no_public_route(): void
     {
         $this->assertFalse(config('filesystems.disks.local.serve'));
-        $this->assertSame(storage_path('app/private'), config('filesystems.disks.local.root'));
+        $database = $this->assertUsesAuthorizedPostgreSqlTestDatabase();
+        $privateRoot = config('filesystems.disks.local.root');
+
+        if ($database === TestDatabaseGuard::ACCEPTANCE_DATABASE) {
+            $acceptanceRoot = realpath('C:\tmp\RentFleet06G');
+            $resolvedPrivateRoot = realpath($privateRoot);
+
+            $this->assertNotFalse($acceptanceRoot);
+            $this->assertNotFalse($resolvedPrivateRoot);
+            $this->assertStringStartsWith(
+                rtrim($acceptanceRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR,
+                $resolvedPrivateRoot
+            );
+        } else {
+            $this->assertSame(storage_path('app/private'), $privateRoot);
+        }
+
         $this->assertNotSame(config('filesystems.disks.public.root'), config('filesystems.disks.local.root'));
         $this->get('/storage/private-document.pdf')->assertNotFound();
 
