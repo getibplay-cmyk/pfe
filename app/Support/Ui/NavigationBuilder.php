@@ -50,6 +50,7 @@ class NavigationBuilder
                 $this->whenAny($user, ['invoice.view', 'payment.view', 'deposit.view', 'expense.view'], $this->item('finance', 'Finance', 'finance.index', 'finance.*')),
             ]),
             $this->section('Pilotage', [
+                $this->when($user, 'prediction.view', $this->item('intelligence', 'Intelligence', 'intelligence.index', 'intelligence.*')),
                 $this->when($user, 'report.view', $this->item('reports', 'Rapports', 'reports.index', 'reports.*')),
             ]),
             $this->section('Administration', [

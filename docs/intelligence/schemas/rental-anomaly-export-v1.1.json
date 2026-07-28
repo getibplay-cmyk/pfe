@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.local/schemas/rental-anomaly-export-v1.1.json",
+  "title": "RentFleet Rental Anomaly Real Returns Export",
+  "description": "Une ligne anonymisée issue d'un retour réel éligible, sans cible ni décision humaine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dataset_version",
+    "row_id",
+    "tenant_key",
+    "agency_key",
+    "contract_key",
+    "event_at",
+    "late_hours",
+    "km_per_day",
+    "fuel_drop_pct"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.1"
+    },
+    "dataset_version": {
+      "const": "rentfleet-real-returns-v1.1.0"
+    },
+    "row_id": {
+      "type": "string",
+      "pattern": "^r_[a-f0-9]{32,64}$"
+    },
+    "tenant_key": {
+      "type": "string",
+      "pattern": "^t_[a-f0-9]{32,64}$"
+    },
+    "agency_key": {
+      "type": "string",
+      "pattern": "^a_[a-f0-9]{32,64}$"
+    },
+    "contract_key": {
+      "type": "string",
+      "pattern": "^c_[a-f0-9]{32,64}$"
+    },
+    "event_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "late_hours": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d{6}$"
+    },
+    "km_per_day": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d{6}$"
+    },
+    "fuel_drop_pct": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d{6}$"
+    }
+  },
+  "x-csv-column-order": [
+    "schema_version",
+    "dataset_version",
+    "row_id",
+    "tenant_key",
+    "agency_key",
+    "contract_key",
+    "event_at",
+    "late_hours",
+    "km_per_day",
+    "fuel_drop_pct"
+  ],
+  "x-csv-format": {
+    "encoding": "UTF-8 with BOM",
+    "delimiter": ";",
+    "decimal_separator": ".",
+    "maximum_rows": 10000
+  }
+}

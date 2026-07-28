@@ -13,6 +13,8 @@ use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
+use App\Support\Intelligence\PredictionScoringService;
+use App\Support\Intelligence\RuleBasedScoringService;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Testing\TestDatabaseGuard;
 use Illuminate\Console\Events\CommandStarting;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(TenantContext::class);
+        $this->app->bind(PredictionScoringService::class, RuleBasedScoringService::class);
 
         $connections = config('database.connections');
         unset($connections['sqlite']);

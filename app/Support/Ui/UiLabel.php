@@ -99,6 +99,7 @@ class UiLabel
         'insurance.coverage.archived' => 'Garantie archivée',
         'reservation.exported' => 'Export des réservations téléchargé',
         'report.exported' => 'Export du rapport téléchargé',
+        'prediction.dataset.exported' => 'Dataset Intelligence anonymisé exporté',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
         'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
@@ -134,7 +135,7 @@ class UiLabel
         'pricing' => 'Tarification', 'reservation' => 'Réservations', 'contract' => 'Contrats', 'inspection' => 'Inspections',
         'damage' => 'Dommages', 'charge' => 'Frais', 'invoice' => 'Factures', 'payment' => 'Paiements',
         'deposit' => 'Cautions', 'expense' => 'Dépenses', 'maintenance' => 'Maintenance', 'insurance' => 'Assurance',
-        'claim' => 'Sinistres', 'report' => 'Rapports', 'audit' => 'Audit',
+        'claim' => 'Sinistres', 'prediction' => 'Intelligence', 'report' => 'Rapports', 'audit' => 'Audit',
     ];
 
     private const PERMISSION_ENTITIES = [
