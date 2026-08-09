@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "rentfleet.demand_forecast.synthetic_advisory_record",
+  "module_id": "demand_forecast",
+  "record_id": "00000000-0000-4000-8000-000000000001",
+  "created_at": "2026-08-09T14:00:00Z",
+  "research_status": {
+    "authoritative_stage": "J5",
+    "gate_decision": "CONFIRMED_FOR_OPTIMIZER_BENCHMARK",
+    "benchmark_gate_passed": true,
+    "audit_score": "15/15",
+    "benchmark_role": "core_public_proxy",
+    "historical_public_output_import_allowed": false,
+    "ready_for_saas": false,
+    "production_allowed": false
+  },
+  "scope": {
+    "environment": "offline_contract_demo",
+    "synthetic_fixture": true,
+    "tenant_ref": "SYNTH-TENANT-001",
+    "agency_ref": "SYNTH-AGENCY-001",
+    "feature_flag": {
+      "key": "ai.demand_forecast.enabled",
+      "enabled": false,
+      "default_state": "disabled"
+    },
+    "automatic_action_allowed": false,
+    "human_decision_required": true,
+    "contains_real_customer_data": false,
+    "contains_coordinates": false
+  },
+  "idempotency": {
+    "key": "10000000-0000-4000-8000-000000000001",
+    "policy": "SAME_KEY_SAME_PAYLOAD_ONLY",
+    "canonical_payload_sha256": "b5eed37f49429f9df8ac7c44cbd2a180638eb0ec472a3765d3c7bba22e16e81b"
+  },
+  "advisory": {
+    "computation_status": "not_run_synthetic_contract_fixture",
+    "time_bucket_start": "2026-08-10T08:00:00Z",
+    "time_bucket_end": "2026-08-10T09:00:00Z",
+    "zone_ref": "SYNTH-ZONE-001",
+    "granularity": "hour",
+    "demand_p50_demo": 12,
+    "demand_p90_demo": 19,
+    "unit": "rental_requests",
+    "uncertainty_kind": "quantile_interval_demo_not_confidence_probability",
+    "explanation": {
+      "method": "synthetic_reason_codes_only",
+      "confidence_percentage_claimed": false,
+      "factors": [
+        {
+          "code": "SYNTH_HOUR_OF_DAY",
+          "direction": "increase",
+          "explanation_scope": "synthetic_reason_code_not_model_attribution"
+        },
+        {
+          "code": "SYNTH_DAY_TYPE",
+          "direction": "neutral",
+          "explanation_scope": "synthetic_reason_code_not_model_attribution"
+        }
+      ]
+    }
+  },
+  "human_decision": {
+    "status": "accepted_for_demo_review",
+    "effect": "NO_OPERATIONAL_ACTION",
+    "decision_id": "30000000-0000-4000-8000-000000000001",
+    "human_actor_ref": "SYNTH-USER-001",
+    "decided_at": "2026-08-09T14:05:00Z",
+    "reason_code": "SCHEMA_DEMO_ACCEPTED",
+    "note": "Accepté pour démontrer le contrat, sans activation ni action métier."
+  },
+  "audit_event": {
+    "when": "2026-08-09T14:05:00Z",
+    "where": {
+      "component": "rentfleet_j11_contract_demo",
+      "environment": "offline_demo"
+    },
+    "who": {
+      "actor_type": "human_demo",
+      "actor_ref": "SYNTH-USER-001"
+    },
+    "what": {
+      "event": "synthetic_human_decision_recorded",
+      "outcome": "human_accepted_demo",
+      "reason_code": "SCHEMA_DEMO_ACCEPTED"
+    },
+    "correlation_id": "20000000-0000-4000-8000-000000000001",
+    "canonical_payload_sha256": "b5eed37f49429f9df8ac7c44cbd2a180638eb0ec472a3765d3c7bba22e16e81b",
+    "contains_sensitive_data": false
+  }
+}

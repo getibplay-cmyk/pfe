@@ -573,3 +573,22 @@ application PHPUnit, avant `RefreshDatabase`, et avant les commandes
 destructives `migrate:fresh`, `migrate:refresh`, `migrate:reset` et `db:wipe`.
 Elle exige simultanément `APP_ENV=testing`, PostgreSQL et le nom exact
 `rentfleet_test`, y compris lorsque `DB_URL` ou `DATABASE_URL` est présent.
+
+## J12 — adaptateur contractuel Intelligence désactivé
+
+Les quatre contrats et fixtures synthétiques scellés de J11 disposent d’un
+adaptateur Laravel isolé. Le verrou reste littéralement désactivé, y compris
+sans variable d’environnement : aucune route de démonstration n’est accessible
+en production, aucun modèle ou solveur n’est exécuté et aucune table métier ne
+reçoit de sortie Intelligence.
+
+Le harnais local, lorsqu’un test active sa configuration en mémoire, vérifie
+les empreintes, les invariants sémantiques, l’idempotence, l’isolation
+tenant/agence, la revue humaine sans effet métier et les tables PostgreSQL
+append-only. La portée, les permissions et les limites sont détaillées dans
+`docs/intelligence/j12-disabled-contract-adapter.md`.
+
+```powershell
+php artisan test --filter=J12ContractAdapterTest
+php artisan test --filter=J12DisabledContractAdapterTest
+```

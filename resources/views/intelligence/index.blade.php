@@ -25,6 +25,38 @@
             </div>
         </x-section-card>
 
+        <x-section-card
+            title="Adaptateur contractuel J11 / J12"
+            description="Quatre contrats synthétiques sont intégrés comme preuve technique, sans modèle ni effet sur l’exploitation."
+        >
+            <div class="grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl border border-slate-200 p-3">
+                    <p class="text-slate-500">État effectif</p>
+                    <p class="mt-1 font-semibold {{ $contractDemo['enabled'] ? 'text-emerald-700' : 'text-slate-700' }}">
+                        {{ $contractDemo['enabled'] ? 'Démonstration isolée active' : 'Désactivé par défaut' }}
+                    </p>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-3">
+                    <p class="text-slate-500">Contrats</p>
+                    <p class="mt-1 font-semibold">{{ $contractDemo['contract_count'] }} fixtures synthétiques</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-3">
+                    <p class="text-slate-500">Prêt pour le SaaS</p>
+                    <p class="mt-1 font-semibold text-amber-800">Non</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 p-3">
+                    <p class="text-slate-500">Effet autorisé</p>
+                    <p class="mt-1 font-semibold">Aucune action métier</p>
+                </div>
+            </div>
+            <p class="mt-4 text-sm leading-6 text-slate-600">
+                Les payloads publics Munich et Scania ne sont jamais importés comme recommandations opérationnelles. Les routes de démonstration répondent 404 tant que le verrou J12 reste fermé.
+            </p>
+            @if ($contractDemo['enabled'])
+                <div class="mt-4"><a href="{{ route('intelligence.contract-demo.index') }}" class="rf-button-secondary">Ouvrir la démonstration isolée</a></div>
+            @endif
+        </x-section-card>
+
         <x-filter-panel title="Périmètre du dataset réel">
             <form method="GET" action="{{ route('intelligence.export') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div>

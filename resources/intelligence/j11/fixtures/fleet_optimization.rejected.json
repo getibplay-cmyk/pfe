@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "rentfleet.fleet_optimization.synthetic_advisory_record",
+  "module_id": "fleet_optimization",
+  "record_id": "00000000-0000-4000-8000-000000000002",
+  "created_at": "2026-08-09T14:00:00Z",
+  "research_status": {
+    "authoritative_stage": "J7",
+    "gate_decision": "OPTIMIZER_CONDITIONAL_GATE_NOT_PASSED_NO_RETUNING",
+    "benchmark_gate_passed": false,
+    "audit_score": "12/12",
+    "benchmark_role": "core_public_proxy",
+    "historical_public_output_import_allowed": false,
+    "ready_for_saas": false,
+    "production_allowed": false
+  },
+  "scope": {
+    "environment": "offline_contract_demo",
+    "synthetic_fixture": true,
+    "tenant_ref": "SYNTH-TENANT-001",
+    "agency_ref": "SYNTH-AGENCY-001",
+    "feature_flag": {
+      "key": "ai.fleet_optimization.enabled",
+      "enabled": false,
+      "default_state": "disabled"
+    },
+    "automatic_action_allowed": false,
+    "human_decision_required": true,
+    "contains_real_customer_data": false,
+    "contains_coordinates": false
+  },
+  "idempotency": {
+    "key": "10000000-0000-4000-8000-000000000002",
+    "policy": "SAME_KEY_SAME_PAYLOAD_ONLY",
+    "canonical_payload_sha256": "8b02cc2637d2149b97d37d211ca1780e6ee7f7d1b4da55ed1149d53d92a60c59"
+  },
+  "advisory": {
+    "computation_status": "not_run_synthetic_contract_fixture",
+    "solver_executed": false,
+    "plan_window_start": "2026-08-10T08:00:00Z",
+    "plan_window_end": "2026-08-10T12:00:00Z",
+    "moves": [
+      {
+        "vehicle_ref": "SYNTH-VEHICLE-002",
+        "from_agency_ref": "SYNTH-AGENCY-001",
+        "to_agency_ref": "SYNTH-AGENCY-002",
+        "planned_at": "2026-08-10T08:30:00Z",
+        "distance_km_demo": 7.5,
+        "reason_code": "SYNTH_DEMAND_BALANCE"
+      }
+    ],
+    "expected_service_gain_pp_demo": 2.5,
+    "execution_allowed": false,
+    "explanation": {
+      "method": "synthetic_reason_codes_only",
+      "confidence_percentage_claimed": false,
+      "factors": [
+        {
+          "code": "SYNTH_ZONE_IMBALANCE",
+          "direction": "increase",
+          "explanation_scope": "synthetic_reason_code_not_model_attribution"
+        }
+      ]
+    }
+  },
+  "human_decision": {
+    "status": "rejected",
+    "effect": "NO_OPERATIONAL_ACTION",
+    "decision_id": "30000000-0000-4000-8000-000000000002",
+    "human_actor_ref": "SYNTH-USER-002",
+    "decided_at": "2026-08-09T14:06:00Z",
+    "reason_code": "SCIENTIFIC_GATE_NOT_PASSED",
+    "note": "Rejet de démonstration cohérent avec le gate J7 non passé."
+  },
+  "audit_event": {
+    "when": "2026-08-09T14:06:00Z",
+    "where": {
+      "component": "rentfleet_j11_contract_demo",
+      "environment": "offline_demo"
+    },
+    "who": {
+      "actor_type": "human_demo",
+      "actor_ref": "SYNTH-USER-002"
+    },
+    "what": {
+      "event": "synthetic_human_decision_recorded",
+      "outcome": "human_rejected_demo",
+      "reason_code": "SCIENTIFIC_GATE_NOT_PASSED"
+    },
+    "correlation_id": "20000000-0000-4000-8000-000000000002",
+    "canonical_payload_sha256": "8b02cc2637d2149b97d37d211ca1780e6ee7f7d1b4da55ed1149d53d92a60c59",
+    "contains_sensitive_data": false
+  }
+}

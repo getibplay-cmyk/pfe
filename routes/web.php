@@ -13,6 +13,7 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\IntelligenceController;
 use App\Http\Controllers\IntelligenceDatasetExportController;
+use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlatformDashboardController;
@@ -196,6 +197,14 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/reports/export', ReportExportController::class)->name('reports.export');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/intelligence/export', IntelligenceDatasetExportController::class)->name('intelligence.export');
+    Route::prefix('/intelligence/contracts-demo')
+        ->name('intelligence.contract-demo.')
+        ->middleware('intelligence.contract-demo')
+        ->group(function () {
+            Route::get('/', [J11ContractDemoController::class, 'index'])->name('index');
+            Route::post('/fixtures', [J11ContractDemoController::class, 'store'])->name('fixtures.store');
+            Route::post('/{record}/decisions', [J11ContractDemoController::class, 'decide'])->name('decisions.store');
+        });
     Route::get('/intelligence', IntelligenceController::class)->name('intelligence.index');
 });
 

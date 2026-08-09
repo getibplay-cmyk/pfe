@@ -16,7 +16,8 @@ class UiLabel
         'posted' => 'Comptabilisé', 'reversed' => 'Contrepassé', 'approved' => 'Approuvé', 'rejected' => 'Rejeté',
         'planned' => 'Planifiée', 'in_progress' => 'En cours', 'completed' => 'Terminée',
         'reported' => 'Déclaré', 'submitted' => 'Soumis', 'under_review' => 'En revue', 'settled' => 'Réglé',
-        'resolved' => 'Résolu', 'dismissed' => 'Écarté',
+        'resolved' => 'Résolu', 'dismissed' => 'Écarté', 'validated' => 'Validé',
+        'accepted_for_demo_review' => 'Accepté pour revue de démonstration',
         'tenant-owner' => 'Administrateur de l’entreprise', 'tenant owner' => 'Administrateur de l’entreprise',
         'agency-manager' => 'Responsable d’agence', 'agency manager' => 'Responsable d’agence',
         'rental-agent' => 'Agent de location', 'rental agent' => 'Agent de location',
@@ -61,7 +62,7 @@ class UiLabel
 
     private const TONES = [
         'active' => 'success', 'confirmed' => 'success', 'accepted' => 'success', 'paid' => 'success',
-        'completed' => 'success', 'approved' => 'success', 'settled' => 'success', 'verified' => 'success',
+        'completed' => 'success', 'approved' => 'success', 'settled' => 'success', 'verified' => 'success', 'validated' => 'success',
         'pending' => 'warning', 'ready' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
         'planned' => 'warning', 'under_review' => 'warning', 'submitted' => 'warning', 'suspended' => 'warning',
         'cancelled' => 'danger', 'expired' => 'danger', 'rejected' => 'danger', 'void' => 'danger',
@@ -100,6 +101,9 @@ class UiLabel
         'reservation.exported' => 'Export des réservations téléchargé',
         'report.exported' => 'Export du rapport téléchargé',
         'prediction.dataset.exported' => 'Dataset Intelligence anonymisé exporté',
+        'prediction.demo.fixture_imported' => 'Fixture Intelligence synthétique ajoutée',
+        'prediction.demo.fixture_replayed' => 'Fixture Intelligence synthétique rejouée sans duplication',
+        'prediction.demo.human_decision_recorded' => 'Décision humaine de démonstration enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
         'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
@@ -206,6 +210,7 @@ class UiLabel
         'charge.review' => 'Examiner les frais contractuels',
         'payment.allocate' => 'Allouer un paiement à une facture',
         'platform.tenants.manage' => 'Administrer les entreprises clientes de la plateforme',
+        'prediction.demo.review' => 'Revoir les contrats Intelligence synthétiques de démonstration',
     ];
 
     private const ENTITIES = [

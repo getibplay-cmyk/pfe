@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\IntelligenceFilterRequest;
 use App\Models\Agency;
 use App\Support\Intelligence\IntelligencePseudonymizer;
+use App\Support\Intelligence\J11\J11ContractDemoGate;
 use App\Support\Reporting\ResolveReportCriteria;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\View\View;
@@ -15,6 +16,7 @@ class IntelligenceController extends Controller
         IntelligenceFilterRequest $request,
         ResolveReportCriteria $resolver,
         IntelligencePseudonymizer $pseudonymizer,
+        J11ContractDemoGate $contractDemoGate,
         TenantContext $context,
     ): View {
         $data = $request->validated();
@@ -27,6 +29,7 @@ class IntelligenceController extends Controller
         return view('intelligence.index', [
             'agencies' => $agencies,
             'configured' => $pseudonymizer->configured(),
+            'contractDemo' => $contractDemoGate->status(),
             'filters' => [
                 ...$data,
                 'agency_id' => count($criteria->agencyIds) === 1 ? $criteria->agencyIds[0] : null,
