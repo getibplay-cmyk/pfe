@@ -379,6 +379,12 @@ class Lot06FD1ReportingDiagnosticsTest extends TestCase
                 'current_mileage' => 1000,
             ], $user->id) : null;
 
+            if ($vehicle !== null) {
+                $vehicle->statusHistories()
+                    ->whereNull('from_status')
+                    ->update(['created_at' => CarbonImmutable::now('Africa/Casablanca')]);
+            }
+
             return compact('tenant', 'agency', 'role', 'user', 'category', 'customer', 'vehicle');
         }, $agency->id);
     }
