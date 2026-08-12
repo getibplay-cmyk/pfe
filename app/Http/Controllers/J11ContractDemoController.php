@@ -21,7 +21,8 @@ class J11ContractDemoController extends Controller
         $this->authorize('viewAny', AiAdvisoryRecordDemo::class);
 
         $records = AiAdvisoryRecordDemo::query()
-            ->with(['agency', 'creator', 'decisions.actor'])
+            ->select(['id', 'tenant_id', 'agency_id', 'module_id', 'contract_version', 'validation_status'])
+            ->with(['agency', 'decisions.actor'])
             ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
             ->latest('id')
             ->paginate(25);

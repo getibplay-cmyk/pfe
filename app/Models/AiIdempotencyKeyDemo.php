@@ -15,6 +15,7 @@ class AiIdempotencyKeyDemo extends Model
     protected $table = 'ai_idempotency_keys_demo';
 
     protected $fillable = [
+        'agency_id',
         'ai_advisory_record_demo_id',
         'idempotency_key',
         'fingerprint',

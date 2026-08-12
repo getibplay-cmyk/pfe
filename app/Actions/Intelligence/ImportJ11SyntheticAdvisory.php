@@ -30,20 +30,28 @@ final class ImportJ11SyntheticAdvisory
         $this->gate->assertEnabled();
         $this->assertActor($actor);
         $fixture = $this->fixtures->get($module);
+        $tenantId = $this->context->tenantId();
+        $agencyId = $this->context->agencyId();
 
         try {
-            return DB::transaction(function () use ($fixture, $actor): J11ImportResult {
-                $existingKey = AiIdempotencyKeyDemo::query()
-                    ->where('idempotency_key', $fixture->idempotencyKey)
-                    ->lockForUpdate()
-                    ->first();
+            return DB::transaction(function () use ($fixture, $actor, $tenantId, $agencyId): J11ImportResult {
+                DB::selectOne(
+                    'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
+                    [implode('|', ['j12', $tenantId, $agencyId ?? 'tenant', $fixture->idempotencyKey])],
+                );
+
+                $existingKey = $this->idempotencyKeyInScope(
+                    $fixture->idempotencyKey,
+                    $agencyId,
+                    true,
+                );
 
                 if ($existingKey !== null) {
-                    return $this->replay($existingKey, $fixture->fingerprint, $actor);
+                    return $this->replay($existingKey, $fixture->fingerprint, $actor, $agencyId);
                 }
 
                 $record = AiAdvisoryRecordDemo::create([
-                    'agency_id' => $this->context->agencyId(),
+                    'agency_id' => $agencyId,
                     'external_record_id' => $fixture->recordId,
                     'module_id' => $fixture->module,
                     'contract_version' => '1.0.0',
@@ -57,6 +65,7 @@ final class ImportJ11SyntheticAdvisory
                 ]);
 
                 AiIdempotencyKeyDemo::create([
+                    'agency_id' => $agencyId,
                     'ai_advisory_record_demo_id' => $record->id,
                     'idempotency_key' => $fixture->idempotencyKey,
                     'fingerprint' => $fixture->fingerprint,
@@ -73,25 +82,60 @@ final class ImportJ11SyntheticAdvisory
                 throw $exception;
             }
 
-            $existingKey = AiIdempotencyKeyDemo::query()
-                ->where('idempotency_key', $fixture->idempotencyKey)
-                ->first();
+            $existingKey = $this->idempotencyKeyInScope($fixture->idempotencyKey, $agencyId);
 
             if ($existingKey === null) {
                 throw $exception;
             }
 
-            return $this->replay($existingKey, $fixture->fingerprint, $actor);
+            return $this->replay($existingKey, $fixture->fingerprint, $actor, $agencyId);
         }
     }
 
-    private function replay(AiIdempotencyKeyDemo $key, string $fingerprint, User $actor): J11ImportResult
-    {
+    private function idempotencyKeyInScope(
+        string $idempotencyKey,
+        ?int $agencyId,
+        bool $lock = false,
+    ): ?AiIdempotencyKeyDemo {
+        $query = AiIdempotencyKeyDemo::query()
+            ->where('idempotency_key', $idempotencyKey)
+            ->when(
+                $agencyId === null,
+                fn ($query) => $query->whereNull('agency_id'),
+                fn ($query) => $query->where('agency_id', $agencyId),
+            );
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private function replay(
+        AiIdempotencyKeyDemo $key,
+        string $fingerprint,
+        User $actor,
+        ?int $agencyId,
+    ): J11ImportResult {
         if (! hash_equals($key->fingerprint, $fingerprint)) {
             throw new J11IdempotencyConflictException;
         }
 
-        $record = AiAdvisoryRecordDemo::findOrFail($key->ai_advisory_record_demo_id);
+        $record = AiAdvisoryRecordDemo::query()
+            ->whereKey($key->ai_advisory_record_demo_id)
+            ->when(
+                $agencyId === null,
+                fn ($query) => $query->whereNull('agency_id'),
+                fn ($query) => $query->where('agency_id', $agencyId),
+            )
+            ->firstOrFail();
+
+        if (! hash_equals($record->fingerprint, $fingerprint)
+            || ($record->payload['idempotency']['key'] ?? null) !== $key->idempotency_key) {
+            throw new J11IdempotencyConflictException;
+        }
+
         if ($actor->agency_id !== null && $actor->agency_id !== $record->agency_id) {
             throw new AuthorizationException;
         }

@@ -40,7 +40,7 @@
         <x-result-count :paginator="$records" />
         <x-responsive-table label="Registre append-only des fixtures J12">
             <table>
-                <thead><tr><th>Module</th><th>Périmètre</th><th>Validation</th><th>Empreinte</th><th>Dernière décision</th><th>Action</th></tr></thead>
+                <thead><tr><th>Module</th><th>Périmètre</th><th>Validation</th><th>Dernière décision</th><th>Action</th></tr></thead>
                 <tbody>
                     @forelse ($records as $record)
                         @php($latestDecision = $record->decisions->first())
@@ -48,7 +48,6 @@
                             <td><p class="font-semibold">{{ $record->module_id->label() }}</p><p class="text-xs text-slate-500">Contrat {{ $record->contract_version }}</p></td>
                             <td>{{ $record->agency?->name ?? 'Tenant entier' }}</td>
                             <td><x-status-badge :value="$record->validation_status" /><p class="mt-1 text-xs text-slate-500">Fixture synthétique</p></td>
-                            <td><span class="font-mono text-xs">{{ substr($record->fingerprint, 0, 12) }}…</span></td>
                             <td>
                                 @if ($latestDecision)
                                     <p class="font-medium">{{ $latestDecision->decision->label() }}</p>
@@ -77,7 +76,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6"><x-empty-state title="Aucune fixture locale" description="Le workflow reste fermé tant qu’aucune fixture scellée n’est ajoutée." /></td></tr>
+                        <tr><td colspan="5"><x-empty-state title="Aucune fixture locale" description="Le workflow reste fermé tant qu’aucune fixture scellée n’est ajoutée." /></td></tr>
                     @endforelse
                 </tbody>
             </table>

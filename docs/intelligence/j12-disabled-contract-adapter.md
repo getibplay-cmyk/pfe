@@ -44,11 +44,17 @@ Trois tables PostgreSQL dédiées et append-only sont créées :
 - `ai_human_decisions_demo` pour les revues humaines locales.
 
 Les contraintes et triggers PostgreSQL imposent le tenant, l’agence, les
-valeurs synthétiques, l’effet non opérationnel et l’immutabilité. Une même clé
-avec la même empreinte produit `REPLAY_SAFE` sans second enregistrement. Une
-empreinte différente est un conflit. Aucun code J12 n’écrit dans les véhicules,
-réservations, contrats, maintenances, blocs, factures, paiements ou autres
-tables métier.
+valeurs synthétiques, l’effet non opérationnel et l’immutabilité. L’idempotence
+est bornée au triplet tenant, agence nullable et clé : deux agences peuvent
+charger indépendamment la même fixture, tandis que `agency_id=null` représente
+le périmètre du tenant entier. Les contraintes `UNIQUE NULLS NOT DISTINCT`, le
+verrou transactionnel par périmètre et le trigger de cohérence avec
+l’enregistrement parent protègent aussi le premier rejeu concurrent. Une même
+clé avec la même empreinte produit `REPLAY_SAFE` sans second enregistrement ;
+une empreinte différente est un conflit. L’empreinte reste une donnée technique
+interne et n’est rendue dans aucune page, même sous forme abrégée. Aucun code
+J12 n’écrit dans les véhicules, réservations, contrats, maintenances, blocs,
+factures, paiements ou autres tables métier.
 
 ## RBAC et routes
 
@@ -76,8 +82,10 @@ npm run build
 ```
 
 Les tests J12 couvrent les huit empreintes scellées, les invariants négatifs,
-la matrice des six rôles, l’isolation tenant/agence, le rejeu idempotent,
-l’audit minimal, les triggers append-only et l’absence d’écriture métier.
+la matrice des six rôles, l’isolation tenant/agence, le rejeu idempotent dans
+chaque périmètre, l’agence nullable, les contraintes de concurrence, l’absence
+d’empreinte dans le HTML, l’audit minimal, les triggers append-only et
+l’absence d’écriture métier.
 
 ## Limite de livraison
 
