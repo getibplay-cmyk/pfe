@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "rentfleet.rental_usage_anomaly.synthetic_advisory_record",
+  "module_id": "rental_usage_anomaly",
+  "record_id": "00000000-0000-4000-8000-000000000004",
+  "created_at": "2026-08-09T14:00:00Z",
+  "research_status": {
+    "authoritative_stage": "J9",
+    "gate_decision": "RESEARCH_GATE_PASSED_PUBLIC_PROXY_NOT_FOR_SAAS",
+    "benchmark_gate_passed": true,
+    "audit_score": "16/16",
+    "benchmark_role": "public_proxy_advisory_benchmark",
+    "historical_public_output_import_allowed": false,
+    "ready_for_saas": false,
+    "production_allowed": false
+  },
+  "scope": {
+    "environment": "offline_contract_demo",
+    "synthetic_fixture": true,
+    "tenant_ref": "SYNTH-TENANT-001",
+    "agency_ref": "SYNTH-AGENCY-001",
+    "feature_flag": {
+      "key": "ai.rental_usage_anomaly.enabled",
+      "enabled": false,
+      "default_state": "disabled"
+    },
+    "automatic_action_allowed": false,
+    "human_decision_required": true,
+    "contains_real_customer_data": false,
+    "contains_coordinates": false
+  },
+  "idempotency": {
+    "key": "10000000-0000-4000-8000-000000000004",
+    "policy": "SAME_KEY_SAME_PAYLOAD_ONLY",
+    "canonical_payload_sha256": "8be9d5bb9dbf436d27f07ff4f9387247d20c4630ffe54bea627a7a1fcbeb6093"
+  },
+  "advisory": {
+    "computation_status": "not_run_synthetic_contract_fixture",
+    "trip_ref": "SYNTH-TRIP-004",
+    "semantic_label": "atypical_usage_for_human_review_not_fraud",
+    "score_kind": "synthetic_rank_not_probability",
+    "atypicality_score_demo": 7.4,
+    "review_budget_percent_demo": 1,
+    "fraud_claimed": false,
+    "automatic_sanction_allowed": false,
+    "reason_codes": [
+      "SYNTH_DURATION",
+      "SYNTH_DISTANCE"
+    ],
+    "explanation": {
+      "method": "synthetic_reason_codes_only",
+      "confidence_percentage_claimed": false,
+      "factors": [
+        {
+          "code": "SYNTH_DURATION",
+          "direction": "increase",
+          "explanation_scope": "synthetic_reason_code_not_model_attribution"
+        },
+        {
+          "code": "SYNTH_DISTANCE",
+          "direction": "increase",
+          "explanation_scope": "synthetic_reason_code_not_model_attribution"
+        }
+      ]
+    }
+  },
+  "human_decision": {
+    "status": "accepted_for_demo_review",
+    "effect": "NO_OPERATIONAL_ACTION",
+    "decision_id": "30000000-0000-4000-8000-000000000004",
+    "human_actor_ref": "SYNTH-USER-004",
+    "decided_at": "2026-08-09T14:07:00Z",
+    "reason_code": "HUMAN_REVIEW_DEMO_ONLY",
+    "note": "Le terme atypique déclenche seulement une revue humaine de démonstration."
+  },
+  "audit_event": {
+    "when": "2026-08-09T14:07:00Z",
+    "where": {
+      "component": "rentfleet_j11_contract_demo",
+      "environment": "offline_demo"
+    },
+    "who": {
+      "actor_type": "human_demo",
+      "actor_ref": "SYNTH-USER-004"
+    },
+    "what": {
+      "event": "synthetic_human_decision_recorded",
+      "outcome": "human_accepted_demo",
+      "reason_code": "HUMAN_REVIEW_DEMO_ONLY"
+    },
+    "correlation_id": "20000000-0000-4000-8000-000000000004",
+    "canonical_payload_sha256": "8be9d5bb9dbf436d27f07ff4f9387247d20c4630ffe54bea627a7a1fcbeb6093",
+    "contains_sensitive_data": false
+  }
+}

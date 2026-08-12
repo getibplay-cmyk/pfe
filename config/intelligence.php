@@ -21,4 +21,15 @@ return [
         'compute' => 'CPU',
         'training_data' => 'synthetic',
     ],
+
+    // J12 is intentionally not environment-configurable. Tests may override
+    // this value in memory to prove the isolated synthetic workflow.
+    'contract_demo' => [
+        'enabled' => false,
+        'synthetic_only' => true,
+        'operational_actions_allowed' => false,
+        'ready_for_saas' => false,
+        'contract_version' => '1.0.0',
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
 ];

@@ -219,7 +219,7 @@ class Lot07B1IntelligenceExportTest extends TestCase
         $this->assertTrue(DB::table('pg_indexes')->where('indexname', 'rental_contracts_intelligence_export_idx')->exists());
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(70, DB::table('migrations')->count());
+        $this->assertSame(73, DB::table('migrations')->count());
     }
 
     public function test_fresh_rbac_matrix_preserves_custom_roles_and_has_no_ml_tables(): void

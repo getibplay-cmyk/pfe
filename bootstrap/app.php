@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureActiveAccount;
+use App\Http\Middleware\EnsureJ11ContractDemoEnabled;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\RequestCorrelation;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => ResolveTenantContext::class,
             'platform' => EnsurePlatformAdmin::class,
             'password.changed' => EnsurePasswordChanged::class,
+            'intelligence.contract-demo' => EnsureJ11ContractDemoEnabled::class,
         ]);
 
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenantContext::class);

@@ -1,0 +1,446 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.local/schemas/j11/predictive_maintenance/1.0.0",
+  "title": "RentFleet J11 predictive_maintenance synthetic advisory record",
+  "$comment": "Contract demonstrator only. It does not authorize inference, SaaS activation, or operational action.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_id",
+    "module_id",
+    "record_id",
+    "created_at",
+    "research_status",
+    "scope",
+    "idempotency",
+    "advisory",
+    "human_decision",
+    "audit_event"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "contract_id": {
+      "const": "rentfleet.predictive_maintenance.synthetic_advisory_record"
+    },
+    "module_id": {
+      "const": "predictive_maintenance"
+    },
+    "record_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "research_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authoritative_stage",
+        "gate_decision",
+        "benchmark_gate_passed",
+        "audit_score",
+        "benchmark_role",
+        "historical_public_output_import_allowed",
+        "ready_for_saas",
+        "production_allowed"
+      ],
+      "properties": {
+        "authoritative_stage": {
+          "const": "J8_CORRECTED"
+        },
+        "gate_decision": {
+          "const": "RESEARCH_GATE_NOT_PASSED_NO_RETUNING"
+        },
+        "benchmark_gate_passed": {
+          "const": false
+        },
+        "audit_score": {
+          "const": "13/14"
+        },
+        "benchmark_role": {
+          "const": "benchmark_only"
+        },
+        "historical_public_output_import_allowed": {
+          "const": false
+        },
+        "ready_for_saas": {
+          "const": false
+        },
+        "production_allowed": {
+          "const": false
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment",
+        "synthetic_fixture",
+        "tenant_ref",
+        "agency_ref",
+        "feature_flag",
+        "automatic_action_allowed",
+        "human_decision_required",
+        "contains_real_customer_data",
+        "contains_coordinates"
+      ],
+      "properties": {
+        "environment": {
+          "const": "offline_contract_demo"
+        },
+        "synthetic_fixture": {
+          "const": true
+        },
+        "tenant_ref": {
+          "type": "string",
+          "pattern": "^SYNTH-TENANT-[0-9]{3}$"
+        },
+        "agency_ref": {
+          "type": "string",
+          "pattern": "^SYNTH-AGENCY-[0-9]{3}$"
+        },
+        "feature_flag": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "key",
+            "enabled",
+            "default_state"
+          ],
+          "properties": {
+            "key": {
+              "const": "ai.predictive_maintenance.enabled"
+            },
+            "enabled": {
+              "const": false
+            },
+            "default_state": {
+              "const": "disabled"
+            }
+          }
+        },
+        "automatic_action_allowed": {
+          "const": false
+        },
+        "human_decision_required": {
+          "const": true
+        },
+        "contains_real_customer_data": {
+          "const": false
+        },
+        "contains_coordinates": {
+          "const": false
+        }
+      }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "policy",
+        "canonical_payload_sha256"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "policy": {
+          "const": "SAME_KEY_SAME_PAYLOAD_ONLY"
+        },
+        "canonical_payload_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "advisory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "computation_status",
+        "vehicle_ref",
+        "assessment_window_start",
+        "assessment_window_end",
+        "advisory_label",
+        "risk_band_demo",
+        "score_kind",
+        "risk_score_demo",
+        "failure_probability_claimed",
+        "recommended_human_action",
+        "automatic_work_order_allowed",
+        "explanation"
+      ],
+      "properties": {
+        "computation_status": {
+          "const": "not_run_synthetic_contract_fixture"
+        },
+        "vehicle_ref": {
+          "type": "string",
+          "pattern": "^SYNTH-VEHICLE-[0-9]{3}$"
+        },
+        "assessment_window_start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "assessment_window_end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "advisory_label": {
+          "const": "manual_inspection_priority_demo"
+        },
+        "risk_band_demo": {
+          "enum": [
+            "low",
+            "medium",
+            "elevated"
+          ]
+        },
+        "score_kind": {
+          "const": "synthetic_rank_not_failure_probability"
+        },
+        "risk_score_demo": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "failure_probability_claimed": {
+          "const": false
+        },
+        "recommended_human_action": {
+          "const": "manual_inspection_only"
+        },
+        "automatic_work_order_allowed": {
+          "const": false
+        },
+        "explanation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method",
+            "confidence_percentage_claimed",
+            "factors"
+          ],
+          "properties": {
+            "method": {
+              "const": "synthetic_reason_codes_only"
+            },
+            "confidence_percentage_claimed": {
+              "const": false
+            },
+            "factors": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "code",
+                  "direction",
+                  "explanation_scope"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^SYNTH_[A-Z0-9_]+$"
+                  },
+                  "direction": {
+                    "enum": [
+                      "increase",
+                      "decrease",
+                      "neutral"
+                    ]
+                  },
+                  "explanation_scope": {
+                    "const": "synthetic_reason_code_not_model_attribution"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "human_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "effect"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "accepted_for_demo_review",
+            "rejected"
+          ]
+        },
+        "effect": {
+          "const": "NO_OPERATIONAL_ACTION"
+        },
+        "decision_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "human_actor_ref": {
+          "type": "string",
+          "pattern": "^SYNTH-USER-[0-9]{3}$"
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason_code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+        },
+        "note": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 240
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "pending"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "decision_id": false,
+              "human_actor_ref": false,
+              "decided_at": false,
+              "reason_code": false,
+              "note": false
+            }
+          },
+          "else": {
+            "properties": {
+              "decision_id": true,
+              "human_actor_ref": true,
+              "decided_at": true,
+              "reason_code": true
+            },
+            "required": [
+              "decision_id",
+              "human_actor_ref",
+              "decided_at",
+              "reason_code"
+            ]
+          }
+        }
+      ]
+    },
+    "audit_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "when",
+        "where",
+        "who",
+        "what",
+        "correlation_id",
+        "canonical_payload_sha256",
+        "contains_sensitive_data"
+      ],
+      "properties": {
+        "when": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "where": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "component",
+            "environment"
+          ],
+          "properties": {
+            "component": {
+              "const": "rentfleet_j11_contract_demo"
+            },
+            "environment": {
+              "const": "offline_demo"
+            }
+          }
+        },
+        "who": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "actor_type",
+            "actor_ref"
+          ],
+          "properties": {
+            "actor_type": {
+              "enum": [
+                "system_demo",
+                "human_demo"
+              ]
+            },
+            "actor_ref": {
+              "type": "string",
+              "pattern": "^SYNTH-(SYSTEM|USER)-[0-9]{3}$"
+            }
+          }
+        },
+        "what": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "event",
+            "outcome",
+            "reason_code"
+          ],
+          "properties": {
+            "event": {
+              "enum": [
+                "synthetic_advisory_created",
+                "synthetic_human_decision_recorded"
+              ]
+            },
+            "outcome": {
+              "enum": [
+                "pending_review",
+                "human_accepted_demo",
+                "human_rejected_demo"
+              ]
+            },
+            "reason_code": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            }
+          }
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "canonical_payload_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "contains_sensitive_data": {
+          "const": false
+        }
+      }
+    }
+  }
+}

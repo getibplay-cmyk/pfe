@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "contract_id": "rentfleet.predictive_maintenance.synthetic_advisory_record",
+  "module_id": "predictive_maintenance",
+  "record_id": "00000000-0000-4000-8000-000000000003",
+  "created_at": "2026-08-09T14:00:00Z",
+  "research_status": {
+    "authoritative_stage": "J8_CORRECTED",
+    "gate_decision": "RESEARCH_GATE_NOT_PASSED_NO_RETUNING",
+    "benchmark_gate_passed": false,
+    "audit_score": "13/14",
+    "benchmark_role": "benchmark_only",
+    "historical_public_output_import_allowed": false,
+    "ready_for_saas": false,
+    "production_allowed": false
+  },
+  "scope": {
+    "environment": "offline_contract_demo",
+    "synthetic_fixture": true,
+    "tenant_ref": "SYNTH-TENANT-001",
+    "agency_ref": "SYNTH-AGENCY-001",
+    "feature_flag": {
+      "key": "ai.predictive_maintenance.enabled",
+      "enabled": false,
+      "default_state": "disabled"
+    },
+    "automatic_action_allowed": false,
+    "human_decision_required": true,
+    "contains_real_customer_data": false,
+    "contains_coordinates": false
+  },
+  "idempotency": {
+    "key": "10000000-0000-4000-8000-000000000003",
+    "policy": "SAME_KEY_SAME_PAYLOAD_ONLY",
+    "canonical_payload_sha256": "4d9e5e1cd6dfbd397f255abc8bdf4422ca0b4578fd176b41cc85e833ee93e054"
+  },
+  "advisory": {
+    "computation_status": "not_run_synthetic_contract_fixture",
+    "vehicle_ref": "SYNTH-VEHICLE-003",
+    "assessment_window_start": "2026-08-01T00:00:00Z",
+    "assessment_window_end": "2026-08-08T00:00:00Z",
+    "advisory_label": "manual_inspection_priority_demo",
+    "risk_band_demo": "elevated",
+    "score_kind": "synthetic_rank_not_failure_probability",
+    "risk_score_demo": 0.72,
+    "failure_probability_claimed": false,
+    "recommended_human_action": "manual_inspection_only",
+    "automatic_work_order_allowed": false,
+    "explanation": {
+      "method": "synthetic_reason_codes_only",
+      "confidence_percentage_claimed": false,
+      "factors": [
+        {
+          "code": "SYNTH_SENSOR_GROUP",
+          "direction": "increase",
+          "explanation_scope": "synthetic_reason_code_not_model_attribution"
+        }
+      ]
+    }
+  },
+  "human_decision": {
+    "status": "pending",
+    "effect": "NO_OPERATIONAL_ACTION"
+  },
+  "audit_event": {
+    "when": "2026-08-09T14:00:00Z",
+    "where": {
+      "component": "rentfleet_j11_contract_demo",
+      "environment": "offline_demo"
+    },
+    "who": {
+      "actor_type": "system_demo",
+      "actor_ref": "SYNTH-SYSTEM-001"
+    },
+    "what": {
+      "event": "synthetic_advisory_created",
+      "outcome": "pending_review",
+      "reason_code": "AWAITING_HUMAN_REVIEW"
+    },
+    "correlation_id": "20000000-0000-4000-8000-000000000003",
+    "canonical_payload_sha256": "4d9e5e1cd6dfbd397f255abc8bdf4422ca0b4578fd176b41cc85e833ee93e054",
+    "contains_sensitive_data": false
+  }
+}
