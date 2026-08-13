@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.invalid/schemas/j14-result-batch-v1.0.0.json",
+  "title": "RentFleet J14-B synthetic result batch",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "batch_id",
+    "generated_at",
+    "source",
+    "export",
+    "results",
+    "human_review",
+    "safety",
+    "idempotency"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "batch_id": { "$ref": "#/$defs/uuid" },
+    "generated_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "computation_status", "producer_name", "producer_version", "environment"],
+      "properties": {
+        "kind": { "const": "synthetic_fixture" },
+        "computation_status": { "const": "not_run_synthetic_contract_fixture" },
+        "producer_name": { "const": "rentfleet-j14-synthetic-fixture" },
+        "producer_version": { "const": "1.0.0" },
+        "environment": { "const": "offline_contract_demo" }
+      }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "schema_version", "dataset_version", "row_count", "content_sha256"],
+      "properties": {
+        "run_id": { "$ref": "#/$defs/uuid" },
+        "schema_version": { "const": "1.1" },
+        "dataset_version": { "const": "rentfleet-real-returns-v1.1.0" },
+        "row_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "content_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "results": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/result" }
+    },
+    "human_review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "initial_status", "effect"],
+      "properties": {
+        "required": { "const": true },
+        "initial_status": { "const": "pending" },
+        "effect": { "const": "NO_OPERATIONAL_ACTION" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "synthetic_only",
+        "contains_real_customer_data",
+        "contains_direct_identifiers",
+        "contains_coordinates",
+        "automatic_action_allowed",
+        "ready_for_saas",
+        "production_allowed"
+      ],
+      "properties": {
+        "synthetic_only": { "const": true },
+        "contains_real_customer_data": { "const": false },
+        "contains_direct_identifiers": { "const": false },
+        "contains_coordinates": { "const": false },
+        "automatic_action_allowed": { "const": false },
+        "ready_for_saas": { "const": false },
+        "production_allowed": { "const": false }
+      }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "policy", "canonical_payload_sha256"],
+      "properties": {
+        "key": { "$ref": "#/$defs/uuid" },
+        "policy": { "const": "SAME_KEY_SAME_PAYLOAD_ONLY" },
+        "canonical_payload_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["normal", "elevated"]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row_id", "advisory_kind", "priority", "summary_code", "factors", "operational_effect"],
+      "properties": {
+        "row_id": { "type": "string", "pattern": "^r_[0-9a-f]{64}$" },
+        "advisory_kind": { "const": "rental_usage_review" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "summary_code": { "const": "SYNTHETIC_REVIEW_ONLY" },
+        "factors": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "prefixItems": [
+            { "$ref": "#/$defs/lateHoursFactor" },
+            { "$ref": "#/$defs/kmPerDayFactor" },
+            { "$ref": "#/$defs/fuelDropFactor" }
+          ],
+          "items": false
+        },
+        "operational_effect": { "const": "NO_OPERATIONAL_ACTION" }
+      }
+    },
+    "lateHoursFactor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "level"],
+      "properties": {
+        "name": { "const": "late_hours" },
+        "level": { "$ref": "#/$defs/level" }
+      }
+    },
+    "kmPerDayFactor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "level"],
+      "properties": {
+        "name": { "const": "km_per_day" },
+        "level": { "$ref": "#/$defs/level" }
+      }
+    },
+    "fuelDropFactor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "level"],
+      "properties": {
+        "name": { "const": "fuel_drop_pct" },
+        "level": { "$ref": "#/$defs/level" }
+      }
+    }
+  }
+}

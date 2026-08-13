@@ -223,9 +223,21 @@
             </x-section-card>
         @endif
 
+        <x-section-card
+            title="J14-B · lots de résultats synthétiques"
+            description="Import fermé, lignée exacte vers J14-A, idempotence et décision humaine append-only, toujours sans effet métier."
+        >
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                    La revue J14-B n’accepte que des sorties qualitatives de fixture synthétique. Elle refuse tout score, identifiant direct, coordonnée, action automatique ou payload non documenté.
+                </p>
+                <a href="{{ route('intelligence.result-batches.index') }}" class="rf-button-secondary">Ouvrir le registre J14-B</a>
+            </div>
+        </x-section-card>
+
         <x-empty-state
             title="Aucune prédiction exécutée ou affichée"
-            description="J13 expose uniquement des preuves et limites gelées. Toute activation, import de résultat ou recommandation opérationnelle exige une validation locale et une évolution séparée."
+            description="J13 et J14 exposent uniquement des preuves synthétiques ou des limites gelées. Aucune recommandation opérationnelle n’est activée."
         />
     </div>
 </x-app-layout>

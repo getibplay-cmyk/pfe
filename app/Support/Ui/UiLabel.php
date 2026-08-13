@@ -61,7 +61,7 @@ class UiLabel
     ];
 
     private const TONES = [
-        'active' => 'success', 'confirmed' => 'success', 'accepted' => 'success', 'paid' => 'success',
+        'active' => 'success', 'confirmed' => 'success', 'accepted' => 'success', 'accepted_for_demo_review' => 'success', 'paid' => 'success',
         'completed' => 'success', 'approved' => 'success', 'settled' => 'success', 'verified' => 'success', 'validated' => 'success',
         'pending' => 'warning', 'ready' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
         'planned' => 'warning', 'under_review' => 'warning', 'submitted' => 'warning', 'suspended' => 'warning',
@@ -106,6 +106,10 @@ class UiLabel
         'prediction.demo.fixture_imported' => 'Fixture Intelligence synthétique ajoutée',
         'prediction.demo.fixture_replayed' => 'Fixture Intelligence synthétique rejouée sans duplication',
         'prediction.demo.human_decision_recorded' => 'Décision humaine de démonstration enregistrée',
+        'prediction.result_batch.imported' => 'Lot de résultats Intelligence synthétique importé',
+        'prediction.result_batch.replayed' => 'Lot de résultats Intelligence rejoué sans duplication',
+        'prediction.result_batch.downloaded' => 'Lot de résultats Intelligence téléchargé',
+        'prediction.result_batch.human_decision_recorded' => 'Décision humaine sur un lot Intelligence enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
         'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
@@ -212,7 +216,7 @@ class UiLabel
         'charge.review' => 'Examiner les frais contractuels',
         'payment.allocate' => 'Allouer un paiement à une facture',
         'platform.tenants.manage' => 'Administrer les entreprises clientes de la plateforme',
-        'prediction.demo.review' => 'Revoir les contrats Intelligence synthétiques de démonstration',
+        'prediction.demo.review' => 'Importer et revoir les preuves Intelligence synthétiques',
     ];
 
     private const ENTITIES = [
@@ -221,6 +225,7 @@ class UiLabel
         'Vehicle' => 'Véhicule', 'VehicleBlock' => 'Bloc véhicule', 'Document' => 'Document privé', 'Invoice' => 'Facture',
         'Payment' => 'Paiement', 'DepositTransaction' => 'Caution', 'Expense' => 'Dépense', 'MaintenanceOrder' => 'Maintenance',
         'InsurancePolicy' => 'Police d’assurance', 'InsuranceClaim' => 'Sinistre', 'InternalNotification' => 'Notification',
+        'IntelligenceDatasetExportRun' => 'Snapshot Intelligence', 'IntelligenceResultBatch' => 'Lot de résultats Intelligence',
     ];
 
     private const REPORT_LABELS = [
