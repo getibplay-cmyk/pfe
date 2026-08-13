@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    env:
+      CI: true
+      APP_ENV: testing
+      APP_DEBUG: false
+      APP_TIMEZONE: Africa/Casablanca
+      PGTZ: Africa/Casablanca
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: rentfleet_test
+      DB_USERNAME: rentfleet_app
+      DB_PASSWORD: rentfleet_ci_only
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+      BCRYPT_ROUNDS: 4
+
+    services:
+      postgres:
+        image: postgres:18.4-bookworm
+        env:
+          POSTGRES_DB: rentfleet_test
+          POSTGRES_USER: rentfleet_app
+          POSTGRES_PASSWORD: rentfleet_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rentfleet_app -d rentfleet_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup PHP and Composer
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: 8.5.8
+          tools: composer:2.10.1
+          extensions: mbstring, intl, dom, fileinfo, pdo_pgsql, pgsql
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22.14.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Configure PowerShell compatibility
+        shell: bash
+        run: |
+          pwsh_path="$(command -v pwsh)"
+          test -n "$pwsh_path"
+          mkdir -p "$RUNNER_TEMP/powershell-compat"
+          ln -s "$pwsh_path" "$RUNNER_TEMP/powershell-compat/powershell.exe"
+          echo "$RUNNER_TEMP/powershell-compat" >> "$GITHUB_PATH"
+
+      - name: Create runner environment file
+        run: cp .env.example .env
+
+      - name: Validate Composer configuration
+        run: composer validate --strict --no-interaction
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Generate application key
+        run: php artisan key:generate --force
+
+      - name: Audit Composer dependencies
+        run: composer audit --locked --no-interaction
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Audit npm dependencies
+        run: npm audit
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
+
+      - name: Apply database migrations
+        run: php artisan migrate --force --no-interaction
+
+      - name: Run test suite
+        run: php artisan test
+
+      - name: Run deployment diagnostics
+        run: php artisan rentfleet:doctor --json --env=testing --expect-database=rentfleet_test
+
+      - name: Check Git diff
+        run: git diff --check

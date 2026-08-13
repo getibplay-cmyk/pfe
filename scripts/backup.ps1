@@ -101,7 +101,7 @@ Assert-PgPassAvailable
 
 $identity = Invoke-PsqlScalar "select current_database() || '|' || current_user"
 if ($identity -ne "$DatabaseName|$PostgresUser") {
-    throw 'La connexion PostgreSQL ne correspond pas à la base source et à l’utilisateur attendus.'
+    throw "La connexion PostgreSQL ne correspond pas à la base source et à l’utilisateur attendus."
 }
 
 $timestamp = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmssfffZ')

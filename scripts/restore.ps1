@@ -148,7 +148,7 @@ try {
 
     $reparsePoints = @(Get-ChildItem -LiteralPath $stage -Recurse -Force | Where-Object { ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 })
     if ($reparsePoints.Count -gt 0) {
-        throw 'L’archive restaurée contient un lien symbolique ou point de réanalyse.'
+        throw "L’archive restaurée contient un lien symbolique ou point de réanalyse."
     }
 
     $expectedPaths = @{}
@@ -169,7 +169,7 @@ try {
     foreach ($file in $restoredFiles) {
         $relative = $file.FullName.Substring($stage.Length).TrimStart('\', '/').Replace('\', '/')
         if (-not $expectedPaths.ContainsKey($relative)) {
-            throw 'L’archive contient un document non déclaré dans le manifeste.'
+            throw "L’archive contient un document non déclaré dans le manifeste."
         }
     }
 
