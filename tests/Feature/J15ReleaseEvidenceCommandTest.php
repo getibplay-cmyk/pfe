@@ -35,8 +35,6 @@ class J15ReleaseEvidenceCommandTest extends TestCase
                 '--output' => $output,
             ])
                 ->expectsOutputToContain('"status": "ok"')
-                ->expectsOutputToContain('"drive_modified": false')
-                ->expectsOutputToContain('"colab_modified": false')
                 ->assertSuccessful();
 
             $this->assertFileExists($output.'/j15-release-manifest.json');
@@ -46,6 +44,8 @@ class J15ReleaseEvidenceCommandTest extends TestCase
             $manifest = json_decode(File::get($output.'/j15-release-manifest.json'), true, 512, JSON_THROW_ON_ERROR);
             $this->assertSame('J15-A', $manifest['scope']['stage']);
             $this->assertSame('passed', $manifest['quality_gate']['status']);
+            $this->assertFalse($manifest['safety']['drive_modified']);
+            $this->assertFalse($manifest['safety']['colab_modified']);
             $this->assertFalse($manifest['safety']['operational_business_write_allowed']);
             $this->assertTrue($manifest['safety']['human_decision_required']);
         } finally {
