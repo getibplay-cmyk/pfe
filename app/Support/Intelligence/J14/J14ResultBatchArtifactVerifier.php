@@ -14,8 +14,14 @@ final class J14ResultBatchArtifactVerifier
         $disk = Storage::disk((string) config('intelligence.result_batches.disk'));
 
         try {
-            $content = $disk->get($batch->stored_path);
+            $content = $disk->exists($batch->stored_path)
+                ? $disk->get($batch->stored_path)
+                : null;
         } catch (Throwable) {
+            throw new RuntimeException('Le lot de résultats privé est indisponible.');
+        }
+
+        if (! is_string($content)) {
             throw new RuntimeException('Le lot de résultats privé est indisponible.');
         }
 
