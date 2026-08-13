@@ -15,6 +15,7 @@ use App\Http\Controllers\IntelligenceController;
 use App\Http\Controllers\IntelligenceDatasetExportController;
 use App\Http\Controllers\IntelligenceDatasetExportManifestController;
 use App\Http\Controllers\IntelligenceDatasetSnapshotDownloadController;
+use App\Http\Controllers\IntelligenceResultBatchController;
 use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
@@ -203,6 +204,14 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.exports.manifest');
     Route::get('/intelligence/exports/{exportRun}/download', IntelligenceDatasetSnapshotDownloadController::class)
         ->name('intelligence.exports.download');
+    Route::get('/intelligence/result-batches', [IntelligenceResultBatchController::class, 'index'])
+        ->name('intelligence.result-batches.index');
+    Route::post('/intelligence/exports/{exportRun}/result-batches', [IntelligenceResultBatchController::class, 'store'])
+        ->name('intelligence.result-batches.store');
+    Route::get('/intelligence/result-batches/{resultBatch}/download', [IntelligenceResultBatchController::class, 'download'])
+        ->name('intelligence.result-batches.download');
+    Route::post('/intelligence/result-batches/{resultBatch}/decisions', [IntelligenceResultBatchController::class, 'decide'])
+        ->name('intelligence.result-batches.decisions.store');
     Route::prefix('/intelligence/contracts-demo')
         ->name('intelligence.contract-demo.')
         ->middleware('intelligence.contract-demo')

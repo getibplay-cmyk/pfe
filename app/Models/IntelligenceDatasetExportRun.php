@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class IntelligenceDatasetExportRun extends Model
 {
@@ -62,6 +63,11 @@ class IntelligenceDatasetExportRun extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function resultBatches(): HasMany
+    {
+        return $this->hasMany(IntelligenceResultBatch::class);
     }
 
     /** @return array<string, mixed> */

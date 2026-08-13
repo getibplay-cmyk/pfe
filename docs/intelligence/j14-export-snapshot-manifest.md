@@ -86,12 +86,13 @@ Les tests couvrent le déterminisme, le manifeste fermé, le disque privé,
 l’immutabilité PostgreSQL, l’isolation tenant/agence, le RBAC et le refus d’un
 snapshot altéré.
 
-## Étape suivante
+## Étape J14-B
 
-J14-B pourra importer un lot uniquement s’il référence un `run_id` existant et
-si `schema_version`, `dataset_version`, nombre de lignes et checksum
-correspondent exactement à ce manifeste. Cette future étape restera
-idempotente, contrôlée par un humain et livrée dans une PR distincte.
+J14-B est livré séparément dans
+`docs/intelligence/j14-result-batch-import-review.md`. Il importe un lot
+uniquement s’il référence un `run_id` existant et si `schema_version`,
+`dataset_version`, nombre de lignes et checksum correspondent exactement à ce
+manifeste. L’import reste idempotent, synthétique et contrôlé par un humain.
 
 ## Références
 

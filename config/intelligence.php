@@ -9,6 +9,17 @@ return [
         'max_rows' => 10000,
     ],
 
+    'result_batches' => [
+        'disk' => 'local',
+        'schema_version' => '1.0.0',
+        'max_upload_kilobytes' => 1024,
+        'synthetic_only' => true,
+        'automatic_actions_allowed' => false,
+        'ready_for_saas' => false,
+        'production_allowed' => false,
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'rule_baseline' => [
         'name' => 'rental_anomaly_rules',
         'version' => '1.0.0',
