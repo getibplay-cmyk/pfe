@@ -1,0 +1,219 @@
+{
+    "manifest_version": "1.0.0",
+    "frozen_on": "2026-08-13",
+    "source_commit": "c1140ba6dfa0b5ea6a4d3f3d9ba418773a4ec8ee",
+    "decision": "J13_CONSULTATIVE_DISABLED_ONLY",
+    "evidence_taxonomy": {
+        "public_proxy_benchmark": "Reproducible experiment on a neighboring public domain, not local RentFleet validation.",
+        "synthetic_contract_proof": "Schema, fixture, validation, idempotency and audit proof without model execution.",
+        "software_integration_proof": "Automated proof of code guards, RBAC, isolation, PostgreSQL invariants and CI.",
+        "rentfleet_local_validation": "Absent: requires a compatible local temporal backtest and reviewed labels.",
+        "production_evidence": "Absent: requires prospective validation, drift monitoring, rollback and local thresholds."
+    },
+    "j13_entry_gate": {
+        "mode": "consultative_disabled_only",
+        "module_count": 4,
+        "new_model_allowed": false,
+        "dynamic_pricing_allowed": false,
+        "feature_flags_enabled": false,
+        "ready_for_saas": false,
+        "production_allowed": false,
+        "inference_allowed": false,
+        "training_allowed": false,
+        "solver_allowed": false,
+        "historical_public_output_import_allowed": false,
+        "automatic_action_allowed": false,
+        "operational_business_write_allowed": false,
+        "human_decision_required": true,
+        "tenant_and_agency_server_derived": true,
+        "decision_effect": "NO_OPERATIONAL_ACTION"
+    },
+    "software_evidence": {
+        "j10_consolidation_checks": "20/20",
+        "j11_contract_tests": "26/26",
+        "j11_semantic_checks": "95/95",
+        "j12_targeted_tests": 16,
+        "j12_targeted_assertions": 236,
+        "main_baseline_tests": 336,
+        "main_baseline_assertions": 3596,
+        "main_baseline_workflow_run": "https://github.com/getibplay-cmyk/pfe/actions/runs/31673087342"
+    },
+    "modules": [
+        {
+            "id": "demand_forecast",
+            "authoritative_stage": "J5",
+            "gate_decision": "CONFIRMED_FOR_OPTIMIZER_BENCHMARK",
+            "audit_score": "15/15",
+            "benchmark_gate_passed": true,
+            "evidence_class": "public_proxy_benchmark",
+            "benchmark_role": "core_public_proxy",
+            "claim_allowed": "The frozen HGB Poisson outperformed both declared baselines on the public proxy test and may feed an optimizer benchmark.",
+            "claims_forbidden": [
+                "total or unsatisfied demand",
+                "confidence probability",
+                "Moroccan or RentFleet validation",
+                "SaaS or production readiness"
+            ],
+            "fixture": {
+                "path": "resources/intelligence/j11/fixtures/demand_forecast.accepted.json",
+                "sha256": "a1cd6ea351aa5c6b2fbe9ed93f42a4e25d5a0cf8d62376a860aa8be3cdfcd6a0"
+            },
+            "schema": {
+                "path": "resources/intelligence/j11/schemas/demand_forecast.v1.schema.json",
+                "sha256": "4c065d70207885f2588c1e0b11f705c26303b0a1c7112b83730ebf1db496642f"
+            },
+            "ready_for_saas": false,
+            "production_allowed": false
+        },
+        {
+            "id": "fleet_optimization",
+            "authoritative_stage": "J7",
+            "gate_decision": "OPTIMIZER_CONDITIONAL_GATE_NOT_PASSED_NO_RETUNING",
+            "audit_score": "12/12",
+            "benchmark_gate_passed": false,
+            "evidence_class": "public_proxy_benchmark",
+            "benchmark_role": "core_public_proxy",
+            "claim_allowed": "The MILP was feasible and reduced unmet demand against no relocation in the public conditional benchmark.",
+            "claims_forbidden": [
+                "superiority over the frozen greedy baseline",
+                "real financial gain",
+                "operational relocation recommendation",
+                "SaaS or production readiness"
+            ],
+            "fixture": {
+                "path": "resources/intelligence/j11/fixtures/fleet_optimization.rejected.json",
+                "sha256": "c7358c99f7e938b47f353abdc2c7cafd8f0e49b6eaaf6170e6b816234e99db89"
+            },
+            "schema": {
+                "path": "resources/intelligence/j11/schemas/fleet_optimization.v1.schema.json",
+                "sha256": "516d33f7589fbf9ae7c7c0e591d0baa0ddd5414eaa1fce532dc7eff43af8dd48"
+            },
+            "ready_for_saas": false,
+            "production_allowed": false
+        },
+        {
+            "id": "predictive_maintenance",
+            "authoritative_stage": "J8_CORRECTED",
+            "gate_decision": "RESEARCH_GATE_NOT_PASSED_NO_RETUNING",
+            "audit_score": "13/14",
+            "benchmark_gate_passed": false,
+            "evidence_class": "public_proxy_benchmark",
+            "benchmark_role": "benchmark_only",
+            "claim_allowed": "The Scania APS experiment is a cost-sensitive classification methodology study on heavy trucks.",
+            "claims_forbidden": [
+                "RentFleet passenger-car failure probability",
+                "automatic maintenance order",
+                "direct domain transfer",
+                "SaaS or production readiness"
+            ],
+            "fixture": {
+                "path": "resources/intelligence/j11/fixtures/predictive_maintenance.pending.json",
+                "sha256": "de3380708b13b914f3ebda6df8689efa67b86bfcdd025653ea10110e9dd722eb"
+            },
+            "schema": {
+                "path": "resources/intelligence/j11/schemas/predictive_maintenance.v1.schema.json",
+                "sha256": "b514d26224a3fb6ef593daca444eba1696389f438da9d97bb1f7416459e14fc0"
+            },
+            "ready_for_saas": false,
+            "production_allowed": false
+        },
+        {
+            "id": "rental_usage_anomaly",
+            "authoritative_stage": "J9",
+            "gate_decision": "RESEARCH_GATE_PASSED_PUBLIC_PROXY_NOT_FOR_SAAS",
+            "audit_score": "16/16",
+            "benchmark_gate_passed": true,
+            "evidence_class": "public_proxy_benchmark",
+            "benchmark_role": "public_proxy_advisory_benchmark",
+            "claim_allowed": "The public benchmark ranks atypical trips for human review and measures sensitivity to declared synthetic perturbations.",
+            "claims_forbidden": [
+                "fraud, danger, damage, fault or culpability",
+                "anomaly probability or confidence",
+                "automatic sanction",
+                "SaaS or production readiness"
+            ],
+            "fixture": {
+                "path": "resources/intelligence/j11/fixtures/rental_usage_anomaly.accepted.json",
+                "sha256": "5d1d30002307ce7c85636e724c64906a2578e05abf3763181053383c10e5fabc"
+            },
+            "schema": {
+                "path": "resources/intelligence/j11/schemas/rental_usage_anomaly.v1.schema.json",
+                "sha256": "bcfb4ab224ebd98d77ad1fb73cc216e49d5795536eaf3815e9031625272d055b"
+            },
+            "ready_for_saas": false,
+            "production_allowed": false
+        }
+    ],
+    "anomaly_lineage": {
+        "j9_public_proxy_benchmark": {
+            "selected_candidate": "robust_mad_top2",
+            "source": "Munich Shared Mobility v2 public proxy",
+            "gate_decision": "RESEARCH_GATE_PASSED_PUBLIC_PROXY_NOT_FOR_SAAS",
+            "allowed_in_j13": false
+        },
+        "legacy_lot07b1_synthetic_artifact": {
+            "config_path": "config/intelligence.php",
+            "config_key": "frozen_model",
+            "name": "rental_anomaly_iforest",
+            "version": "0.1.0",
+            "algorithm": "Isolation Forest",
+            "threshold": "0.5740760891923362",
+            "training_data": "synthetic",
+            "relationship_to_j9": "separate_legacy_artifact_not_the_j9_selected_candidate",
+            "allowed_in_j13": false
+        },
+        "j11_j12_fixture": {
+            "module": "rental_usage_anomaly",
+            "computation_status": "not_run_synthetic_contract_fixture",
+            "relationship_to_models": "no_model_or_solver_was_executed"
+        }
+    },
+    "source_documents": [
+        {
+            "title": "J5_protocol.yaml",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-02"
+        },
+        {
+            "title": "J7_protocol.yaml",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-08"
+        },
+        {
+            "title": "J8_protocol.yaml",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-09"
+        },
+        {
+            "title": "J9_protocol.yaml",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-09"
+        },
+        {
+            "title": "J10_protocol.yaml",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-09"
+        },
+        {
+            "title": "J10_scientific_summary.md",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-09"
+        },
+        {
+            "title": "J11_protocol.yaml",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-09"
+        },
+        {
+            "title": "J11_scientific_summary.md",
+            "archive": "private_governance_drive",
+            "frozen_on": "2026-08-09"
+        }
+    ],
+    "methodology_references": [
+        "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10",
+        "https://airc.nist.gov/airmf-resources/airmf/3-sec-characteristics/",
+        "https://research.google/pubs/model-cards-for-model-reporting/",
+        "https://arxiv.org/abs/1803.09010"
+    ]
+}
