@@ -3,15 +3,16 @@
         <x-page-header
             title="Intelligence et export anonymisé"
             eyebrow="Pilotage"
-            description="Préparez un dataset réel tenant/agence-scopé pour le modèle d’anomalies, sans afficher ni importer de prédiction."
+            description="Préparez un dataset réel tenant/agence-scopé et consultez les preuves scientifiques gelées, sans exécuter ni importer de prédiction."
         />
 
-        <x-section-card title="Cadre scientifique et humain" description="Le modèle et la baseline n’exécutent aucune décision métier.">
+        <x-section-card title="Cadre scientifique et humain" description="Les preuves disponibles n’exécutent aucune décision métier.">
             <ul class="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
-                <li>Le modèle <span class="font-medium">rental_anomaly_iforest 0.1.0</span> a été validé sur des données synthétiques et reste gelé.</li>
+                <li><span class="font-medium">rental_anomaly_iforest 0.1.0</span> est un artefact synthétique historique du Lot 07B1, distinct du candidat public J9.</li>
+                <li>Le benchmark public J9 a sélectionné <span class="font-medium">robust_mad_top2</span>, sans validation locale RentFleet et sans autorisation d’usage dans J13.</li>
                 <li>L’export réel v1.1 ne contient aucune étiquette, cible, identité ou décision humaine.</li>
-                <li>Une anomalie sert uniquement à prioriser une revue humaine ; elle ne prouve ni fraude ni responsabilité.</li>
-                <li>Les calculs et l’entraînement utilisent le CPU ; aucun GPU n’est requis.</li>
+                <li>Une anomalie ne prouve ni fraude, danger, dommage, faute ou responsabilité.</li>
+                <li>Aucune inférence, aucun entraînement, solveur ou calcul de modèle n’est exécuté par cet écran.</li>
             </ul>
         </x-section-card>
 
@@ -22,6 +23,93 @@
                     {{ $configured ? 'Configurée' : 'Configuration requise' }}
                 </span>
                 <span class="text-slate-500">La valeur du secret n’est jamais affichée, auditée ou transmise au navigateur.</span>
+            </div>
+        </x-section-card>
+
+        <x-section-card
+            title="J13 · preuves consultatives désactivées"
+            description="Quatre cartes en lecture seule exposent la provenance et les limites gelées ; elles ne constituent pas des sorties de modèles RentFleet."
+        >
+            <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+                <p class="font-semibold">Mode consultatif fermé</p>
+                <p class="mt-1 leading-6">
+                    Feature flags désactivés, SaaS et production interdits. Toute future utilisation exigerait une décision humaine auditée avec l’effet constant
+                    <code class="font-semibold">{{ $consultativeGate['decision_effect'] }}</code>.
+                </p>
+            </div>
+
+            <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                @foreach ($consultativeModules as $module)
+                    <article data-j13-module="{{ $module['id'] }}" aria-labelledby="j13-module-{{ $module['id'] }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $module['authoritative_stage'] }} · audit {{ $module['audit_score'] }}</p>
+                                <h3 id="j13-module-{{ $module['id'] }}" class="mt-1 text-lg font-semibold text-slate-950">{{ $module['label'] }}</h3>
+                            </div>
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $module['benchmark_gate_passed'] ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900' }}">
+                                {{ $module['benchmark_gate_passed'] ? 'Gate du benchmark proxy franchie' : 'Gate du benchmark proxy non franchie' }}
+                            </span>
+                        </div>
+
+                        <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                            <div>
+                                <dt class="font-medium text-slate-500">Niveau de preuve</dt>
+                                <dd class="mt-1 font-semibold text-slate-800">{{ $module['evidence_label'] }}</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-slate-500">Rôle du benchmark</dt>
+                                <dd class="mt-1 break-words font-mono text-xs text-slate-700">{{ $module['benchmark_role'] }}</dd>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <dt class="font-medium text-slate-500">Décision gelée</dt>
+                                <dd class="mt-1 break-words font-mono text-xs text-slate-700">{{ $module['gate_decision'] }}</dd>
+                            </div>
+                        </dl>
+
+                        <div class="mt-4 rounded-xl bg-slate-50 p-4">
+                            <p class="text-sm font-semibold text-slate-800">Affirmation autorisée</p>
+                            <p lang="en" class="mt-2 text-sm leading-6 text-slate-700">{{ $module['claim_allowed'] }}</p>
+                            <p lang="en" class="mt-2 text-xs leading-5 text-slate-500">{{ $module['evidence_description'] }}</p>
+                        </div>
+
+                        <div class="mt-4">
+                            <p class="text-sm font-semibold text-slate-800">Limites scientifiques</p>
+                            <ul lang="en" class="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
+                                @foreach ($module['claims_forbidden'] as $claim)
+                                    <li>{{ $claim }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        <p class="mt-4 border-t border-slate-200 pt-3 text-xs font-semibold text-slate-600">
+                            Feature flag : désactivé · SaaS : non · Production : non
+                        </p>
+                    </article>
+                @endforeach
+            </div>
+
+            <div class="mt-5">
+                <h3 class="text-base font-semibold text-slate-950">Lignée distincte du module d’usages atypiques</h3>
+                <div class="mt-3 grid gap-3 text-sm md:grid-cols-3">
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <p class="font-semibold text-slate-900">Benchmark public J9</p>
+                        <p class="mt-2"><code>{{ $anomalyLineage['j9_public_proxy_benchmark']['selected_candidate'] }}</code></p>
+                        <p class="mt-1 text-slate-600">{{ $anomalyLineage['j9_public_proxy_benchmark']['source'] }}</p>
+                        <p class="mt-2 font-medium text-amber-800">Interdit dans J13</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <p class="font-semibold text-slate-900">Artefact historique Lot 07B1</p>
+                        <p class="mt-2"><code>{{ $anomalyLineage['legacy_lot07b1_synthetic_artifact']['name'] }} {{ $anomalyLineage['legacy_lot07b1_synthetic_artifact']['version'] }}</code></p>
+                        <p class="mt-1 text-slate-600">{{ $anomalyLineage['legacy_lot07b1_synthetic_artifact']['algorithm'] }} · données synthétiques</p>
+                        <p class="mt-2 font-medium text-amber-800">Distinct de J9 et interdit dans J13</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <p class="font-semibold text-slate-900">Fixture contractuelle J11/J12</p>
+                        <p class="mt-2 break-words"><code>{{ $anomalyLineage['j11_j12_fixture']['computation_status'] }}</code></p>
+                        <p class="mt-1 text-slate-600">Aucun modèle ni solveur exécuté</p>
+                        <p class="mt-2 font-medium text-slate-700">Preuve d’intégration uniquement</p>
+                    </div>
+                </div>
             </div>
         </x-section-card>
 
@@ -90,8 +178,8 @@
         </x-filter-panel>
 
         <x-empty-state
-            title="Aucune prédiction affichée dans ce sous-lot"
-            description="Le Lot 07B1 prépare uniquement le contrat d’intégration, la baseline explicable et l’export réel anonymisé. L’import et la revue des prédictions appartiennent au Lot 08."
+            title="Aucune prédiction exécutée ou affichée"
+            description="J13 expose uniquement des preuves et limites gelées. Toute activation, import de résultat ou recommandation opérationnelle exige une validation locale et une évolution séparée."
         />
     </div>
 </x-app-layout>
