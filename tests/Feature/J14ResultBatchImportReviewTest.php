@@ -212,7 +212,7 @@ class J14ResultBatchImportReviewTest extends TestCase
 
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.result-batches.store', $run), [
-                'result_batch' => UploadedFile::fake()->createWithContent('payload.php', $this->json($base)),
+                'result_batch' => UploadedFile::fake()->createWithContent('payload.php', $this->encodeJson($base)),
             ])
             ->assertSessionHasErrors('result_batch');
 
@@ -580,11 +580,11 @@ class J14ResultBatchImportReviewTest extends TestCase
     /** @param array<string, mixed> $payload */
     private function jsonFile(array $payload, string $name = 'j14-result-batch.json'): UploadedFile
     {
-        return UploadedFile::fake()->createWithContent($name, $this->json($payload));
+        return UploadedFile::fake()->createWithContent($name, $this->encodeJson($payload));
     }
 
     /** @param array<string, mixed> $payload */
-    private function json(array $payload): string
+    private function encodeJson(array $payload): string
     {
         return json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
