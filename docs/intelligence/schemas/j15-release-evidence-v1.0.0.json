@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RentFleet J15-A deterministic release evidence manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_id",
+    "evidence_class",
+    "subject",
+    "scope",
+    "safety",
+    "materials",
+    "quality_gate",
+    "reproducibility",
+    "attestation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "evidence_id": {
+      "const": "rentfleet-j15-a-reproducibility-release-evidence"
+    },
+    "evidence_class": {
+      "const": "software_integration_proof"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "source_commit", "workflow_path"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "workflow_path": {
+          "const": ".github/workflows/ci.yml"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "claim_allowed", "claims_forbidden"],
+      "properties": {
+        "stage": {
+          "const": "J15-A"
+        },
+        "claim_allowed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claims_forbidden": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scientific_experiments_rerun",
+        "drive_modified",
+        "colab_modified",
+        "contains_new_model",
+        "inference_allowed",
+        "training_allowed",
+        "solver_allowed",
+        "rentfleet_local_validation",
+        "production_evidence",
+        "ready_for_saas",
+        "production_allowed",
+        "automatic_action_allowed",
+        "operational_business_write_allowed",
+        "human_decision_required",
+        "decision_effect"
+      ],
+      "properties": {
+        "scientific_experiments_rerun": {"const": false},
+        "drive_modified": {"const": false},
+        "colab_modified": {"const": false},
+        "contains_new_model": {"const": false},
+        "inference_allowed": {"const": false},
+        "training_allowed": {"const": false},
+        "solver_allowed": {"const": false},
+        "rentfleet_local_validation": {"const": false},
+        "production_evidence": {"const": false},
+        "ready_for_saas": {"const": false},
+        "production_allowed": {"const": false},
+        "automatic_action_allowed": {"const": false},
+        "operational_business_write_allowed": {"const": false},
+        "human_decision_required": {"const": true},
+        "decision_effect": {"const": "NO_OPERATIONAL_ACTION"}
+      }
+    },
+    "materials": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/material"
+      }
+    },
+    "quality_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checks", "test_suite", "doctor"],
+      "properties": {
+        "status": {"const": "passed"},
+        "checks": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": {
+            "$ref": "#/$defs/check"
+          }
+        },
+        "test_suite": {
+          "$ref": "#/$defs/testSuite"
+        },
+        "doctor": {
+          "$ref": "#/$defs/doctor"
+        }
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_json",
+        "digest_algorithm",
+        "volatile_run_metadata_excluded",
+        "same_inputs_same_manifest"
+      ],
+      "properties": {
+        "canonical_json": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest_algorithm": {"const": "sha256"},
+        "volatile_run_metadata_excluded": {"const": true},
+        "same_inputs_same_manifest": {"const": true}
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "predicate",
+        "subject_checksums_file",
+        "pull_request_policy",
+        "main_policy"
+      ],
+      "properties": {
+        "provider": {"const": "github_actions"},
+        "predicate": {"const": "slsa_provenance"},
+        "subject_checksums_file": {"const": "SHA256SUMS"},
+        "pull_request_policy": {"const": "unsigned_downloadable_bundle"},
+        "main_policy": {"const": "sigstore_attestation_after_protected_push"}
+      }
+    }
+  },
+  "$defs": {
+    "material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^\\\\]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "command", "status"],
+      "properties": {
+        "id": {
+          "enum": [
+            "composer_validate",
+            "composer_audit",
+            "npm_audit",
+            "frontend_build",
+            "pint",
+            "migrations",
+            "phpunit",
+            "doctor",
+            "git_diff"
+          ]
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {"const": "passed"}
+      }
+    },
+    "testSuite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "tests", "assertions", "errors", "failures", "skipped"],
+      "properties": {
+        "status": {"const": "passed"},
+        "tests": {"type": "integer", "minimum": 1},
+        "assertions": {"type": "integer", "minimum": 1},
+        "errors": {"const": 0},
+        "failures": {"const": 0},
+        "skipped": {"type": "integer", "minimum": 0}
+      }
+    },
+    "doctor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checks", "pass", "warn", "fail"],
+      "properties": {
+        "status": {"const": "ok"},
+        "checks": {"type": "integer", "minimum": 1},
+        "pass": {"type": "integer", "minimum": 1},
+        "warn": {"type": "integer", "minimum": 0},
+        "fail": {"const": 0}
+      }
+    }
+  }
+}
