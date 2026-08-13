@@ -101,6 +101,8 @@ class UiLabel
         'reservation.exported' => 'Export des réservations téléchargé',
         'report.exported' => 'Export du rapport téléchargé',
         'prediction.dataset.exported' => 'Dataset Intelligence anonymisé exporté',
+        'prediction.dataset.snapshot_downloaded' => 'Snapshot Intelligence téléchargé',
+        'prediction.dataset.manifest_downloaded' => 'Manifeste Intelligence téléchargé',
         'prediction.demo.fixture_imported' => 'Fixture Intelligence synthétique ajoutée',
         'prediction.demo.fixture_replayed' => 'Fixture Intelligence synthétique rejouée sans duplication',
         'prediction.demo.human_decision_recorded' => 'Décision humaine de démonstration enregistrée',

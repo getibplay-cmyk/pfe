@@ -3,6 +3,12 @@
 return [
     'export_hmac_key' => env('INTELLIGENCE_EXPORT_HMAC_KEY'),
 
+    'dataset_exports' => [
+        'disk' => 'local',
+        'manifest_version' => '1.0.0',
+        'max_rows' => 10000,
+    ],
+
     'rule_baseline' => [
         'name' => 'rental_anomaly_rules',
         'version' => '1.0.0',

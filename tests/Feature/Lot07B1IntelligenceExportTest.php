@@ -6,6 +6,7 @@ use App\Enums\RentalContractStatus;
 use App\Models\Agency;
 use App\Models\AuditLog;
 use App\Models\Customer;
+use App\Models\IntelligenceDatasetExportRun;
 use App\Models\Permission;
 use App\Models\RentalContract;
 use App\Models\Reservation;
@@ -20,8 +21,10 @@ use App\Support\Tenancy\TenantContext;
 use App\Support\Ui\NavigationBuilder;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class Lot07B1IntelligenceExportTest extends TestCase
@@ -32,7 +35,14 @@ class Lot07B1IntelligenceExportTest extends TestCase
     {
         parent::setUp();
         config(['intelligence.export_hmac_key' => str_repeat('hmac-test-only-', 4)]);
+        Storage::fake('local');
         $this->seed(RolesPermissionsSeeder::class);
+    }
+
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+        parent::tearDown();
     }
 
     public function test_page_and_export_follow_the_six_role_rbac_matrix(): void
@@ -195,16 +205,18 @@ class Lot07B1IntelligenceExportTest extends TestCase
             ->assertOk();
         $audit = AuditLog::withoutGlobalScopes()->where('action', 'prediction.dataset.exported')->latest('id')->firstOrFail();
         $this->assertEqualsCanonicalizing([
+            'run_id',
             'schema_version',
             'dataset_version',
             'date_from',
             'date_to',
-            'agency_ids',
-            'eligible_rows',
+            'scope_kind',
+            'row_count',
             'max_rows',
             'format',
+            'operational_effect',
         ], array_keys($audit->new_values));
-        foreach (['content', 'row_id', 'contract_id', 'contract_key', 'secret', 'late_hours', 'km_per_day', 'fuel_drop_pct'] as $forbidden) {
+        foreach (['content', 'content_sha256', 'stored_path', 'scope_key', 'row_id', 'contract_id', 'contract_key', 'secret', 'late_hours', 'km_per_day', 'fuel_drop_pct'] as $forbidden) {
             $this->assertArrayNotHasKey($forbidden, $audit->new_values);
         }
 
@@ -219,7 +231,187 @@ class Lot07B1IntelligenceExportTest extends TestCase
         $this->assertTrue(DB::table('pg_indexes')->where('indexname', 'rental_contracts_intelligence_export_idx')->exists());
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(73, DB::table('migrations')->count());
+        $this->assertSame(74, DB::table('migrations')->count());
+    }
+
+    public function test_j14_export_creates_a_private_reproducible_snapshot_and_closed_manifest(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-13 10:00:00+01:00');
+        $fixture = $this->fixture();
+        $contract = $this->contract($fixture, RentalContractStatus::Returned);
+        $this->returnInspection($fixture, $contract);
+
+        $firstResponse = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.export', $this->filters($fixture['agency'])))
+            ->assertOk();
+        $firstContent = $firstResponse->streamedContent();
+        $firstRun = IntelligenceDatasetExportRun::withoutGlobalScopes()->latest('id')->firstOrFail();
+
+        $firstResponse->assertHeader('x-rentfleet-export-run', $firstRun->run_id)
+            ->assertHeader('x-rentfleet-snapshot-sha256', $firstRun->content_sha256);
+        Storage::disk('local')->assertExists($firstRun->stored_path);
+        $this->assertSame($firstContent, Storage::disk('local')->get($firstRun->stored_path));
+        $this->assertSame(hash('sha256', $firstContent), $firstRun->content_sha256);
+        $this->assertSame(strlen($firstContent), $firstRun->byte_size);
+        $this->assertSame(1, $firstRun->row_count);
+        $this->assertSame('agency', $firstRun->scope_kind);
+        $this->assertMatchesRegularExpression('/^a_[a-f0-9]{64}$/', $firstRun->scope_key);
+        $this->assertSame('NO_OPERATIONAL_ACTION', $firstRun->operational_effect);
+
+        $secondResponse = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.export', $this->filters($fixture['agency'])))
+            ->assertOk();
+        $secondContent = $secondResponse->streamedContent();
+        $secondRun = IntelligenceDatasetExportRun::withoutGlobalScopes()->latest('id')->firstOrFail();
+
+        $this->assertNotSame($firstRun->run_id, $secondRun->run_id);
+        $this->assertSame($firstContent, $secondContent);
+        $this->assertSame($firstRun->content_sha256, $secondRun->content_sha256);
+        $this->assertSame(2, IntelligenceDatasetExportRun::withoutGlobalScopes()->count());
+
+        $manifestResponse = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.exports.manifest', $firstRun))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/json; charset=UTF-8');
+        $manifestContent = $manifestResponse->streamedContent();
+        $manifest = json_decode($manifestContent, true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertSame('1.0.0', $manifest['manifest_version']);
+        $this->assertSame($firstRun->run_id, $manifest['run_id']);
+        $this->assertSame(PredictionInput::SCHEMA_VERSION, $manifest['dataset']['schema_version']);
+        $this->assertSame(PredictionInput::DATASET_VERSION, $manifest['dataset']['dataset_version']);
+        $this->assertSame($firstRun->content_sha256, $manifest['snapshot']['content_sha256']);
+        $this->assertSame(1, $manifest['snapshot']['row_count']);
+        $this->assertTrue($manifest['safety']['pseudonymized']);
+        $this->assertFalse($manifest['safety']['contains_predictions']);
+        $this->assertSame('NO_OPERATIONAL_ACTION', $manifest['safety']['operational_effect']);
+        foreach (['stored_path', 'created_by', 'tenant_id', 'agency_id', 'Personne Fictive', 'qa07b1@example.invalid'] as $forbidden) {
+            $this->assertStringNotContainsString($forbidden, $manifestContent);
+        }
+
+        $snapshotResponse = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.exports.download', $firstRun))
+            ->assertOk()
+            ->assertHeader('x-rentfleet-export-run', $firstRun->run_id);
+        $this->assertSame($firstContent, $snapshotResponse->streamedContent());
+        $page = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.index', $this->filters($fixture['agency'])))
+            ->assertOk()
+            ->assertSee('J14-A · snapshots d’export reproductibles')
+            ->assertSee($firstRun->run_id)
+            ->assertSee('Manifeste JSON')
+            ->assertSee('Snapshot CSV');
+        $page->assertDontSee($firstRun->content_sha256)
+            ->assertDontSee($firstRun->stored_path);
+    }
+
+    public function test_j14_rbac_scope_immutability_and_snapshot_integrity_fail_closed(): void
+    {
+        $fixture = $this->fixture('agency-manager');
+        $contract = $this->contract($fixture, RentalContractStatus::Returned);
+        $this->returnInspection($fixture, $contract);
+        $this->actingAs($fixture['user'])
+            ->get(route('intelligence.export', $this->filters($fixture['agency'])))
+            ->assertOk()
+            ->streamedContent();
+        $run = IntelligenceDatasetExportRun::withoutGlobalScopes()->latest('id')->firstOrFail();
+
+        $otherAgency = app(TenantContext::class)->run($fixture['tenant'], fn () => Agency::factory()->create());
+        $otherManager = User::factory()->create([
+            'tenant_id' => $fixture['tenant']->id,
+            'agency_id' => $otherAgency->id,
+            'role_id' => Role::where('slug', 'agency-manager')->value('id'),
+            'must_change_password' => false,
+        ]);
+        $viewer = User::factory()->create([
+            'tenant_id' => $fixture['tenant']->id,
+            'agency_id' => $fixture['agency']->id,
+            'role_id' => Role::where('slug', 'viewer-auditor')->value('id'),
+            'must_change_password' => false,
+        ]);
+        $owner = User::factory()->create([
+            'tenant_id' => $fixture['tenant']->id,
+            'agency_id' => null,
+            'role_id' => Role::where('slug', 'tenant-owner')->value('id'),
+            'must_change_password' => false,
+        ]);
+        $foreign = $this->fixture();
+
+        $this->actingAs($otherManager)
+            ->get(route('intelligence.exports.manifest', $run))
+            ->assertForbidden();
+        $this->actingAs($viewer)
+            ->get(route('intelligence.exports.download', $run))
+            ->assertForbidden();
+        $this->actingAs($foreign['user'])
+            ->get(route('intelligence.exports.manifest', $run))
+            ->assertNotFound();
+        $this->actingAs($owner)
+            ->get(route('intelligence.exports.manifest', $run))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertPostgreSqlConstraint(fn () => DB::table('intelligence_dataset_export_runs')
+            ->where('id', $run->id)
+            ->update(['row_count' => 999]));
+        $this->assertPostgreSqlConstraint(fn () => DB::table('intelligence_dataset_export_runs')
+            ->where('id', $run->id)
+            ->delete());
+
+        $downloadsBefore = AuditLog::withoutGlobalScopes()
+            ->where('action', 'prediction.dataset.snapshot_downloaded')
+            ->count();
+        Storage::disk('local')->put($run->stored_path, 'snapshot-altéré');
+        $this->actingAs($owner)
+            ->get(route('intelligence.exports.download', $run))
+            ->assertStatus(409);
+        $this->assertSame($downloadsBefore, AuditLog::withoutGlobalScopes()
+            ->where('action', 'prediction.dataset.snapshot_downloaded')
+            ->count());
+    }
+
+    public function test_j14_failed_manifest_persistence_removes_the_private_snapshot(): void
+    {
+        $fixture = $this->fixture();
+        config(['intelligence.dataset_exports.manifest_version' => 'invalid-version']);
+        $this->withoutExceptionHandling();
+
+        try {
+            $this->actingAs($fixture['user'])
+                ->get(route('intelligence.export', $this->filters($fixture['agency'])));
+            $this->fail('La contrainte de version du manifeste devait refuser cet export.');
+        } catch (QueryException $exception) {
+            $this->assertSame('23514', (string) $exception->getCode());
+        }
+
+        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/dataset-exports'));
+        $this->assertSame(0, IntelligenceDatasetExportRun::withoutGlobalScopes()->count());
+    }
+
+    public function test_j14_postgresql_contract_and_route_surface_are_explicit(): void
+    {
+        $this->assertSame('pgsql', DB::connection()->getDriverName());
+        $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
+        $this->assertSame(74, DB::table('migrations')->count());
+        $this->assertTrue(DB::table('information_schema.tables')
+            ->where('table_schema', 'public')
+            ->where('table_name', 'intelligence_dataset_export_runs')
+            ->exists());
+        $this->assertTrue(DB::table('information_schema.triggers')
+            ->where('event_object_schema', 'public')
+            ->where('event_object_table', 'intelligence_dataset_export_runs')
+            ->where('trigger_name', 'intelligence_export_runs_append_only')
+            ->exists());
+
+        $scopeConstraint = DB::selectOne(
+            'SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE conname = ?',
+            ['intelligence_export_runs_scope_check'],
+        );
+        $this->assertStringContainsString('scope_kind', $scopeConstraint->definition);
+        $this->assertStringContainsString('tenant', $scopeConstraint->definition);
+        $this->assertStringContainsString('agency', $scopeConstraint->definition);
+        $this->assertTrue(app('router')->has('intelligence.exports.manifest'));
+        $this->assertTrue(app('router')->has('intelligence.exports.download'));
     }
 
     public function test_fresh_rbac_matrix_preserves_custom_roles_and_has_no_ml_tables(): void
@@ -388,5 +580,15 @@ class Lot07B1IntelligenceExportTest extends TestCase
             'date_to' => CarbonImmutable::parse('2026-08-31')->toDateString(),
             'agency_id' => $agency->id,
         ];
+    }
+
+    private function assertPostgreSqlConstraint(callable $operation): void
+    {
+        try {
+            DB::transaction($operation);
+            $this->fail('Une contrainte PostgreSQL devait refuser cette mutation.');
+        } catch (QueryException $exception) {
+            $this->assertSame('23514', (string) $exception->getCode());
+        }
     }
 }
