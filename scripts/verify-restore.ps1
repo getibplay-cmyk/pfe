@@ -152,7 +152,7 @@ Assert-PgPassAvailable
 
 $identity = Invoke-PsqlScalar "select current_database() || '|' || current_user"
 if ($identity -ne "$DatabaseName|$PostgresUser") {
-    throw 'La connexion ne cible pas la base de restauration et l’utilisateur attendus.'
+    throw "La connexion ne cible pas la base de restauration et l’utilisateur attendus."
 }
 
 $expectedTables = @(
@@ -206,7 +206,7 @@ try {
 
     & $php -v
     if ($LASTEXITCODE -ne 0) {
-        throw 'PHP_BINARY n’est pas exécutable.'
+        throw "PHP_BINARY n’est pas exécutable."
     }
     & $php artisan migrate:status --no-ansi
     if ($LASTEXITCODE -ne 0) {
