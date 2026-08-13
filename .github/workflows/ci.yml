@@ -26,6 +26,7 @@ jobs:
       APP_ENV: testing
       APP_DEBUG: false
       APP_TIMEZONE: Africa/Casablanca
+      PGTZ: Africa/Casablanca
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
@@ -71,6 +72,15 @@ jobs:
           node-version: 22.14.0
           cache: npm
           cache-dependency-path: package-lock.json
+
+      - name: Configure PowerShell compatibility
+        shell: bash
+        run: |
+          pwsh_path="$(command -v pwsh)"
+          test -n "$pwsh_path"
+          mkdir -p "$RUNNER_TEMP/powershell-compat"
+          ln -s "$pwsh_path" "$RUNNER_TEMP/powershell-compat/powershell.exe"
+          echo "$RUNNER_TEMP/powershell-compat" >> "$GITHUB_PATH"
 
       - name: Create runner environment file
         run: cp .env.example .env
