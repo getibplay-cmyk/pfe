@@ -7,8 +7,8 @@ use DateTimeImmutable;
 final readonly class J14ValidatedResultBatch
 {
     /**
-     * @param array<string, mixed> $payload
-     * @param list<array<string, mixed>> $rows
+     * @param  array<string, mixed>  $payload
+     * @param  list<array<string, mixed>>  $rows
      */
     public function __construct(
         public array $payload,
