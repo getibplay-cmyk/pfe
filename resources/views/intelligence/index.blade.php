@@ -177,6 +177,52 @@
             </form>
         </x-filter-panel>
 
+        @if (auth()->user()->hasPermission('prediction.export'))
+            <x-section-card
+                title="J14-A · snapshots d’export reproductibles"
+                description="Chaque CSV est conservé sur le disque privé avec un identifiant d’exécution et un manifeste d’intégrité, sans prédiction ni effet métier."
+            >
+                <x-responsive-table label="Registre append-only des snapshots Intelligence" class="shadow-none">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Exécution</th>
+                                <th>Période</th>
+                                <th>Périmètre</th>
+                                <th>Lignes</th>
+                                <th>Créé le</th>
+                                <th><span class="sr-only">Téléchargements</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($exportRuns as $run)
+                                <tr>
+                                    <td class="font-mono text-xs">{{ $run->run_id }}</td>
+                                    <td>{{ $run->date_from->format('d/m/Y') }} → {{ $run->date_to->format('d/m/Y') }}</td>
+                                    <td>{{ $run->scope_kind === 'agency' ? 'Agence autorisée' : 'Entreprise entière' }}</td>
+                                    <td>{{ number_format($run->row_count, 0, ',', ' ') }}</td>
+                                    <td>{{ App\Support\Ui\UiLabel::dateTime($run->created_at) }}</td>
+                                    <td class="text-right">
+                                        <div class="flex flex-wrap justify-end gap-3">
+                                            <a href="{{ route('intelligence.exports.manifest', $run) }}" class="font-medium text-indigo-700">Manifeste JSON</a>
+                                            <a href="{{ route('intelligence.exports.download', $run) }}" class="font-medium text-indigo-700">Snapshot CSV</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="p-10 text-center text-slate-500">Aucun snapshot n’a encore été créé pour ce périmètre.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </x-responsive-table>
+                <p class="mt-4 text-xs leading-5 text-slate-500">
+                    L’empreinte SHA-256 complète et les versions autorisées figurent dans le manifeste. Le chemin du fichier privé n’est jamais exposé.
+                </p>
+            </x-section-card>
+        @endif
+
         <x-empty-state
             title="Aucune prédiction exécutée ou affichée"
             description="J13 expose uniquement des preuves et limites gelées. Toute activation, import de résultat ou recommandation opérationnelle exige une validation locale et une évolution séparée."

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\IntelligenceFilterRequest;
 use App\Models\Agency;
+use App\Models\IntelligenceDatasetExportRun;
 use App\Support\Intelligence\IntelligencePseudonymizer;
 use App\Support\Intelligence\J11\J11ContractDemoGate;
 use App\Support\Intelligence\J13\J13ConsultativeEvidenceCatalog;
@@ -27,6 +28,16 @@ class IntelligenceController extends Controller
             ->when($context->agencyId(), fn ($query, $agencyId) => $query->whereKey($agencyId))
             ->orderBy('name')
             ->get();
+        $exportRuns = collect();
+
+        if ($request->user()->hasPermission('prediction.export')) {
+            $exportRuns = IntelligenceDatasetExportRun::query()
+                ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
+                ->latest('created_at')
+                ->latest('id')
+                ->limit(10)
+                ->get();
+        }
 
         return view('intelligence.index', [
             'agencies' => $agencies,
@@ -35,6 +46,7 @@ class IntelligenceController extends Controller
             'consultativeModules' => $consultativeEvidence->cards(),
             'consultativeGate' => $consultativeEvidence->gate(),
             'anomalyLineage' => $consultativeEvidence->anomalyLineage(),
+            'exportRuns' => $exportRuns,
             'filters' => [
                 ...$data,
                 'agency_id' => count($criteria->agencyIds) === 1 ? $criteria->agencyIds[0] : null,
