@@ -1,0 +1,87 @@
+{
+  "protocol_id": "rentfleet-fleet-reallocation-qualification",
+  "protocol_version": "1.0.0",
+  "preregistered_at": "2026-08-14",
+  "status": "PREREGISTERED_BEFORE_FINAL_BENCHMARK",
+  "scope": "SCIENTIFIC_METHOD_QUALIFICATION_ONLY",
+  "solver": {
+    "name": "Google OR-Tools SimpleMinCostFlow",
+    "version": "9.15.6755",
+    "python": "3.12.13",
+    "processing": "CPU_ONLY",
+    "required_status": "OPTIMAL"
+  },
+  "sources": [
+    {
+      "title": "Minimum Cost Flows",
+      "url": "https://developers.google.com/optimization/flow/mincostflow",
+      "publisher": "Google for Developers"
+    },
+    {
+      "title": "SimpleMinCostFlow Python API",
+      "url": "https://or-tools.github.io/docs/pdoc/ortools/graph/python/min_cost_flow.html",
+      "publisher": "Google OR-Tools"
+    },
+    {
+      "title": "OR-Tools v9.15 release",
+      "url": "https://github.com/google/or-tools/releases/tag/v9.15",
+      "publisher": "Google OR-Tools"
+    }
+  ],
+  "benchmark": {
+    "kind": "DETERMINISTIC_SYNTHETIC_STRESS_SUITE",
+    "seed": 20260814,
+    "scenario_count": 48,
+    "snapshot_sha256": "53d79202807b2952dc95154e0116153664f202007807a0855a16cbea63cc4214",
+    "agency_count_per_scenario": 4,
+    "vehicle_category_scope": "ONE_SYNTHETIC_CATEGORY_PER_SCENARIO",
+    "distance_unit": "km",
+    "currency": "MAD",
+    "cost_scale": "centimes",
+    "relocation_cost_mad_per_km": "5.00",
+    "unserved_demand_penalty_mad_per_vehicle": "10000.00",
+    "presence_probability": "1.000000",
+    "presence_reason": "CATBOOST_RESEARCH_GATE_NOT_PASSED_CONSERVATIVE_NO_DISCOUNT",
+    "data_status": "SYNTHETIC_NOT_RENTFLEET_NOT_LOCAL_ACCURACY",
+    "route_capacity_semantics": "maximum vehicles transferable on a directed operational lane",
+    "final_suite_policy": "The generator, seed, gates, baselines and tie-breaking are committed before the OR-Tools final run."
+  },
+  "baselines": {
+    "no_relocation": "Serve demand only with vehicles already present at each agency.",
+    "greedy": "Serve locally, then consume directed lanes once in ascending distance/origin/destination order without global look-ahead."
+  },
+  "objective": {
+    "formula": "relocation_cost_centimes + unserved_vehicles * unserved_penalty_centimes",
+    "interpretation": "Synthetic decision objective for method comparison; it is not an invoice, tariff or accounting amount.",
+    "priority": "The unserved penalty is larger than every allowed one-vehicle relocation so service is prioritized."
+  },
+  "gates": {
+    "optimal_solution_rate_min": "1.000000",
+    "invariant_valid_solution_rate_min": "1.000000",
+    "aggregate_service_rate_min": "0.800000",
+    "aggregate_unserved_strictly_better_than_no_relocation": true,
+    "aggregate_unserved_strictly_better_than_greedy": true,
+    "aggregate_decision_cost_strictly_better_than_no_relocation": true,
+    "aggregate_decision_cost_strictly_better_than_greedy": true,
+    "maximum_single_solve_runtime_ms": "5000.000"
+  },
+  "safety": {
+    "saas_integration_allowed_before_gate": false,
+    "automatic_business_write_allowed": false,
+    "human_validation_required": true,
+    "tenant_or_agency_raw_data_allowed": false,
+    "local_rentfleet_status": "NOT_VALIDATED_NO_REAL_HISTORY",
+    "forbidden_automatic_targets": [
+      "reservation",
+      "contract",
+      "pricing",
+      "invoice",
+      "vehicle",
+      "reallocation"
+    ]
+  },
+  "decision_policy": {
+    "pass": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW",
+    "fail": "RESEARCH_GATE_NOT_PASSED_NO_SAAS_INTEGRATION"
+  }
+}
