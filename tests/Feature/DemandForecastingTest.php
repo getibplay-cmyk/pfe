@@ -391,7 +391,8 @@ class DemandForecastingTest extends TestCase
                 'status' => 'active',
                 'expected_start_at' => '2026-08-10 23:30:00+00',
                 'expected_return_at' => '2026-08-12 10:00:00+00',
-                'actual_start_at' => $actualStartAt,
+                'actual_start_at' => CarbonImmutable::parse($actualStartAt)
+                    ->setTimezone(DemandForecastContract::TIMEZONE),
                 'rental_subtotal' => '0.00',
                 'additional_charges_total' => '0.00',
                 'total_amount' => '0.00',
