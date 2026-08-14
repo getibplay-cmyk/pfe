@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "intelligence" / "train_cancellation_risk.py"
 EVIDENCE = ROOT / "docs" / "evidence" / "intelligence" / "cancellation-risk"
 NOTEBOOK = ROOT / "notebooks" / "J15B_cancellation_risk_catboost.ipynb"
-QUALIFICATION_COMMIT = "00db4d6c1e4ed7bdb4892c565de5c03625b3e6b7"
+QUALIFICATION_COMMIT = "f27985d35aa853653e3120a3ee3acb5289948319"
 SPEC = importlib.util.spec_from_file_location("rentfleet_cancellation_qualification", SCRIPT)
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError("Unable to load the cancellation qualification module")

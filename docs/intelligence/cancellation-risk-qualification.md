@@ -160,7 +160,7 @@ pour le modèle JSON normalisé.
 
 Le notebook Colab `notebooks/J15B_cancellation_risk_catboost.ipynb` clone et
 checkout explicitement le commit scientifique
-`00db4d6c1e4ed7bdb4892c565de5c03625b3e6b7`, installe le lock, vérifie le
+`f27985d35aa853653e3120a3ee3acb5289948319`, installe le lock, vérifie le
 dataset, relance le pipeline et contrôle tous les checksums. Il est livré sans
 sortie embarquée afin de ne pas confondre une exécution locale avec la preuve
 gelée.
