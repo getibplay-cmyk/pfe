@@ -21,6 +21,11 @@ final class IntelligencePseudonymizer
         return $this->digest('a_', "agency|v1|{$tenantId}|{$agencyId}");
     }
 
+    public function demandSeriesKey(int $tenantId, int $agencyId): string
+    {
+        return $this->digest('s_', "demand-series|v1|{$tenantId}|{$agencyId}|all");
+    }
+
     public function contractKey(int $tenantId, int $contractId): string
     {
         return $this->digest('c_', "contract|v1|{$tenantId}|{$contractId}");
