@@ -167,7 +167,7 @@ final class CreateDemandHistoryExport
                 '(actual_start_at AT TIME ZONE ?)::date AS departure_date, COUNT(*)::integer AS departure_count',
                 [DemandForecastContract::TIMEZONE],
             )
-            ->groupByRaw('(actual_start_at AT TIME ZONE ?)::date', [DemandForecastContract::TIMEZONE])
+            ->groupBy('departure_date')
             ->orderBy('departure_date')
             ->get()
             ->mapWithKeys(static fn (object $row): array => [
