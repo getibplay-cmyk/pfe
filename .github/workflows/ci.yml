@@ -22,8 +22,8 @@ jobs:
     timeout-minutes: 15
 
     env:
-      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
-      PYTHONHASHSEED: 20260814
+      MPLCONFIGDIR: /tmp/rentfleet-matplotlib
+      PYTHONHASHSEED: "20260814"
 
     steps:
       - name: Checkout
