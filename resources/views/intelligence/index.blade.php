@@ -235,6 +235,22 @@
             </div>
         </x-section-card>
 
+        <x-section-card
+            title="OR-Tools · réallocation consultative qualifiée"
+            description="Import privé de propositions synthétiques en kilomètres, puis décision humaine append-only sans écriture métier."
+        >
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                    Le solveur qualifié reste externe à Laravel. RentFleet vérifie sa lignée, l’abstention CatBoost, les coûts et les mouvements avant de les afficher ; accepter une proposition signifie seulement « retenue pour la démonstration ».
+                </p>
+                @if (auth()->user()->agency_id === null)
+                    <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary">Ouvrir les propositions</a>
+                @else
+                    <span class="text-sm text-slate-500">Registre réservé à la vue entreprise entière.</span>
+                @endif
+            </div>
+        </x-section-card>
+
         <x-empty-state
             title="Aucune prédiction exécutée ou affichée"
             description="J13 et J14 exposent uniquement des preuves synthétiques ou des limites gelées. Aucune recommandation opérationnelle n’est activée."

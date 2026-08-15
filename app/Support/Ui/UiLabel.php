@@ -110,6 +110,10 @@ class UiLabel
         'prediction.result_batch.replayed' => 'Lot de résultats Intelligence rejoué sans duplication',
         'prediction.result_batch.downloaded' => 'Lot de résultats Intelligence téléchargé',
         'prediction.result_batch.human_decision_recorded' => 'Décision humaine sur un lot Intelligence enregistrée',
+        'prediction.fleet_reallocation.imported' => 'Proposition de réallocation synthétique importée',
+        'prediction.fleet_reallocation.replayed' => 'Proposition de réallocation rejouée sans duplication',
+        'prediction.fleet_reallocation.downloaded' => 'Proposition de réallocation téléchargée',
+        'prediction.fleet_reallocation.human_decision_recorded' => 'Décision humaine sur une réallocation enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
         'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
@@ -225,6 +229,7 @@ class UiLabel
         'Vehicle' => 'Véhicule', 'VehicleBlock' => 'Bloc véhicule', 'Document' => 'Document privé', 'Invoice' => 'Facture',
         'Payment' => 'Paiement', 'DepositTransaction' => 'Caution', 'Expense' => 'Dépense', 'MaintenanceOrder' => 'Maintenance',
         'InsurancePolicy' => 'Police d’assurance', 'InsuranceClaim' => 'Sinistre', 'InternalNotification' => 'Notification',
+        'FleetReallocationProposal' => 'Proposition de réallocation',
         'IntelligenceDatasetExportRun' => 'Snapshot Intelligence', 'IntelligenceResultBatch' => 'Lot de résultats Intelligence',
     ];
 
