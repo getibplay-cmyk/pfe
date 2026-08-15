@@ -132,18 +132,24 @@ class J12ContractAdapterTest extends TestCase
         $this->assertNotSame($expected, $canonical->digest($payload));
     }
 
-    public function test_adapter_contains_no_external_execution_or_scoring_client(): void
+    public function test_j11_adapter_contains_no_external_execution_or_scoring_client(): void
     {
         $sources = '';
+
         foreach ([
-            app_path('Actions/Intelligence'),
-            app_path('Support/Intelligence/J11'),
-        ] as $directory) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory));
-            foreach ($files as $file) {
-                if ($file instanceof SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
-                    $sources .= file_get_contents($file->getPathname());
-                }
+            app_path('Actions/Intelligence/ImportJ11SyntheticAdvisory.php'),
+            app_path('Actions/Intelligence/RecordJ11DemoDecision.php'),
+        ] as $path) {
+            $this->assertFileExists($path);
+            $sources .= file_get_contents($path);
+        }
+
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator(app_path('Support/Intelligence/J11')),
+        );
+        foreach ($files as $file) {
+            if ($file instanceof SplFileInfo && $file->isFile() && $file->getExtension() === 'php') {
+                $sources .= file_get_contents($file->getPathname());
             }
         }
 

@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Actions\Intelligence\DownloadFleetReallocationProposal;
 use App\Actions\Intelligence\ImportFleetReallocationProposal;
+use App\Actions\Intelligence\QueueFleetReallocationRun;
 use App\Actions\Intelligence\RecordFleetReallocationDecision;
 use App\Enums\IntelligenceResultBatchDecision;
 use App\Exceptions\FleetReallocationValidationException;
 use App\Http\Requests\ImportFleetReallocationProposalRequest;
+use App\Http\Requests\QueueFleetReallocationRunRequest;
 use App\Http\Requests\RecordFleetReallocationDecisionRequest;
 use App\Models\FleetReallocationProposal;
+use App\Models\FleetReallocationRun;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
@@ -24,15 +27,39 @@ class FleetReallocationProposalController extends Controller
 
         return view('intelligence.fleet-reallocation.index', [
             'proposals' => FleetReallocationProposal::query()
-                ->with(['moves', 'decision.actor'])
+                ->with(['moves', 'decision.actor', 'runtimeRun'])
                 ->latest('imported_at')
                 ->latest('id')
                 ->paginate(20),
+            'runtimeRuns' => FleetReallocationRun::query()
+                ->with('proposal')
+                ->latest('requested_at')
+                ->latest('id')
+                ->limit(10)
+                ->get(),
             'canImport' => auth()->user()->agency_id === null
+                && auth()->user()->hasPermission('prediction.demo.review'),
+            'canExecute' => (bool) config('intelligence.fleet_reallocation.runtime_enabled')
+                && auth()->user()->agency_id === null
                 && auth()->user()->hasPermission('prediction.demo.review'),
             'acceptReasonCodes' => RecordFleetReallocationDecisionRequest::ACCEPT_REASON_CODES,
             'rejectReasonCodes' => RecordFleetReallocationDecisionRequest::REJECT_REASON_CODES,
         ]);
+    }
+
+    public function queueRun(
+        QueueFleetReallocationRunRequest $request,
+        QueueFleetReallocationRun $queue,
+    ): RedirectResponse {
+        $run = $queue->handle(
+            $request->user(),
+            (int) $request->validated('forecast_horizon'),
+        );
+
+        return redirect()->route('intelligence.fleet-reallocation.index')->with(
+            'status',
+            'Exécution OR-Tools '.$run->run_id.' ajoutée à la queue Intelligence.',
+        );
     }
 
     public function store(

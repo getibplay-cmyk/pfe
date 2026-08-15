@@ -117,6 +117,9 @@ class UiLabel
         'prediction.demand_forecast.replayed' => 'Prévision de demande rejouée sans duplication',
         'prediction.fleet_reallocation.imported' => 'Proposition de réallocation synthétique importée',
         'prediction.fleet_reallocation.replayed' => 'Proposition de réallocation rejouée sans duplication',
+        'prediction.fleet_reallocation.run_queued' => 'Calcul OR-Tools ajouté à la queue',
+        'prediction.fleet_reallocation.run_succeeded' => 'Calcul OR-Tools terminé',
+        'prediction.fleet_reallocation.run_failed' => 'Échec contrôlé du calcul OR-Tools',
         'prediction.fleet_reallocation.downloaded' => 'Proposition de réallocation téléchargée',
         'prediction.fleet_reallocation.human_decision_recorded' => 'Décision humaine sur une réallocation enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
@@ -225,7 +228,7 @@ class UiLabel
         'charge.review' => 'Examiner les frais contractuels',
         'payment.allocate' => 'Allouer un paiement à une facture',
         'platform.tenants.manage' => 'Administrer les entreprises clientes de la plateforme',
-        'prediction.demo.review' => 'Importer et revoir les preuves Intelligence synthétiques',
+        'prediction.demo.review' => 'Générer, importer et revoir les preuves Intelligence synthétiques',
         'prediction.forecast.import' => 'Importer les prévisions de demande consultatives',
     ];
 
@@ -235,7 +238,7 @@ class UiLabel
         'Vehicle' => 'Véhicule', 'VehicleBlock' => 'Bloc véhicule', 'Document' => 'Document privé', 'Invoice' => 'Facture',
         'Payment' => 'Paiement', 'DepositTransaction' => 'Caution', 'Expense' => 'Dépense', 'MaintenanceOrder' => 'Maintenance',
         'InsurancePolicy' => 'Police d’assurance', 'InsuranceClaim' => 'Sinistre', 'InternalNotification' => 'Notification',
-        'FleetReallocationProposal' => 'Proposition de réallocation',
+        'FleetReallocationProposal' => 'Proposition de réallocation', 'FleetReallocationRun' => 'Exécution OR-Tools',
         'IntelligenceDatasetExportRun' => 'Snapshot Intelligence', 'IntelligenceResultBatch' => 'Lot de résultats Intelligence',
         'DemandHistoryExportRun' => 'Snapshot d’historique de demande', 'DemandForecastRun' => 'Exécution de prévision de demande',
         'DemandForecast' => 'Prévision de demande',

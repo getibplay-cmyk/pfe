@@ -124,6 +124,7 @@ jobs:
           python -m unittest -v \
             tests/Python/test_fleet_reallocation_qualification.py \
             tests/Python/test_consultative_demo.py \
+            tests/Python/test_fleet_reallocation_runtime.py \
             tests/Python/test_demand_forecast_j15b_evidence.py \
             tests/Python/test_s6_scientific_dossier.py
 
