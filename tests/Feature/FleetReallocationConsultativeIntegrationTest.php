@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Intelligence\ExecuteFleetReallocationRun;
+use App\Enums\FleetReallocationRunStatus;
+use App\Jobs\RunFleetReallocation;
 use App\Models\Agency;
 use App\Models\AuditLog;
 use App\Models\FleetReallocationDecision;
 use App\Models\FleetReallocationMove;
 use App\Models\FleetReallocationProposal;
+use App\Models\FleetReallocationRun;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -19,6 +23,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -198,6 +204,174 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
         }
     }
 
+    public function test_owner_queues_and_completes_a_fresh_ortools_runtime_run_without_operational_write(): void
+    {
+        $fixture = $this->fixture();
+        Queue::fake();
+        $trackedTables = [
+            'vehicles',
+            'vehicle_blocks',
+            'reservations',
+            'rental_contracts',
+            'maintenance_orders',
+            'invoices',
+            'payments',
+        ];
+        $before = collect($trackedTables)->mapWithKeys(
+            static fn (string $table): array => [$table => DB::table($table)->count()],
+        );
+
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.runs.store'), [
+                'forecast_horizon' => 3,
+            ])
+            ->assertRedirect(route('intelligence.fleet-reallocation.index'))
+            ->assertSessionHas('status');
+
+        $run = FleetReallocationRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(FleetReallocationRunStatus::Queued, $run->status);
+        $this->assertSame(3, $run->forecast_horizon);
+        $this->assertSame(3, $run->scenario_number);
+        $this->assertNull($run->fleet_reallocation_proposal_id);
+        Queue::assertPushed(
+            RunFleetReallocation::class,
+            fn (RunFleetReallocation $job): bool => $job->runId === $run->run_id
+                && $job->tenantId === $fixture['tenant']->id
+                && $job->actorId === $fixture['owner']->id
+                && $job->queue === 'intelligence',
+        );
+
+        $payload = $this->runtimePayload($run);
+        Process::fake([
+            '*' => Process::result(
+                output: json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+            ),
+        ]);
+        $job = new RunFleetReallocation($run->run_id, $fixture['tenant']->id, $fixture['owner']->id);
+        $job->handle(app(ExecuteFleetReallocationRun::class));
+
+        $completed = FleetReallocationRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(FleetReallocationRunStatus::Succeeded, $completed->status);
+        $this->assertNotNull($completed->started_at);
+        $this->assertNotNull($completed->finished_at);
+        $proposal = FleetReallocationProposal::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame($run->run_id, $proposal->proposal_id);
+        $this->assertSame($proposal->id, $completed->fleet_reallocation_proposal_id);
+        $this->assertSame(3, $proposal->forecast_horizon);
+        $this->assertSame('0.032959', $proposal->solver_runtime_ms);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'prediction.fleet_reallocation.run_queued',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'prediction.fleet_reallocation.run_succeeded',
+        ]);
+        Process::assertRan(fn ($process): bool => is_array($process->command)
+            && $process->command[0] === config('intelligence.fleet_reallocation.python_binary')
+            && $process->command[1] === config('intelligence.fleet_reallocation.runtime_script')
+            && $process->timeout === 30);
+
+        $this->actingAs($fixture['owner'])
+            ->get(route('intelligence.fleet-reallocation.index'))
+            ->assertOk()
+            ->assertSee('Calcul réellement exécuté depuis le SaaS')
+            ->assertSee($run->run_id);
+
+        foreach ($before as $table => $count) {
+            $this->assertSame($count, DB::table($table)->count(), $table);
+        }
+        $this->assertPostgreSqlConstraint(fn () => DB::table('fleet_reallocation_runs')
+            ->where('id', $completed->id)
+            ->delete());
+    }
+
+    public function test_runtime_failure_is_sanitized_and_keeps_the_operational_tables_untouched(): void
+    {
+        $fixture = $this->fixture();
+        Queue::fake();
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.runs.store'), [
+                'forecast_horizon' => 1,
+            ])
+            ->assertRedirect();
+        $run = FleetReallocationRun::withoutGlobalScopes()->firstOrFail();
+
+        Process::fake([
+            '*' => Process::result(
+                errorOutput: '{"error_code":"ORTOOLS_DEPENDENCY_MISSING"}',
+                exitCode: 3,
+            ),
+        ]);
+        $job = new RunFleetReallocation($run->run_id, $fixture['tenant']->id, $fixture['owner']->id);
+        $failure = null;
+        try {
+            $job->handle(app(ExecuteFleetReallocationRun::class));
+        } catch (\Throwable $exception) {
+            $failure = $exception;
+        }
+        $this->assertNotNull($failure);
+        $job->failed($failure);
+
+        $failed = FleetReallocationRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(FleetReallocationRunStatus::Failed, $failed->status);
+        $this->assertSame('ORTOOLS_DEPENDENCY_MISSING', $failed->failure_code);
+        $this->assertNotNull($failed->started_at);
+        $this->assertNotNull($failed->finished_at);
+        $this->assertSame(0, FleetReallocationProposal::withoutGlobalScopes()->count());
+        $this->assertSame(0, FleetReallocationMove::withoutGlobalScopes()->count());
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'prediction.fleet_reallocation.run_failed',
+        ]);
+    }
+
+    public function test_only_one_queued_or_running_solver_job_is_allowed_per_tenant(): void
+    {
+        $fixture = $this->fixture();
+        Queue::fake();
+
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.runs.store'), [
+                'forecast_horizon' => 1,
+            ])
+            ->assertRedirect();
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.runs.store'), [
+                'forecast_horizon' => 2,
+            ])
+            ->assertStatus(409);
+
+        $this->assertSame(1, FleetReallocationRun::withoutGlobalScopes()->count());
+        $this->assertSame(1, Queue::pushed(RunFleetReallocation::class)->count());
+        $this->assertTrue(DB::table('pg_indexes')
+            ->where('schemaname', 'public')
+            ->where('indexname', 'fleet_reallocation_runs_one_active_per_tenant')
+            ->exists());
+    }
+
+    public function test_a_stale_run_is_failed_before_a_new_solver_job_is_queued(): void
+    {
+        $fixture = $this->fixture();
+        Queue::fake();
+
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.runs.store'), [
+                'forecast_horizon' => 1,
+            ])
+            ->assertRedirect();
+        CarbonImmutable::setTestNow(now()->addMinutes(11));
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.runs.store'), [
+                'forecast_horizon' => 2,
+            ])
+            ->assertRedirect();
+
+        $runs = FleetReallocationRun::withoutGlobalScopes()->orderBy('id')->get();
+        $this->assertCount(2, $runs);
+        $this->assertSame(FleetReallocationRunStatus::Failed, $runs[0]->status);
+        $this->assertSame('RUN_STALE_RECOVERED', $runs[0]->failure_code);
+        $this->assertSame(FleetReallocationRunStatus::Queued, $runs[1]->status);
+        $this->assertSame(2, Queue::pushed(RunFleetReallocation::class)->count());
+    }
+
     public function test_same_key_same_payload_replays_but_different_payload_conflicts(): void
     {
         $fixture = $this->fixture();
@@ -282,6 +456,11 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
                     'proposal' => $this->jsonFile($this->payload()),
                 ])
                 ->assertForbidden();
+            $this->actingAs($user)
+                ->post(route('intelligence.fleet-reallocation.runs.store'), [
+                    'forecast_horizon' => 1,
+                ])
+                ->assertForbidden();
         }
 
         $foreign = $this->fixture();
@@ -341,6 +520,7 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
     {
         foreach ([
             'intelligence.fleet-reallocation.index',
+            'intelligence.fleet-reallocation.runs.store',
             'intelligence.fleet-reallocation.store',
             'intelligence.fleet-reallocation.download',
             'intelligence.fleet-reallocation.decisions.store',
@@ -349,6 +529,10 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
         }
 
         $this->assertTrue((bool) config('intelligence.fleet_reallocation.synthetic_demo_only'));
+        $this->assertTrue((bool) config('intelligence.fleet_reallocation.runtime_enabled'));
+        $this->assertSame('intelligence', config('intelligence.fleet_reallocation.runtime_queue'));
+        $this->assertSame(30, config('intelligence.fleet_reallocation.runtime_timeout_seconds'));
+        $this->assertSame(600, config('intelligence.fleet_reallocation.runtime_stale_after_seconds'));
         $this->assertFalse((bool) config('intelligence.fleet_reallocation.automatic_actions_allowed'));
         $this->assertFalse((bool) config('intelligence.fleet_reallocation.operational_table_writes_allowed'));
         $this->assertSame(
@@ -503,6 +687,21 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
             ->digest($payload);
 
         return $payload;
+    }
+
+    /** @return array<string, mixed> */
+    private function runtimePayload(FleetReallocationRun $run): array
+    {
+        $payload = $this->payload();
+        $asOfDate = $run->requested_at->setTimezone(config('app.timezone'))->toImmutable();
+        $payload['proposal_id'] = $run->run_id;
+        $payload['generated_at'] = $run->requested_at->utc()->format('Y-m-d\TH:i:s\Z');
+        $payload['planning']['as_of_date'] = $asOfDate->format('Y-m-d');
+        $payload['planning']['target_date'] = $asOfDate->addDays($run->forecast_horizon)->format('Y-m-d');
+        $payload['planning']['forecast_horizon'] = $run->forecast_horizon;
+        $payload['idempotency']['key'] = $run->run_id;
+
+        return $this->withDigest($payload);
     }
 
     /** @param array<string, mixed> $payload */

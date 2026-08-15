@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 use Throwable;
 
 class RentFleetDoctor extends Command
@@ -107,6 +108,46 @@ class RentFleetDoctor extends Command
         $this->add('PHP', version_compare(PHP_VERSION, '8.5.0', '>=') ? 'pass' : 'fail', PHP_VERSION);
         $missing = array_values(array_filter(['pdo_pgsql', 'pgsql'], fn (string $extension) => ! extension_loaded($extension)));
         $this->add('Extensions PostgreSQL', $missing === [] ? 'pass' : 'fail', $missing === [] ? 'pdo_pgsql, pgsql' : 'manquantes: '.implode(', ', $missing));
+        $pythonBinary = (string) config('intelligence.fleet_reallocation.python_binary');
+        $runtimeScript = (string) config('intelligence.fleet_reallocation.runtime_script');
+        $ortoolsConfigured = (bool) config('intelligence.fleet_reallocation.runtime_enabled')
+            && $pythonBinary !== ''
+            && File::exists($runtimeScript);
+        $runtimeVersion = null;
+        if ($ortoolsConfigured) {
+            try {
+                $probe = Process::path(base_path())
+                    ->timeout(5)
+                    ->env([
+                        'APP_KEY' => false,
+                        'DB_PASSWORD' => false,
+                        'MAIL_PASSWORD' => false,
+                        'AWS_SECRET_ACCESS_KEY' => false,
+                        'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
+                        'DEMO_PASSWORD' => false,
+                        'PGPASSWORD' => false,
+                    ])
+                    ->run([
+                        $pythonBinary,
+                        '-c',
+                        'import importlib.metadata,sys; print(f\'{sys.version_info.major}.{sys.version_info.minor}|{importlib.metadata.version("ortools")}\')',
+                    ]);
+                if ($probe->successful()) {
+                    $runtimeVersion = trim($probe->output());
+                }
+            } catch (Throwable) {
+                // Le détail public reste volontairement limité aux versions attendues.
+            }
+        }
+        $runtimeReady = $ortoolsConfigured && $runtimeVersion === '3.12|9.15.6755';
+        $production = app()->environment('production') || $this->option('production');
+        $this->add(
+            'Runtime OR-Tools',
+            $runtimeReady ? 'pass' : ($production ? 'fail' : 'warn'),
+            $runtimeReady
+                ? 'Python 3.12 · OR-Tools 9.15.6755 · script présent'
+                : 'Python 3.12 et OR-Tools 9.15.6755 requis; vérifier INTELLIGENCE_PYTHON_BINARY',
+        );
     }
 
     private function checkDatabase(): void
@@ -156,7 +197,19 @@ class RentFleetDoctor extends Command
 
     private function checkWorkers(): void
     {
-        $this->add('Queue', config('queue.default') === 'database' ? 'pass' : 'warn', (string) config('queue.default').' (aucune tâche applicative en queue)');
+        $queueConnection = (string) config('queue.default');
+        $activeRuns = null;
+        try {
+            $activeRuns = DB::table('fleet_reallocation_runs')
+                ->whereIn('status', ['queued', 'running'])
+                ->count();
+        } catch (Throwable) {
+            // La vérification des migrations rapporte séparément une table absente.
+        }
+        $queueDetail = $queueConnection === 'database'
+            ? 'database (worker intelligence requis; '.($activeRuns ?? 0).' exécution(s) active(s))'
+            : $queueConnection.' (database requis hors tests pour OR-Tools)';
+        $this->add('Queue', $queueConnection === 'database' ? 'pass' : 'warn', $queueDetail);
 
         try {
             $events = app(Schedule::class)->events();

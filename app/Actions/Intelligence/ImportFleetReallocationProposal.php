@@ -34,7 +34,6 @@ final class ImportFleetReallocationProposal
 
     public function handle(UploadedFile $file, User $actor): FleetReallocationProposalImportResult
     {
-        $this->assertActor($actor);
         $maximumBytes = (int) config('intelligence.fleet_reallocation.max_upload_kilobytes') * 1024;
         $uploadedBytes = $file->getSize();
         if (! is_int($uploadedBytes) || $uploadedBytes <= 0 || $uploadedBytes > $maximumBytes) {
@@ -48,6 +47,20 @@ final class ImportFleetReallocationProposal
         $contents = is_string($realPath) ? file_get_contents($realPath) : false;
         if (! is_string($contents) || $contents === '') {
             throw new RuntimeException('La proposition de réallocation téléversée est vide ou illisible.');
+        }
+
+        return $this->handlePayload($contents, $actor);
+    }
+
+    public function handlePayload(string $contents, User $actor): FleetReallocationProposalImportResult
+    {
+        $this->assertActor($actor);
+        $maximumBytes = (int) config('intelligence.fleet_reallocation.max_upload_kilobytes') * 1024;
+        if ($contents === '' || strlen($contents) > $maximumBytes) {
+            throw FleetReallocationValidationException::at(
+                '$',
+                'taille du JSON absente ou supérieure à la limite autorisée',
+            );
         }
 
         $validated = $this->validator->validate($contents);

@@ -108,6 +108,11 @@ class FleetReallocationProposal extends Model
         return $this->hasOne(FleetReallocationDecision::class);
     }
 
+    public function runtimeRun(): HasOne
+    {
+        return $this->hasOne(FleetReallocationRun::class, 'fleet_reallocation_proposal_id');
+    }
+
     public function importer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'imported_by');

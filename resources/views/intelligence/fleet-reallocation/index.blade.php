@@ -3,9 +3,10 @@
         <x-page-header
             title="Propositions de réallocation OR-Tools"
             eyebrow="Intelligence consultative"
-            description="Consultez et révisez des plans synthétiques qualifiés, sans déplacer aucun véhicule."
+            description="Lancez réellement le solveur OR-Tools sur un scénario synthétique qualifié, puis vérifiez et révisez son résultat sans déplacer aucun véhicule."
         >
             <x-slot:actions>
+                <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary">Actualiser</a>
                 <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
             </x-slot:actions>
         </x-page-header>
@@ -20,6 +21,70 @@
                 <li>Le statut local reste <code>NOT_VALIDATED_NO_REAL_HISTORY</code>.</li>
                 <li>Toute décision conserve l’effet <code>NO_OPERATIONAL_ACTION</code>.</li>
             </ul>
+        </x-section-card>
+
+        @if ($canExecute)
+            <x-section-card
+                title="Lancer un nouveau calcul OR-Tools"
+                description="Le bouton crée une exécution fraîche, traitée par la queue PostgreSQL et le script Python qualifié. La prévision HGB reste ici une entrée synthétique clairement signalée, pas une inférence."
+            >
+                <form method="POST" action="{{ route('intelligence.fleet-reallocation.runs.store') }}" class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                    @csrf
+                    <div>
+                        <x-input-label for="fleet-reallocation-horizon" value="Horizon de démonstration" required />
+                        <select id="fleet-reallocation-horizon" name="forecast_horizon" class="mt-1 block w-full rounded-lg border-slate-300 text-sm" required>
+                            @foreach (range(1, 7) as $horizon)
+                                <option value="{{ $horizon }}" @selected((int) old('forecast_horizon', 1) === $horizon)>D+{{ $horizon }}</option>
+                            @endforeach
+                        </select>
+                        <x-field-error :messages="$errors->get('forecast_horizon')" class="mt-2" />
+                    </div>
+                    <x-primary-button>Générer une proposition</x-primary-button>
+                </form>
+                <p class="mt-3 text-xs leading-5 text-slate-500">
+                    En local, le worker <code>php artisan queue:work --queue=intelligence</code> doit être actif. Chaque lancement produit un identifiant et un JSON privés distincts.
+                </p>
+            </x-section-card>
+        @endif
+
+        <x-section-card title="Dernières exécutions" description="Ce registre permet de distinguer une proposition réellement calculée d’un fichier simplement importé.">
+            @if ($runtimeRuns->isEmpty())
+                <x-empty-state title="Aucune exécution lancée" description="Utilisez « Générer une proposition » pour créer le premier calcul OR-Tools depuis le SaaS." />
+            @else
+                <x-responsive-table label="Dernières exécutions OR-Tools" class="shadow-none">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Demandée</th>
+                                <th>Horizon</th>
+                                <th>État</th>
+                                <th>Résultat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($runtimeRuns as $run)
+                                <tr>
+                                    <td>{{ App\Support\Ui\UiLabel::dateTime($run->requested_at) }}</td>
+                                    <td>D+{{ $run->forecast_horizon }}</td>
+                                    <td>
+                                        <span class="font-medium">{{ $run->status->label() }}</span>
+                                        @if ($run->failure_code)
+                                            <p class="mt-1 text-xs text-red-700"><code>{{ $run->failure_code }}</code></p>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($run->proposal)
+                                            <a href="#proposal-{{ $run->proposal->proposal_id }}" class="font-medium text-fleet-700 underline">Voir la proposition</a>
+                                        @else
+                                            <span class="text-slate-500">Pas encore disponible</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </x-responsive-table>
+            @endif
         </x-section-card>
 
         @if ($canImport)
@@ -40,9 +105,17 @@
 
         @forelse ($proposals as $proposal)
             <x-section-card
+                id="proposal-{{ $proposal->proposal_id }}"
                 title="Plan D+{{ $proposal->forecast_horizon }} · {{ $proposal->target_date->format('d/m/Y') }}"
                 description="{{ $proposal->solver_name }} {{ $proposal->solver_version }} · {{ $proposal->solver_status }}"
             >
+                <div class="mb-4 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    @if ($proposal->runtimeRun)
+                        <strong>Calcul réellement exécuté depuis le SaaS</strong> · exécution {{ $proposal->runtimeRun->run_id }}
+                    @else
+                        <strong>Résultat importé</strong> · aucune exécution Python associée dans le SaaS
+                    @endif
+                </div>
                 <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
                     <div class="rounded-xl bg-slate-50 p-3">
                         <p class="text-slate-500">Service</p>
