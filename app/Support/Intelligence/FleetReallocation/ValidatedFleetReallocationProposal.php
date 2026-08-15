@@ -7,8 +7,8 @@ use DateTimeImmutable;
 final readonly class ValidatedFleetReallocationProposal
 {
     /**
-     * @param array<string, mixed> $payload
-     * @param list<array<string, mixed>> $moves
+     * @param  array<string, mixed>  $payload
+     * @param  list<array<string, mixed>>  $moves
      */
     public function __construct(
         public array $payload,

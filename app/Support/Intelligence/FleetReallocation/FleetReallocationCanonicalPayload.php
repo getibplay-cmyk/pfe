@@ -17,7 +17,7 @@ final class FleetReallocationCanonicalPayload
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      *
      * @throws JsonException
      */
@@ -45,6 +45,7 @@ final class FleetReallocationCanonicalPayload
         }
 
         ksort($value, SORT_STRING);
+
         foreach ($value as $key => $item) {
             $value[$key] = $this->sort($item);
         }
