@@ -7,6 +7,7 @@ use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DemandForecastController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FinanceController;
@@ -212,6 +213,16 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.result-batches.download');
     Route::post('/intelligence/result-batches/{resultBatch}/decisions', [IntelligenceResultBatchController::class, 'decide'])
         ->name('intelligence.result-batches.decisions.store');
+    Route::get('/intelligence/demand-forecasts', [DemandForecastController::class, 'index'])
+        ->name('intelligence.demand-forecasts.index');
+    Route::get('/intelligence/demand-history/export', [DemandForecastController::class, 'export'])
+        ->name('intelligence.demand-history.export');
+    Route::get('/intelligence/demand-history/{historyRun}/manifest', [DemandForecastController::class, 'manifest'])
+        ->name('intelligence.demand-history.manifest');
+    Route::get('/intelligence/demand-history/{historyRun}/download', [DemandForecastController::class, 'download'])
+        ->name('intelligence.demand-history.download');
+    Route::post('/intelligence/demand-history/{historyRun}/forecasts', [DemandForecastController::class, 'store'])
+        ->name('intelligence.demand-forecasts.store');
     Route::prefix('/intelligence/contracts-demo')
         ->name('intelligence.contract-demo.')
         ->middleware('intelligence.contract-demo')

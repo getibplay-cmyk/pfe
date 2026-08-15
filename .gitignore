@@ -16,6 +16,8 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
+__pycache__/
+*.py[cod]
 /auth.json
 /backups
 /*.dump

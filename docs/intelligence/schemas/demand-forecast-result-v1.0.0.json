@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.local/schemas/demand-forecast-result-v1.0.0.json",
+  "title": "RentFleet consultative demand forecast result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "batch_id",
+    "generated_at",
+    "model",
+    "dataset",
+    "evaluation",
+    "forecasts",
+    "safety",
+    "idempotency"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "batch_id": { "type": "string", "format": "uuid" },
+    "generated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "artifact_sha256", "framework", "framework_version", "compute", "explanation_method"],
+      "properties": {
+        "name": { "const": "hgb_poisson::regularized" },
+        "version": { "const": "j5-v1" },
+        "artifact_sha256": { "const": "992217b4887623ca924a3dc36686c69ab616634aace64cf993ad50b61ace6802" },
+        "framework": { "const": "scikit-learn" },
+        "framework_version": { "const": "1.6.1" },
+        "compute": { "const": "cpu" },
+        "explanation_method": { "const": "one_at_a_time_sensitivity_v1" }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "schema_version", "dataset_version", "preprocessing_version", "content_sha256", "row_count", "date_from", "date_to", "timezone", "distance_unit", "target", "vehicle_category", "missing_dates"],
+      "properties": {
+        "run_id": { "type": "string", "format": "uuid" },
+        "schema_version": { "const": "1.0" },
+        "dataset_version": { "const": "rentfleet-demand-history-v1.0.0" },
+        "preprocessing_version": { "const": "rentfleet-demand-preprocessing-v1.0.0" },
+        "content_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "row_count": { "type": "integer", "minimum": 35, "maximum": 731 },
+        "date_from": { "type": "string", "format": "date" },
+        "date_to": { "type": "string", "format": "date" },
+        "timezone": { "const": "Africa/Casablanca" },
+        "distance_unit": { "const": "km" },
+        "target": { "const": "observed_departures" },
+        "vehicle_category": { "const": "all" },
+        "missing_dates": { "const": "zero_filled" }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["validation_scope", "public_wape", "public_mase", "public_interval_coverage_p05_p95", "local_holdout_status", "local_wape", "local_mase", "local_interval_coverage_p05_p95", "production_claim_allowed"],
+      "properties": {
+        "validation_scope": { "const": "public_proxy_only_local_shadow" },
+        "public_wape": { "const": "0.152342" },
+        "public_mase": { "const": "0.829556" },
+        "public_interval_coverage_p05_p95": { "const": "0.860700" },
+        "local_holdout_status": { "const": "not_available_pending_real_history" },
+        "local_wape": { "type": "null" },
+        "local_mase": { "type": "null" },
+        "local_interval_coverage_p05_p95": { "type": "null" },
+        "production_claim_allowed": { "const": false }
+      }
+    },
+    "forecasts": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": { "$ref": "#/$defs/forecast" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "human_decision_required", "automatic_action_allowed", "operational_table_write_allowed", "ready_for_production", "operational_effect"],
+      "properties": {
+        "mode": { "const": "consultative_shadow" },
+        "human_decision_required": { "const": true },
+        "automatic_action_allowed": { "const": false },
+        "operational_table_write_allowed": { "const": false },
+        "ready_for_production": { "const": false },
+        "operational_effect": { "const": "NO_OPERATIONAL_ACTION" }
+      }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "policy", "canonical_payload_sha256"],
+      "properties": {
+        "key": { "type": "string", "format": "uuid" },
+        "policy": { "const": "SAME_KEY_SAME_PAYLOAD_ONLY" },
+        "canonical_payload_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  },
+  "$defs": {
+    "decimal": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,7})\\.[0-9]{6}$" },
+    "signedDecimal": { "type": "string", "pattern": "^-?(?:0|[1-9][0-9]{0,7})\\.[0-9]{6}$" },
+    "explanation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "direction", "prediction_delta"],
+      "properties": {
+        "feature": {
+          "enum": [
+            "lag_1_at_cutoff", "lag_2_at_cutoff", "lag_3_at_cutoff", "lag_7_at_cutoff", "lag_14_at_cutoff", "lag_28_at_cutoff",
+            "seasonal_lag_target_minus_7", "rolling_mean_7_at_cutoff", "rolling_mean_28_at_cutoff", "rolling_median_7_at_cutoff",
+            "rolling_median_28_at_cutoff", "rolling_std_7_at_cutoff", "rolling_std_28_at_cutoff", "target_is_weekend"
+          ]
+        },
+        "direction": { "enum": ["increase", "decrease", "neutral"] },
+        "prediction_delta": { "$ref": "#/$defs/signedDecimal" }
+      }
+    },
+    "forecast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_date", "horizon", "vehicle_category", "conditional_mean", "p05", "p50", "p90", "p95", "raw_any_crossing", "monotone_adjusted", "explanations", "demand_semantics", "operational_effect"],
+      "properties": {
+        "target_date": { "type": "string", "format": "date" },
+        "horizon": { "type": "integer", "minimum": 1, "maximum": 7 },
+        "vehicle_category": { "const": "all" },
+        "conditional_mean": { "$ref": "#/$defs/decimal" },
+        "p05": { "$ref": "#/$defs/decimal" },
+        "p50": { "$ref": "#/$defs/decimal" },
+        "p90": { "$ref": "#/$defs/decimal" },
+        "p95": { "$ref": "#/$defs/decimal" },
+        "raw_any_crossing": { "type": "boolean" },
+        "monotone_adjusted": { "type": "boolean" },
+        "explanations": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/explanation" } },
+        "demand_semantics": { "const": "observed_departures" },
+        "operational_effect": { "const": "NO_OPERATIONAL_ACTION" }
+      }
+    }
+  }
+}
