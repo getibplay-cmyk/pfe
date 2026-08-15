@@ -138,6 +138,14 @@ Pour corriger le formatage :
 php vendor/bin/pint
 ```
 
+### Runtime de prévision HGB
+
+Le modèle de demande J5 peut être exécuté réellement depuis le SaaS sans
+versionner son bundle privé. Suivre le guide
+[Exécution HGB authentique depuis le SaaS](docs/intelligence/demand-forecast-runtime.md)
+pour installer l’artefact exact, préparer Python 3.12 et démarrer le worker
+`intelligence`.
+
 ## État du lot 00
 
 - authentification Breeze Blade et connexion disponibles ;

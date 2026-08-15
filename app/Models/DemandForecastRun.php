@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DemandForecastRun extends Model
 {
@@ -90,6 +91,11 @@ class DemandForecastRun extends Model
     public function forecasts(): HasMany
     {
         return $this->hasMany(DemandForecast::class)->orderBy('horizon');
+    }
+
+    public function executionRun(): HasOne
+    {
+        return $this->hasOne(DemandForecastExecutionRun::class);
     }
 
     public function importer(): BelongsTo

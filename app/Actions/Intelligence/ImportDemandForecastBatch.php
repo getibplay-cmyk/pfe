@@ -47,17 +47,33 @@ final class ImportDemandForecastBatch
                 'taille du fichier JSON absente ou supérieure à la limite autorisée',
             );
         }
+        $realPath = $file->getRealPath();
+        $contents = is_string($realPath) ? file_get_contents($realPath) : false;
+        if (! is_string($contents) || $contents === '') {
+            throw new RuntimeException('Le lot de prévisions téléversé est vide ou illisible.');
+        }
+
+        return $this->handlePayload($history, $contents, $actor);
+    }
+
+    public function handlePayload(
+        DemandHistoryExportRun $history,
+        string $contents,
+        User $actor,
+    ): DemandForecastImportResult {
+        $this->assertActor($history, $actor);
+        $maximumBytes = (int) config('intelligence.demand_forecasting.max_upload_kilobytes') * 1024;
+        if ($contents === '' || strlen($contents) > $maximumBytes) {
+            throw DemandForecastValidationException::at(
+                '$',
+                'taille du JSON absente ou supérieure à la limite autorisée',
+            );
+        }
         if (! $this->artifactVerifier->validHistory($history)) {
             throw DemandForecastValidationException::at(
                 'dataset.content_sha256',
                 'le snapshot privé lié est absent ou altéré',
             );
-        }
-
-        $realPath = $file->getRealPath();
-        $contents = is_string($realPath) ? file_get_contents($realPath) : false;
-        if (! is_string($contents) || $contents === '') {
-            throw new RuntimeException('Le lot de prévisions téléversé est vide ou illisible.');
         }
 
         $validated = $this->validator->validate($contents, $history);

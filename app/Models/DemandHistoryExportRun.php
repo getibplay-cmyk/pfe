@@ -77,6 +77,11 @@ class DemandHistoryExportRun extends Model
         return $this->hasMany(DemandForecastRun::class);
     }
 
+    public function executionRuns(): HasMany
+    {
+        return $this->hasMany(DemandForecastExecutionRun::class);
+    }
+
     /** @return array<string, mixed> */
     public function manifest(): array
     {

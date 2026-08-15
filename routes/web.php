@@ -224,6 +224,8 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.demand-history.download');
     Route::post('/intelligence/demand-history/{historyRun}/forecasts', [DemandForecastController::class, 'store'])
         ->name('intelligence.demand-forecasts.store');
+    Route::post('/intelligence/demand-history/{historyRun}/forecast-executions', [DemandForecastController::class, 'queueExecution'])
+        ->name('intelligence.demand-forecast-executions.store');
     Route::get('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'index'])
         ->name('intelligence.fleet-reallocation.index');
     Route::post('/intelligence/fleet-reallocation/runs', [FleetReallocationProposalController::class, 'queueRun'])

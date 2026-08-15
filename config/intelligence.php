@@ -23,6 +23,19 @@ return [
     'demand_forecasting' => [
         'disk' => 'local',
         'max_upload_kilobytes' => 512,
+        'runtime_enabled' => env('DEMAND_FORECAST_RUNTIME_ENABLED', true),
+        'runtime_queue' => 'intelligence',
+        'runtime_timeout_seconds' => 60,
+        'runtime_stale_after_seconds' => 600,
+        'python_binary' => env(
+            'DEMAND_FORECAST_PYTHON_BINARY',
+            env('INTELLIGENCE_PYTHON_BINARY', 'python'),
+        ),
+        'runtime_script' => base_path('scripts/intelligence/run_demand_forecast.py'),
+        'model_bundle_path' => env(
+            'DEMAND_FORECAST_MODEL_PATH',
+            storage_path('app/private/intelligence/models/demand_forecast_munich_j5_v1.0.joblib'),
+        ),
         'mode' => 'consultative_shadow',
         'automatic_actions_allowed' => false,
         'production_claim_allowed' => false,

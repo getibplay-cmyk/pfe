@@ -83,7 +83,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--model-bundle", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    output = parser.add_mutually_exclusive_group(required=True)
+    output.add_argument("--output", type=Path)
+    output.add_argument(
+        "--stdout",
+        action="store_true",
+        help="Write only the closed forecast JSON to stdout for the SaaS runtime.",
+    )
     return parser.parse_args()
 
 
@@ -372,14 +378,19 @@ def main() -> int:
         frame = load_snapshot(args.snapshot, manifest)
         bundle = load_bundle(args.model_bundle)
         payload = make_payload(frame, manifest, bundle)
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(canonical_json(payload) + "\n", encoding="utf-8")
+        encoded = canonical_json(payload) + "\n"
+        if args.stdout:
+            sys.stdout.write(encoded)
+        else:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(encoded, encoding="utf-8")
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exception:
         print(f"Demand forecast failed: {exception}", file=sys.stderr)
         return 1
 
-    print(f"Consultative forecast written to {args.output}")
-    print("Local accuracy remains unavailable; no production claim is allowed.")
+    if not args.stdout:
+        print(f"Consultative forecast written to {args.output}")
+        print("Local accuracy remains unavailable; no production claim is allowed.")
     return 0
 
 
