@@ -2,6 +2,10 @@
   "canonical_colab_observation": {
     "python": "3.12.13",
     "scikit_learn": "1.6.1",
+    "joblib": "1.5.3",
+    "numpy": "2.0.2",
+    "pandas": "2.2.2",
+    "pyarrow": "18.1.0",
     "device": "CPU",
     "gpu_required": false
   },

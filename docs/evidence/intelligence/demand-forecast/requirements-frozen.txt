@@ -1,6 +1,5 @@
-# Versions observed in the canonical J2/J5 Colab outputs. The exact joblib
-# version was not recorded; do not claim byte-for-byte portability of the
-# serialized bundle across environments.
+# Versions observed in the canonical J5 manifest.
+joblib==1.5.3
 numpy==2.0.2
 pandas==2.2.2
 pyarrow==18.1.0
