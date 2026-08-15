@@ -62,7 +62,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/consultative-demo"
           python scripts/intelligence/build_consultative_demo.py \
             --output "$RUNNER_TEMP/consultative-demo"
-          sha256sum --check "$RUNNER_TEMP/consultative-demo/SHA256SUMS"
+          (cd "$RUNNER_TEMP/consultative-demo" && sha256sum --check SHA256SUMS)
           diff --recursive --brief \
             docs/evidence/intelligence/consultative-demo \
             "$RUNNER_TEMP/consultative-demo"
