@@ -132,7 +132,10 @@
                     </thead>
                     <tbody>
                         @forelse ($historyRuns as $run)
-                            @php($execution = $run->executionRuns->first())
+                            @php
+                                $execution = $run->executionRuns->first();
+                                $executionIsActive = $execution && in_array($execution->status->value, ['queued', 'running'], true);
+                            @endphp
                             <tr>
                                 <td>
                                     <p class="font-medium text-slate-900">{{ $run->agency->name }}</p>
@@ -163,8 +166,8 @@
                                         @if ($runtime['ready'])
                                             <form method="POST" action="{{ route('intelligence.demand-forecast-executions.store', $run) }}" class="mt-3">
                                                 @csrf
-                                                <x-primary-button :disabled="$execution && in_array($execution->status->value, ['queued', 'running'], true)">
-                                                    {{ $execution && in_array($execution->status->value, ['queued', 'running'], true) ? 'Exécution déjà active' : 'Exécuter HGB authentique' }}
+                                                <x-primary-button :disabled="$executionIsActive">
+                                                    {{ $executionIsActive ? 'Exécution déjà active' : 'Exécuter HGB authentique' }}
                                                 </x-primary-button>
                                             </form>
                                         @endif
