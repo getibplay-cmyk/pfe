@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0.0",
+  "path": "notebooks/J15B_demand_forecast_hgb.ipynb",
+  "sha256": "ef051c3ea6adb9069fb9cf462cdac6db4edc810b0b50c9ceb0dbb0dcb3447015",
+  "role": "frozen_artifact_audit_without_final_test_reopening",
+  "python": "3.12.13",
+  "canonical_execution": "archived_outside_repository",
+  "provenance_boundary": "source inventory is intentionally not published"
+}

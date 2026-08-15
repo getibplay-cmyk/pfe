@@ -81,7 +81,12 @@ jobs:
         run: |
           python -m unittest -v \
             tests/Python/test_fleet_reallocation_qualification.py \
-            tests/Python/test_consultative_demo.py
+            tests/Python/test_consultative_demo.py \
+            tests/Python/test_demand_forecast_j15b_evidence.py
+
+      - name: Verify HGB J15-B evidence checksums
+        working-directory: docs/evidence/intelligence/demand-forecast
+        run: sha256sum --check SHA256SUMS
 
   quality:
     runs-on: ubuntu-24.04
