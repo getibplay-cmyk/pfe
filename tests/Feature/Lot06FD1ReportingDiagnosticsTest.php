@@ -391,17 +391,25 @@ class Lot06FD1ReportingDiagnosticsTest extends TestCase
 
     private function vehicleForAgency(array $fixture, Agency $agency): Vehicle
     {
-        return app(TenantContext::class)->run($fixture['tenant'], fn () => app(CreateVehicle::class)->handle([
-            'agency_id' => $agency->id,
-            'vehicle_category_id' => $fixture['category']->id,
-            'registration_number' => 'D1-'.str()->random(10),
-            'brand' => 'Renault',
-            'model' => 'Clio',
-            'production_year' => 2026,
-            'fuel_type' => 'petrol',
-            'transmission' => 'manual',
-            'current_mileage' => 500,
-        ], $fixture['user']->id), $agency->id);
+        return app(TenantContext::class)->run($fixture['tenant'], function () use ($fixture, $agency): Vehicle {
+            $vehicle = app(CreateVehicle::class)->handle([
+                'agency_id' => $agency->id,
+                'vehicle_category_id' => $fixture['category']->id,
+                'registration_number' => 'D1-'.str()->random(10),
+                'brand' => 'Renault',
+                'model' => 'Clio',
+                'production_year' => 2026,
+                'fuel_type' => 'petrol',
+                'transmission' => 'manual',
+                'current_mileage' => 500,
+            ], $fixture['user']->id);
+
+            $vehicle->statusHistories()
+                ->whereNull('from_status')
+                ->update(['created_at' => CarbonImmutable::now('Africa/Casablanca')]);
+
+            return $vehicle;
+        }, $agency->id);
     }
 
     private function reservation(array $fixture, string $start, string $end): Reservation
