@@ -56,6 +56,17 @@ jobs:
         working-directory: ${{ runner.temp }}/fleet-reallocation
         run: sha256sum --check SHA256SUMS
 
+      - name: Reproduce synthetic consultative demo chain
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/consultative-demo"
+          python scripts/intelligence/build_consultative_demo.py \
+            --output "$RUNNER_TEMP/consultative-demo"
+          sha256sum --check "$RUNNER_TEMP/consultative-demo/SHA256SUMS"
+          diff --recursive --brief \
+            docs/evidence/intelligence/consultative-demo \
+            "$RUNNER_TEMP/consultative-demo"
+
       - name: Upload preregistered qualification evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -67,7 +78,10 @@ jobs:
           compression-level: 9
 
       - name: Test protocol, baselines, solver and reproducibility
-        run: python -m unittest -v tests/Python/test_fleet_reallocation_qualification.py
+        run: |
+          python -m unittest -v \
+            tests/Python/test_fleet_reallocation_qualification.py \
+            tests/Python/test_consultative_demo.py
 
   quality:
     runs-on: ubuntu-24.04

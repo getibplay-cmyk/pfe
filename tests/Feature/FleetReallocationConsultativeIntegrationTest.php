@@ -135,6 +135,69 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
         }
     }
 
+    public function test_committed_demo_bundle_reaches_explicit_human_review_without_operational_write(): void
+    {
+        $fixture = $this->fixture();
+        $proposalPath = base_path('docs/evidence/intelligence/consultative-demo/fleet-reallocation-proposal.json');
+        $forecastPath = base_path('docs/evidence/intelligence/consultative-demo/synthetic-hgb-forecast.json');
+        $payload = json_decode(file_get_contents($proposalPath), true, 128, JSON_THROW_ON_ERROR);
+        $forecast = json_decode(file_get_contents($forecastPath), true, 128, JSON_THROW_ON_ERROR);
+        $this->assertSame(
+            hash_file('sha256', $forecastPath),
+            $payload['planning']['demand_source']['forecast_reference_sha256'],
+        );
+        $this->assertSame(
+            'SYNTHETIC_INPUT_CONFORMING_TO_HGB_CONTRACT_NOT_MODEL_INFERENCE',
+            $forecast['forecast_status'],
+        );
+        foreach ($payload['planning']['nodes'] as $node) {
+            $this->assertSame($node['forecast_demand'], $node['effective_demand']);
+        }
+
+        $trackedTables = [
+            'vehicles',
+            'vehicle_blocks',
+            'reservations',
+            'rental_contracts',
+            'maintenance_orders',
+            'invoices',
+            'payments',
+        ];
+        $before = collect($trackedTables)->mapWithKeys(
+            static fn (string $table): array => [$table => DB::table($table)->count()],
+        );
+
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.store'), [
+                'proposal' => $this->jsonFile($payload, 's6-consultative-demo.json'),
+            ])
+            ->assertRedirect(route('intelligence.fleet-reallocation.index'));
+
+        $proposal = FleetReallocationProposal::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame('pending', $proposal->reviewStatus());
+        $this->assertSame('1.000000', $proposal->presence_probability);
+        $this->assertSame(4, $proposal->node_count);
+        $this->assertGreaterThan(0, $proposal->move_line_count);
+
+        $this->actingAs($fixture['owner'])
+            ->post(route('intelligence.fleet-reallocation.decisions.store', $proposal), [
+                'decision' => 'accepted_for_demo_review',
+                'reason_code' => 'CONSULTATIVE_PLAN_ACCEPTED_FOR_DEMO',
+            ])
+            ->assertRedirect(route('intelligence.fleet-reallocation.index'));
+
+        $this->assertSame(
+            FleetReallocationContract::OPERATIONAL_EFFECT,
+            FleetReallocationDecision::withoutGlobalScopes()->firstOrFail()->effect,
+        );
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'prediction.fleet_reallocation.human_decision_recorded',
+        ]);
+        foreach ($before as $table => $count) {
+            $this->assertSame($count, DB::table($table)->count(), $table);
+        }
+    }
+
     public function test_same_key_same_payload_replays_but_different_payload_conflicts(): void
     {
         $fixture = $this->fixture();
