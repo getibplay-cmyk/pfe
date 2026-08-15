@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.local/schemas/cancellation-qualification-v1.0.0.json",
+  "title": "RentFleet cancellation risk public qualification manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol",
+    "dataset",
+    "mapping",
+    "splits",
+    "model",
+    "threshold_selection",
+    "test_metrics",
+    "gate",
+    "evidence",
+    "safety",
+    "runtime"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "protocol": {
+      "type": "object",
+      "required": ["version", "preprocessing_version", "seed", "compute", "distance_unit", "prediction_cutoff", "test_policy"]
+    },
+    "dataset": {
+      "type": "object",
+      "required": ["title", "doi", "snapshot_url", "snapshot_sha256", "license", "license_url", "audit"]
+    },
+    "mapping": {
+      "type": "object",
+      "required": ["scope", "feature_count", "features", "forbidden_leakage_columns", "tenant_and_agency_policy", "raw_personal_data_allowed"]
+    },
+    "splits": {
+      "type": "object",
+      "required": ["strategy", "fractions", "boundaries_starting_new_block", "blocks"]
+    },
+    "model": {
+      "type": "object",
+      "required": ["name", "version", "framework", "framework_version", "selected_iterations", "parameters", "imbalance_strategy", "calibration", "explanation"]
+    },
+    "threshold_selection": {
+      "type": "object",
+      "required": ["threshold", "balanced_accuracy", "macro_f1"]
+    },
+    "test_metrics": {
+      "type": "object",
+      "required": ["balanced_accuracy", "macro_f1", "pr_auc", "roc_auc", "brier_loss", "log_loss", "ece_10", "threshold", "confusion_matrix", "per_class"]
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["balanced_accuracy_minimum", "macro_f1_minimum", "passed", "decision"],
+      "properties": {
+        "balanced_accuracy_minimum": {"const": 0.8},
+        "macro_f1_minimum": {"const": 0.8},
+        "passed": {"const": false},
+        "decision": {"const": "RESEARCH_GATE_NOT_PASSED_NO_SAAS_INTEGRATION"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["shap_rows", "reliability_bins"]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["validation_scope", "local_rentfleet_status", "consultative_only", "human_validation_required", "automatic_action_allowed", "operational_business_write_allowed", "saas_integration_allowed", "production_claim_allowed"],
+      "properties": {
+        "validation_scope": {"const": "PUBLIC_BENCHMARK"},
+        "local_rentfleet_status": {"const": "NOT_VALIDATED_NO_REAL_HISTORY"},
+        "consultative_only": {"const": true},
+        "human_validation_required": {"const": true},
+        "automatic_action_allowed": {"const": false},
+        "operational_business_write_allowed": {"const": false},
+        "saas_integration_allowed": {"const": false},
+        "production_claim_allowed": {"const": false}
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["python", "numpy", "pandas", "scikit_learn", "catboost", "joblib", "matplotlib", "operating_system", "architecture"]
+    }
+  }
+}

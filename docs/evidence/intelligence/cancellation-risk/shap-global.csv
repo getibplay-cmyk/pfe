@@ -1,0 +1,16 @@
+feature,mean_absolute_shap_raw_margin,mean_signed_shap_raw_margin,rank
+has_options,0.52355608,-0.19244556,1
+lead_time_days,0.36696956,0.14345305,2
+deposit_required,0.34341286,-0.13861576,3
+prior_cancellations,0.19070578,-0.16107339,4
+agency_proxy,0.14752078,0.01145961,5
+prior_completed_bookings,0.04884081,-0.00085835,6
+rental_nights,0.02023153,0.0017512,7
+booking_month,0.01860955,0.00552071,8
+weekend_nights,0.01021713,0.00091546,9
+returning_customer,0.0067641,0.00112266,10
+weekday_nights,0.0064705,-0.00093725,11
+arrival_month,0.0,0.0,12
+arrival_weekday,0.0,0.0,13
+booking_weekday,0.0,0.0,14
+vehicle_category_proxy,0.0,0.0,15

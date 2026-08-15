@@ -17,6 +17,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  science-cancellation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    env:
+      MPLCONFIGDIR: /tmp/rentfleet-matplotlib
+      PYTHONHASHSEED: "20260814"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Verify Python runtime
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import sys
+          if sys.version_info[:2] != (3, 12):
+              raise SystemExit(f"Python 3.12 required, got {sys.version}")
+          PY
+
+      - name: Install frozen cancellation environment
+        shell: bash
+        run: |
+          python3 -m venv "$RUNNER_TEMP/cancellation-venv"
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            --only-binary=:all: \
+            -r requirements/science-cancellation.lock
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m pip check
+
+      - name: Verify cancellation qualification evidence
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m unittest -v \
+            tests/Python/test_cancellation_risk_qualification.py
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m py_compile \
+            scripts/intelligence/train_cancellation_risk.py
+          cd docs/evidence/intelligence/cancellation-risk
+          sha256sum --check SHA256SUMS
+
   quality:
     runs-on: ubuntu-24.04
     timeout-minutes: 30

@@ -1,0 +1,76 @@
+protocol_version: cancellation-risk-qualification-v1.0.0
+status: frozen_negative
+decision: RESEARCH_GATE_NOT_PASSED_NO_SAAS_INTEGRATION
+
+objective:
+  target: cancellation_or_no_show
+  horizon: one_day_before_planned_arrival_public_proxy
+  validation_scope: PUBLIC_BENCHMARK
+  local_rentfleet_status: NOT_VALIDATED_NO_REAL_HISTORY
+
+dataset:
+  title: Hotel Booking Demand
+  doi: https://doi.org/10.1016/j.dib.2018.11.126
+  license: CC BY 4.0
+  snapshot_commit: 1f5a20eae51d871ec4ac0f95d16e43b9ba3f1dec
+  snapshot_sha256: 7c2ae42a7353905ea136e5c2287f17c92c5435826598bfbb8491c6f0c7b1fc06
+  expected_rows: 119390
+
+reproducibility:
+  seed: 20260814
+  python: "3.12"
+  dependency_lock: requirements/science-cancellation.lock
+  training_script: scripts/intelligence/train_cancellation_risk.py
+  qualification_commit: f27985d35aa853653e3120a3ee3acb5289948319
+  colab_notebook: notebooks/J15B_cancellation_risk_catboost.ipynb
+  preprocessing_version: hotel-booking-to-rentfleet-v1.0.0
+  compute: cpu
+  thread_count: 1
+  distance_unit: km
+
+preprocessing:
+  exclude_zero_night_stays: true
+  duplicate_policy: retained_because_public_source_has_no_booking_identifier
+  tenant_agency_policy: derive_server_side_and_hmac_pseudonymize
+  raw_personal_data_allowed: false
+  forbidden_leakage_columns:
+    - is_canceled
+    - reservation_status
+    - reservation_status_date
+    - assigned_room_type
+    - booking_changes
+    - days_in_waiting_list
+
+split:
+  strategy: five_contiguous_arrival_date_blocks
+  train: 0.55
+  validation: 0.15
+  calibration: 0.10
+  threshold: 0.10
+  test: 0.10
+  final_test_reuse_allowed: false
+
+model:
+  family: CatBoostClassifier
+  version: 1.2.10
+  imbalance: auto_class_weights_Balanced_training_only
+  calibration: isotonic_disjoint_block
+  explanation: native_Tree_SHAP_raw_margin
+
+gates:
+  balanced_accuracy_minimum: 0.80
+  macro_f1_minimum: 0.80
+  conjunction_required: true
+  observed_balanced_accuracy: 0.610399
+  observed_macro_f1: 0.610644
+  passed: false
+
+safety:
+  consultative_only: true
+  human_validation_required: true
+  automatic_action_allowed: false
+  operational_business_write_allowed: false
+  saas_integration_allowed: false
+  production_claim_allowed: false
+
+evidence_directory: docs/evidence/intelligence/cancellation-risk
