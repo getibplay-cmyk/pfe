@@ -1,0 +1,34 @@
+{
+  "artifact_id": "rentfleet-j15b-fleet-reallocation-ortools",
+  "artifact_version": "1.0.0",
+  "created_at": "2026-08-15",
+  "notebook": {
+    "path": "notebooks/J15B_fleet_reallocation_ortools.ipynb",
+    "sha256": "e90b8c79eb2c7e79527f5121b024d57b5c0139e0c68edc21ffab6aeeec36b455",
+    "nbformat": 4,
+    "execution_counts_cleared": true,
+    "outputs_cleared": true
+  },
+  "qualification": {
+    "commit": "f71a80ac657c5ed58a8147e8535bdba60dddde0d",
+    "pull_request": "https://github.com/getibplay-cmyk/pfe/pull/11",
+    "workflow_run": "https://github.com/getibplay-cmyk/pfe/actions/runs/31852979538",
+    "workflow_run_number": 25,
+    "science_job": "success",
+    "quality_job": "success",
+    "decision": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW",
+    "benchmark_snapshot_sha256": "53d79202807b2952dc95154e0116153664f202007807a0855a16cbea63cc4214"
+  },
+  "scope": {
+    "data_status": "SYNTHETIC_NOT_RENTFLEET_NOT_LOCAL_ACCURACY",
+    "catboost_output_consumed": false,
+    "automatic_business_write_allowed": false,
+    "human_validation_required": true,
+    "local_rentfleet_status": "NOT_VALIDATED_NO_REAL_HISTORY"
+  },
+  "validation": {
+    "notebook_execution_status": "NOT_EXECUTED_AS_NOTEBOOK_IN_CI",
+    "equivalent_frozen_script_execution_status": "PASSED_IN_GITHUB_ACTIONS",
+    "static_notebook_contract_status": "VALIDATED_LOCALLY_AND_ENFORCED_IN_CI"
+  }
+}

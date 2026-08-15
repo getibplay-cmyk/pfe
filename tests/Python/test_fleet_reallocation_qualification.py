@@ -16,6 +16,10 @@ REQUIREMENTS = ROOT / "scripts" / "intelligence" / "requirements-fleet-reallocat
 EVIDENCE = ROOT / "docs" / "evidence" / "intelligence" / "fleet-reallocation"
 SCHEMA = ROOT / "docs" / "intelligence" / "schemas" / "fleet-reallocation-qualification-v1.0.0.json"
 BENCHMARK_SHA256 = "53d79202807b2952dc95154e0116153664f202007807a0855a16cbea63cc4214"
+QUALIFICATION_COMMIT = "f71a80ac657c5ed58a8147e8535bdba60dddde0d"
+NOTEBOOK = ROOT / "notebooks" / "J15B_fleet_reallocation_ortools.ipynb"
+NOTEBOOK_MANIFEST = EVIDENCE / "notebook-manifest.json"
+FINAL_CHECKSUMS = EVIDENCE / "SHA256SUMS"
 SPEC = importlib.util.spec_from_file_location("rentfleet_fleet_reallocation_qualification", SCRIPT)
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError("Unable to load fleet reallocation qualification module")
@@ -118,6 +122,51 @@ class FleetReallocationQualificationTest(unittest.TestCase):
         self.assertEqual(1, len(greedy["relocations"]))
         self.assertEqual("agency_alpha", greedy["relocations"][0]["origin"])
         self.assertEqual("agency_gamma", greedy["relocations"][0]["destination"])
+
+    def test_j15b_notebook_is_clean_pinned_and_covered_by_final_checksums(self) -> None:
+        notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
+        notebook_manifest = json.loads(NOTEBOOK_MANIFEST.read_text(encoding="utf-8"))
+        serialized = NOTEBOOK.read_text(encoding="utf-8")
+        source = "".join(
+            line
+            for cell in notebook["cells"]
+            for line in cell.get("source", [])
+        )
+
+        self.assertEqual(4, notebook["nbformat"])
+        self.assertEqual("3.12", notebook["metadata"]["language_info"]["version"])
+        self.assertIn(QUALIFICATION_COMMIT, source)
+        self.assertIn(BENCHMARK_SHA256, source)
+        self.assertIn(MODULE.PASS_DECISION, source)
+        self.assertNotIn("refs/heads/", source)
+        for marker in ("codex", "chatgpt", "claude", "openai"):
+            self.assertNotIn(marker, serialized.lower())
+        for cell in notebook["cells"]:
+            if cell["cell_type"] == "code":
+                self.assertIsNone(cell["execution_count"])
+                self.assertEqual([], cell["outputs"])
+
+        self.assertEqual(QUALIFICATION_COMMIT, notebook_manifest["qualification"]["commit"])
+        self.assertEqual(MODULE.PASS_DECISION, notebook_manifest["qualification"]["decision"])
+        self.assertFalse(notebook_manifest["scope"]["catboost_output_consumed"])
+        self.assertFalse(notebook_manifest["scope"]["automatic_business_write_allowed"])
+        self.assertEqual(
+            hashlib.sha256(NOTEBOOK.read_bytes()).hexdigest(),
+            notebook_manifest["notebook"]["sha256"],
+        )
+
+        expected = {}
+        for line in FINAL_CHECKSUMS.read_text(encoding="utf-8").splitlines():
+            digest, name = line.split("  ", maxsplit=1)
+            expected[name] = digest
+        actual = {
+            path.name
+            for path in EVIDENCE.iterdir()
+            if path.is_file() and path.name != FINAL_CHECKSUMS.name
+        }
+        self.assertEqual(actual, set(expected))
+        for name, digest in expected.items():
+            self.assertEqual(digest, hashlib.sha256((EVIDENCE / name).read_bytes()).hexdigest(), name)
 
     @unittest.skipUnless(importlib.util.find_spec("ortools"), "OR-Tools frozen environment not installed")
     def test_final_ortools_suite_passes_all_preregistered_gates_and_is_reproducible(self) -> None:
