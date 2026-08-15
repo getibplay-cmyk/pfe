@@ -32,8 +32,7 @@ class DemandForecastController extends Controller
         Request $request,
         TenantContext $context,
         DemandForecastModelArtifact $modelArtifact,
-    ): View
-    {
+    ): View {
         $this->authorize('viewAny', DemandForecastRun::class);
 
         $agencies = Agency::query()
