@@ -1,0 +1,4 @@
+method,scenario_count,total_demand,served_demand,unserved_demand,service_rate,relocation_cost_centimes,decision_cost_centimes
+no_relocation,48,732,384,348,0.524590,0,348000000
+greedy,48,732,552,180,0.754098,2346500,182346500
+ortools_min_cost_flow,48,732,720,12,0.983607,7545000,19545000

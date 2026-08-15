@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.invalid/schemas/fleet-reallocation-proposal-v1.0.0.json",
+  "title": "RentFleet consultative synthetic fleet reallocation proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "proposal_id",
+    "generated_at",
+    "source",
+    "planning",
+    "summary",
+    "safety",
+    "idempotency"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "proposal_id": { "$ref": "#/$defs/uuid" },
+    "generated_at": { "$ref": "#/$defs/utcDateTime" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "solver_name",
+        "solver_version",
+        "solver_status",
+        "qualification_decision",
+        "qualification_commit",
+        "evidence_commit"
+      ],
+      "properties": {
+        "kind": { "const": "synthetic_demo" },
+        "solver_name": { "const": "ortools_simple_min_cost_flow" },
+        "solver_version": { "const": "9.15.6755" },
+        "solver_status": { "const": "OPTIMAL" },
+        "qualification_decision": { "const": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW" },
+        "qualification_commit": { "const": "f71a80ac657c5ed58a8147e8535bdba60dddde0d" },
+        "evidence_commit": { "const": "77479105049fa183f9e032e3207017b5348f6f1b" }
+      }
+    },
+    "planning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "as_of_date",
+        "target_date",
+        "forecast_horizon",
+        "distance_unit",
+        "data_status",
+        "demand_source",
+        "cancellation_risk",
+        "nodes",
+        "moves"
+      ],
+      "properties": {
+        "as_of_date": { "type": "string", "format": "date" },
+        "target_date": { "type": "string", "format": "date" },
+        "forecast_horizon": { "type": "integer", "minimum": 1, "maximum": 7 },
+        "distance_unit": { "const": "km" },
+        "data_status": { "const": "SYNTHETIC_DEMO_NOT_RENTFLEET_HISTORY" },
+        "demand_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model_name",
+            "model_version",
+            "forecast_reference_sha256",
+            "local_holdout_status",
+            "synthetic_demo"
+          ],
+          "properties": {
+            "model_name": { "const": "hgb_poisson::regularized" },
+            "model_version": { "const": "j5-v1" },
+            "forecast_reference_sha256": { "$ref": "#/$defs/sha256" },
+            "local_holdout_status": { "const": "not_available_pending_real_history" },
+            "synthetic_demo": { "const": true }
+          }
+        },
+        "cancellation_risk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model_name",
+            "gate_decision",
+            "presence_probability",
+            "presence_reason",
+            "demand_adjustment"
+          ],
+          "properties": {
+            "model_name": { "const": "cancellation_risk_catboost" },
+            "gate_decision": { "const": "RESEARCH_GATE_NOT_PASSED_NO_SAAS_INTEGRATION" },
+            "presence_probability": { "const": "1.000000" },
+            "presence_reason": { "const": "CATBOOST_RESEARCH_GATE_NOT_PASSED_CONSERVATIVE_NO_DISCOUNT" },
+            "demand_adjustment": { "const": "ABSTENTION_NO_DEMAND_REDUCTION" }
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "moves": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/move" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node_count",
+        "move_line_count",
+        "relocated_vehicle_count",
+        "total_demand",
+        "served_demand",
+        "unserved_demand",
+        "service_rate",
+        "relocation_cost_centimes",
+        "decision_cost_centimes",
+        "solver_runtime_ms"
+      ],
+      "properties": {
+        "node_count": { "type": "integer", "minimum": 2, "maximum": 20 },
+        "move_line_count": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "relocated_vehicle_count": { "type": "integer", "minimum": 1 },
+        "total_demand": { "type": "integer", "minimum": 1 },
+        "served_demand": { "type": "integer", "minimum": 0 },
+        "unserved_demand": { "type": "integer", "minimum": 0 },
+        "service_rate": { "$ref": "#/$defs/decimal6" },
+        "relocation_cost_centimes": { "type": "integer", "minimum": 1 },
+        "decision_cost_centimes": { "type": "integer", "minimum": 1 },
+        "solver_runtime_ms": { "$ref": "#/$defs/decimal6" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "synthetic_demo",
+        "contains_real_customer_data",
+        "contains_direct_identifiers",
+        "contains_coordinates",
+        "human_decision_required",
+        "automatic_action_allowed",
+        "operational_table_write_allowed",
+        "local_validation_status",
+        "operational_effect"
+      ],
+      "properties": {
+        "synthetic_demo": { "const": true },
+        "contains_real_customer_data": { "const": false },
+        "contains_direct_identifiers": { "const": false },
+        "contains_coordinates": { "const": false },
+        "human_decision_required": { "const": true },
+        "automatic_action_allowed": { "const": false },
+        "operational_table_write_allowed": { "const": false },
+        "local_validation_status": { "const": "NOT_VALIDATED_NO_REAL_HISTORY" },
+        "operational_effect": { "const": "NO_OPERATIONAL_ACTION" }
+      }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "policy", "canonical_payload_sha256"],
+      "properties": {
+        "key": { "$ref": "#/$defs/uuid" },
+        "policy": { "const": "SAME_KEY_SAME_PAYLOAD_ONLY" },
+        "canonical_payload_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "utcDateTime": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "decimal3": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,3})\\.[0-9]{3}$" },
+    "decimal6": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,4})\\.[0-9]{6}$" },
+    "nodeRef": { "type": "string", "pattern": "^SYNTH-NODE-[0-9]{3}$" },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node_ref", "available_vehicles", "forecast_demand", "effective_demand"],
+      "properties": {
+        "node_ref": { "$ref": "#/$defs/nodeRef" },
+        "available_vehicles": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "forecast_demand": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "effective_demand": { "type": "integer", "minimum": 0, "maximum": 1000 }
+      }
+    },
+    "move": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_node_ref",
+        "to_node_ref",
+        "vehicles",
+        "distance_km",
+        "unit_cost_centimes",
+        "total_cost_centimes",
+        "reason_code",
+        "operational_effect"
+      ],
+      "properties": {
+        "from_node_ref": { "$ref": "#/$defs/nodeRef" },
+        "to_node_ref": { "$ref": "#/$defs/nodeRef" },
+        "vehicles": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "distance_km": { "$ref": "#/$defs/decimal3" },
+        "unit_cost_centimes": { "type": "integer", "minimum": 1 },
+        "total_cost_centimes": { "type": "integer", "minimum": 1 },
+        "reason_code": { "const": "EFFECTIVE_DEMAND_IMBALANCE" },
+        "operational_effect": { "const": "NO_OPERATIONAL_ACTION" }
+      }
+    }
+  }
+}

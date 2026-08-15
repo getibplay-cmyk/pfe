@@ -30,6 +30,17 @@ return [
         'decision_effect' => 'NO_OPERATIONAL_ACTION',
     ],
 
+    'fleet_reallocation' => [
+        'disk' => 'local',
+        'schema_version' => '1.0.0',
+        'max_upload_kilobytes' => 1024,
+        'synthetic_demo_only' => true,
+        'automatic_actions_allowed' => false,
+        'operational_table_writes_allowed' => false,
+        'local_validation_status' => 'NOT_VALIDATED_NO_REAL_HISTORY',
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'rule_baseline' => [
         'name' => 'rental_anomaly_rules',
         'version' => '1.0.0',

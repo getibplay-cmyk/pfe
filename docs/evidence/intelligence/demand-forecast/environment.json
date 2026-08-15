@@ -1,0 +1,25 @@
+{
+  "canonical_colab_observation": {
+    "python": "3.12.13",
+    "scikit_learn": "1.6.1",
+    "joblib": "1.5.3",
+    "numpy": "2.0.2",
+    "pandas": "2.2.2",
+    "pyarrow": "18.1.0",
+    "device": "CPU",
+    "gpu_required": false
+  },
+  "data_preparation_observation": {
+    "python": "3.12.13",
+    "numpy": "2.0.2",
+    "pandas": "2.2.2",
+    "pyarrow": "18.1.0"
+  },
+  "randomness": {
+    "bootstrap_seed": 20260802,
+    "bootstrap_replicates": 2000,
+    "bootstrap_block_days": 7,
+    "model_early_stopping": false
+  },
+  "note": "These are frozen observations from the canonical J2-J5 Colab chain, not current floating package versions."
+}

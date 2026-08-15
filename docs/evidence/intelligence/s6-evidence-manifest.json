@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0.0",
+  "frozen_on": "2026-08-15",
+  "milestone": "STOP_S6_SCIENTIFIC_DOSSIER_COMPLETE_AND_REPRODUCIBLE",
+  "base_main_sha": "31163492fdbfe634546117e1178bfdb6cdfef143",
+  "base_main_sha_role": "PRE_MERGE_AUDIT_BASELINE",
+  "components": {
+    "demand_forecast_hgb": {
+      "decision": "QUALIFIED_PUBLIC_PROXY_CONSULTATIVE_REFERENCE",
+      "pull_request": 9,
+      "integration_head_sha": "d5355bd475d76a4377f95089b2402e5f8cf071f1",
+      "evidence_lineage_sha": "d645b4e8aac32f24fa2feaabf8124e97078834d8",
+      "ci_reference_run": 31843463099,
+      "horizons_days": [1, 2, 3, 4, 5, 6, 7],
+      "final_test": {
+        "wape": 0.15234192004813368,
+        "mase": 0.8295561180756534,
+        "rolling_median_28_wape": 0.1634943328371188,
+        "seasonal_naive_7_wape": 0.18467139298716232
+      },
+      "local_status": "NOT_VALIDATED_NO_REAL_HISTORY",
+      "automatic_operational_action": false
+    },
+    "cancellation_risk_catboost": {
+      "decision": "RESEARCH_GATE_NOT_PASSED_NO_SAAS_INTEGRATION",
+      "pull_request": 10,
+      "evidence_head_sha": "92c56ceba3a671169ae0e3e77687eae1d4c6ab0a",
+      "ci_reference_run": 31850088428,
+      "final_test": {
+        "balanced_accuracy": 0.610399,
+        "balanced_accuracy_gate": 0.8,
+        "macro_f1": 0.610644,
+        "macro_f1_gate": 0.8,
+        "locked": true,
+        "reopened": false
+      },
+      "saas_integration_allowed": false,
+      "local_status": "NOT_VALIDATED_NO_REAL_HISTORY",
+      "automatic_operational_action": false
+    },
+    "fleet_reallocation_ortools": {
+      "decision": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW",
+      "pull_request": 11,
+      "evidence_lineage_sha": "d645b4e8aac32f24fa2feaabf8124e97078834d8",
+      "audited_head_sha": "40042fff8a96e4bea01588977b31201dac549865",
+      "ci_reference_run": 31863737122,
+      "solver": "Google OR-Tools SimpleMinCostFlow",
+      "solver_version": "9.15.6755",
+      "distance_unit": "km",
+      "scenario_count": 48,
+      "valid_solution_rate": 1.0,
+      "service_rate": 0.983607,
+      "service_rate_gate": 0.8,
+      "unserved_demand": {
+        "ortools": 12,
+        "greedy": 180,
+        "no_relocation": 348
+      },
+      "decision_cost_centimes": {
+        "ortools": 19545000,
+        "greedy": 182346500,
+        "no_relocation": 348000000
+      },
+      "runtime_gate_ms": 5000,
+      "runtime_gate_passed": true,
+      "local_status": "NOT_VALIDATED_NO_REAL_HISTORY",
+      "automatic_operational_action": false
+    }
+  },
+  "consultative_demo": {
+    "data_status": "SYNTHETIC_DEMO_NOT_RENTFLEET_HISTORY",
+    "ordered_stages": [
+      "HGB_SYNTHETIC_FORECAST_NOT_MODEL_INFERENCE",
+      "CATBOOST_ABSTENTION_NO_DEMAND_REDUCTION",
+      "EFFECTIVE_DEMAND",
+      "ORTOOLS_SIMPLE_MIN_COST_FLOW",
+      "HUMAN_APPEND_ONLY_DECISION"
+    ],
+    "human_validation_required": true,
+    "decision_effect": "NO_OPERATIONAL_ACTION"
+  },
+  "privacy": {
+    "tenant_and_agency_derived_server_side": true,
+    "raw_personal_data_allowed": false,
+    "secrets_allowed": false,
+    "direct_identity_allowed": false
+  },
+  "closure": {
+    "integration_pull_request": 11,
+    "branch": "science/fleet-reallocation-qualification",
+    "head_ci_must_be_green": true,
+    "merge_sequence": [9, 10, 11],
+    "main_mutation_authorized": true,
+    "history_rewrite_authorized": false,
+    "report_started": false,
+    "slides_started": false
+  }
+}

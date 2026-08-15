@@ -1,0 +1,4 @@
+model,role,wape,mase,mae,rmse,mean_bias,decision
+hgb_poisson::regularized,qualified_public_proxy,0.15234192004813368,0.8295561180756534,12.666595894002114,20.00584096943336,4.871855539427566,retain_consultative_reference
+rolling_median_28_shifted_cutoff,baseline,0.1634943328371188,0.8901368129031454,13.593872549019608,21.898730025978683,0.8956582633053222,baseline_only
+seasonal_naive_t_minus_7,baseline,0.18467139298716232,1.005409,15.354657,24.190386,1.245343,baseline_only

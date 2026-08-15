@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_frozen_on": "2026-08-15",
+  "decision": "qualified_public_proxy_consultative_reference",
+  "model": {
+    "family": "HistGradientBoostingRegressor",
+    "identifier": "hgb_poisson::regularized",
+    "loss": "poisson",
+    "n_iter": 240,
+    "horizons_days": [1, 2, 3, 4, 5, 6, 7]
+  },
+  "public_benchmark": {
+    "name": "Dataset of Idling Positions and Derived Trips of Shared Mobility Vehicles in Munich, Germany (2023-2025)",
+    "doi": "10.5281/zenodo.16947276",
+    "record_url": "https://zenodo.org/records/16947276",
+    "record_version": "v2",
+    "article_license": "CC BY 4.0",
+    "dataset_record_license": "unspecified",
+    "raw_redistribution": false,
+    "scientific_role": "methodological_public_proxy_only"
+  },
+  "preprocessing": {
+    "target": "observed_departures",
+    "providers": ["miles", "sharenow"],
+    "series": 68,
+    "service_location_proxy": "fixed_grid_approximately_2_km",
+    "vehicle_category_proxy": "all",
+    "timezone": "Europe/Berlin",
+    "panel_rows": 123552,
+    "deterministic": true,
+    "anti_leakage_passed": true,
+    "private_provenance_checksums": "archived_in_drive_j15b_packet_only"
+  },
+  "split": {
+    "strategy": "chronological_date_70_15_15",
+    "train": {"start": "2024-05-01", "end_exclusive": "2025-02-02"},
+    "validation": {"start": "2025-02-02", "end_exclusive": "2025-04-02"},
+    "final_test": {"start": "2025-04-02", "end_inclusive": "2025-05-31", "locked": true},
+    "private_split_manifest_checksum": "archived_in_drive_j15b_packet_only"
+  },
+  "selection": {
+    "validation_wape": 0.1203336471375202,
+    "validation_mase": 0.7015522943525174,
+    "final_test_opened_once": true,
+    "final_test_used_for_retuning": false,
+    "seed_bootstrap": 20260802,
+    "bootstrap_replicates": 2000,
+    "bootstrap_block_days": 7
+  },
+  "final_test": {
+    "n_observations": 28560,
+    "wape": 0.15234192004813368,
+    "mase": 0.8295561180756534,
+    "mae": 12.666595894002114,
+    "rmse": 20.00584096943336,
+    "mean_bias": 4.871855539427566,
+    "rolling_median_28_wape": 0.1634943328371188,
+    "seasonal_naive_7_wape": 0.18467139298716232,
+    "p05_p95_empirical_coverage": 0.8606792717086835,
+    "confirmation_gate_passed": true
+  },
+  "integration": {
+    "pull_request": "https://github.com/getibplay-cmyk/pfe/pull/9",
+    "head_sha": "d5355bd475d76a4377f95089b2402e5f8cf071f1",
+    "mode": "consultative_import_only",
+    "human_validation_required": true,
+    "automatic_operational_action": false
+  },
+  "local_status": "not_validated_without_sufficient_real_rentfleet_history",
+  "limitations": [
+    "Observed Munich car-sharing departures are a public proxy, not RentFleet reservation demand.",
+    "The dataset record does not specify a dataset license; raw redistribution remains disabled.",
+    "The final-test WAPE is 26.60 percent worse than locked validation.",
+    "The nominal P05-P95 interval covers 86.07 percent, below its nominal 90 percent target.",
+    "No compatible Moroccan RentFleet historical backtest exists."
+  ]
+}

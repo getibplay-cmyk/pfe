@@ -11,6 +11,7 @@ use App\Http\Controllers\DemandForecastController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\FleetReallocationProposalController;
 use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\IntelligenceController;
 use App\Http\Controllers\IntelligenceDatasetExportController;
@@ -223,6 +224,14 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.demand-history.download');
     Route::post('/intelligence/demand-history/{historyRun}/forecasts', [DemandForecastController::class, 'store'])
         ->name('intelligence.demand-forecasts.store');
+    Route::get('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'index'])
+        ->name('intelligence.fleet-reallocation.index');
+    Route::post('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'store'])
+        ->name('intelligence.fleet-reallocation.store');
+    Route::get('/intelligence/fleet-reallocation/{reallocationProposal}/download', [FleetReallocationProposalController::class, 'download'])
+        ->name('intelligence.fleet-reallocation.download');
+    Route::post('/intelligence/fleet-reallocation/{reallocationProposal}/decisions', [FleetReallocationProposalController::class, 'decide'])
+        ->name('intelligence.fleet-reallocation.decisions.store');
     Route::prefix('/intelligence/contracts-demo')
         ->name('intelligence.contract-demo.')
         ->middleware('intelligence.contract-demo')
