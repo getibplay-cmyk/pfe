@@ -1,14 +1,16 @@
 # STOP S6 — checklist finale
 
 Cette checklist arrête le développement scientifique avant le rapport et les
-slides. Elle est validée seulement lorsque le head de la PR brouillon #11 porte
-une CI entièrement verte.
+slides. Elle a été gelée sur la PR #11 avec une CI entièrement verte, puis sert
+de base à la séquence de fusion protégée #9 → #10 → #11 explicitement autorisée
+le 15 août 2026.
 
 ## Gouvernance du dépôt
 
-- [x] `main` reste inchangée à
+- [x] La base `main` auditée avant fusion est
   `31163492fdbfe634546117e1178bfdb6cdfef143`.
-- [x] Les PR #9, #10 et #11 sont ouvertes, en brouillon et non fusionnées.
+- [x] La séquence d'intégration autorisée est strictement #9 → #10 → #11 ; la
+  PR #11 porte l'arbre final réconciliant les trois lots.
 - [x] Aucun historique n'a été réécrit, aucune branche n'a été forcée, fermée
   ou supprimée.
 - [x] HGB, CatBoost et OR-Tools sont les seuls composants candidats finaux ;
@@ -74,7 +76,6 @@ une CI entièrement verte.
 - Le benchmark HGB est un proxy de mobilité partagée à Munich.
 - Le benchmark CatBoost vient de l'hôtellerie et son résultat est négatif.
 - Les scénarios, coûts et demandes OR-Tools sont synthétiques.
-- Aucune fusion n'est incluse dans S6 ; la revue et les fusions restent des
-  décisions humaines séparées.
+- La fusion n'est pas une décision scientifique : la revue humaine et la
+  séquence protégée #9 → #10 → #11 restent une phase d'intégration séparée.
 - Aucun rapport ni slide n'est commencé dans ce jalon.
-

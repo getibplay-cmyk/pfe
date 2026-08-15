@@ -17,6 +17,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  science-cancellation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    env:
+      MPLCONFIGDIR: /tmp/rentfleet-matplotlib
+      PYTHONHASHSEED: "20260814"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Verify Python runtime
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import sys
+          if sys.version_info[:2] != (3, 12):
+              raise SystemExit(f"Python 3.12 required, got {sys.version}")
+          PY
+
+      - name: Install frozen cancellation environment
+        shell: bash
+        run: |
+          python3 -m venv "$RUNNER_TEMP/cancellation-venv"
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            --only-binary=:all: \
+            -r requirements/science-cancellation.lock
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m pip check
+
+      - name: Verify cancellation qualification evidence
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m unittest -v \
+            tests/Python/test_cancellation_risk_qualification.py
+          "$RUNNER_TEMP/cancellation-venv/bin/python" -m py_compile \
+            scripts/intelligence/train_cancellation_risk.py
+          cd docs/evidence/intelligence/cancellation-risk
+          sha256sum --check SHA256SUMS
+
   science-fleet-reallocation:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -178,6 +220,42 @@ jobs:
 
       - name: Audit npm dependencies
         run: npm audit
+
+      - name: Validate demand adapter contracts
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import ast
+          import json
+          from pathlib import Path
+
+          ast.parse(Path('scripts/intelligence/run_demand_forecast.py').read_text(encoding='utf-8'))
+          json.loads(Path('docs/intelligence/schemas/demand-forecast-result-v1.0.0.json').read_text(encoding='utf-8'))
+          requirements = Path('scripts/intelligence/requirements-demand-forecast.txt').read_text(encoding='utf-8').splitlines()
+          assert requirements == [
+              'numpy==2.0.2',
+              'pandas==2.2.2',
+              'scikit-learn==1.6.1',
+              'joblib==1.5.3',
+          ]
+          PY
+
+      - name: Install frozen demand adapter environment
+        shell: bash
+        run: |
+          python3 -m venv "$RUNNER_TEMP/demand-forecast-venv"
+          "$RUNNER_TEMP/demand-forecast-venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            --requirement scripts/intelligence/requirements-demand-forecast.txt
+
+      - name: Test demand adapter preprocessing and payload
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: 1
+        run: |
+          "$RUNNER_TEMP/demand-forecast-venv/bin/python" \
+            -m unittest tests/Python/test_demand_forecast_adapter.py
 
       - name: Build frontend assets
         run: npm run build

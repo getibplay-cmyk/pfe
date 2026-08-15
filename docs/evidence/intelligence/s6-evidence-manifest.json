@@ -3,6 +3,7 @@
   "frozen_on": "2026-08-15",
   "milestone": "STOP_S6_SCIENTIFIC_DOSSIER_COMPLETE_AND_REPRODUCIBLE",
   "base_main_sha": "31163492fdbfe634546117e1178bfdb6cdfef143",
+  "base_main_sha_role": "PRE_MERGE_AUDIT_BASELINE",
   "components": {
     "demand_forecast_hgb": {
       "decision": "QUALIFIED_PUBLIC_PROXY_CONSULTATIVE_REFERENCE",
@@ -41,7 +42,8 @@
       "decision": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW",
       "pull_request": 11,
       "evidence_lineage_sha": "d645b4e8aac32f24fa2feaabf8124e97078834d8",
-      "ci_reference_run": 31863024785,
+      "audited_head_sha": "40042fff8a96e4bea01588977b31201dac549865",
+      "ci_reference_run": 31863737122,
       "solver": "Google OR-Tools SimpleMinCostFlow",
       "solver_version": "9.15.6755",
       "distance_unit": "km",
@@ -84,12 +86,13 @@
     "direct_identity_allowed": false
   },
   "closure": {
-    "draft_pull_request": 11,
+    "integration_pull_request": 11,
     "branch": "science/fleet-reallocation-qualification",
     "head_ci_must_be_green": true,
-    "main_mutation_authorized": false,
+    "merge_sequence": [9, 10, 11],
+    "main_mutation_authorized": true,
+    "history_rewrite_authorized": false,
     "report_started": false,
     "slides_started": false
   }
 }
-

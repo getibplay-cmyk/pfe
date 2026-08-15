@@ -110,6 +110,11 @@ class UiLabel
         'prediction.result_batch.replayed' => 'Lot de résultats Intelligence rejoué sans duplication',
         'prediction.result_batch.downloaded' => 'Lot de résultats Intelligence téléchargé',
         'prediction.result_batch.human_decision_recorded' => 'Décision humaine sur un lot Intelligence enregistrée',
+        'prediction.demand_history.exported' => 'Historique quotidien de demande exporté',
+        'prediction.demand_history.downloaded' => 'Historique quotidien de demande téléchargé',
+        'prediction.demand_history.manifest_downloaded' => 'Manifeste de demande téléchargé',
+        'prediction.demand_forecast.imported' => 'Prévision de demande consultative importée',
+        'prediction.demand_forecast.replayed' => 'Prévision de demande rejouée sans duplication',
         'prediction.fleet_reallocation.imported' => 'Proposition de réallocation synthétique importée',
         'prediction.fleet_reallocation.replayed' => 'Proposition de réallocation rejouée sans duplication',
         'prediction.fleet_reallocation.downloaded' => 'Proposition de réallocation téléchargée',
@@ -221,6 +226,7 @@ class UiLabel
         'payment.allocate' => 'Allouer un paiement à une facture',
         'platform.tenants.manage' => 'Administrer les entreprises clientes de la plateforme',
         'prediction.demo.review' => 'Importer et revoir les preuves Intelligence synthétiques',
+        'prediction.forecast.import' => 'Importer les prévisions de demande consultatives',
     ];
 
     private const ENTITIES = [
@@ -231,6 +237,8 @@ class UiLabel
         'InsurancePolicy' => 'Police d’assurance', 'InsuranceClaim' => 'Sinistre', 'InternalNotification' => 'Notification',
         'FleetReallocationProposal' => 'Proposition de réallocation',
         'IntelligenceDatasetExportRun' => 'Snapshot Intelligence', 'IntelligenceResultBatch' => 'Lot de résultats Intelligence',
+        'DemandHistoryExportRun' => 'Snapshot d’historique de demande', 'DemandForecastRun' => 'Exécution de prévision de demande',
+        'DemandForecast' => 'Prévision de demande',
     ];
 
     private const REPORT_LABELS = [

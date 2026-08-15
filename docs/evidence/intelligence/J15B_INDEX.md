@@ -20,17 +20,18 @@ de présence de `1.000000` et aucune réduction de demande.
 
 ## Lignée GitHub immuable
 
-| Élément | PR brouillon | Révision de preuve | CI de référence |
+| Élément | PR source | Révision de preuve | CI de référence |
 |---|---|---|---|
 | Adaptateur HGB consultatif | [#9](https://github.com/getibplay-cmyk/pfe/pull/9) | `d5355bd475d76a4377f95089b2402e5f8cf071f1` | [#21](https://github.com/getibplay-cmyk/pfe/actions/runs/31843463099) |
 | CatBoost refusé, artefacts et notebook | [#10](https://github.com/getibplay-cmyk/pfe/pull/10) | `92c56ceba3a671169ae0e3e77687eae1d4c6ab0a` | [#23](https://github.com/getibplay-cmyk/pfe/actions/runs/31850088428) |
-| OR-Tools, démonstration et dossier HGB | [#11](https://github.com/getibplay-cmyk/pfe/pull/11) | `d645b4e8aac32f24fa2feaabf8124e97078834d8` | [#33](https://github.com/getibplay-cmyk/pfe/actions/runs/31863024785) |
+| OR-Tools, démonstration et dossier HGB | [#11](https://github.com/getibplay-cmyk/pfe/pull/11) | `40042fff8a96e4bea01588977b31201dac549865` | [#34](https://github.com/getibplay-cmyk/pfe/actions/runs/31863737122) |
 
-`main` reste la base commune `31163492fdbfe634546117e1178bfdb6cdfef143`.
-Aucune de ces PR n'est fusionnée. La CI du commit qui ajoute cet index et la
-checklist constitue la preuve de clôture S6 ; son URL est consignée dans la
-conversation de la PR #11 afin de ne pas créer de référence circulaire dans les
-octets vérifiés.
+Le commit `31163492fdbfe634546117e1178bfdb6cdfef143` est la base d'audit antérieure
+aux fusions. Après le gel scientifique, la séquence d'intégration protégée
+explicitement autorisée est #9 → #10 → #11. Les révisions ci-dessus restent les
+références scientifiques immuables ; les commits de réalignement et les CI
+d'intégration sont consignés dans les conversations des PR afin de ne pas créer
+de référence circulaire dans les octets vérifiés.
 
 ## Inventaire reproductible
 
@@ -118,4 +119,3 @@ conserve l'effet `NO_OPERATIONAL_ACTION`.
   https://developers.google.com/optimization/flow/mincostflow
 - NIST AI RMF 1.0 :
   https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10
-

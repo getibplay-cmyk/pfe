@@ -1,0 +1,16 @@
+model_feature,public_source,rentfleet_source,compatibility,guard
+agency_proxy,hotel,agency_key,proxy,Tenant/agency key must be HMAC-pseudonymized server-side.
+vehicle_category_proxy,reserved_room_type,vehicle_category_key,direct_semantics,Category key only; never expose a database identifier.
+deposit_required,deposit_type,deposit_amount > 0,partial,Public refundability is collapsed to the local deposit-presence flag.
+arrival_month,arrival_date,starts_at month,derived,Derived in Africa/Casablanca at the scoring cutoff.
+arrival_weekday,arrival_date,starts_at weekday,derived,Derived in Africa/Casablanca at the scoring cutoff.
+booking_month,booking_date,created_at month,derived,Derived in Africa/Casablanca.
+booking_weekday,booking_date,created_at weekday,derived,Derived in Africa/Casablanca.
+lead_time_days,lead_time,starts_at - created_at,direct_semantics,Non-negative whole-day floor at the scoring cutoff.
+weekend_nights,stays_in_weekend_nights,"weekend nights in [starts_at, ends_at)",derived,Calculated from the semi-open local rental period.
+weekday_nights,stays_in_week_nights,"weekday nights in [starts_at, ends_at)",derived,Calculated from the semi-open local rental period.
+rental_nights,sum of stay nights,billed_days,direct_semantics,Positive duration only.
+returning_customer,is_repeated_guest,prior completed contracts > 0,derived,Use only events strictly before the scoring cutoff.
+prior_cancellations,previous_cancellations,prior cancelled reservations,derived,Use only events strictly before the scoring cutoff.
+prior_completed_bookings,previous_bookings_not_canceled,prior completed contracts,derived,Use only events strictly before the scoring cutoff.
+has_options,total_of_special_requests > 0,options_total > 0,partial,Presence only; public request count is not transferred.

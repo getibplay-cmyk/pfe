@@ -101,7 +101,9 @@ class S6ScientificDossierTest(unittest.TestCase):
 
         closure = self.manifest["closure"]
         self.assertTrue(closure["head_ci_must_be_green"])
-        self.assertFalse(closure["main_mutation_authorized"])
+        self.assertEqual([9, 10, 11], closure["merge_sequence"])
+        self.assertTrue(closure["main_mutation_authorized"])
+        self.assertFalse(closure["history_rewrite_authorized"])
         self.assertFalse(closure["report_started"])
         self.assertFalse(closure["slides_started"])
 

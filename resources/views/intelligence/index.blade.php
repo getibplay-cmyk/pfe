@@ -3,8 +3,21 @@
         <x-page-header
             title="Intelligence et export anonymisé"
             eyebrow="Pilotage"
-            description="Préparez un dataset réel tenant/agence-scopé et consultez les preuves scientifiques gelées, sans exécuter ni importer de prédiction."
+            description="Préparez des datasets réels tenant/agence-scopés, consultez les preuves gelées et accédez aux prévisions de demande en mode consultatif."
         />
+
+        <x-section-card
+            title="Prévision de demande D+1 à D+7"
+            description="Premier modèle fonctionnel intégré : historique local pseudonymisé, scénarios probabilistes et facteurs explicatifs, sans action automatique."
+        >
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="max-w-3xl text-sm leading-6 text-slate-600">
+                    <p><span class="font-semibold text-slate-900">HGB Poisson régularisé</span> · WAPE public 15,234 % · couverture P05–P95 86,07 %.</p>
+                    <p class="mt-1">Ces métriques proviennent du proxy public Munich. La validation sur l’historique réel RentFleet reste obligatoire avant toute affirmation de performance locale.</p>
+                </div>
+                <a href="{{ route('intelligence.demand-forecasts.index') }}" class="rf-button-secondary">Ouvrir les prévisions de demande</a>
+            </div>
+        </x-section-card>
 
         <x-section-card title="Cadre scientifique et humain" description="Les preuves disponibles n’exécutent aucune décision métier.">
             <ul class="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
@@ -252,8 +265,8 @@
         </x-section-card>
 
         <x-empty-state
-            title="Aucune prédiction exécutée ou affichée"
-            description="J13 et J14 exposent uniquement des preuves synthétiques ou des limites gelées. Aucune recommandation opérationnelle n’est activée."
+            title="Aucune recommandation opérationnelle automatique"
+            description="Les preuves J13/J14 et les prévisions de demande restent consultatives. Toute interprétation et toute décision relèvent d’un utilisateur autorisé."
         />
     </div>
 </x-app-layout>

@@ -20,6 +20,16 @@ return [
         'decision_effect' => 'NO_OPERATIONAL_ACTION',
     ],
 
+    'demand_forecasting' => [
+        'disk' => 'local',
+        'max_upload_kilobytes' => 512,
+        'mode' => 'consultative_shadow',
+        'automatic_actions_allowed' => false,
+        'production_claim_allowed' => false,
+        'distance_unit' => 'km',
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'fleet_reallocation' => [
         'disk' => 'local',
         'schema_version' => '1.0.0',
