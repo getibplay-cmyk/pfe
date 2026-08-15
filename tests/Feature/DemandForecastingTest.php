@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Intelligence\ExecuteDemandForecastExecution;
+use App\Enums\DemandForecastExecutionStatus;
+use App\Jobs\RunDemandForecast;
 use App\Models\Agency;
 use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\DemandForecast;
+use App\Models\DemandForecastExecutionRun;
 use App\Models\DemandForecastRun;
 use App\Models\DemandHistoryExportRun;
 use App\Models\RentalContract;
@@ -17,6 +21,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Support\Intelligence\DemandForecasting\DemandForecastCanonicalPayload;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
+use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
@@ -24,6 +29,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -37,6 +44,11 @@ class DemandForecastingTest extends TestCase
         parent::setUp();
         CarbonImmutable::setTestNow('2026-08-14 12:00:00+01:00');
         config(['intelligence.export_hmac_key' => str_repeat('demand-test-only-', 4)]);
+        config([
+            'intelligence.demand_forecasting.model_bundle_path' => storage_path(
+                'framework/testing/missing-demand-model.joblib',
+            ),
+        ]);
         Storage::fake('local');
         $this->seed(RolesPermissionsSeeder::class);
     }
@@ -171,6 +183,221 @@ class DemandForecastingTest extends TestCase
         }
     }
 
+    public function test_saas_queues_and_executes_the_authentic_hgb_boundary_without_operational_write(): void
+    {
+        $fixture = $this->fixture();
+        $history = $this->history($fixture);
+        $artifact = $this->mock(DemandForecastModelArtifact::class);
+        $artifact->shouldReceive('configuredIsValid')->andReturnTrue();
+        $artifact->shouldReceive('configuredPath')->andReturn('/private/models/authentic-j5.joblib');
+        Queue::fake();
+        $trackedTables = [
+            'vehicles',
+            'vehicle_blocks',
+            'reservations',
+            'rental_contracts',
+            'maintenance_orders',
+            'invoices',
+            'payments',
+        ];
+        $before = collect($trackedTables)->mapWithKeys(
+            static fn (string $table): array => [$table => DB::table($table)->count()],
+        );
+
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertRedirect(route('intelligence.demand-forecasts.index'))
+            ->assertSessionHas('status');
+
+        $execution = DemandForecastExecutionRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(DemandForecastExecutionStatus::Queued, $execution->status);
+        $this->assertSame($history->id, $execution->demand_history_export_run_id);
+        $this->assertSame(DemandForecastContract::MODEL_ARTIFACT_SHA256, $execution->model_artifact_sha256);
+        $this->assertSame(DemandForecastContract::MODEL_ARTIFACT_BYTES, $execution->model_artifact_bytes);
+        Queue::assertPushed(
+            RunDemandForecast::class,
+            fn (RunDemandForecast $job): bool => $job->runId === $execution->run_id
+                && $job->tenantId === $fixture['tenant']->id
+                && $job->actorId === $fixture['user']->id
+                && $job->queue === 'intelligence',
+        );
+
+        Process::fake([
+            '*' => Process::result(
+                output: json_encode(
+                    $this->payload($history),
+                    JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
+                ),
+            ),
+        ]);
+        $job = new RunDemandForecast(
+            $execution->run_id,
+            $fixture['tenant']->id,
+            $fixture['user']->id,
+        );
+        $job->handle(app(ExecuteDemandForecastExecution::class));
+
+        $completed = DemandForecastExecutionRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(DemandForecastExecutionStatus::Succeeded, $completed->status);
+        $this->assertNotNull($completed->started_at);
+        $this->assertNotNull($completed->finished_at);
+        $this->assertNotNull($completed->demand_forecast_run_id);
+        $this->assertSame(1, DemandForecastRun::withoutGlobalScopes()->count());
+        $this->assertSame(7, DemandForecast::withoutGlobalScopes()->count());
+        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/demand-runtime'));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'prediction.demand_forecast.execution_queued',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'prediction.demand_forecast.execution_succeeded',
+        ]);
+        Process::assertRan(fn ($process): bool => is_array($process->command)
+            && $process->command[0] === config('intelligence.demand_forecasting.python_binary')
+            && $process->command[1] === config('intelligence.demand_forecasting.runtime_script')
+            && in_array('--stdout', $process->command, true)
+            && in_array('/private/models/authentic-j5.joblib', $process->command, true)
+            && $process->timeout === 60);
+
+        $this->actingAs($fixture['user'])
+            ->get(route('intelligence.demand-forecasts.index'))
+            ->assertOk()
+            ->assertSee('Inférence HGB réellement exécutée depuis le SaaS')
+            ->assertSee($completed->run_id)
+            ->assertSee('bundle J5 authentique');
+
+        foreach ($before as $table => $count) {
+            $this->assertSame($count, DB::table($table)->count(), $table);
+        }
+        $this->assertPostgreSqlConstraint(fn () => DB::table('demand_forecast_execution_runs')
+            ->where('id', $completed->id)
+            ->delete());
+    }
+
+    public function test_missing_or_unverified_hgb_artifact_fails_closed_before_queueing(): void
+    {
+        $fixture = $this->fixture();
+        $history = $this->history($fixture);
+        Queue::fake();
+
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertServiceUnavailable();
+
+        $this->assertSame(0, DemandForecastExecutionRun::withoutGlobalScopes()->count());
+        Queue::assertNothingPushed();
+
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history), [
+                'model_path' => '/tmp/untrusted.joblib',
+            ])
+            ->assertSessionHasErrors('model_path');
+        $this->assertSame(0, DemandForecastExecutionRun::withoutGlobalScopes()->count());
+    }
+
+    public function test_model_installer_rejects_any_non_j5_file_without_creating_a_target(): void
+    {
+        $target = storage_path('framework/testing/rejected-demand-model.joblib');
+        config(['intelligence.demand_forecasting.model_bundle_path' => $target]);
+        if (file_exists($target)) {
+            unlink($target);
+        }
+        $invalid = UploadedFile::fake()->createWithContent(
+            'not-the-j5-model.joblib',
+            'this is not a serialized model',
+        );
+
+        $this->artisan('rentfleet:demand-model:install', [
+            'source' => $invalid->getPathname(),
+        ])->assertFailed();
+
+        $this->assertFileDoesNotExist($target);
+    }
+
+    public function test_hgb_process_failure_is_sanitized_and_persisted_without_result(): void
+    {
+        $fixture = $this->fixture();
+        $history = $this->history($fixture);
+        $artifact = $this->mock(DemandForecastModelArtifact::class);
+        $artifact->shouldReceive('configuredIsValid')->andReturnTrue();
+        $artifact->shouldReceive('configuredPath')->andReturn('/private/models/authentic-j5.joblib');
+        Queue::fake();
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertRedirect();
+        $execution = DemandForecastExecutionRun::withoutGlobalScopes()->firstOrFail();
+
+        Process::fake([
+            '*' => Process::result(
+                errorOutput: 'secret=/private/path database-password=forbidden',
+                exitCode: 1,
+            ),
+        ]);
+        $job = new RunDemandForecast(
+            $execution->run_id,
+            $fixture['tenant']->id,
+            $fixture['user']->id,
+        );
+        $failure = null;
+        try {
+            $job->handle(app(ExecuteDemandForecastExecution::class));
+        } catch (\Throwable $exception) {
+            $failure = $exception;
+        }
+        $this->assertNotNull($failure);
+        $job->failed($failure);
+
+        $failed = DemandForecastExecutionRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(DemandForecastExecutionStatus::Failed, $failed->status);
+        $this->assertSame('HGB_PROCESS_FAILED', $failed->failure_code);
+        $this->assertSame(0, DemandForecastRun::withoutGlobalScopes()->count());
+        $this->assertSame(0, DemandForecast::withoutGlobalScopes()->count());
+        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/demand-runtime'));
+        $this->assertFalse(AuditLog::withoutGlobalScopes()->get()->contains(
+            static fn (AuditLog $audit): bool => str_contains(
+                json_encode($audit->new_values, JSON_THROW_ON_ERROR),
+                'secret=/private/path',
+            ),
+        ));
+        $this->actingAs($fixture['user'])
+            ->get(route('intelligence.demand-forecasts.index'))
+            ->assertOk()
+            ->assertSee('Python ou l’environnement HGB figé n’a pas pu terminer le calcul.')
+            ->assertDontSee('secret=/private/path');
+    }
+
+    public function test_only_one_active_hgb_run_per_snapshot_and_stale_runs_are_recovered(): void
+    {
+        $fixture = $this->fixture();
+        $history = $this->history($fixture);
+        $artifact = $this->mock(DemandForecastModelArtifact::class);
+        $artifact->shouldReceive('configuredIsValid')->andReturnTrue();
+        Queue::fake();
+
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertRedirect();
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertStatus(409);
+        $this->assertSame(1, DemandForecastExecutionRun::withoutGlobalScopes()->count());
+
+        CarbonImmutable::setTestNow(now()->addMinutes(11));
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertRedirect();
+
+        $runs = DemandForecastExecutionRun::withoutGlobalScopes()->orderBy('id')->get();
+        $this->assertCount(2, $runs);
+        $this->assertSame(DemandForecastExecutionStatus::Failed, $runs[0]->status);
+        $this->assertSame('RUN_STALE_RECOVERED', $runs[0]->failure_code);
+        $this->assertSame(DemandForecastExecutionStatus::Queued, $runs[1]->status);
+        $this->assertSame(2, Queue::pushed(RunDemandForecast::class)->count());
+        $this->assertTrue(DB::table('pg_indexes')
+            ->where('schemaname', 'public')
+            ->where('indexname', 'demand_forecast_exec_one_active_per_history')
+            ->exists());
+    }
+
     public function test_history_export_requires_strict_iso_dates_and_a_forward_period(): void
     {
         $fixture = $this->fixture();
@@ -256,10 +483,16 @@ class DemandForecastingTest extends TestCase
             'intelligence.demand-history.manifest',
             'intelligence.demand-history.download',
             'intelligence.demand-forecasts.store',
+            'intelligence.demand-forecast-executions.store',
         ] as $route) {
             $this->assertTrue(app('router')->has($route), $route);
         }
-        foreach (['demand_history_export_runs', 'demand_forecast_runs', 'demand_forecasts'] as $table) {
+        foreach ([
+            'demand_history_export_runs',
+            'demand_forecast_runs',
+            'demand_forecasts',
+            'demand_forecast_execution_runs',
+        ] as $table) {
             $this->assertTrue(DB::table('information_schema.tables')
                 ->where('table_schema', 'public')
                 ->where('table_name', $table)
@@ -277,13 +510,22 @@ class DemandForecastingTest extends TestCase
                 'forecast_batch' => $this->jsonFile($payload),
             ])
             ->assertForbidden();
+        $this->actingAs($viewer)
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertForbidden();
         $this->actingAs($otherFleetManager)
             ->post(route('intelligence.demand-forecasts.store', $history), [
                 'forecast_batch' => $this->jsonFile($payload),
             ])
             ->assertForbidden();
+        $this->actingAs($otherFleetManager)
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
+            ->assertForbidden();
         $this->actingAs($foreign['user'])
             ->get(route('intelligence.demand-history.download', $history))
+            ->assertNotFound();
+        $this->actingAs($foreign['user'])
+            ->post(route('intelligence.demand-forecast-executions.store', $history))
             ->assertNotFound();
 
         $this->actingAs($fleetManager)

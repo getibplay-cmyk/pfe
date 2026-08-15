@@ -87,7 +87,15 @@ limite : il autorise uniquement une inférence shadow et génère un payload où
 `ready_for_production=false`, `automatic_action_allowed=false` et
 `operational_effect=NO_OPERATIONAL_ACTION`.
 
-## Exécution dans Colab ou en local
+## Exécution depuis le SaaS, Colab ou en local
+
+Le chemin recommandé est désormais l’exécution asynchrone depuis le SaaS. Le
+bundle privé exact est installé par
+`php artisan rentfleet:demand-model:install`, puis le bouton **Exécuter HGB
+authentique** place le calcul sur la queue `intelligence`. Le guide détaillé est
+disponible dans [demand-forecast-runtime.md](demand-forecast-runtime.md).
+
+Le flux manuel reste disponible comme solution de diagnostic :
 
 1. Depuis l’écran **Prévision de demande**, générer le CSV et télécharger son
    manifeste JSON.
@@ -117,10 +125,11 @@ limite : il autorise uniquement une inférence shadow et génère un payload où
    sept horizons, l’ordre des quantiles, l’idempotence et toutes les limites de
    sécurité.
 
-La CI installe cet environnement figé et teste le prétraitement ainsi que le
-payload complet avec des pipelines déterministes. Elle ne télécharge pas le
-bundle privé : le test d’inférence avec l’artefact dont l’empreinte est indiquée
-ci-dessus reste une preuve Colab séparée.
+La CI installe cet environnement figé et teste le prétraitement, le payload, la
+queue, les états PostgreSQL, le RBAC et la frontière processus. Elle ne
+télécharge pas le bundle privé. Un test dédié charge réellement l’artefact
+authentique lorsqu’un chemin `DEMAND_FORECAST_MODEL_PATH` est fourni ; sinon il
+est ignoré et aucun faux bundle n’est créé.
 
 ## Explications affichées
 

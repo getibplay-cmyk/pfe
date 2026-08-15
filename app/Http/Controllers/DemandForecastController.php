@@ -5,14 +5,17 @@ namespace App\Http\Controllers;
 use App\Actions\Intelligence\CreateDemandHistoryExport;
 use App\Actions\Intelligence\DownloadDemandHistorySnapshot;
 use App\Actions\Intelligence\ImportDemandForecastBatch;
+use App\Actions\Intelligence\QueueDemandForecastExecution;
 use App\Exceptions\DemandForecastValidationException;
 use App\Http\Requests\DemandHistoryExportRequest;
 use App\Http\Requests\ImportDemandForecastRequest;
+use App\Http\Requests\QueueDemandForecastExecutionRequest;
 use App\Models\Agency;
 use App\Models\DemandForecastRun;
 use App\Models\DemandHistoryExportRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
+use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
 use App\Support\Intelligence\IntelligencePseudonymizer;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -25,8 +28,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DemandForecastController extends Controller
 {
-    public function index(Request $request, TenantContext $context): View
-    {
+    public function index(
+        Request $request,
+        TenantContext $context,
+        DemandForecastModelArtifact $modelArtifact,
+    ): View {
         $this->authorize('viewAny', DemandForecastRun::class);
 
         $agencies = Agency::query()
@@ -34,7 +40,12 @@ class DemandForecastController extends Controller
             ->orderBy('name')
             ->get();
         $historyRuns = DemandHistoryExportRun::query()
-            ->with('agency')
+            ->with([
+                'agency',
+                'executionRuns' => fn ($query) => $query
+                    ->latest('requested_at')
+                    ->latest('id'),
+            ])
             ->withCount('forecastRuns')
             ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
             ->latest('created_at')
@@ -42,17 +53,28 @@ class DemandForecastController extends Controller
             ->limit(20)
             ->get();
         $forecastRuns = DemandForecastRun::query()
-            ->with(['agency', 'historyExport', 'forecasts'])
+            ->with(['agency', 'historyExport', 'forecasts', 'executionRun'])
             ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
             ->latest('as_of_date')
             ->latest('id')
             ->paginate(10);
+
+        $artifactReady = $modelArtifact->configuredIsValid();
+        $runtimeReady = (bool) config('intelligence.demand_forecasting.runtime_enabled')
+            && $artifactReady
+            && (string) config('intelligence.demand_forecasting.python_binary') !== ''
+            && is_file((string) config('intelligence.demand_forecasting.runtime_script'));
 
         return view('intelligence.demand-forecasts.index', [
             'agencies' => $agencies,
             'historyRuns' => $historyRuns,
             'forecastRuns' => $forecastRuns,
             'configured' => app(IntelligencePseudonymizer::class)->configured(),
+            'runtime' => [
+                'enabled' => (bool) config('intelligence.demand_forecasting.runtime_enabled'),
+                'artifact_ready' => $artifactReady,
+                'ready' => $runtimeReady,
+            ],
             'contract' => [
                 'model_name' => DemandForecastContract::MODEL_NAME,
                 'model_version' => DemandForecastContract::MODEL_VERSION,
@@ -69,6 +91,19 @@ class DemandForecastController extends Controller
                 'date_to' => $request->string('date_to')->toString() ?: today()->toDateString(),
             ],
         ]);
+    }
+
+    public function queueExecution(
+        QueueDemandForecastExecutionRequest $request,
+        DemandHistoryExportRun $historyRun,
+        QueueDemandForecastExecution $queue,
+    ): RedirectResponse {
+        $run = $queue->handle($historyRun, $request->user());
+
+        return redirect()->route('intelligence.demand-forecasts.index')->with(
+            'status',
+            'Inférence HGB '.$run->run_id.' ajoutée à la queue Intelligence.',
+        );
     }
 
     public function export(

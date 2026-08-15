@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule;
@@ -148,6 +149,53 @@ class RentFleetDoctor extends Command
                 ? 'Python 3.12 · OR-Tools 9.15.6755 · script présent'
                 : 'Python 3.12 et OR-Tools 9.15.6755 requis; vérifier INTELLIGENCE_PYTHON_BINARY',
         );
+
+        $demandBinary = (string) config('intelligence.demand_forecasting.python_binary');
+        $demandScript = (string) config('intelligence.demand_forecasting.runtime_script');
+        $modelArtifact = app(DemandForecastModelArtifact::class);
+        $demandConfigured = (bool) config('intelligence.demand_forecasting.runtime_enabled')
+            && $demandBinary !== ''
+            && File::exists($demandScript);
+        $demandVersions = null;
+        if ($demandConfigured) {
+            try {
+                $probe = Process::path(base_path())
+                    ->timeout(8)
+                    ->env([
+                        'PYTHONDONTWRITEBYTECODE' => '1',
+                        'APP_KEY' => false,
+                        'DB_PASSWORD' => false,
+                        'MAIL_PASSWORD' => false,
+                        'AWS_SECRET_ACCESS_KEY' => false,
+                        'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
+                        'DEMO_PASSWORD' => false,
+                        'PGPASSWORD' => false,
+                    ])
+                    ->run([
+                        $demandBinary,
+                        '-c',
+                        'import joblib,numpy,pandas,sklearn,sys; print(f\'{sys.version_info.major}.{sys.version_info.minor}|{numpy.__version__}|{pandas.__version__}|{sklearn.__version__}|{joblib.__version__}\')',
+                    ]);
+                if ($probe->successful()) {
+                    $demandVersions = trim($probe->output());
+                }
+            } catch (Throwable) {
+                // Les chemins et stderr du runtime ne sont jamais exposés par le doctor.
+            }
+        }
+        $modelReady = $modelArtifact->configuredIsValid();
+        $demandReady = $demandConfigured
+            && $modelReady
+            && $demandVersions === '3.12|2.0.2|2.2.2|1.6.1|1.5.3';
+        $this->add(
+            'Runtime HGB J5',
+            $demandReady ? 'pass' : ($production ? 'fail' : 'warn'),
+            $demandReady
+                ? 'bundle authentique vérifié · Python 3.12 · numpy 2.0.2 · pandas 2.2.2 · scikit-learn 1.6.1 · joblib 1.5.3'
+                : ($modelReady
+                    ? 'bundle vérifié; environnement Python figé incomplet'
+                    : 'bundle J5 privé exact absent ou empreinte/taille invalide'),
+        );
     }
 
     private function checkDatabase(): void
@@ -203,12 +251,15 @@ class RentFleetDoctor extends Command
             $activeRuns = DB::table('fleet_reallocation_runs')
                 ->whereIn('status', ['queued', 'running'])
                 ->count();
+            $activeRuns += DB::table('demand_forecast_execution_runs')
+                ->whereIn('status', ['queued', 'running'])
+                ->count();
         } catch (Throwable) {
             // La vérification des migrations rapporte séparément une table absente.
         }
         $queueDetail = $queueConnection === 'database'
             ? 'database (worker intelligence requis; '.($activeRuns ?? 0).' exécution(s) active(s))'
-            : $queueConnection.' (database requis hors tests pour OR-Tools)';
+            : $queueConnection.' (database requis hors tests pour OR-Tools et HGB)';
         $this->add('Queue', $queueConnection === 'database' ? 'pass' : 'warn', $queueDetail);
 
         try {

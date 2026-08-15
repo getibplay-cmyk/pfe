@@ -3,7 +3,7 @@
         <x-page-header
             title="Prévision de demande D+1 à D+7"
             eyebrow="Intelligence consultative"
-            description="Préparez l’historique quotidien RentFleet, importez les sorties du modèle HGB et examinez des scénarios expliqués, sans action automatique."
+            description="Préparez l’historique quotidien RentFleet, exécutez le modèle HGB authentique depuis le SaaS et examinez ses scénarios expliqués, sans action automatique."
         />
 
         @if (session('status'))
@@ -11,6 +11,20 @@
                 {{ session('status') }}
             </div>
         @endif
+
+        <div class="rounded-xl border p-4 text-sm leading-6 {{ $runtime['ready'] ? 'border-emerald-200 bg-emerald-50 text-emerald-950' : 'border-amber-200 bg-amber-50 text-amber-950' }}">
+            @if ($runtime['ready'])
+                <span class="font-semibold">Runtime HGB disponible :</span>
+                bundle J5 authentique présent dans le stockage privé et empreinte SHA-256 exacte vérifiée. Les calculs passent par la queue <code>intelligence</code>.
+            @elseif (! $runtime['enabled'])
+                <span class="font-semibold">Runtime HGB désactivé :</span>
+                l’import JSON manuel reste disponible, mais aucune inférence ne peut être lancée depuis le SaaS.
+            @else
+                <span class="font-semibold">Runtime HGB incomplet :</span>
+                {{ $runtime['artifact_ready'] ? 'le bundle privé est vérifié, mais la configuration Python ou le script doit être contrôlé.' : 'le bundle J5 exact doit être installé dans le stockage privé.' }}
+                Exécutez <code>php artisan rentfleet:doctor</code> après l’installation.
+            @endif
+        </div>
 
         <x-section-card title="Niveau de preuve du modèle" description="Les performances ci-dessous viennent du benchmark public Munich ; elles ne mesurent pas encore RentFleet.">
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -118,6 +132,10 @@
                     </thead>
                     <tbody>
                         @forelse ($historyRuns as $run)
+                            @php
+                                $execution = $run->executionRuns->first();
+                                $executionIsActive = $execution && in_array($execution->status->value, ['queued', 'running'], true);
+                            @endphp
                             <tr>
                                 <td>
                                     <p class="font-medium text-slate-900">{{ $run->agency->name }}</p>
@@ -126,7 +144,17 @@
                                 </td>
                                 <td>{{ $run->row_count }} jours continus</td>
                                 <td>{{ number_format($run->observed_departures_count, 0, ',', ' ') }}</td>
-                                <td>{{ $run->forecast_runs_count }}</td>
+                                <td>
+                                    <p>{{ $run->forecast_runs_count }}</p>
+                                    @if ($execution)
+                                        <p class="mt-1"><x-status-badge :value="$execution->status->value" :label="$execution->status->label()" /></p>
+                                        <p class="mt-1 font-mono text-xs text-slate-500">{{ $execution->run_id }}</p>
+                                        @if ($execution->failure_code)
+                                            <p class="mt-1 text-xs text-rose-700">{{ $execution->failureLabel() }}</p>
+                                            <p class="mt-1 font-mono text-xs text-slate-500">{{ $execution->failure_code }}</p>
+                                        @endif
+                                    @endif
+                                </td>
                                 <td class="text-right">
                                     <div class="flex flex-wrap justify-end gap-3">
                                         @can('view', $run)
@@ -135,12 +163,23 @@
                                         @endcan
                                     </div>
                                     @can('importForecast', $run)
-                                        <form method="POST" action="{{ route('intelligence.demand-forecasts.store', $run) }}" enctype="multipart/form-data" class="mt-3 flex flex-col items-end gap-2">
-                                            @csrf
-                                            <label for="forecast-batch-{{ $run->id }}" class="text-xs font-medium text-slate-600">Résultat JSON du modèle</label>
-                                            <input id="forecast-batch-{{ $run->id }}" name="forecast_batch" type="file" accept="application/json,.json" class="block max-w-xs text-xs" required />
-                                            <x-primary-button>Importer en shadow</x-primary-button>
-                                        </form>
+                                        @if ($runtime['ready'])
+                                            <form method="POST" action="{{ route('intelligence.demand-forecast-executions.store', $run) }}" class="mt-3">
+                                                @csrf
+                                                <x-primary-button :disabled="$executionIsActive">
+                                                    {{ $executionIsActive ? 'Exécution déjà active' : 'Exécuter HGB authentique' }}
+                                                </x-primary-button>
+                                            </form>
+                                        @endif
+                                        <details class="mt-3 text-left">
+                                            <summary class="cursor-pointer text-xs font-medium text-slate-600">Import JSON manuel de secours</summary>
+                                            <form method="POST" action="{{ route('intelligence.demand-forecasts.store', $run) }}" enctype="multipart/form-data" class="mt-2 flex flex-col items-end gap-2">
+                                                @csrf
+                                                <label for="forecast-batch-{{ $run->id }}" class="text-xs font-medium text-slate-600">Résultat JSON du modèle</label>
+                                                <input id="forecast-batch-{{ $run->id }}" name="forecast_batch" type="file" accept="application/json,.json" class="block max-w-xs text-xs" required />
+                                                <x-primary-button>Importer en shadow</x-primary-button>
+                                            </form>
+                                        </details>
                                     @endcan
                                 </td>
                             </tr>
@@ -176,6 +215,13 @@
             <div class="space-y-6">
                 @forelse ($forecastRuns as $run)
                     <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        @if ($run->executionRun)
+                            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
+                                <strong>Inférence HGB réellement exécutée depuis le SaaS</strong>
+                                · exécution <span class="font-mono text-xs">{{ $run->executionRun->run_id }}</span>
+                                · bundle J5 authentique vérifié avant chargement.
+                            </div>
+                        @endif
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Shadow consultatif · {{ $run->agency->name }}</p>

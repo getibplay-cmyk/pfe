@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - feature/runtime-intelligence
   push:
     branches:
       - main
@@ -256,7 +257,9 @@ jobs:
           PYTHONDONTWRITEBYTECODE: 1
         run: |
           "$RUNNER_TEMP/demand-forecast-venv/bin/python" \
-            -m unittest tests/Python/test_demand_forecast_adapter.py
+            -m unittest \
+            tests/Python/test_demand_forecast_adapter.py \
+            tests/Python/test_demand_forecast_authentic_artifact.py
 
       - name: Build frontend assets
         run: npm run build

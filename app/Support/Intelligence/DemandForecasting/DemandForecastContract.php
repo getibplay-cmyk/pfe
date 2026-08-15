@@ -20,6 +20,8 @@ final class DemandForecastContract
 
     public const MODEL_ARTIFACT_SHA256 = '992217b4887623ca924a3dc36686c69ab616634aace64cf993ad50b61ace6802';
 
+    public const MODEL_ARTIFACT_BYTES = 6401204;
+
     public const FRAMEWORK = 'scikit-learn';
 
     public const FRAMEWORK_VERSION = '1.6.1';
