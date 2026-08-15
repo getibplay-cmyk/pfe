@@ -1,10 +1,22 @@
 # Qualification scientifique de la réallocation de flotte
 
-## Statut avant exécution finale
+## Décision finale
 
-Ce lot qualifie uniquement la méthode `SimpleMinCostFlow`. Il ne contient aucune intégration Laravel et ne modifie aucune donnée métier.
+La qualification préenregistrée a réussi : `QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW`.
 
-Le protocole `fleet-reallocation-v1.0.0.json`, le générateur, les baselines, les seuils et la règle de décision sont figés avant la première exécution finale OR-Tools. Un échec produira un résultat négatif conservé et interdira l'intégration SaaS.
+Le protocole `fleet-reallocation-v1.0.0.json`, le générateur, les baselines, les seuils et la règle de décision ont été figés dans le commit `e970822409eac55f6d9b2343d3fd31a52f0722c6`, avant la CI finale. Le lot qualifie uniquement la méthode `SimpleMinCostFlow`. Il ne contient encore aucune intégration Laravel et ne modifie aucune donnée métier.
+
+## Résultats observés
+
+| Méthode | Demande servie | Demande non servie | Taux de service | Coût de décision synthétique (centimes) |
+|---|---:|---:|---:|---:|
+| `no_relocation` | 384 / 732 | 348 | 52,4590 % | 348 000 000 |
+| `greedy` | 552 / 732 | 180 | 75,4098 % | 182 346 500 |
+| `ortools_min_cost_flow` | 720 / 732 | 12 | 98,3607 % | 19 545 000 |
+
+Les 48 résolutions ont reçu le statut `OPTIMAL` et satisfait les invariants de conservation, capacité, demande et coût recalculé. Le temps maximal observé pour le seul appel solveur est `0,032959 ms` sur le runner CI ; cette mesure dépend de la machine et n'inclut pas la préparation du réseau.
+
+Les douze demandes non servies correspondent aux pénuries totales introduites dans douze scénarios. Le solveur n'invente aucun véhicule.
 
 ## Problème modélisé
 
@@ -28,6 +40,8 @@ CatBoost ayant échoué à son gate scientifique, aucune probabilité issue de c
 
 Le benchmark prouve une méthode d'optimisation sur données synthétiques. Il ne prouve ni un gain local RentFleet, ni un coût réel, ni une performance future.
 
+Le coût de décision combine réallocation et pénalité synthétique. Sa forte amélioration ne doit jamais être présentée comme une économie en MAD réellement observée.
+
 ## Baselines
 
 1. `no_relocation` sert uniquement la demande locale avec les véhicules déjà présents.
@@ -48,6 +62,17 @@ Le benchmark prouve une méthode d'optimisation sur données synthétiques. Il n
 Même en cas de réussite, la sortie restera consultative. Elle devra être importée de manière idempotente, tenant/agence dérivés côté serveur et pseudonymisés, puis validée par un humain. Elle ne pourra modifier automatiquement réservation, contrat, tarif, facture, véhicule ou transfert.
 
 Le statut local restera `NOT_VALIDATED_NO_REAL_HISTORY` jusqu'à une évaluation shadow sur un historique RentFleet suffisant.
+
+## Reproductibilité
+
+- Python `3.12.13` ;
+- OR-Tools `9.15.6755` ;
+- seed `20260814` et `PYTHONHASHSEED=20260814` ;
+- snapshot synthétique SHA-256 `53d79202807b2952dc95154e0116153664f202007807a0855a16cbea63cc4214` ;
+- dépendances transitives figées dans `requirements-fleet-reallocation.txt` ;
+- artefact CI et checksums conservés sous `docs/evidence/intelligence/fleet-reallocation`.
+
+Preuve d'exécution : [GitHub Actions CI #24](https://github.com/getibplay-cmyk/pfe/actions/runs/31852107373).
 
 ## Sources primaires
 

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.invalid/schemas/fleet-reallocation-qualification-v1.0.0.json",
+  "title": "RentFleet fleet reallocation scientific qualification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "decision",
+    "gate_passed",
+    "benchmark",
+    "solver",
+    "aggregates",
+    "gates",
+    "safety"
+  ],
+  "properties": {
+    "protocol_version": {"const": "1.0.0"},
+    "decision": {"const": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW"},
+    "gate_passed": {"const": true},
+    "benchmark": {
+      "type": "object",
+      "required": ["scenario_count", "snapshot_sha256", "distance_unit", "data_status"],
+      "properties": {
+        "scenario_count": {"const": 48},
+        "snapshot_sha256": {"const": "53d79202807b2952dc95154e0116153664f202007807a0855a16cbea63cc4214"},
+        "distance_unit": {"const": "km"},
+        "data_status": {"const": "SYNTHETIC_NOT_RENTFLEET_NOT_LOCAL_ACCURACY"}
+      }
+    },
+    "solver": {
+      "type": "object",
+      "required": ["name", "version", "required_status"],
+      "properties": {
+        "name": {"const": "Google OR-Tools SimpleMinCostFlow"},
+        "version": {"const": "9.15.6755"},
+        "required_status": {"const": "OPTIMAL"}
+      }
+    },
+    "aggregates": {"type": "object"},
+    "gates": {"type": "object"},
+    "safety": {
+      "type": "object",
+      "required": ["automatic_business_write_allowed", "human_validation_required", "local_rentfleet_status"],
+      "properties": {
+        "automatic_business_write_allowed": {"const": false},
+        "human_validation_required": {"const": true},
+        "local_rentfleet_status": {"const": "NOT_VALIDATED_NO_REAL_HISTORY"}
+      }
+    }
+  }
+}

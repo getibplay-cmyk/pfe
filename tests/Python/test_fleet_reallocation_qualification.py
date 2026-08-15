@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "intelligence" / "qualify_fleet_reallocation.py"
 PROTOCOL = ROOT / "docs" / "intelligence" / "protocols" / "fleet-reallocation-v1.0.0.json"
 REQUIREMENTS = ROOT / "scripts" / "intelligence" / "requirements-fleet-reallocation.txt"
+EVIDENCE = ROOT / "docs" / "evidence" / "intelligence" / "fleet-reallocation"
+SCHEMA = ROOT / "docs" / "intelligence" / "schemas" / "fleet-reallocation-qualification-v1.0.0.json"
 BENCHMARK_SHA256 = "53d79202807b2952dc95154e0116153664f202007807a0855a16cbea63cc4214"
 SPEC = importlib.util.spec_from_file_location("rentfleet_fleet_reallocation_qualification", SCRIPT)
 if SPEC is None or SPEC.loader is None:
@@ -22,10 +24,10 @@ SPEC.loader.exec_module(MODULE)
 
 
 class FleetReallocationQualificationTest(unittest.TestCase):
-    def test_protocol_is_preregistered_with_frozen_gates(self) -> None:
+    def test_protocol_preserves_preregistered_gates_and_frozen_result(self) -> None:
         protocol = json.loads(PROTOCOL.read_text(encoding="utf-8"))
 
-        self.assertEqual("PREREGISTERED_BEFORE_FINAL_BENCHMARK", protocol["status"])
+        self.assertEqual("QUALIFIED_AFTER_PREREGISTERED_RUN", protocol["status"])
         self.assertEqual("9.15.6755", protocol["solver"]["version"])
         self.assertEqual("3.12.13", protocol["solver"]["python"])
         self.assertEqual("OPTIMAL", protocol["solver"]["required_status"])
@@ -38,9 +40,46 @@ class FleetReallocationQualificationTest(unittest.TestCase):
         self.assertFalse(protocol["safety"]["saas_integration_allowed_before_gate"])
         self.assertFalse(protocol["safety"]["automatic_business_write_allowed"])
         self.assertEqual(
-            ["ortools==9.15.6755"],
+            [
+                "absl-py==2.5.0",
+                "immutabledict==4.3.1",
+                "numpy==2.5.2",
+                "ortools==9.15.6755",
+                "pandas==3.0.5",
+                "protobuf==6.33.6",
+                "python-dateutil==2.9.0.post0",
+                "six==1.17.0",
+                "typing_extensions==4.16.0",
+            ],
             REQUIREMENTS.read_text(encoding="utf-8").splitlines(),
         )
+
+    def test_frozen_qualified_result_and_ci_checksums_are_consistent(self) -> None:
+        manifest = json.loads((EVIDENCE / "qualification-manifest.json").read_text(encoding="utf-8"))
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+
+        self.assertTrue(manifest["gate_passed"])
+        self.assertEqual(MODULE.PASS_DECISION, manifest["decision"])
+        self.assertEqual("9.15.6755", manifest["solver"]["version"])
+        self.assertEqual(48, manifest["benchmark"]["scenario_count"])
+        self.assertEqual(BENCHMARK_SHA256, manifest["benchmark"]["snapshot_sha256"])
+        self.assertEqual("0.983607", manifest["aggregates"]["ortools_min_cost_flow"]["service_rate"])
+        self.assertEqual(12, manifest["aggregates"]["ortools_min_cost_flow"]["unserved_demand"])
+        self.assertEqual(180, manifest["aggregates"]["greedy"]["unserved_demand"])
+        self.assertEqual(348, manifest["aggregates"]["no_relocation"]["unserved_demand"])
+        self.assertFalse(manifest["safety"]["automatic_business_write_allowed"])
+        self.assertFalse(manifest["safety"]["catboost_output_consumed"])
+        self.assertEqual(
+            manifest["decision"],
+            schema["properties"]["decision"]["const"],
+        )
+
+        expected = {}
+        for line in (EVIDENCE / "CI_SHA256SUMS").read_text(encoding="utf-8").splitlines():
+            digest, name = line.split("  ", maxsplit=1)
+            expected[name] = digest
+        for name, digest in expected.items():
+            self.assertEqual(digest, hashlib.sha256((EVIDENCE / name).read_bytes()).hexdigest(), name)
 
     def test_synthetic_snapshot_is_deterministic_kilometres_only_and_catboost_abstains(self) -> None:
         first = MODULE.build_scenarios()

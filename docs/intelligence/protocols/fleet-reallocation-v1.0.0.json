@@ -2,7 +2,7 @@
   "protocol_id": "rentfleet-fleet-reallocation-qualification",
   "protocol_version": "1.0.0",
   "preregistered_at": "2026-08-14",
-  "status": "PREREGISTERED_BEFORE_FINAL_BENCHMARK",
+  "status": "QUALIFIED_AFTER_PREREGISTERED_RUN",
   "scope": "SCIENTIFIC_METHOD_QUALIFICATION_ONLY",
   "solver": {
     "name": "Google OR-Tools SimpleMinCostFlow",
@@ -82,6 +82,21 @@
   },
   "decision_policy": {
     "pass": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW",
-    "fail": "RESEARCH_GATE_NOT_PASSED_NO_SAAS_INTEGRATION"
+    "fail": "RESEARCH_GATE_NOT_PASSED_NO_SAAS_INTEGRATION",
+    "observed": "QUALIFIED_FOR_CONSULTATIVE_SAAS_INTEGRATION_REVIEW"
+  },
+  "qualification": {
+    "preregistered_commit": "e970822409eac55f6d9b2343d3fd31a52f0722c6",
+    "workflow_run": "https://github.com/getibplay-cmyk/pfe/actions/runs/31852107373",
+    "artifact_digest": "sha256:d43edf5f8a522b4f5317b8f5aced943868c8f8a6e2442b26e3fbf3e0fd4b06bc",
+    "optimal_solution_rate": "1.000000",
+    "invariant_valid_solution_rate": "1.000000",
+    "aggregate_service_rate": "0.983607",
+    "unserved_no_relocation": 348,
+    "unserved_greedy": 180,
+    "unserved_ortools": 12,
+    "maximum_single_solve_runtime_ms": "0.032959",
+    "gate_passed": true,
+    "local_rentfleet_status": "NOT_VALIDATED_NO_REAL_HISTORY"
   }
 }
