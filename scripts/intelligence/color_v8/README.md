@@ -94,3 +94,16 @@ stops before creating or executing a new final.
 The external final must be assembled later from a separate per-image licensed
 ledger.  Never choose final images with candidate predictions or inspect final
 metrics before the one allowed execution.
+
+`collect_color_v8_external_final_candidates.py` can create the pre-review
+candidate bundle from Wikimedia Commons.  It deterministically enumerates
+automobile-by-colour categories, excludes all development source URLs, accepts
+only the explicit CC BY/CC0 allowlist, and builds contact sheets without ever
+loading a model.  Its output is not a final until every selected row has been
+visually reviewed and `freeze_color_v8_external_final.py` succeeds.
+
+`review_color_v8_external_final_candidates.py` consumes the ordered queues
+approved from those contact sheets.  Without importing a model, it removes
+exact and pHash-near development overlaps plus duplicates inside the proposed
+final, retains the first 20 independent rows per ontology target, and writes a
+row-level decision audit for `freeze_color_v8_external_final.py`.
