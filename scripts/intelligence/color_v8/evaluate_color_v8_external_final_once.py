@@ -162,8 +162,18 @@ def main() -> None:
         logits, targets, row_indices = infer(model, loader, device)
         labels = np.asarray([CLASSES[index] for index in targets], dtype=str)
         probabilities = softmax(logits, float(checkpoint["temperature"]))
-        supported_metrics = metric_bundle(labels, probabilities, gates=FUTURE_EXTERNAL_GATES)
-        reject_metrics = reject_bundle(labels, probabilities)
+        confidence_threshold = float(checkpoint["confidence_threshold"])
+        supported_metrics = metric_bundle(
+            labels,
+            probabilities,
+            gates=FUTURE_EXTERNAL_GATES,
+            confidence_threshold=confidence_threshold,
+        )
+        reject_metrics = reject_bundle(
+            labels,
+            probabilities,
+            confidence_threshold=confidence_threshold,
+        )
         external_gate_checks = {
             "supported": supported_metrics["gate_passed"],
             "reject_false_acceptance": reject_metrics["gate_passed"],
@@ -192,8 +202,11 @@ def main() -> None:
             "qualified_state_sha256": state_sha256,
             "qualification_report_sha256": sha256_file(qualification_report_path),
             "temperature": float(checkpoint["temperature"]),
-            "confidence_threshold": float(checkpoint["confidence_threshold"]),
-            "gates": {"supported": FUTURE_EXTERNAL_GATES, "reject_false_acceptance_max_at_0_90": 0.05},
+            "confidence_threshold": confidence_threshold,
+            "gates": {
+                "supported": FUTURE_EXTERNAL_GATES,
+                "reject_false_acceptance_max_at_calibrated_threshold": 0.05,
+            },
             "metrics": {"supported": supported_metrics, "reject": reject_metrics},
             "gate_checks": external_gate_checks,
             "decisions": {
