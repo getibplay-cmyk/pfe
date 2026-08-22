@@ -41,7 +41,8 @@ Primary references:
 3. `select_color_v8_candidate.py` freezes one candidate using a deterministic
    validation-only ranking.
 4. `qualify_color_v8_development.py` may then load calibration once to fit a
-   scalar temperature and evaluate the stricter development gates.
+   scalar temperature and the least-abstaining safe confidence threshold.  The
+   threshold grid starts at 0.90 and can only make acceptance more conservative.
 5. `freeze_color_v8_external_final.py` freezes a new, prediction-blind final
    with per-image licences and exact/pHash independence from development.
 6. `evaluate_color_v8_external_final_once.py` creates an exclusive start token
@@ -58,8 +59,11 @@ No command in this directory edits Laravel or enables a SaaS feature flag.
 `black`, `blue`, `gray`, `green`, `orange`, `red`, `white`, `yellow`,
 `__reject__`.
 
-Confidence acceptance is fixed at 0.90.  Hue and saturation augmentation are
-forbidden; only geometric, brightness and contrast perturbations are used.
+Candidate selection uses confidence acceptance fixed at 0.90.  After candidate
+selection, calibration chooses the minimum feasible threshold on a fixed
+0.90–0.99 grid, subject to all aggregate and per-source development gates.  Hue
+and saturation augmentation are forbidden; only geometric, brightness and
+contrast perturbations are used.
 
 ## Development gates
 
@@ -70,9 +74,9 @@ forbidden; only geometric, brightness and contrast perturbations are used.
 | Minimum per-class recall | >= 0.85 |
 | ECE | <= 0.05 |
 | Support | >= 20/class |
-| Accepted precision at 0.90 | >= 0.95 |
-| Coverage at 0.90 | >= 0.50 |
-| Reject false-acceptance at 0.90 | <= 0.05 |
+| Accepted precision at calibrated threshold (floor 0.90) | >= 0.95 |
+| Coverage at calibrated threshold (floor 0.90) | >= 0.50 |
+| Reject false-acceptance at calibrated threshold (aggregate and per source) | <= 0.05 |
 
 The independent external final retains the registered v7 supported-class gates
 (0.85 macro-F1/balanced accuracy, 0.80 minimum recall, ECE <= 0.05, support
@@ -81,9 +85,9 @@ reject false-acceptance <= 0.05.
 
 ## Execution
 
-Use `S7_COLOR_V8_COLAB_GPU.ipynb`.  It mounts the private Drive, copies the ZIP
-(or reassembles its SHA-256-verified multipart transport) to the Colab VM before
-extraction, verifies CUDA, clones the dedicated GitHub branch, trains
+Use `S7_COLOR_V8_COLAB_GPU.ipynb`.  It authenticates the private Drive API,
+copies the ZIP (or reassembles its SHA-256-verified multipart transport) to the
+Colab VM before extraction, verifies CUDA, loads the immutable source bundle, trains
 candidates, selects one, then performs development calibration.  It deliberately
 stops before creating or executing a new final.
 
