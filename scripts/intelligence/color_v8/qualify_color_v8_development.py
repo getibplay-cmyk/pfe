@@ -58,6 +58,75 @@ def source_gate(entries: dict) -> tuple[bool, bool, int, int]:
     )
 
 
+def confidence_threshold_from_calibration(
+    rows: list[dict],
+    indices: np.ndarray,
+    labels: np.ndarray,
+    probabilities: np.ndarray,
+) -> tuple[float, dict]:
+    """Choose the least-abstaining safe threshold on calibration only.
+
+    The candidate weights and temperature are already fixed.  The threshold
+    grid starts at the original 0.90 policy floor; it can only make acceptance
+    more conservative.  The first feasible value maximises coverage while
+    satisfying every aggregate and per-source development gate.
+    """
+
+    thresholds = np.round(np.linspace(0.90, 0.99, 91), 3)
+    selected = None
+    trace = []
+    for threshold_value in thresholds:
+        threshold = float(threshold_value)
+        supported = metric_bundle(labels, probabilities, confidence_threshold=threshold)
+        reject = reject_bundle(labels, probabilities, confidence_threshold=threshold)
+        sources = source_metrics(
+            rows,
+            indices,
+            labels,
+            probabilities,
+            confidence_threshold=threshold,
+        )
+        source_supported, source_reject, supported_bundles, reject_bundles = source_gate(sources)
+        checks = {
+            "supported": supported["gate_passed"],
+            "reject": reject["gate_passed"],
+            "source_supported": source_supported,
+            "source_reject": source_reject,
+        }
+        reject_rates = [
+            entry["reject"]["false_acceptance_rate_at_threshold"]
+            for entry in sources.values()
+            if entry["reject"]["rows"] >= DEVELOPMENT_GATES["support_min_per_class"]
+        ]
+        trace.append(
+            {
+                "threshold": threshold,
+                "feasible": all(checks.values()),
+                "checks": checks,
+                "accepted_precision": supported["accepted_precision_at_threshold"],
+                "coverage": supported["coverage_at_threshold"],
+                "reject_false_acceptance_rate": reject["false_acceptance_rate_at_threshold"],
+                "max_source_reject_false_acceptance_rate": max(reject_rates) if reject_rates else None,
+                "supported_source_bundles": supported_bundles,
+                "reject_source_bundles": reject_bundles,
+            }
+        )
+        if selected is None and all(checks.values()):
+            selected = threshold
+
+    return (selected if selected is not None else float(thresholds[0])), {
+        "method": "minimum_feasible_threshold_on_calibration_only",
+        "policy_floor": float(thresholds[0]),
+        "grid_min": float(thresholds[0]),
+        "grid_max": float(thresholds[-1]),
+        "grid_points": len(thresholds),
+        "selection_objective": "maximum_coverage_subject_to_all_aggregate_and_per_source_development_gates",
+        "selected_feasible": selected is not None,
+        "selected_threshold": selected,
+        "trace": trace,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset-root", type=Path, required=True)
@@ -127,16 +196,51 @@ def main() -> None:
     temperature, temperature_audit = temperature_from_calibration(calibration_logits, calibration_labels)
     validation_probabilities = softmax(validation_logits, temperature)
     calibration_probabilities = softmax(calibration_logits, temperature)
-    validation_metrics = metric_bundle(validation_labels, validation_probabilities)
-    calibration_metrics = metric_bundle(calibration_labels, calibration_probabilities)
-    validation_reject = reject_bundle(validation_labels, validation_probabilities)
-    calibration_reject = reject_bundle(calibration_labels, calibration_probabilities)
-    validation_sources = source_metrics(by_split["validation"], validation_indices, validation_labels, validation_probabilities)
-    calibration_sources = source_metrics(by_split["calibration"], calibration_indices, calibration_labels, calibration_probabilities)
+    confidence_threshold, threshold_audit = confidence_threshold_from_calibration(
+        by_split["calibration"],
+        calibration_indices,
+        calibration_labels,
+        calibration_probabilities,
+    )
+    validation_metrics = metric_bundle(
+        validation_labels,
+        validation_probabilities,
+        confidence_threshold=confidence_threshold,
+    )
+    calibration_metrics = metric_bundle(
+        calibration_labels,
+        calibration_probabilities,
+        confidence_threshold=confidence_threshold,
+    )
+    validation_reject = reject_bundle(
+        validation_labels,
+        validation_probabilities,
+        confidence_threshold=confidence_threshold,
+    )
+    calibration_reject = reject_bundle(
+        calibration_labels,
+        calibration_probabilities,
+        confidence_threshold=confidence_threshold,
+    )
+    validation_sources = source_metrics(
+        by_split["validation"],
+        validation_indices,
+        validation_labels,
+        validation_probabilities,
+        confidence_threshold=confidence_threshold,
+    )
+    calibration_sources = source_metrics(
+        by_split["calibration"],
+        calibration_indices,
+        calibration_labels,
+        calibration_probabilities,
+        confidence_threshold=confidence_threshold,
+    )
     validation_source_supported, validation_source_reject, validation_supported_bundles, validation_reject_bundles = source_gate(validation_sources)
     calibration_source_supported, calibration_source_reject, calibration_supported_bundles, calibration_reject_bundles = source_gate(calibration_sources)
 
     checks = {
+        "calibration_threshold_feasible": threshold_audit["selected_feasible"],
         "validation_supported": validation_metrics["gate_passed"],
         "calibration_supported": calibration_metrics["gate_passed"],
         "validation_reject": validation_reject["gate_passed"],
@@ -158,7 +262,8 @@ def main() -> None:
             "classes": CLASSES,
             "image_size": image_size,
             "temperature": temperature,
-            "confidence_threshold": 0.90,
+            "confidence_threshold": confidence_threshold,
+            "confidence_threshold_policy": "minimum_feasible_on_calibration_only_with_0_90_floor",
             "development_manifest_sha256": sha256_file(manifest),
             "selection_ledger_sha256": sha256_file(ledger_path),
             "state_dict": checkpoint["state_dict"],
@@ -183,7 +288,7 @@ def main() -> None:
     report = {
         "schema_version": "8.0.0",
         "created_at_utc": utc_now(),
-        "stage": "development_qualification_after_validation_only_selection",
+        "stage": "development_qualification_after_validation_only_selection_and_calibrated_abstention",
         "architecture": architecture,
         "device": str(device),
         "gpu_name": torch.cuda.get_device_name(0) if device.type == "cuda" else None,
@@ -196,8 +301,9 @@ def main() -> None:
         },
         "calibration": {
             "temperature": temperature,
-            "confidence_threshold": 0.90,
-            **temperature_audit,
+            "confidence_threshold": confidence_threshold,
+            "temperature_audit": temperature_audit,
+            "confidence_threshold_audit": threshold_audit,
         },
         "gates": {"development": DEVELOPMENT_GATES, "future_external": FUTURE_EXTERNAL_GATES},
         "metrics": {
