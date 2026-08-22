@@ -211,9 +211,12 @@ def metric_bundle(
     probabilities: np.ndarray,
     gates: dict = DEVELOPMENT_GATES,
     required_labels: tuple[str, ...] = SUPPORTED,
+    confidence_threshold: float = THRESHOLD,
 ) -> dict:
     if not required_labels:
         raise ValueError("At least one required label is needed")
+    if not 0.0 < confidence_threshold < 1.0:
+        raise ValueError("confidence_threshold must be strictly between 0 and 1")
     supported_mask = np.isin(labels, required_labels)
     labels = labels[supported_mask]
     probabilities = probabilities[supported_mask]
@@ -223,7 +226,7 @@ def metric_bundle(
     true_index = np.asarray([CLASSES.index(str(label)) for label in labels], dtype=int)
     predicted_index = probabilities.argmax(axis=1)
     supported_confidence = probabilities[:, : len(SUPPORTED)].max(axis=1)
-    accepted = (predicted_index != CLASSES.index(REJECT)) & (supported_confidence >= THRESHOLD)
+    accepted = (predicted_index != CLASSES.index(REJECT)) & (supported_confidence >= confidence_threshold)
     correct = predicted_index == true_index
     required_indices = np.asarray([CLASSES.index(label) for label in required_labels], dtype=int)
     recalls = recall_score(true_index, predicted_index, labels=required_indices, average=None, zero_division=0)
@@ -237,9 +240,10 @@ def metric_bundle(
         "per_class_recall": {label: float(value) for label, value in zip(required_labels, recalls)},
         "support": {label: int(support.get(label, 0)) for label in required_labels},
         "ece": expected_calibration_error(supported_confidence, correct),
-        "accepted_precision_at_0_90": float(correct[accepted].mean()) if accepted.any() else 0.0,
-        "coverage_at_0_90": float(accepted.mean()),
-        "accepted_rows_at_0_90": int(accepted.sum()),
+        "confidence_threshold": float(confidence_threshold),
+        "accepted_precision_at_threshold": float(correct[accepted].mean()) if accepted.any() else 0.0,
+        "coverage_at_threshold": float(accepted.mean()),
+        "accepted_rows_at_threshold": int(accepted.sum()),
         "confusion_matrix": confusion_matrix(true_index, predicted_index, labels=np.arange(len(CLASSES))).tolist(),
     }
     metrics["gate_checks"] = {
@@ -248,29 +252,73 @@ def metric_bundle(
         "min_class_recall": metrics["min_class_recall"] >= gates["min_class_recall_min"],
         "ece": metrics["ece"] <= gates["ece_max"],
         "support": all(metrics["support"][label] >= gates["support_min_per_class"] for label in required_labels),
-        "accepted_precision_at_0_90": metrics["accepted_precision_at_0_90"] >= gates["accepted_precision_min_at_0_90"],
-        "coverage_at_0_90": metrics["coverage_at_0_90"] >= gates["coverage_min_at_0_90"],
+        "accepted_precision_at_threshold": metrics["accepted_precision_at_threshold"] >= gates["accepted_precision_min_at_0_90"],
+        "coverage_at_threshold": metrics["coverage_at_threshold"] >= gates["coverage_min_at_0_90"],
     }
+    if np.isclose(confidence_threshold, THRESHOLD):
+        metrics.update(
+            {
+                "accepted_precision_at_0_90": metrics["accepted_precision_at_threshold"],
+                "coverage_at_0_90": metrics["coverage_at_threshold"],
+                "accepted_rows_at_0_90": metrics["accepted_rows_at_threshold"],
+            }
+        )
+        metrics["gate_checks"].update(
+            {
+                "accepted_precision_at_0_90": metrics["gate_checks"]["accepted_precision_at_threshold"],
+                "coverage_at_0_90": metrics["gate_checks"]["coverage_at_threshold"],
+            }
+        )
     metrics["gate_passed"] = all(metrics["gate_checks"].values())
     return metrics
 
 
-def reject_bundle(labels: np.ndarray, probabilities: np.ndarray) -> dict:
+def reject_bundle(
+    labels: np.ndarray,
+    probabilities: np.ndarray,
+    confidence_threshold: float = THRESHOLD,
+) -> dict:
+    if not 0.0 < confidence_threshold < 1.0:
+        raise ValueError("confidence_threshold must be strictly between 0 and 1")
     mask = labels == REJECT
     probabilities = probabilities[mask]
     if not len(probabilities):
-        return {"rows": 0, "false_acceptance_rate_at_0_90": 1.0, "gate_passed": False}
+        result = {
+            "rows": 0,
+            "confidence_threshold": float(confidence_threshold),
+            "false_accepted_rows_at_threshold": 0,
+            "false_acceptance_rate_at_threshold": 1.0,
+            "gate_max": DEVELOPMENT_GATES["reject_false_acceptance_max_at_0_90"],
+            "gate_passed": False,
+        }
+        if np.isclose(confidence_threshold, THRESHOLD):
+            result.update(
+                {
+                    "false_accepted_rows_at_0_90": 0,
+                    "false_acceptance_rate_at_0_90": 1.0,
+                }
+            )
+        return result
     predicted = probabilities.argmax(axis=1)
     supported_confidence = probabilities[:, : len(SUPPORTED)].max(axis=1)
-    false_accept = (predicted != CLASSES.index(REJECT)) & (supported_confidence >= THRESHOLD)
+    false_accept = (predicted != CLASSES.index(REJECT)) & (supported_confidence >= confidence_threshold)
     rate = float(false_accept.mean())
-    return {
+    result = {
         "rows": int(len(probabilities)),
-        "false_accepted_rows_at_0_90": int(false_accept.sum()),
-        "false_acceptance_rate_at_0_90": rate,
+        "confidence_threshold": float(confidence_threshold),
+        "false_accepted_rows_at_threshold": int(false_accept.sum()),
+        "false_acceptance_rate_at_threshold": rate,
         "gate_max": DEVELOPMENT_GATES["reject_false_acceptance_max_at_0_90"],
         "gate_passed": rate <= DEVELOPMENT_GATES["reject_false_acceptance_max_at_0_90"],
     }
+    if np.isclose(confidence_threshold, THRESHOLD):
+        result.update(
+            {
+                "false_accepted_rows_at_0_90": result["false_accepted_rows_at_threshold"],
+                "false_acceptance_rate_at_0_90": result["false_acceptance_rate_at_threshold"],
+            }
+        )
+    return result
 
 
 @torch.inference_mode()
@@ -302,7 +350,13 @@ def temperature_from_calibration(logits: np.ndarray, labels: np.ndarray) -> tupl
     }
 
 
-def source_metrics(rows: list[dict], indices: np.ndarray, labels: np.ndarray, probabilities: np.ndarray) -> dict:
+def source_metrics(
+    rows: list[dict],
+    indices: np.ndarray,
+    labels: np.ndarray,
+    probabilities: np.ndarray,
+    confidence_threshold: float = THRESHOLD,
+) -> dict:
     sources = np.asarray([rows[index]["source"] for index in indices], dtype=str)
     result = {}
     for source in sorted(set(sources)):
@@ -314,8 +368,19 @@ def source_metrics(rows: list[dict], indices: np.ndarray, labels: np.ndarray, pr
             if supported_counts.get(label, 0) >= DEVELOPMENT_GATES["support_min_per_class"]
         )
         result[source] = {
-            "supported": metric_bundle(labels[mask], probabilities[mask], required_labels=evaluated) if evaluated else None,
-            "reject": reject_bundle(labels[mask], probabilities[mask]),
+            "supported": metric_bundle(
+                labels[mask],
+                probabilities[mask],
+                required_labels=evaluated,
+                confidence_threshold=confidence_threshold,
+            )
+            if evaluated
+            else None,
+            "reject": reject_bundle(
+                labels[mask],
+                probabilities[mask],
+                confidence_threshold=confidence_threshold,
+            ),
         }
     return result
 
