@@ -110,6 +110,21 @@ class VehicleColorPredictionRun extends Model
             && (float) $this->confidence >= VehicleColorContract::CONSULTATIVE_DISPLAY_THRESHOLD;
     }
 
+    public function consultativeStatus(): string
+    {
+        if ($this->status !== VehicleColorPredictionStatus::Succeeded) {
+            return 'vehicle_color_consultative_unavailable';
+        }
+
+        if ($this->model_accepted) {
+            return 'vehicle_color_consultative_scientific_threshold_reached';
+        }
+
+        return $this->hasDisplayableCandidate()
+            ? 'vehicle_color_consultative_candidate_to_review'
+            : 'vehicle_color_consultative_not_exploitable';
+    }
+
     public function failureLabel(): ?string
     {
         if ($this->failure_code === null) {

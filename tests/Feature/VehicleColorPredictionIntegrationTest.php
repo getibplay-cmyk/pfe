@@ -26,6 +26,7 @@ use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Ui\UiLabel;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -157,6 +158,10 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $this->assertSame('black', $completed->suggested_color);
         $this->assertSame('0.9800000', $completed->confidence);
         $this->assertTrue($completed->model_accepted);
+        $this->assertSame(
+            'vehicle_color_consultative_scientific_threshold_reached',
+            $completed->consultativeStatus(),
+        );
         $this->assertNotNull($completed->started_at);
         $this->assertNotNull($completed->finished_at);
         $this->assertSame(
@@ -377,8 +382,24 @@ class VehicleColorPredictionIntegrationTest extends TestCase
 
         $this->assertTrue($atThreshold->hasDisplayableCandidate());
         $this->assertSame('Noir', $atThreshold->outcomeLabel());
+        $this->assertSame(
+            'vehicle_color_consultative_candidate_to_review',
+            $atThreshold->consultativeStatus(),
+        );
+        $this->assertSame(
+            'Couleur indicative à contrôler visuellement',
+            UiLabel::get($atThreshold->consultativeStatus()),
+        );
         $this->assertFalse($belowThreshold->hasDisplayableCandidate());
         $this->assertSame('Résultat non exploitable', $belowThreshold->outcomeLabel());
+        $this->assertSame(
+            'vehicle_color_consultative_not_exploitable',
+            $belowThreshold->consultativeStatus(),
+        );
+        $this->assertSame(
+            'Résultat non exploitable',
+            UiLabel::get($belowThreshold->consultativeStatus()),
+        );
     }
 
     public function test_bad_input_and_unverified_artifact_fail_closed_before_queueing(): void
