@@ -321,10 +321,7 @@ jobs:
         run: npm run build
 
       - name: Check PHP formatting
-        run: |
-          vendor/bin/pint tests/Feature/VehicleColorPredictionIntegrationTest.php
-          git diff --no-ext-diff --unified=80 -- tests/Feature/VehicleColorPredictionIntegrationTest.php
-          exit 1
+        run: vendor/bin/pint --test
 
       - name: Apply database migrations
         run: php artisan migrate --force --no-interaction
