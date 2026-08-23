@@ -9,6 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::table('vehicles', function (Blueprint $table) {
+            $table->unique(
+                ['tenant_id', 'agency_id', 'id'],
+                'vehicles_tenant_agency_id_unique',
+            );
+        });
+
         Schema::create('vehicle_color_prediction_runs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
@@ -44,8 +51,10 @@ return new class extends Migration
             );
             $table->foreign(['tenant_id', 'agency_id'], 'vehicle_color_runs_agency_fk')
                 ->references(['tenant_id', 'id'])->on('agencies')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'vehicle_id'], 'vehicle_color_runs_vehicle_fk')
-                ->references(['tenant_id', 'id'])->on('vehicles')->restrictOnDelete();
+            $table->foreign(
+                ['tenant_id', 'agency_id', 'vehicle_id'],
+                'vehicle_color_runs_vehicle_agency_fk',
+            )->references(['tenant_id', 'agency_id', 'id'])->on('vehicles')->restrictOnDelete();
             $table->foreign(['tenant_id', 'requested_by'], 'vehicle_color_runs_requester_fk')
                 ->references(['tenant_id', 'id'])->on('users')->restrictOnDelete();
         });
@@ -260,6 +269,9 @@ return new class extends Migration
 
         Schema::dropIfExists('vehicle_color_prediction_reviews');
         Schema::dropIfExists('vehicle_color_prediction_runs');
+        Schema::table('vehicles', function (Blueprint $table) {
+            $table->dropUnique('vehicles_tenant_agency_id_unique');
+        });
 
         // Conservative rollback: the permission and later delegations remain.
     }

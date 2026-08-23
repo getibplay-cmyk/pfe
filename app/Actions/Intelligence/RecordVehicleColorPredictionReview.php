@@ -76,6 +76,7 @@ final class RecordVehicleColorPredictionReview
         if ($actor->tenant_id !== $run->tenant_id
             || $this->context->tenantId() !== $run->tenant_id
             || ! $actor->is_active
+            || ! $actor->hasPermission('prediction.view')
             || ! $actor->hasPermission('prediction.color.review')
             || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)
             || ($contextAgency !== null && $contextAgency !== $run->agency_id)) {

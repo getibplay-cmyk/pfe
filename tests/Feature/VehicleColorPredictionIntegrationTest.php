@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\Intelligence\ExecuteVehicleColorPrediction;
 use App\Actions\Intelligence\QueueVehicleColorPrediction;
+use App\Actions\Intelligence\RecordVehicleColorPredictionReview;
 use App\Enums\VehicleColorPredictionStatus;
 use App\Enums\VehicleColorReviewDecision;
 use App\Exceptions\VehicleColorExecutionException;
@@ -31,6 +32,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class VehicleColorPredictionIntegrationTest extends TestCase
@@ -428,6 +430,71 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_database_rejects_vehicle_agency_mismatch_in_prediction_scope(): void
+    {
+        $fixture = $this->fixture();
+        $otherAgency = app(TenantContext::class)->run(
+            $fixture['tenant'],
+            fn () => Agency::factory()->create(['name' => 'Agence forgée couleur']),
+        );
+
+        $this->assertPostgreSqlForeignKeyConstraint(
+            fn () => DB::table('vehicle_color_prediction_runs')->insert([
+                'tenant_id' => $fixture['tenant']->id,
+                'agency_id' => $otherAgency->id,
+                'run_id' => (string) Str::uuid(),
+                'vehicle_id' => $fixture['vehicle']->id,
+                'requested_by' => $fixture['user']->id,
+                'status' => VehicleColorPredictionStatus::Queued->value,
+                'failure_code' => null,
+                'input_mime' => 'image/png',
+                'input_extension' => 'png',
+                'input_bytes' => 1,
+                'input_sha256' => str_repeat('a', 64),
+                'input_stored_path' => 'intelligence/color-v8/inputs/forged.png',
+                'suggested_color' => null,
+                'confidence' => null,
+                'model_accepted' => null,
+                'probabilities' => null,
+                'model_name' => VehicleColorContract::MODEL_NAME,
+                'model_version' => VehicleColorContract::MODEL_VERSION,
+                'model_artifact_sha256' => VehicleColorContract::MODEL_ARTIFACT_SHA256,
+                'metadata_sha256' => VehicleColorContract::METADATA_SHA256,
+                'accepted_threshold' => VehicleColorContract::ACCEPTED_THRESHOLD,
+                'operational_effect' => VehicleColorContract::OPERATIONAL_EFFECT,
+                'requested_at' => now(),
+                'started_at' => null,
+                'finished_at' => null,
+            ]),
+        );
+    }
+
+    public function test_internal_review_action_revalidates_view_permission(): void
+    {
+        $fixture = $this->fixture();
+        $run = $this->completedRun($fixture, true);
+        $this->revokeViewPermission($fixture['user']);
+
+        $failure = null;
+        try {
+            app(TenantContext::class)->run(
+                $fixture['tenant'],
+                fn () => app(RecordVehicleColorPredictionReview::class)->handle(
+                    $run,
+                    $fixture['user'],
+                    VehicleColorReviewDecision::Rejected,
+                    null,
+                ),
+                $fixture['agency']->id,
+            );
+        } catch (AuthorizationException $exception) {
+            $failure = $exception;
+        }
+
+        $this->assertInstanceOf(AuthorizationException::class, $failure);
+        $this->assertSame(0, VehicleColorPredictionReview::withoutGlobalScopes()->count());
+    }
+
     public function test_internal_queue_action_revalidates_view_permission(): void
     {
         $fixture = $this->fixture();
@@ -715,6 +782,16 @@ class VehicleColorPredictionIntegrationTest extends TestCase
                 'operational_effect' => VehicleColorContract::OPERATIONAL_EFFECT,
             ],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function assertPostgreSqlForeignKeyConstraint(callable $operation): void
+    {
+        try {
+            DB::transaction($operation);
+            $this->fail('Une contrainte de périmètre PostgreSQL devait refuser cette mutation.');
+        } catch (QueryException $exception) {
+            $this->assertSame('23503', (string) $exception->getCode());
+        }
     }
 
     private function assertPostgreSqlConstraint(callable $operation): void
