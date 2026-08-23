@@ -24,6 +24,8 @@ final class VehicleColorContract
 
     public const METADATA_BYTES = 1987;
 
+    public const CONSULTATIVE_DISPLAY_THRESHOLD = 0.75;
+
     public const ACCEPTED_THRESHOLD = 0.977;
 
     public const OPERATIONAL_EFFECT = 'NO_OPERATIONAL_ACTION';
