@@ -16,18 +16,18 @@ class VehicleColorImageSanitizer
     public function sanitize(UploadedFile $image): SanitizedVehicleColorImage
     {
         $source = $image->getRealPath();
-        $mime = (string) $image->getMimeType();
-        $extension = match ($mime) {
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            default => throw new VehicleColorRuntimeUnavailableException,
-        };
+        $sourceMime = (string) $image->getMimeType();
+        if (! in_array($sourceMime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            throw new VehicleColorRuntimeUnavailableException;
+        }
         $binary = (string) config('intelligence.vehicle_color_v8.python_binary');
         $script = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
         $timeout = (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds');
         $maxBytes = (int) config('intelligence.vehicle_color_v8.max_upload_kilobytes') * 1024;
         $maxDimension = (int) config('intelligence.vehicle_color_v8.max_image_dimension');
+        $outputMaxDimension = (int) config(
+            'intelligence.vehicle_color_v8.max_stored_image_dimension',
+        );
         if (! is_string($source)
             || ! is_file($source)
             || is_link($source)
@@ -39,7 +39,9 @@ class VehicleColorImageSanitizer
             || $maxBytes < 1
             || $maxBytes > 8_388_608
             || $maxDimension < 1
-            || $maxDimension > 8_000) {
+            || $maxDimension > 8_000
+            || $outputMaxDimension < 256
+            || $outputMaxDimension > 4_096) {
             throw new VehicleColorRuntimeUnavailableException;
         }
 
@@ -64,11 +66,13 @@ class VehicleColorImageSanitizer
                     '--output',
                     $temporary,
                     '--expected-mime',
-                    $mime,
+                    $sourceMime,
                     '--max-bytes',
                     (string) $maxBytes,
                     '--max-dimension',
                     (string) $maxDimension,
+                    '--output-max-dimension',
+                    (string) $outputMaxDimension,
                 ]);
             $output = $result->output();
             if ($result->failed() || $output === '' || strlen($output) > self::MAX_MANIFEST_BYTES) {
@@ -76,7 +80,13 @@ class VehicleColorImageSanitizer
             }
 
             $manifest = json_decode($output, true, flags: JSON_THROW_ON_ERROR);
-            $this->assertManifest($manifest, $temporary, $mime, $extension, $maxBytes, $maxDimension);
+            $this->assertManifest(
+                $manifest,
+                $temporary,
+                $sourceMime,
+                $maxBytes,
+                $outputMaxDimension,
+            );
             $contents = file_get_contents($temporary);
             if (! is_string($contents)) {
                 throw new VehicleColorRuntimeUnavailableException;
@@ -84,8 +94,8 @@ class VehicleColorImageSanitizer
 
             return new SanitizedVehicleColorImage(
                 contents: $contents,
-                mime: $mime,
-                extension: $extension,
+                mime: $manifest['mime'],
+                extension: $manifest['extension'],
                 bytes: strlen($contents),
                 sha256: hash('sha256', $contents),
                 width: $manifest['width'],
@@ -103,16 +113,16 @@ class VehicleColorImageSanitizer
     private function assertManifest(
         mixed $manifest,
         string $path,
-        string $mime,
-        string $extension,
+        string $sourceMime,
         int $maxBytes,
-        int $maxDimension,
+        int $outputMaxDimension,
     ): void {
         if (! is_array($manifest)) {
             throw new VehicleColorRuntimeUnavailableException;
         }
         $expectedKeys = [
             'schema_version',
+            'source_mime',
             'mime',
             'extension',
             'bytes',
@@ -130,8 +140,9 @@ class VehicleColorImageSanitizer
         $detectedMime = is_file($path) ? (new \finfo(FILEINFO_MIME_TYPE))->file($path) : false;
         if ($actualKeys !== $expectedKeys
             || $manifest['schema_version'] !== self::SCHEMA_VERSION
-            || $manifest['mime'] !== $mime
-            || $manifest['extension'] !== $extension
+            || $manifest['source_mime'] !== $sourceMime
+            || $manifest['mime'] !== 'image/jpeg'
+            || $manifest['extension'] !== 'jpg'
             || $manifest['metadata_removed'] !== true
             || ! is_int($manifest['bytes'])
             || ! is_int($manifest['width'])
@@ -147,9 +158,9 @@ class VehicleColorImageSanitizer
             || ($dimensions[1] ?? null) !== $manifest['height']
             || $manifest['width'] < 1
             || $manifest['height'] < 1
-            || $manifest['width'] > $maxDimension
-            || $manifest['height'] > $maxDimension
-            || $detectedMime !== $mime) {
+            || $manifest['width'] > $outputMaxDimension
+            || $manifest['height'] > $outputMaxDimension
+            || $detectedMime !== $manifest['mime']) {
             throw new VehicleColorRuntimeUnavailableException;
         }
     }

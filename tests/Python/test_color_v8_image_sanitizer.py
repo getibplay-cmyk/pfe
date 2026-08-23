@@ -58,7 +58,7 @@ class ColorV8ImageSanitizerTest(unittest.TestCase):
                 self.assertNotIn("xmp", sanitized.info)
                 self.assertNotIn("icc_profile", sanitized.info)
 
-    def test_png_and_webp_are_reencoded_without_source_metadata(self) -> None:
+    def test_png_and_webp_are_normalized_to_jpeg_without_source_metadata(self) -> None:
         for image_format, mime, extension in (
             ("PNG", "image/png", "png"),
             ("WEBP", "image/webp", "webp"),
@@ -80,13 +80,37 @@ class ColorV8ImageSanitizerTest(unittest.TestCase):
 
                 self.assertEqual(0, result.returncode, result.stderr)
                 manifest = json.loads(result.stdout)
-                self.assertEqual(mime, manifest["mime"])
-                self.assertEqual(extension, manifest["extension"])
+                self.assertEqual(mime, manifest["source_mime"])
+                self.assertEqual("image/jpeg", manifest["mime"])
+                self.assertEqual("jpg", manifest["extension"])
                 self.assertNotIn(b"private-source-metadata", output.read_bytes())
                 with Image.open(output) as sanitized:
-                    self.assertEqual(image_format, sanitized.format)
+                    self.assertEqual("JPEG", sanitized.format)
                     self.assertEqual("RGB", sanitized.mode)
                     self.assertEqual(0, len(sanitized.getexif()))
+
+    def test_large_low_quality_source_is_fitted_instead_of_rejected_after_reencoding(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="rentfleet-color-v8-sanitize-") as temporary:
+            source = Path(temporary) / "compressed-source.jpg"
+            output = Path(temporary) / "sanitized.jpg"
+            Image.effect_noise((5_000, 3_500), 100).convert("RGB").save(
+                source,
+                format="JPEG",
+                quality=5,
+            )
+            self.assertLess(source.stat().st_size, 8_388_608)
+            expanded = Path(temporary) / "fixed-quality-expanded.jpg"
+            with Image.open(source) as decoded:
+                decoded.save(expanded, format="JPEG", quality=92, optimize=True)
+            self.assertGreater(expanded.stat().st_size, 8_388_608)
+
+            result = self.run_sanitizer(source, output, "image/jpeg")
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            manifest = json.loads(result.stdout)
+            self.assertLessEqual(manifest["bytes"], 8_388_608)
+            self.assertLessEqual(max(manifest["width"], manifest["height"]), 2_048)
+            self.assertEqual("image/jpeg", manifest["mime"])
 
     def test_mime_mismatch_fails_without_echoing_private_paths(self) -> None:
         with tempfile.TemporaryDirectory(prefix="rentfleet-color-v8-sanitize-") as temporary:
@@ -121,6 +145,8 @@ class ColorV8ImageSanitizerTest(unittest.TestCase):
                 "8388608",
                 "--max-dimension",
                 "8000",
+                "--output-max-dimension",
+                "2048",
             ],
             cwd=Path(tempfile.gettempdir()),
             capture_output=True,

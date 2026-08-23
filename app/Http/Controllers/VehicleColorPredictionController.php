@@ -68,7 +68,9 @@ class VehicleColorPredictionController extends Controller
             && (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds') >= 1
             && (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds') <= 30
             && (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds') >= 1
-            && (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds') <= 15;
+            && (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds') <= 15
+            && (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension') >= 256
+            && (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension') <= 4_096;
 
         return view('intelligence.vehicle-colors.index', [
             'vehicles' => $vehicles,

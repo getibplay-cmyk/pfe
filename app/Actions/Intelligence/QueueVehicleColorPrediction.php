@@ -175,6 +175,7 @@ final class QueueVehicleColorPrediction
         $timeout = (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds');
         $sanitizer = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
         $sanitizerTimeout = (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds');
+        $storedDimension = (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension');
 
         return $this->modelArtifact->configuredIsValid()
             && (string) config('intelligence.vehicle_color_v8.python_binary') !== ''
@@ -184,7 +185,9 @@ final class QueueVehicleColorPrediction
             && $timeout >= 1
             && $timeout <= 30
             && $sanitizerTimeout >= 1
-            && $sanitizerTimeout <= 15;
+            && $sanitizerTimeout <= 15
+            && $storedDimension >= 256
+            && $storedDimension <= 4_096;
     }
 
     private function recoverStaleRuns(Vehicle $vehicle): void

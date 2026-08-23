@@ -48,9 +48,10 @@ L’abstention et la validation humaine restent obligatoires.
 
 1. Le navigateur envoie seulement `vehicle_id` et une image JPEG, PNG ou WebP.
 2. Le serveur déduit le tenant et l’agence depuis le contexte authentifié.
-3. Le runtime Pillow applique l’orientation EXIF puis réencode la photo sans
-   EXIF, GPS, XMP, profil ICC ni commentaire. Seule cette copie assainie est
-   stockée sur le disque Laravel privé, jamais sous `public/`.
+3. Le runtime Pillow applique l’orientation EXIF puis normalise la photo en
+   JPEG privé (2 048 px maximum, qualité adaptative sous 8 Mo), sans EXIF,
+   GPS, XMP, profil ICC ni commentaire. Seule cette copie assainie est stockée
+   sur le disque Laravel privé, jamais sous `public/`.
 4. La taille, le MIME et le SHA-256 sont recalculés sur la copie assainie. Son
    chemin exact est lié au `tenant_id`, au `run_id` et à l’extension par
    la validation PHP et une contrainte PostgreSQL; une analyse ne peut pas

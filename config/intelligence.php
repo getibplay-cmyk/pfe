@@ -69,6 +69,7 @@ return [
         'image_sanitizer_timeout_seconds' => 15,
         'max_upload_kilobytes' => 8192,
         'max_image_dimension' => 8000,
+        'max_stored_image_dimension' => 2048,
         'rate_limits' => [
             'user_per_minute' => env('COLOR_V8_USER_RATE_LIMIT_PER_MINUTE', 5),
             'scope_per_hour' => env('COLOR_V8_SCOPE_RATE_LIMIT_PER_HOUR', 30),

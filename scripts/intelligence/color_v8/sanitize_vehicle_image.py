@@ -18,12 +18,17 @@ from PIL import Image, ImageOps
 SCHEMA_VERSION = "1.0.0"
 MAX_INPUT_BYTES = 8_388_608
 MAX_DIMENSION = 8_000
+DEFAULT_OUTPUT_MAX_DIMENSION = 2_048
 MAX_PIXELS = 64_000_000
 FORMAT_BY_MIME = {
     "image/jpeg": ("JPEG", "jpg"),
     "image/png": ("PNG", "png"),
     "image/webp": ("WEBP", "webp"),
 }
+OUTPUT_FORMAT = "JPEG"
+OUTPUT_MIME = "image/jpeg"
+OUTPUT_EXTENSION = "jpg"
+OUTPUT_QUALITIES = (92, 85, 75, 65, 50)
 PRIVATE_METADATA_KEYS = {
     "comment",
     "exif",
@@ -47,6 +52,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--expected-mime", choices=tuple(FORMAT_BY_MIME), required=True)
     parser.add_argument("--max-bytes", type=int, default=MAX_INPUT_BYTES)
     parser.add_argument("--max-dimension", type=int, default=MAX_DIMENSION)
+    parser.add_argument(
+        "--output-max-dimension",
+        type=int,
+        default=DEFAULT_OUTPUT_MAX_DIMENSION,
+    )
     return parser.parse_args()
 
 
@@ -72,7 +82,19 @@ def flatten_to_rgb(image: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
-def save_reencoded(image: Image.Image, image_format: str, output: Path) -> None:
+def fit_for_private_storage(image: Image.Image, max_dimension: int) -> Image.Image:
+    if max(image.size) <= max_dimension:
+        return image
+    fitted = image.copy()
+    fitted.thumbnail(
+        (max_dimension, max_dimension),
+        resample=Image.Resampling.LANCZOS,
+        reducing_gap=3.0,
+    )
+    return fitted
+
+
+def save_reencoded(image: Image.Image, output: Path, max_bytes: int) -> tuple[int, int]:
     output_parent = output.parent
     require(output_parent.is_dir() and not output_parent.is_symlink(), "Output directory is unsafe.")
     require(not output.is_symlink(), "Output target is unsafe.")
@@ -84,18 +106,26 @@ def save_reencoded(image: Image.Image, image_format: str, output: Path) -> None:
     )
     temporary = Path(temporary_name)
     try:
+        os.close(descriptor)
         os.chmod(temporary, 0o600)
-        with os.fdopen(descriptor, "wb") as stream:
-            if image_format == "JPEG":
-                image.save(stream, format="JPEG", quality=95, optimize=True, progressive=False)
-            elif image_format == "PNG":
-                image.save(stream, format="PNG", optimize=True)
-            elif image_format == "WEBP":
-                image.save(stream, format="WEBP", quality=95, method=4)
-            else:
-                raise SanitizationContractError("Output format is unsupported.")
-        os.replace(temporary, output)
-        os.chmod(output, 0o600)
+        candidate = image
+        while True:
+            for quality in OUTPUT_QUALITIES:
+                with temporary.open("wb") as stream:
+                    candidate.save(
+                        stream,
+                        format=OUTPUT_FORMAT,
+                        quality=quality,
+                        optimize=True,
+                        progressive=False,
+                    )
+                if 1 <= temporary.stat().st_size <= max_bytes:
+                    os.replace(temporary, output)
+                    os.chmod(output, 0o600)
+                    return candidate.size
+            longest_side = max(candidate.size)
+            require(longest_side > 256, "Sanitized image cannot fit the private storage contract.")
+            candidate = fit_for_private_storage(candidate, max(256, int(longest_side * 0.75)))
     finally:
         if temporary.exists():
             temporary.unlink()
@@ -107,13 +137,18 @@ def sanitize(
     expected_mime: str,
     max_bytes: int,
     max_dimension: int,
+    output_max_dimension: int,
 ) -> dict[str, object]:
     require(1 <= max_bytes <= MAX_INPUT_BYTES, "Maximum byte size is invalid.")
     require(1 <= max_dimension <= MAX_DIMENSION, "Maximum dimension is invalid.")
+    require(
+        256 <= output_max_dimension <= 4_096,
+        "Maximum sanitized dimension is invalid.",
+    )
     require(source_path.is_file() and not source_path.is_symlink(), "Input image is missing or unsafe.")
     require(1 <= source_path.stat().st_size <= max_bytes, "Input image size is invalid.")
 
-    expected_format, extension = FORMAT_BY_MIME[expected_mime]
+    expected_format, _ = FORMAT_BY_MIME[expected_mime]
     with Image.open(source_path) as probe:
         image_format = probe.format
         probe.verify()
@@ -127,15 +162,14 @@ def sanitize(
             "Input image dimensions are invalid.",
         )
         require(oriented.width * oriented.height <= MAX_PIXELS, "Input image area is invalid.")
-        sanitized = flatten_to_rgb(oriented)
+        sanitized = fit_for_private_storage(flatten_to_rgb(oriented), output_max_dimension)
         sanitized.info.clear()
-        width, height = sanitized.size
-        save_reencoded(sanitized, expected_format, output_path)
+        width, height = save_reencoded(sanitized, output_path, max_bytes)
 
     output_bytes = output_path.stat().st_size
     require(1 <= output_bytes <= max_bytes, "Sanitized image size is invalid.")
     with Image.open(output_path) as probe:
-        require(probe.format == expected_format, "Sanitized image format is invalid.")
+        require(probe.format == OUTPUT_FORMAT, "Sanitized image format is invalid.")
         probe.verify()
     with Image.open(output_path) as verified:
         require(len(verified.getexif()) == 0, "Sanitized image still contains EXIF data.")
@@ -146,8 +180,9 @@ def sanitize(
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "mime": expected_mime,
-        "extension": extension,
+        "source_mime": expected_mime,
+        "mime": OUTPUT_MIME,
+        "extension": OUTPUT_EXTENSION,
         "bytes": output_bytes,
         "sha256": file_sha256(output_path),
         "width": width,
@@ -164,6 +199,7 @@ def main() -> int:
         args.expected_mime,
         args.max_bytes,
         args.max_dimension,
+        args.output_max_dimension,
     )
     sys.stdout.write(json.dumps(manifest, separators=(",", ":")) + "\n")
     return 0
