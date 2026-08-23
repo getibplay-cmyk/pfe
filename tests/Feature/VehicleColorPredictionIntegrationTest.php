@@ -372,7 +372,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $belowThreshold = new VehicleColorPredictionRun([
             'status' => VehicleColorPredictionStatus::Succeeded,
             'suggested_color' => 'black',
-            'confidence' => VehicleColorContract::CONSULTATIVE_DISPLAY_THRESHOLD - 0.0001,
+            'confidence' => 0.7499,
         ]);
 
         $this->assertTrue($atThreshold->hasDisplayableCandidate());
