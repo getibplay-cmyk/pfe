@@ -104,6 +104,7 @@ def validate_manifest(rows: Sequence[Mapping[str, str]]) -> ManifestReport:
     split_label_counts = {split: {"0": 0, "1": 0} for split in sorted(ALLOWED_SPLITS)}
     label_counts = {"0": 0, "1": 0}
     source_counts: dict[str, int] = {}
+    source_split_label_counts: dict[str, dict[str, dict[str, int]]] = {}
     group_to_split: dict[str, str] = {}
     seen_hashes: dict[str, str] = {}
 
@@ -164,6 +165,10 @@ def validate_manifest(rows: Sequence[Mapping[str, str]]) -> ManifestReport:
             )
 
         source_counts[source_id] = source_counts.get(source_id, 0) + 1
+        source_split_label_counts.setdefault(
+            source_id,
+            {name: {"0": 0, "1": 0} for name in sorted(ALLOWED_SPLITS)},
+        )[split][label] += 1
         split_counts[split] += 1
         split_label_counts[split][label] += 1
         label_counts[label] += 1
@@ -178,6 +183,17 @@ def validate_manifest(rows: Sequence[Mapping[str, str]]) -> ManifestReport:
     ]
     if one_class_splits:
         raise ProtocolError(f"Splits sans les deux labels: {', '.join(one_class_splits)}")
+    incomplete_source_splits = [
+        f"{source_id}/{split}"
+        for source_id, source_splits in source_split_label_counts.items()
+        for split, counts in source_splits.items()
+        if counts["0"] == 0 or counts["1"] == 0
+    ]
+    if incomplete_source_splits:
+        raise ProtocolError(
+            "Chaque source doit contenir les deux labels dans chaque split: "
+            + ", ".join(incomplete_source_splits)
+        )
     empty_labels = [label for label, count in label_counts.items() if count == 0]
     if empty_labels:
         raise ProtocolError(f"Labels absents: {', '.join(empty_labels)}")
