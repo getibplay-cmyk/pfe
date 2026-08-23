@@ -19,6 +19,18 @@
             </div>
         </x-section-card>
 
+        <x-section-card
+            title="Couleur d’un véhicule · S7 v8"
+            description="Modèle ONNX gelé avec abstention et validation humaine obligatoire, sans mise à jour automatique du véhicule."
+        >
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                    Macro-F1 externe finale 0,914989 · précision des prédictions acceptées 100 % · couverture 59,375 % · seuil d’acceptation 0,977. Le module reste désactivé par défaut jusqu’à activation explicite.
+                </p>
+                <a href="{{ route('intelligence.vehicle-colors.index') }}" class="rf-button-secondary">Ouvrir l’analyse couleur</a>
+            </div>
+        </x-section-card>
+
         <x-section-card title="Cadre scientifique et humain" description="Les preuves disponibles n’exécutent aucune décision métier.">
             <ul class="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
                 <li><span class="font-medium">rental_anomaly_iforest 0.1.0</span> est un artefact synthétique historique du Lot 07B1, distinct du candidat public J9.</li>

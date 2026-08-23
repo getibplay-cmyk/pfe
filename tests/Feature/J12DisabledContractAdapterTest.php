@@ -584,7 +584,7 @@ class J12DisabledContractAdapterTest extends TestCase
     public function test_postgresql_schema_and_review_permission_remain_explicit(): void
     {
         $this->assertUsesAuthorizedPostgreSqlTestDatabase();
-        $this->assertSame(79, DB::table('migrations')->count());
+        $this->assertSame(80, DB::table('migrations')->count());
 
         foreach (['ai_advisory_records_demo', 'ai_idempotency_keys_demo', 'ai_human_decisions_demo'] as $table) {
             $this->assertTrue(DB::table('information_schema.tables')

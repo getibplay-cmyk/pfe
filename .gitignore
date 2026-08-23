@@ -26,6 +26,7 @@ __pycache__/
 /storage/app/.rentfleet-restore-stage-*
 /.pgpass
 /pgpass.conf
+/:memory:.ses
 /.fleet
 /.idea
 /.nova

@@ -60,6 +60,38 @@ return [
         'decision_effect' => 'NO_OPERATIONAL_ACTION',
     ],
 
+    'vehicle_color_v8' => [
+        'enabled' => env('RENTFLEET_COLOR_V8_ENABLED', false),
+        'disk' => 'local',
+        'runtime_queue' => 'intelligence',
+        'runtime_timeout_seconds' => 30,
+        'runtime_stale_after_seconds' => 600,
+        'max_upload_kilobytes' => 8192,
+        'rate_limits' => [
+            'user_per_minute' => env('COLOR_V8_USER_RATE_LIMIT_PER_MINUTE', 5),
+            'scope_per_hour' => env('COLOR_V8_SCOPE_RATE_LIMIT_PER_HOUR', 30),
+        ],
+        'python_binary' => env(
+            'COLOR_V8_PYTHON_BINARY',
+            env('INTELLIGENCE_PYTHON_BINARY', 'python'),
+        ),
+        'execution_provider' => env('COLOR_V8_EXECUTION_PROVIDER', 'CPUExecutionProvider'),
+        'runtime_script' => base_path('scripts/intelligence/color_v8/run_color_v8_onnx.py'),
+        'model_path' => env(
+            'COLOR_V8_MODEL_PATH',
+            storage_path('app/private/intelligence/models/color-v8/S7_COLOR_V8_FINAL.onnx'),
+        ),
+        'metadata_path' => env(
+            'COLOR_V8_METADATA_PATH',
+            storage_path('app/private/intelligence/models/color-v8/S7_COLOR_V8_FINAL_METADATA.json'),
+        ),
+        'mode' => 'consultative_only',
+        'human_validation_required' => true,
+        'automatic_actions_allowed' => false,
+        'operational_table_writes_allowed' => false,
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'rule_baseline' => [
         'name' => 'rental_anomaly_rules',
         'version' => '1.0.0',

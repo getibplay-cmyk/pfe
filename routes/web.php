@@ -35,6 +35,7 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleBlockController;
 use App\Http\Controllers\VehicleCategoryController;
+use App\Http\Controllers\VehicleColorPredictionController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleInspectionController;
 use Illuminate\Support\Facades\Log;
@@ -226,6 +227,15 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.demand-forecasts.store');
     Route::post('/intelligence/demand-history/{historyRun}/forecast-executions', [DemandForecastController::class, 'queueExecution'])
         ->name('intelligence.demand-forecast-executions.store');
+    Route::get('/intelligence/vehicle-colors', [VehicleColorPredictionController::class, 'index'])
+        ->name('intelligence.vehicle-colors.index');
+    Route::post('/intelligence/vehicle-colors', [VehicleColorPredictionController::class, 'store'])
+        ->middleware('throttle:vehicle-color-v8')
+        ->name('intelligence.vehicle-colors.store');
+    Route::get('/intelligence/vehicle-colors/{colorPrediction}/input', [VehicleColorPredictionController::class, 'input'])
+        ->name('intelligence.vehicle-colors.input');
+    Route::post('/intelligence/vehicle-colors/{colorPrediction}/reviews', [VehicleColorPredictionController::class, 'review'])
+        ->name('intelligence.vehicle-colors.reviews.store');
     Route::get('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'index'])
         ->name('intelligence.fleet-reallocation.index');
     Route::post('/intelligence/fleet-reallocation/runs', [FleetReallocationProposalController::class, 'queueRun'])

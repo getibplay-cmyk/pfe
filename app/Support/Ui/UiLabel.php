@@ -10,7 +10,7 @@ class UiLabel
     private const LABELS = [
         'active' => 'Actif', 'inactive' => 'Inactif', 'archived' => 'Archivé', 'suspended' => 'Suspendu',
         'draft' => 'Brouillon', 'pending' => 'En attente', 'confirmed' => 'Confirmée', 'converted' => 'Convertie',
-        'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'accepted' => 'Accepté',
+        'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'accepted' => 'Accepté', 'ignored' => 'Ignoré',
         'return_pending' => 'Retour à traiter', 'returned' => 'Retourné', 'closed' => 'Clôturé',
         'issued' => 'Émise', 'partially_paid' => 'Partiellement payée', 'paid' => 'Payée', 'void' => 'Annulée',
         'posted' => 'Comptabilisé', 'reversed' => 'Contrepassé', 'approved' => 'Approuvé', 'rejected' => 'Rejeté',
@@ -67,7 +67,7 @@ class UiLabel
         'pending' => 'warning', 'ready' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
         'planned' => 'warning', 'under_review' => 'warning', 'submitted' => 'warning', 'suspended' => 'warning',
         'queued' => 'warning', 'running' => 'info', 'succeeded' => 'success', 'failed' => 'danger',
-        'cancelled' => 'danger', 'expired' => 'danger', 'rejected' => 'danger', 'void' => 'danger',
+        'cancelled' => 'danger', 'expired' => 'danger', 'rejected' => 'danger', 'void' => 'danger', 'ignored' => 'muted',
         'out_of_service' => 'danger', 'critical' => 'danger', 'inactive' => 'muted', 'archived' => 'muted',
         'draft' => 'muted', 'closed' => 'muted', 'returned' => 'info', 'in_progress' => 'info',
         'information' => 'info', 'warning' => 'warning', 'urgent' => 'danger',
@@ -127,6 +127,11 @@ class UiLabel
         'prediction.fleet_reallocation.run_failed' => 'Échec contrôlé du calcul OR-Tools',
         'prediction.fleet_reallocation.downloaded' => 'Proposition de réallocation téléchargée',
         'prediction.fleet_reallocation.human_decision_recorded' => 'Décision humaine sur une réallocation enregistrée',
+        'prediction.vehicle_color.run_queued' => 'Analyse couleur ajoutée à la queue',
+        'prediction.vehicle_color.run_succeeded' => 'Analyse couleur ONNX terminée',
+        'prediction.vehicle_color.run_failed' => 'Échec contrôlé de l’analyse couleur',
+        'prediction.vehicle_color.input_viewed' => 'Photo privée de l’analyse couleur consultée',
+        'prediction.vehicle_color.human_decision_recorded' => 'Décision humaine sur une couleur enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
         'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
@@ -235,6 +240,7 @@ class UiLabel
         'platform.tenants.manage' => 'Administrer les entreprises clientes de la plateforme',
         'prediction.demo.review' => 'Générer, importer et revoir les preuves Intelligence synthétiques',
         'prediction.forecast.import' => 'Importer les prévisions de demande consultatives',
+        'prediction.color.review' => 'Analyser et revoir la couleur d’un véhicule',
     ];
 
     private const ENTITIES = [
@@ -247,6 +253,8 @@ class UiLabel
         'IntelligenceDatasetExportRun' => 'Snapshot Intelligence', 'IntelligenceResultBatch' => 'Lot de résultats Intelligence',
         'DemandHistoryExportRun' => 'Snapshot d’historique de demande', 'DemandForecastRun' => 'Exécution de prévision de demande',
         'DemandForecast' => 'Prévision de demande',
+        'VehicleColorPredictionRun' => 'Analyse de couleur véhicule',
+        'VehicleColorPredictionReview' => 'Revue humaine de couleur véhicule',
     ];
 
     private const REPORT_LABELS = [
@@ -341,6 +349,10 @@ class UiLabel
 
     public static function permissionDescription(string $permission): string
     {
+        if ($permission === 'prediction.color.review') {
+            return 'Effet : analyse consultative et revue humaine auditée, sans modification automatique du véhicule.';
+        }
+
         return str_ends_with($permission, '.view')
             ? 'Effet : consultation des informations autorisées, sans modification.'
             : 'Effet : exécution d’une action métier contrôlée et auditée lorsque nécessaire.';
