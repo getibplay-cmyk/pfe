@@ -35,14 +35,18 @@ ensuite été conservé sur Google Drive et vérifié avant l’intégration.
 | Précision acceptée | 1,00 |
 | Couverture acceptée | 0,59375 |
 | Fausse acceptation du rejet | 0,05 |
-| Seuil d’acceptation | 0,977 |
+| Seuil d’affichage consultatif | 0,75 |
+| Seuil d’acceptation scientifique | 0,977 |
 
 Ontologie fermée : `black`, `blue`, `gray`, `green`, `orange`, `red`,
 `white`, `yellow`, `__reject__`.
 
 Ces métriques qualifient l’artefact sur le protocole externe gelé. Elles ne
 constituent pas une garantie universelle sur les futures photos RentFleet.
-L’abstention et la validation humaine restent obligatoires.
+À partir de 0,75, l’interface affiche la meilleure couleur supportée comme une
+indication à contrôler visuellement. Ce seuil d’affichage ne modifie ni la
+règle d’acceptation scientifique à 0,977, ni l’abstention du runtime, ni
+l’obligation de validation humaine.
 
 ## Architecture de sécurité
 
@@ -142,7 +146,8 @@ cuDNN 9; la pile NVIDIA du worker doit donc être compatible. Ne jamais installe
 - Une seule analyse `queued` ou `running` est autorisée par véhicule.
 - Une exécution expirée est fermée en `failed` avant un nouveau lancement.
 - Un échec ne conserve ni suggestion ni score et n’expose pas `stderr`.
-- Une abstention ne peut jamais être acceptée par la revue humaine.
+- Une couleur candidate est visible à partir de 0,75 pour le contrôle visuel.
+- Sous 0,977, elle reste une indication non acceptable par la politique scientifique.
 - La photo reste accessible uniquement par la route privée, autorisée et
   auditée.
 - Pour arrêter immédiatement les nouvelles analyses, remettre

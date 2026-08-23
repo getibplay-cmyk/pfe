@@ -26,6 +26,7 @@ use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Ui\UiLabel;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -157,6 +158,10 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $this->assertSame('black', $completed->suggested_color);
         $this->assertSame('0.9800000', $completed->confidence);
         $this->assertTrue($completed->model_accepted);
+        $this->assertSame(
+            'vehicle_color_consultative_scientific_threshold_reached',
+            $completed->consultativeStatus(),
+        );
         $this->assertNotNull($completed->started_at);
         $this->assertNotNull($completed->finished_at);
         $this->assertSame(
@@ -177,7 +182,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-colors.index'))
             ->assertOk()
             ->assertSee('Noir')
-            ->assertSee('Acceptable pour revue humaine')
+            ->assertSee('Seuil scientifique validé atteint')
             ->assertDontSee($completed->input_stored_path)
             ->assertDontSee($completed->input_sha256)
             ->assertDontSee($completed->model_artifact_sha256);
@@ -319,8 +324,9 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $this->actingAs($fixture['user'])
             ->get(route('intelligence.vehicle-colors.index'))
             ->assertOk()
-            ->assertSee('Abstention du modèle')
-            ->assertSee('Abstention obligatoire')
+            ->assertSee('Résultat non exploitable')
+            ->assertDontSee('Abstention du modèle')
+            ->assertDontSee('Abstention obligatoire')
             ->assertDontSee('Accepter la suggestion');
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.vehicle-colors.reviews.store', $run), [
@@ -338,6 +344,62 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             'decision' => VehicleColorReviewDecision::Rejected->value,
             'effect' => VehicleColorContract::OPERATIONAL_EFFECT,
         ]);
+    }
+
+    public function test_candidate_is_displayed_from_seventy_five_percent_without_lowering_acceptance(): void
+    {
+        $fixture = $this->fixture();
+        $run = $this->completedRun($fixture, false, 0.9705);
+        $this->assertFalse($run->model_accepted);
+        $this->assertTrue($run->hasDisplayableCandidate());
+        $this->assertSame('Noir', $run->outcomeLabel());
+
+        $this->actingAs($fixture['user'])
+            ->get(route('intelligence.vehicle-colors.index'))
+            ->assertOk()
+            ->assertSee('Couleur la plus probable')
+            ->assertSee('Noir')
+            ->assertSee('97,05 %')
+            ->assertSee('Couleur indicative à contrôler visuellement')
+            ->assertSee('Le seuil scientifique de 97,7 % reste inchangé')
+            ->assertDontSee('Abstention du modèle')
+            ->assertDontSee('Abstention obligatoire')
+            ->assertDontSee('Accepter la suggestion');
+    }
+
+    public function test_consultative_display_threshold_is_inclusive(): void
+    {
+        $atThreshold = new VehicleColorPredictionRun([
+            'status' => VehicleColorPredictionStatus::Succeeded,
+            'suggested_color' => 'black',
+            'confidence' => VehicleColorContract::CONSULTATIVE_DISPLAY_THRESHOLD,
+        ]);
+        $belowThreshold = new VehicleColorPredictionRun([
+            'status' => VehicleColorPredictionStatus::Succeeded,
+            'suggested_color' => 'black',
+            'confidence' => 0.7499,
+        ]);
+
+        $this->assertTrue($atThreshold->hasDisplayableCandidate());
+        $this->assertSame('Noir', $atThreshold->outcomeLabel());
+        $this->assertSame(
+            'vehicle_color_consultative_candidate_to_review',
+            $atThreshold->consultativeStatus(),
+        );
+        $this->assertSame(
+            'Couleur indicative à contrôler visuellement',
+            UiLabel::get($atThreshold->consultativeStatus()),
+        );
+        $this->assertFalse($belowThreshold->hasDisplayableCandidate());
+        $this->assertSame('Résultat non exploitable', $belowThreshold->outcomeLabel());
+        $this->assertSame(
+            'vehicle_color_consultative_not_exploitable',
+            $belowThreshold->consultativeStatus(),
+        );
+        $this->assertSame(
+            'Résultat non exploitable',
+            UiLabel::get($belowThreshold->consultativeStatus()),
+        );
     }
 
     public function test_bad_input_and_unverified_artifact_fail_closed_before_queueing(): void
@@ -797,8 +859,11 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $this->assertFileDoesNotExist(config('intelligence.vehicle_color_v8.model_path'));
     }
 
-    private function completedRun(array $fixture, bool $accepted): VehicleColorPredictionRun
-    {
+    private function completedRun(
+        array $fixture,
+        bool $accepted,
+        ?float $confidence = null,
+    ): VehicleColorPredictionRun {
         $this->enableRuntime();
         Queue::fake();
         $this->actingAs($fixture['user'])
@@ -808,7 +873,9 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ])
             ->assertRedirect();
         $run = VehicleColorPredictionRun::withoutGlobalScopes()->latest('id')->firstOrFail();
-        Process::fake(['*' => Process::result(output: $this->resultJson($run, $accepted))]);
+        Process::fake([
+            '*' => Process::result(output: $this->resultJson($run, $accepted, $confidence)),
+        ]);
         (new RunVehicleColorPrediction($run->run_id, $run->tenant_id, $run->requested_by))
             ->handle(app(ExecuteVehicleColorPrediction::class));
 
@@ -925,8 +992,11 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         return $bytes;
     }
 
-    private function resultJson(VehicleColorPredictionRun $run, bool $accepted): string
-    {
+    private function resultJson(
+        VehicleColorPredictionRun $run,
+        bool $accepted,
+        ?float $confidence = null,
+    ): string {
         $probabilities = $accepted
             ? [
                 'black' => 0.98,
@@ -950,6 +1020,11 @@ class VehicleColorPredictionIntegrationTest extends TestCase
                 'yellow' => 0.05,
                 '__reject__' => 0.15,
             ];
+        if ($confidence !== null) {
+            $remaining = (1 - $confidence) / (count(VehicleColorContract::CLASSES) - 1);
+            $probabilities = array_fill_keys(VehicleColorContract::CLASSES, $remaining);
+            $probabilities['black'] = $confidence;
+        }
 
         return json_encode([
             'schema_version' => VehicleColorContract::RESULT_SCHEMA_VERSION,

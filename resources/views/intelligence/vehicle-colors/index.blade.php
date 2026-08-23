@@ -3,7 +3,7 @@
         <x-page-header
             title="Couleur du véhicule · modèle S7 v8"
             eyebrow="Intelligence consultative"
-            description="Soumettez une photo privée, consultez la suggestion ONNX puis consignez une décision humaine. La couleur enregistrée du véhicule n’est jamais modifiée automatiquement."
+            description="Soumettez une photo privée, consultez la couleur la plus probable puis consignez une décision humaine. La couleur enregistrée du véhicule n’est jamais modifiée automatiquement."
         >
             <x-slot:actions>
                 <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
@@ -107,10 +107,13 @@
                             <div>
                                 @if ($run->status->value === 'succeeded')
                                     <div class="grid gap-3 text-sm sm:grid-cols-3">
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Suggestion</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance supportée</p><p class="mt-1 font-semibold">{{ number_format((float) $run->confidence * 100, 2, ',', ' ') }} %</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Politique du modèle</p><p class="mt-1 font-semibold {{ $run->model_accepted ? 'text-emerald-700' : 'text-amber-800' }}">{{ $run->model_accepted ? 'Acceptable pour revue humaine' : 'Abstention obligatoire' }}</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Couleur la plus probable</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance du modèle</p><p class="mt-1 font-semibold">{{ number_format((float) $run->confidence * 100, 2, ',', ' ') }} %</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Statut consultatif</p><p class="mt-1"><x-status-badge :value="$run->consultativeStatus()" /></p></div>
                                     </div>
+                                    @if ($run->hasDisplayableCandidate() && ! $run->model_accepted)
+                                        <p class="mt-3 text-xs leading-5 text-amber-800">La couleur est affichée à partir de 75 % pour faciliter le contrôle visuel. Le seuil scientifique de 97,7 % reste inchangé et cette indication ne peut produire aucune modification automatique.</p>
+                                    @endif
 
                                     @if ($run->review)
                                         <div class="mt-4 rounded-xl border border-slate-200 p-4 text-sm">
