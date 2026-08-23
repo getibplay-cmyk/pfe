@@ -140,8 +140,11 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $input = $this->actingAs($fixture['user'])
             ->get(route('intelligence.vehicle-colors.input', $completed))
             ->assertOk()
-            ->assertHeader('content-type', 'image/png')
-            ->assertHeader('cache-control', 'private, no-store, max-age=0');
+            ->assertHeader('content-type', 'image/png');
+        $this->assertEqualsCanonicalizing(
+            ['private', 'no-store', 'max-age=0'],
+            array_map('trim', explode(',', (string) $input->headers->get('cache-control'))),
+        );
         $this->assertSame($this->imageBytes(), $input->streamedContent());
         $this->assertDatabaseHas('audit_logs', ['action' => 'prediction.vehicle_color.input_viewed']);
     }
