@@ -165,6 +165,7 @@ final class QueueVehicleColorPrediction
             || $actor->tenant_id !== $vehicle->tenant_id
             || $this->context->tenantId() !== $vehicle->tenant_id
             || ! $actor->is_active
+            || ! $actor->hasPermission('prediction.view')
             || ! $actor->hasPermission('prediction.color.review')
             || ($actor->agency_id !== null && $actor->agency_id !== $vehicle->agency_id)
             || ($contextAgency !== null && $contextAgency !== $vehicle->agency_id)) {

@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Actions\Intelligence\ExecuteVehicleColorPrediction;
+use App\Actions\Intelligence\QueueVehicleColorPrediction;
 use App\Enums\VehicleColorPredictionStatus;
 use App\Enums\VehicleColorReviewDecision;
+use App\Exceptions\VehicleColorExecutionException;
 use App\Jobs\RunVehicleColorPrediction;
 use App\Models\Agency;
 use App\Models\AuditLog;
@@ -21,6 +23,7 @@ use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -425,6 +428,70 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+
+    public function test_internal_queue_action_revalidates_view_permission(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime();
+        Queue::fake();
+        $this->revokeViewPermission($fixture['user']);
+
+        $failure = null;
+        try {
+            app(TenantContext::class)->run(
+                $fixture['tenant'],
+                fn () => app(QueueVehicleColorPrediction::class)->handle(
+                    $fixture['vehicle'],
+                    $this->image(),
+                    $fixture['user'],
+                ),
+                $fixture['agency']->id,
+            );
+        } catch (AuthorizationException $exception) {
+            $failure = $exception;
+        }
+
+        $this->assertInstanceOf(AuthorizationException::class, $failure);
+        $this->assertSame(0, VehicleColorPredictionRun::withoutGlobalScopes()->count());
+        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/color-v8'));
+        Queue::assertNothingPushed();
+    }
+
+    public function test_worker_revalidates_view_permission_after_queueing(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime();
+        Queue::fake();
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.vehicle-colors.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'image' => $this->image(),
+            ])
+            ->assertRedirect();
+
+        $run = VehicleColorPredictionRun::withoutGlobalScopes()->firstOrFail();
+        $this->revokeViewPermission($fixture['user']);
+        Process::fake();
+        $job = new RunVehicleColorPrediction($run->run_id, $run->tenant_id, $run->requested_by);
+
+        $failure = null;
+        try {
+            $job->handle(app(ExecuteVehicleColorPrediction::class));
+        } catch (VehicleColorExecutionException $exception) {
+            $failure = $exception;
+        }
+
+        $this->assertInstanceOf(VehicleColorExecutionException::class, $failure);
+        $this->assertSame('RUN_ACTOR_NOT_AUTHORIZED', $failure->failureCode());
+        $job->failed($failure);
+        $this->assertDatabaseHas('vehicle_color_prediction_runs', [
+            'id' => $run->id,
+            'status' => VehicleColorPredictionStatus::Failed->value,
+            'failure_code' => 'RUN_ACTOR_NOT_AUTHORIZED',
+        ]);
+        Process::assertNothingRan();
+    }
+
     public function test_vehicle_selector_is_bounded_and_searchable(): void
     {
         $fixture = $this->fixture();
@@ -510,6 +577,16 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ->handle(app(ExecuteVehicleColorPrediction::class));
 
         return VehicleColorPredictionRun::withoutGlobalScopes()->findOrFail($run->id);
+    }
+
+
+    private function revokeViewPermission(User $user): void
+    {
+        $permission = Permission::query()
+            ->where('slug', 'prediction.view')
+            ->firstOrFail();
+        $user->role()->firstOrFail()->permissions()->detach($permission->id);
+        $user->unsetRelation('role');
     }
 
     private function enableRuntime(): void

@@ -39,6 +39,7 @@ final class ExecuteVehicleColorPrediction
                 ->first();
             if (! (bool) config('intelligence.vehicle_color_v8.enabled')
                 || $actor === null
+                || ! $actor->hasPermission('prediction.view')
                 || ! $actor->hasPermission('prediction.color.review')
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
                 throw new VehicleColorExecutionException('RUN_ACTOR_NOT_AUTHORIZED');
