@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import unittest
 
 from scripts.intelligence.vehicle_damage.protocol import (
@@ -66,6 +65,14 @@ class VehicleDamageProtocolTest(unittest.TestCase):
     def test_rejects_one_class_split(self):
         rows = [row for row in self.valid_rows() if not (row["split"] == "test" and row["label"] == "0")]
         with self.assertRaisesRegex(ProtocolError, "Splits sans les deux labels"):
+            validate_manifest(rows)
+
+    def test_rejects_source_that_would_be_identifiable_from_the_label(self):
+        rows = self.valid_rows()
+        rows[0]["source_id"] = "tqvcd"
+        rows[0]["source_url"] = "https://github.com/dxlabskku/TQVCD"
+        rows[0]["license_id"] = "TQVCD-author-consent"
+        with self.assertRaisesRegex(ProtocolError, "Chaque source doit contenir les deux labels"):
             validate_manifest(rows)
 
     def test_release_gate_is_inclusive_at_user_floor(self):
