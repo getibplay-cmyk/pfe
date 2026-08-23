@@ -48,11 +48,14 @@ L’abstention et la validation humaine restent obligatoires.
 
 1. Le navigateur envoie seulement `vehicle_id` et une image JPEG, PNG ou WebP.
 2. Le serveur déduit le tenant et l’agence depuis le contexte authentifié.
-3. La photo est stockée sur le disque Laravel privé, jamais sous `public/`.
-4. Son chemin exact est lié au `tenant_id`, au `run_id` et à l’extension par
+3. Le runtime Pillow applique l’orientation EXIF puis réencode la photo sans
+   EXIF, GPS, XMP, profil ICC ni commentaire. Seule cette copie assainie est
+   stockée sur le disque Laravel privé, jamais sous `public/`.
+4. La taille, le MIME et le SHA-256 sont recalculés sur la copie assainie. Son
+   chemin exact est lié au `tenant_id`, au `run_id` et à l’extension par
    la validation PHP et une contrainte PostgreSQL; une analyse ne peut pas
    pointer vers la photo privée d’un autre tenant ou d’une autre exécution.
-5. Le registre garde taille et SHA-256; ni le chemin ni les empreintes ne sont
+5. Le registre garde la taille et le SHA-256 assainis; ni le chemin ni les empreintes ne sont
    rendus dans l’interface ou l’audit.
 6. Le job revalide l’acteur, le véhicule, la photo, l’ONNX et les métadonnées.
 7. Le processus Python reçoit une liste d’arguments, un environnement privé de

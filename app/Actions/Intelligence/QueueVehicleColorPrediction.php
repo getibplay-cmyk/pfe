@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
+use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -25,6 +26,7 @@ final class QueueVehicleColorPrediction
     public function __construct(
         private readonly TenantContext $context,
         private readonly VehicleColorModelArtifact $modelArtifact,
+        private readonly VehicleColorImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
     ) {}
 
@@ -35,25 +37,19 @@ final class QueueVehicleColorPrediction
             throw new VehicleColorRuntimeUnavailableException;
         }
 
+        $sanitized = $this->imageSanitizer->sanitize($image);
         $runId = (string) Str::uuid();
-        $mime = (string) $image->getMimeType();
-        $extension = match ($mime) {
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            default => throw new VehicleColorRuntimeUnavailableException,
-        };
-        $sourcePath = $image->getRealPath();
-        $bytes = $image->getSize();
-        $sha256 = is_string($sourcePath) ? hash_file('sha256', $sourcePath) : false;
-        if (! is_int($bytes) || $bytes < 1 || ! is_string($sha256)) {
-            throw new VehicleColorRuntimeUnavailableException;
-        }
+        $mime = $sanitized->mime;
+        $extension = $sanitized->extension;
+        $bytes = $sanitized->bytes;
+        $sha256 = $sanitized->sha256;
 
         $disk = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'));
         $directory = 'intelligence/color-v8/inputs/'.$this->context->tenantId();
-        $storedPath = $disk->putFileAs($directory, $image, $runId.'.'.$extension);
-        if (! is_string($storedPath)) {
+        $storedPath = $directory.'/'.$runId.'.'.$extension;
+        $stored = $disk->put($storedPath, $sanitized->contents, ['visibility' => 'private']);
+        unset($sanitized);
+        if (! $stored) {
             throw new VehicleColorRuntimeUnavailableException;
         }
 
@@ -177,13 +173,18 @@ final class QueueVehicleColorPrediction
     {
         $provider = (string) config('intelligence.vehicle_color_v8.execution_provider');
         $timeout = (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds');
+        $sanitizer = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
+        $sanitizerTimeout = (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds');
 
         return $this->modelArtifact->configuredIsValid()
             && (string) config('intelligence.vehicle_color_v8.python_binary') !== ''
             && is_file((string) config('intelligence.vehicle_color_v8.runtime_script'))
+            && is_file($sanitizer)
             && in_array($provider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true)
             && $timeout >= 1
-            && $timeout <= 30;
+            && $timeout <= 30
+            && $sanitizerTimeout >= 1
+            && $sanitizerTimeout <= 15;
     }
 
     private function recoverStaleRuns(Vehicle $vehicle): void

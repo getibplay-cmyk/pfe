@@ -211,10 +211,12 @@ class RentFleetDoctor extends Command
 
         $colorBinary = (string) config('intelligence.vehicle_color_v8.python_binary');
         $colorScript = (string) config('intelligence.vehicle_color_v8.runtime_script');
+        $colorSanitizer = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
         $colorProvider = (string) config('intelligence.vehicle_color_v8.execution_provider');
         $colorArtifact = app(VehicleColorModelArtifact::class);
         $colorConfigured = $colorBinary !== ''
             && File::exists($colorScript)
+            && File::exists($colorSanitizer)
             && in_array($colorProvider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true);
         $colorVersions = null;
         if ($colorConfigured) {
