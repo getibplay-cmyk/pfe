@@ -24,7 +24,8 @@ class StoreVehicleColorPredictionRequest extends FormRequest
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:'.(int) config('intelligence.vehicle_color_v8.max_upload_kilobytes'),
-                'dimensions:max_width=8000,max_height=8000',
+                'dimensions:max_width='.(int) config('intelligence.vehicle_color_v8.max_image_dimension')
+                    .',max_height='.(int) config('intelligence.vehicle_color_v8.max_image_dimension'),
             ],
             'tenant_id' => ['prohibited'],
             'agency_id' => ['prohibited'],

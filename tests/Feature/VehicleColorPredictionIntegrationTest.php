@@ -8,6 +8,7 @@ use App\Actions\Intelligence\RecordVehicleColorPredictionReview;
 use App\Enums\VehicleColorPredictionStatus;
 use App\Enums\VehicleColorReviewDecision;
 use App\Exceptions\VehicleColorExecutionException;
+use App\Exceptions\VehicleColorRuntimeUnavailableException;
 use App\Jobs\RunVehicleColorPrediction;
 use App\Models\Agency;
 use App\Models\AuditLog;
@@ -19,7 +20,9 @@ use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Models\VehicleColorPredictionReview;
 use App\Models\VehicleColorPredictionRun;
+use App\Support\Intelligence\VehicleColor\SanitizedVehicleColorImage;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
+use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Tenancy\TenantContext;
@@ -190,6 +193,82 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         );
         $this->assertSame($this->imageBytes(), $input->streamedContent());
         $this->assertDatabaseHas('audit_logs', ['action' => 'prediction.vehicle_color.input_viewed']);
+    }
+
+    public function test_only_reencoded_metadata_free_image_is_stored_and_identified(): void
+    {
+        $fixture = $this->fixture();
+        $sanitizedBytes = $this->imageBytes();
+        $sourceBytes = $sanitizedBytes.'private-exif-gps-marker';
+        $this->enableRuntime($sanitizedBytes);
+        Queue::fake();
+
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.vehicle-colors.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'image' => UploadedFile::fake()->createWithContent('vehicle.png', $sourceBytes),
+            ])
+            ->assertRedirect();
+
+        $run = VehicleColorPredictionRun::withoutGlobalScopes()->firstOrFail();
+        $stored = Storage::disk('local')->get($run->input_stored_path);
+        $this->assertSame($sanitizedBytes, $stored);
+        $this->assertStringNotContainsString('private-exif-gps-marker', $stored);
+        $this->assertSame(strlen($sanitizedBytes), $run->input_bytes);
+        $this->assertSame(hash('sha256', $sanitizedBytes), $run->input_sha256);
+        $this->assertNotSame(hash('sha256', $sourceBytes), $run->input_sha256);
+        Queue::assertPushed(RunVehicleColorPrediction::class);
+    }
+
+    public function test_image_sanitization_failure_closes_before_storage_database_and_queue(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime();
+        $sanitizer = $this->mock(VehicleColorImageSanitizer::class);
+        $sanitizer->shouldReceive('sanitize')
+            ->once()
+            ->andThrow(new VehicleColorRuntimeUnavailableException);
+        Queue::fake();
+
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.vehicle-colors.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'image' => $this->image(),
+            ])
+            ->assertServiceUnavailable();
+
+        $this->assertSame(0, VehicleColorPredictionRun::withoutGlobalScopes()->count());
+        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/color-v8'));
+        Queue::assertNothingPushed();
+    }
+
+    public function test_php_python_sanitizer_bridge_removes_exif_gps_and_applies_orientation(): void
+    {
+        $python = getenv('COLOR_V8_TEST_PYTHON_BINARY');
+        if (! is_string($python) || ! is_file($python)) {
+            $this->markTestSkipped('Le runtime Python figé du sanitizer est réservé à la CI.');
+        }
+        config([
+            'intelligence.vehicle_color_v8.python_binary' => $python,
+            'intelligence.vehicle_color_v8.image_sanitizer_script' => base_path(
+                'scripts/intelligence/color_v8/sanitize_vehicle_image.py',
+            ),
+        ]);
+        $source = $this->metadataJpegBytes();
+        $this->assertStringContainsString('private-customer-location', $source);
+
+        $sanitized = app(VehicleColorImageSanitizer::class)->sanitize(
+            UploadedFile::fake()->createWithContent('vehicle.jpg', $source),
+        );
+
+        $this->assertSame('image/jpeg', $sanitized->mime);
+        $this->assertSame('jpg', $sanitized->extension);
+        $this->assertSame(20, $sanitized->width);
+        $this->assertSame(40, $sanitized->height);
+        $this->assertSame(strlen($sanitized->contents), $sanitized->bytes);
+        $this->assertSame(hash('sha256', $sanitized->contents), $sanitized->sha256);
+        $this->assertStringNotContainsString('private-customer-location', $sanitized->contents);
+        $this->assertNotSame(hash('sha256', $source), $sanitized->sha256);
     }
 
     public function test_human_acceptance_is_append_only_and_has_no_operational_effect(): void
@@ -745,13 +824,27 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $user->unsetRelation('role');
     }
 
-    private function enableRuntime(): void
+    private function enableRuntime(?string $sanitizedBytes = null): void
     {
         config(['intelligence.vehicle_color_v8.enabled' => true]);
         $artifact = $this->mock(VehicleColorModelArtifact::class);
         $artifact->shouldReceive('configuredIsValid')->andReturnTrue();
         $artifact->shouldReceive('configuredModelPath')->andReturn('/private/models/S7_COLOR_V8_FINAL.onnx');
         $artifact->shouldReceive('configuredMetadataPath')->andReturn('/private/models/S7_COLOR_V8_FINAL_METADATA.json');
+        $contents = $sanitizedBytes ?? $this->imageBytes();
+        $sanitizer = $this->mock(VehicleColorImageSanitizer::class);
+        $sanitizer->shouldReceive('sanitize')
+            ->andReturnUsing(static function () use ($contents): SanitizedVehicleColorImage {
+                return new SanitizedVehicleColorImage(
+                    contents: $contents,
+                    mime: 'image/png',
+                    extension: 'png',
+                    bytes: strlen($contents),
+                    sha256: hash('sha256', $contents),
+                    width: 1,
+                    height: 1,
+                );
+            });
     }
 
     private function fixture(string $roleSlug = 'tenant-owner'): array
@@ -814,6 +907,19 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         );
         if (! is_string($bytes)) {
             throw new \LogicException('La fixture PNG de test est invalide.');
+        }
+
+        return $bytes;
+    }
+
+    private function metadataJpegBytes(): string
+    {
+        $bytes = base64_decode(
+            '/9j/4AAQSkZJRgABAQAAAQABAAD/4QC6RXhpZgAATU0AKgAAAAgAAwEOAAIAAAAaAAAAMgESAAMAAAABAAYAAIglAAQAAAABAAAATAAAAABwcml2YXRlLWN1c3RvbWVyLWxvY2F0aW9uAAAEAAEAAgAAAAJOAAAAAAIABQAAAAMAAACCAAMAAgAAAAJXAAAAAAQABQAAAAMAAACaAAAAAAAAACEAAAABAAAAIwAAAAEAAAAAAAAAAQAAAAcAAAABAAAAJAAAAAEAAAAAAAAAAf/bAEMAAwICAwICAwMDAwQDAwQFCAUFBAQFCgcHBggMCgwMCwoLCw0OEhANDhEOCwsQFhARExQVFRUMDxcYFhQYEhQVFP/bAEMBAwQEBQQFCQUFCRQNCw0UFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFP/AABEIABQAKAMBIgACEQEDEQH/xAAfAAABBQEBAQEBAQAAAAAAAAAAAQIDBAUGBwgJCgv/xAC1EAACAQMDAgQDBQUEBAAAAX0BAgMABBEFEiExQQYTUWEHInEUMoGRoQgjQrHBFVLR8CQzYnKCCQoWFxgZGiUmJygpKjQ1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4eLj5OXm5+jp6vHy8/T19vf4+fr/xAAfAQADAQEBAQEBAQEBAAAAAAAAAQIDBAUGBwgJCgv/xAC1EQACAQIEBAMEBwUEBAABAncAAQIDEQQFITEGEkFRB2FxEyIygQgUQpGhscEJIzNS8BVictEKFiQ04SXxFxgZGiYnKCkqNTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqCg4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2dri4+Tl5ufo6ery8/T19vf4+fr/2gAMAwEAAhEDEQA/APmyiiivyI/0YCiiigAooooAKKKKACiiigAooooA/9k=',
+            true,
+        );
+        if (! is_string($bytes)) {
+            throw new \LogicException('La fixture JPEG EXIF/GPS de test est invalide.');
         }
 
         return $bytes;
