@@ -842,8 +842,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         array $fixture,
         bool $accepted,
         ?float $confidence = null,
-    ): VehicleColorPredictionRun
-    {
+    ): VehicleColorPredictionRun {
         $this->enableRuntime();
         Queue::fake();
         $this->actingAs($fixture['user'])
@@ -976,8 +975,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         VehicleColorPredictionRun $run,
         bool $accepted,
         ?float $confidence = null,
-    ): string
-    {
+    ): string {
         $probabilities = $accepted
             ? [
                 'black' => 0.98,
