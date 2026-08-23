@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\VehicleColorPredictionRun;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -10,7 +11,7 @@ class StoreVehicleColorPredictionRequest extends FormRequest
     public function authorize(): bool
     {
         return (bool) config('intelligence.vehicle_color_v8.enabled')
-            && ($this->user()?->can('create', \App\Models\VehicleColorPredictionRun::class) ?? false);
+            && ($this->user()?->can('create', VehicleColorPredictionRun::class) ?? false);
     }
 
     public function rules(): array
