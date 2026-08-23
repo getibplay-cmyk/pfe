@@ -32,9 +32,10 @@ class VehicleColorPredictionController extends Controller
     ): View {
         $this->authorize('viewAny', VehicleColorPredictionRun::class);
 
-        $vehicleSearch = trim((string) $request->validate([
+        $validated = $request->validate([
             'vehicle_search' => ['nullable', 'string', 'max:100'],
-        ])['vehicle_search'] ?? '');
+        ]);
+        $vehicleSearch = trim((string) ($validated['vehicle_search'] ?? ''));
         $vehicles = Vehicle::query()
             ->with('agency')
             ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
