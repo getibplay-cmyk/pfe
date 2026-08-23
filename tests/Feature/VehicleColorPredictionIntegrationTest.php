@@ -428,7 +428,6 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         Queue::assertNothingPushed();
     }
 
-
     public function test_internal_queue_action_revalidates_view_permission(): void
     {
         $fixture = $this->fixture();
@@ -489,7 +488,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             'status' => VehicleColorPredictionStatus::Failed->value,
             'failure_code' => 'RUN_ACTOR_NOT_AUTHORIZED',
         ]);
-        Process::assertNothingRan();
+        Process::assertDidntRun(fn ($process, $result): bool => true);
     }
 
     public function test_vehicle_selector_is_bounded_and_searchable(): void
@@ -578,7 +577,6 @@ class VehicleColorPredictionIntegrationTest extends TestCase
 
         return VehicleColorPredictionRun::withoutGlobalScopes()->findOrFail($run->id);
     }
-
 
     private function revokeViewPermission(User $user): void
     {
