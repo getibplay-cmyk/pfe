@@ -66,4 +66,9 @@ class Vehicle extends Model
     {
         return $this->morphMany(Document::class, 'documentable');
     }
+
+    public function colorPredictionRuns(): HasMany
+    {
+        return $this->hasMany(VehicleColorPredictionRun::class);
+    }
 }

@@ -83,6 +83,10 @@ class RolesPermissionsSeeder extends Seeder
             ['slug' => 'prediction.forecast.import'],
             ['name' => 'Importer les prévisions de demande consultatives', 'group' => 'prediction'],
         );
+        Permission::firstOrCreate(
+            ['slug' => 'prediction.color.review'],
+            ['name' => 'Analyser et revoir la couleur d’un véhicule', 'group' => 'prediction'],
+        );
 
         Permission::query()->get()->each(function (Permission $permission): void {
             $permission->forceFill(['name' => UiLabel::permission($permission->slug)])->save();
@@ -90,9 +94,9 @@ class RolesPermissionsSeeder extends Seeder
 
         $roles = [
             'tenant-owner' => ['Administrateur de l’entreprise', Permission::pluck('slug')->all()],
-            'agency-manager' => ['Responsable d’agence', ['agency.view', 'agency.manage', 'user.view', 'user.manage', 'audit.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'document.delete', 'pricing.view', 'pricing.manage', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'reservation.export', 'vehicle_block.manage', 'contract.view', 'contract.create', 'contract.version', 'contract.accept', 'contract.activate', 'contract.return', 'contract.cancel', 'inspection.manage', 'damage.view', 'damage.report', 'damage.review', 'charge.review', 'prediction.view', 'prediction.export', 'report.view']],
+            'agency-manager' => ['Responsable d’agence', ['agency.view', 'agency.manage', 'user.view', 'user.manage', 'audit.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'document.delete', 'pricing.view', 'pricing.manage', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'reservation.export', 'vehicle_block.manage', 'contract.view', 'contract.create', 'contract.version', 'contract.accept', 'contract.activate', 'contract.return', 'contract.cancel', 'inspection.manage', 'damage.view', 'damage.report', 'damage.review', 'charge.review', 'prediction.view', 'prediction.export', 'prediction.color.review', 'report.view']],
             'rental-agent' => ['Agent de location', ['agency.view', 'user.view', 'customer.view', 'customer.create', 'customer.update', 'customer.identity.view', 'document.view', 'document.upload', 'document.download', 'pricing.view', 'reservation.view', 'reservation.create', 'reservation.update', 'reservation.confirm', 'reservation.cancel', 'contract.view', 'contract.create', 'contract.version', 'contract.accept', 'contract.activate', 'contract.return', 'contract.cancel', 'inspection.manage', 'damage.view', 'damage.report']],
-            'fleet-manager' => ['Responsable de flotte', ['agency.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'maintenance.view', 'document.view', 'document.upload', 'document.download', 'reservation.view', 'vehicle_block.manage', 'contract.view', 'inspection.manage', 'damage.view', 'damage.report', 'damage.review', 'prediction.view', 'prediction.demo.review', 'prediction.forecast.import']],
+            'fleet-manager' => ['Responsable de flotte', ['agency.view', 'vehicle.view', 'vehicle.create', 'vehicle.update', 'vehicle.archive', 'maintenance.view', 'document.view', 'document.upload', 'document.download', 'reservation.view', 'vehicle_block.manage', 'contract.view', 'inspection.manage', 'damage.view', 'damage.report', 'damage.review', 'prediction.view', 'prediction.demo.review', 'prediction.forecast.import', 'prediction.color.review']],
             'accountant' => ['Comptable', ['agency.view', 'payment.view', 'report.view', 'pricing.view', 'reservation.view', 'contract.view', 'damage.view', 'charge.review']],
             'viewer-auditor' => ['Lecteur / auditeur', ['agency.view', 'user.view', 'vehicle.view', 'customer.view', 'document.view', 'pricing.view', 'reservation.view', 'contract.view', 'damage.view', 'prediction.view', 'report.view', 'audit.view']],
         ];

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
+use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule;
@@ -196,6 +197,67 @@ class RentFleetDoctor extends Command
                     ? 'bundle vérifié; environnement Python figé incomplet'
                     : 'bundle J5 privé exact absent ou empreinte/taille invalide'),
         );
+
+        $colorEnabled = (bool) config('intelligence.vehicle_color_v8.enabled');
+        if (! $colorEnabled) {
+            $this->add(
+                'Runtime couleur S7 v8',
+                'warn',
+                'désactivé par défaut; activation explicite requise après installation et contrôle',
+            );
+
+            return;
+        }
+
+        $colorBinary = (string) config('intelligence.vehicle_color_v8.python_binary');
+        $colorScript = (string) config('intelligence.vehicle_color_v8.runtime_script');
+        $colorProvider = (string) config('intelligence.vehicle_color_v8.execution_provider');
+        $colorArtifact = app(VehicleColorModelArtifact::class);
+        $colorConfigured = $colorBinary !== ''
+            && File::exists($colorScript)
+            && in_array($colorProvider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true);
+        $colorVersions = null;
+        if ($colorConfigured) {
+            try {
+                $probe = Process::path(sys_get_temp_dir())
+                    ->timeout(8)
+                    ->env([
+                        'PYTHONDONTWRITEBYTECODE' => '1',
+                        'ORT_DISABLE_TELEMETRY_EVENTS' => '1',
+                        'APP_KEY' => false,
+                        'DB_PASSWORD' => false,
+                        'MAIL_PASSWORD' => false,
+                        'AWS_SECRET_ACCESS_KEY' => false,
+                        'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
+                        'DEMO_PASSWORD' => false,
+                        'PGPASSWORD' => false,
+                    ])
+                    ->run([
+                        $colorBinary,
+                        '-c',
+                        'import importlib.metadata,numpy,onnxruntime,sys; provider=sys.argv[1]; print(f\'{sys.version_info.major}.{sys.version_info.minor}|{numpy.__version__}|{importlib.metadata.version("Pillow")}|{onnxruntime.__version__}|{int(provider in onnxruntime.get_available_providers())}\')',
+                        $colorProvider,
+                    ]);
+                if ($probe->successful()) {
+                    $colorVersions = trim($probe->output());
+                }
+            } catch (Throwable) {
+                // Les chemins et stderr du runtime ne sont jamais exposés par le doctor.
+            }
+        }
+        $colorArtifactReady = $colorArtifact->configuredIsValid();
+        $colorReady = $colorConfigured
+            && $colorArtifactReady
+            && $colorVersions === '3.12|2.3.5|12.3.0|1.29.0|1';
+        $this->add(
+            'Runtime couleur S7 v8',
+            $colorReady ? 'pass' : ($production ? 'fail' : 'warn'),
+            $colorReady
+                ? 'paire ONNX/métadonnées vérifiée · Python 3.12 · numpy 2.3.5 · Pillow 12.3.0 · ONNX Runtime 1.29.0 · fournisseur disponible'
+                : ($colorArtifactReady
+                    ? 'paire vérifiée; environnement Python ou fournisseur ONNX incomplet'
+                    : 'paire privée ONNX/métadonnées absente ou empreinte/taille invalide'),
+        );
     }
 
     private function checkDatabase(): void
@@ -254,12 +316,15 @@ class RentFleetDoctor extends Command
             $activeRuns += DB::table('demand_forecast_execution_runs')
                 ->whereIn('status', ['queued', 'running'])
                 ->count();
+            $activeRuns += DB::table('vehicle_color_prediction_runs')
+                ->whereIn('status', ['queued', 'running'])
+                ->count();
         } catch (Throwable) {
             // La vérification des migrations rapporte séparément une table absente.
         }
         $queueDetail = $queueConnection === 'database'
             ? 'database (worker intelligence requis; '.($activeRuns ?? 0).' exécution(s) active(s))'
-            : $queueConnection.' (database requis hors tests pour OR-Tools et HGB)';
+            : $queueConnection.' (database requis hors tests pour OR-Tools, HGB et couleur ONNX)';
         $this->add('Queue', $queueConnection === 'database' ? 'pass' : 'warn', $queueDetail);
 
         try {
