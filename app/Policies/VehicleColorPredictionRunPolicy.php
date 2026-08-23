@@ -19,12 +19,14 @@ class VehicleColorPredictionRunPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission('prediction.color.review');
+        return $this->viewAny($user)
+            && $user->hasPermission('prediction.color.review');
     }
 
     public function review(User $user, VehicleColorPredictionRun $run): bool
     {
         return $this->sameScope($user, $run)
+            && $this->viewAny($user)
             && $user->hasPermission('prediction.color.review');
     }
 

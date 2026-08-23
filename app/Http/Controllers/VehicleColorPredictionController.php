@@ -15,6 +15,7 @@ use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -22,16 +23,30 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VehicleColorPredictionController extends Controller
 {
+    private const VEHICLE_SELECTOR_LIMIT = 50;
+
     public function index(
+        Request $request,
         TenantContext $context,
         VehicleColorModelArtifact $modelArtifact,
     ): View {
         $this->authorize('viewAny', VehicleColorPredictionRun::class);
 
+        $vehicleSearch = trim((string) $request->validate([
+            'vehicle_search' => ['nullable', 'string', 'max:100'],
+        ])['vehicle_search'] ?? '');
         $vehicles = Vehicle::query()
             ->with('agency')
             ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
+            ->when($vehicleSearch !== '', function ($query) use ($vehicleSearch): void {
+                $term = '%'.$vehicleSearch.'%';
+                $query->where(fn ($search) => $search
+                    ->where('registration_number', 'ilike', $term)
+                    ->orWhere('brand', 'ilike', $term)
+                    ->orWhere('model', 'ilike', $term));
+            })
             ->orderBy('registration_number')
+            ->limit(self::VEHICLE_SELECTOR_LIMIT)
             ->get(['id', 'tenant_id', 'agency_id', 'registration_number', 'brand', 'model', 'color']);
         $runs = VehicleColorPredictionRun::query()
             ->with(['vehicle.agency', 'review.reviewer'])
@@ -52,6 +67,8 @@ class VehicleColorPredictionController extends Controller
 
         return view('intelligence.vehicle-colors.index', [
             'vehicles' => $vehicles,
+            'vehicleSearch' => $vehicleSearch,
+            'vehicleSelectorLimit' => self::VEHICLE_SELECTOR_LIMIT,
             'runs' => $runs,
             'runtime' => [
                 'enabled' => (bool) config('intelligence.vehicle_color_v8.enabled'),

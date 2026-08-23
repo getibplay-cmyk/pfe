@@ -48,6 +48,19 @@
         @if (auth()->user()->hasPermission('prediction.color.review'))
             <x-section-card title="Nouvelle analyse privée" description="JPEG, PNG ou WebP · 8 Mo maximum · 8 000 × 8 000 pixels maximum.">
                 @if ($canRun)
+                    <form method="GET" action="{{ route('intelligence.vehicle-colors.index') }}" class="mb-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-end">
+                        <div class="min-w-0 flex-1">
+                            <x-input-label for="color-vehicle-search" value="Rechercher un véhicule" />
+                            <input id="color-vehicle-search" name="vehicle_search" value="{{ $vehicleSearch }}" maxlength="100" placeholder="Immatriculation, marque ou modèle" class="mt-1 block w-full rounded-lg border-slate-300">
+                        </div>
+                        <div class="flex gap-2">
+                            <x-primary-button class="justify-center">Rechercher</x-primary-button>
+                            @if ($vehicleSearch !== '')
+                                <a href="{{ route('intelligence.vehicle-colors.index') }}" class="rf-button-secondary">Effacer</a>
+                            @endif
+                        </div>
+                    </form>
+                    <p class="mb-4 text-xs leading-5 text-slate-500">Le sélecteur affiche au maximum {{ $vehicleSelectorLimit }} véhicules. Affinez la recherche si le véhicule attendu n’apparaît pas.</p>
                     <form method="POST" action="{{ route('intelligence.vehicle-colors.store') }}" enctype="multipart/form-data" class="grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
                         @csrf
                         <div>

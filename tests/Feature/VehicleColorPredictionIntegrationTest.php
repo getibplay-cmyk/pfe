@@ -8,6 +8,7 @@ use App\Enums\VehicleColorReviewDecision;
 use App\Jobs\RunVehicleColorPrediction;
 use App\Models\Agency;
 use App\Models\AuditLog;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
@@ -379,6 +380,90 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             $this->assertFalse($this->user($fixture, $role, $fixture['agency'])
                 ->hasPermission('prediction.color.review'), $role);
         }
+    }
+
+    public function test_color_review_permission_alone_cannot_access_queue_or_review_predictions(): void
+    {
+        $fixture = $this->fixture();
+        $run = $this->completedRun($fixture, true);
+        $role = Role::query()->forceCreate([
+            'tenant_id' => $fixture['tenant']->id,
+            'name' => 'Revue couleur sans consultation',
+            'slug' => 'color-review-without-view',
+            'is_system' => false,
+            'is_active' => true,
+            'created_by' => $fixture['user']->id,
+        ]);
+        $role->permissions()->attach(
+            Permission::query()->where('slug', 'prediction.color.review')->value('id'),
+        );
+        $reviewer = User::factory()->create([
+            'tenant_id' => $fixture['tenant']->id,
+            'agency_id' => $fixture['agency']->id,
+            'role_id' => $role->id,
+            'must_change_password' => false,
+        ]);
+        Queue::fake();
+
+        $this->actingAs($reviewer)
+            ->get(route('intelligence.vehicle-colors.index'))
+            ->assertForbidden();
+        $this->actingAs($reviewer)
+            ->post(route('intelligence.vehicle-colors.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'image' => $this->image(),
+            ])
+            ->assertForbidden();
+        $this->actingAs($reviewer)
+            ->post(route('intelligence.vehicle-colors.reviews.store', $run), [
+                'decision' => VehicleColorReviewDecision::Rejected->value,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(1, VehicleColorPredictionRun::withoutGlobalScopes()->count());
+        $this->assertSame(0, VehicleColorPredictionReview::withoutGlobalScopes()->count());
+        Queue::assertNothingPushed();
+    }
+
+    public function test_vehicle_selector_is_bounded_and_searchable(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime();
+        $now = now();
+        $vehicles = [];
+        for ($index = 2; $index <= 60; $index++) {
+            $vehicles[] = [
+                'tenant_id' => $fixture['tenant']->id,
+                'agency_id' => $fixture['agency']->id,
+                'vehicle_category_id' => $fixture['vehicle']->vehicle_category_id,
+                'registration_number' => sprintf('RF-COLOR-%03d', $index),
+                'brand' => $index === 60 ? 'MarqueCible' : 'RentFleet',
+                'model' => $index === 60 ? 'ModeleUnique' : 'Sélecteur',
+                'fuel_type' => 'petrol',
+                'transmission' => 'automatic',
+                'current_mileage' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        Vehicle::withoutGlobalScopes()->insert($vehicles);
+
+        $response = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.vehicle-colors.index'))
+            ->assertOk()
+            ->assertSee('Le sélecteur affiche au maximum 50 véhicules.');
+        $listed = $response->viewData('vehicles');
+        $this->assertCount(50, $listed);
+        $this->assertSame('RF-COLOR-001', $listed->first()->registration_number);
+        $this->assertSame('RF-COLOR-050', $listed->last()->registration_number);
+
+        $searched = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.vehicle-colors.index', ['vehicle_search' => 'marquecible']))
+            ->assertOk()
+            ->assertSee('RF-COLOR-060')
+            ->viewData('vehicles');
+        $this->assertCount(1, $searched);
+        $this->assertSame('RF-COLOR-060', $searched->first()->registration_number);
     }
 
     public function test_schema_routes_permission_and_installer_contract_are_present(): void
