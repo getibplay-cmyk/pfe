@@ -109,7 +109,7 @@
                                     <div class="grid gap-3 text-sm sm:grid-cols-3">
                                         <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Couleur la plus probable</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
                                         <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance du modèle</p><p class="mt-1 font-semibold">{{ number_format((float) $run->confidence * 100, 2, ',', ' ') }} %</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Statut consultatif</p><p class="mt-1 font-semibold {{ $run->model_accepted ? 'text-emerald-700' : 'text-amber-800' }}">{{ $run->model_accepted ? 'Seuil scientifique validé atteint' : ($run->hasDisplayableCandidate() ? 'Couleur indicative à contrôler visuellement' : 'Résultat non exploitable') }}</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Statut consultatif</p><p class="mt-1 font-semibold {{ $run->model_accepted ? 'text-emerald-700' : 'text-amber-800' }}">{{ $run->model_accepted ? 'Acceptable pour revue humaine' : ($run->hasDisplayableCandidate() ? 'Couleur indicative à contrôler visuellement' : 'Résultat non exploitable') }}</p></div>
                                     </div>
                                     @if ($run->hasDisplayableCandidate() && ! $run->model_accepted)
                                         <p class="mt-3 text-xs leading-5 text-amber-800">La couleur est affichée à partir de 75 % pour faciliter le contrôle visuel. Le seuil scientifique de 97,7 % reste inchangé et cette indication ne peut produire aucune modification automatique.</p>
