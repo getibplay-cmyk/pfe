@@ -94,10 +94,17 @@ return new class extends Migration
                     CHECK (
                         status IN ('queued', 'running', 'succeeded', 'failed')
                         AND input_mime IN ('image/jpeg', 'image/png', 'image/webp')
-                        AND input_extension IN ('jpg', 'jpeg', 'png', 'webp')
+                        AND input_extension IN ('jpg', 'png', 'webp')
                         AND input_bytes BETWEEN 1 AND 8388608
                         AND input_sha256 ~ '^[a-f0-9]{64}$'
-                        AND input_stored_path LIKE 'intelligence/color-v8/inputs/%'
+                        AND input_stored_path = (
+                            'intelligence/color-v8/inputs/'
+                            || tenant_id::text
+                            || '/'
+                            || run_id::text
+                            || '.'
+                            || input_extension
+                        )
                         AND model_name = 'vehicle_color_mobilenet_v3_large'
                         AND model_version = 's7-color-v8.0.0'
                         AND model_artifact_sha256 = '5ec7757a7bafda0abd45685dd8e1178e5b6b79220ff61b6018398d00f2e86a76'

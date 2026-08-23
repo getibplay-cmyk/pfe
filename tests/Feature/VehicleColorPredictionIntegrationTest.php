@@ -20,6 +20,7 @@ use App\Models\VehicleCategory;
 use App\Models\VehicleColorPredictionReview;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
+use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
@@ -128,7 +129,13 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $this->assertSame(VehicleColorContract::MODEL_ARTIFACT_SHA256, $run->model_artifact_sha256);
         $this->assertSame(VehicleColorContract::METADATA_SHA256, $run->metadata_sha256);
         $this->assertSame(VehicleColorContract::OPERATIONAL_EFFECT, $run->operational_effect);
-        $this->assertStringStartsWith('intelligence/color-v8/inputs/', $run->input_stored_path);
+        $this->assertSame(
+            'intelligence/color-v8/inputs/'
+                .$run->tenant_id.'/'
+                .$run->run_id.'.'
+                .$run->input_extension,
+            $run->input_stored_path,
+        );
         Storage::disk('local')->assertExists($run->input_stored_path);
         Queue::assertPushed(
             RunVehicleColorPrediction::class,
@@ -467,12 +474,13 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             $fixture['tenant'],
             fn () => Agency::factory()->create(['name' => 'Agence forgée couleur']),
         );
+        $runId = (string) Str::uuid();
 
         $this->assertPostgreSqlForeignKeyConstraint(
             fn () => DB::table('vehicle_color_prediction_runs')->insert([
                 'tenant_id' => $fixture['tenant']->id,
                 'agency_id' => $otherAgency->id,
-                'run_id' => (string) Str::uuid(),
+                'run_id' => $runId,
                 'vehicle_id' => $fixture['vehicle']->id,
                 'requested_by' => $fixture['user']->id,
                 'status' => VehicleColorPredictionStatus::Queued->value,
@@ -481,7 +489,8 @@ class VehicleColorPredictionIntegrationTest extends TestCase
                 'input_extension' => 'png',
                 'input_bytes' => 1,
                 'input_sha256' => str_repeat('a', 64),
-                'input_stored_path' => 'intelligence/color-v8/inputs/forged.png',
+                'input_stored_path' => 'intelligence/color-v8/inputs/'
+                    .$fixture['tenant']->id.'/'.$runId.'.png',
                 'suggested_color' => null,
                 'confidence' => null,
                 'model_accepted' => null,
@@ -497,6 +506,58 @@ class VehicleColorPredictionIntegrationTest extends TestCase
                 'finished_at' => null,
             ]),
         );
+    }
+
+    public function test_database_and_runtime_bind_private_input_to_tenant_and_run(): void
+    {
+        $fixture = $this->fixture();
+        $runId = (string) Str::uuid();
+        $bytes = $this->imageBytes();
+        $foreignTenantPath = 'intelligence/color-v8/inputs/'
+            .($fixture['tenant']->id + 1).'/'.$runId.'.png';
+        $row = [
+            'tenant_id' => $fixture['tenant']->id,
+            'agency_id' => $fixture['agency']->id,
+            'run_id' => $runId,
+            'vehicle_id' => $fixture['vehicle']->id,
+            'requested_by' => $fixture['user']->id,
+            'status' => VehicleColorPredictionStatus::Queued->value,
+            'failure_code' => null,
+            'input_mime' => 'image/png',
+            'input_extension' => 'png',
+            'input_bytes' => strlen($bytes),
+            'input_sha256' => hash('sha256', $bytes),
+            'input_stored_path' => $foreignTenantPath,
+            'suggested_color' => null,
+            'confidence' => null,
+            'model_accepted' => null,
+            'probabilities' => null,
+            'model_name' => VehicleColorContract::MODEL_NAME,
+            'model_version' => VehicleColorContract::MODEL_VERSION,
+            'model_artifact_sha256' => VehicleColorContract::MODEL_ARTIFACT_SHA256,
+            'metadata_sha256' => VehicleColorContract::METADATA_SHA256,
+            'accepted_threshold' => VehicleColorContract::ACCEPTED_THRESHOLD,
+            'operational_effect' => VehicleColorContract::OPERATIONAL_EFFECT,
+            'requested_at' => now(),
+            'started_at' => null,
+            'finished_at' => null,
+        ];
+
+        $this->assertPostgreSqlConstraint(
+            fn () => DB::table('vehicle_color_prediction_runs')->insert($row),
+        );
+
+        $sameTenantOtherRunPath = 'intelligence/color-v8/inputs/'
+            .$fixture['tenant']->id.'/'.Str::uuid().'.png';
+        foreach ([$foreignTenantPath, $sameTenantOtherRunPath] as $forgedPath) {
+            Storage::disk('local')->put($forgedPath, $bytes);
+            $forgedRun = (new VehicleColorPredictionRun)->forceFill([
+                ...$row,
+                'input_stored_path' => $forgedPath,
+            ]);
+
+            $this->assertFalse(app(VehicleColorInputArtifact::class)->valid($forgedRun));
+        }
     }
 
     public function test_internal_review_action_revalidates_view_permission(): void

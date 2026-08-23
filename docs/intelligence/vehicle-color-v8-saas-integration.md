@@ -49,16 +49,19 @@ L’abstention et la validation humaine restent obligatoires.
 1. Le navigateur envoie seulement `vehicle_id` et une image JPEG, PNG ou WebP.
 2. Le serveur déduit le tenant et l’agence depuis le contexte authentifié.
 3. La photo est stockée sur le disque Laravel privé, jamais sous `public/`.
-4. Le registre garde taille et SHA-256; ni le chemin ni les empreintes ne sont
+4. Son chemin exact est lié au `tenant_id`, au `run_id` et à l’extension par
+   la validation PHP et une contrainte PostgreSQL; une analyse ne peut pas
+   pointer vers la photo privée d’un autre tenant ou d’une autre exécution.
+5. Le registre garde taille et SHA-256; ni le chemin ni les empreintes ne sont
    rendus dans l’interface ou l’audit.
-5. Le job revalide l’acteur, le véhicule, la photo, l’ONNX et les métadonnées.
-6. Le processus Python reçoit une liste d’arguments, un environnement privé de
+6. Le job revalide l’acteur, le véhicule, la photo, l’ONNX et les métadonnées.
+7. Le processus Python reçoit une liste d’arguments, un environnement privé de
    secrets et un délai maximum de 30 secondes.
-7. Python reproduit `Resize((256,256), BICUBIC)`, `CenterCrop(224)`, le passage
+8. Python reproduit `Resize((256,256), BICUBIC)`, `CenterCrop(224)`, le passage
    RGB, l’échelle 0–1 et la normalisation ImageNet.
-8. Python et PHP recalculent indépendamment le top-1 supporté, la confiance et
+9. Python et PHP recalculent indépendamment le top-1 supporté, la confiance et
    la règle d’abstention.
-9. Le résultat et la revue portent toujours
+10. Le résultat et la revue portent toujours
    `NO_OPERATIONAL_ACTION`; les triggers PostgreSQL rendent les résultats
    terminaux immuables et les revues append-only.
 
