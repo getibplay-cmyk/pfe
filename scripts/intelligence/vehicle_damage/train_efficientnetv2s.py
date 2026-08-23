@@ -14,7 +14,6 @@ import json
 import os
 import platform
 import random
-import subprocess
 import sys
 import time
 from collections import Counter
@@ -512,6 +511,18 @@ def main() -> int:
     test_metrics = classification_metrics(test_labels, test_probabilities, threshold)
     test_metrics["loss"] = test_loss
     intervals = bootstrap_intervals(test_labels, test_probabilities, threshold, args.bootstrap, SEED + 1)
+    per_source_metrics: dict[str, dict[str, float]] = {}
+    test_sources = np.array([row["source_id"] for row in split_rows["test"]])
+    for source_id in sorted(set(test_sources)):
+        source_mask = test_sources == source_id
+        if len(np.unique(test_labels[source_mask])) < 2:
+            raise RuntimeError(
+                f"Le test de la source {source_id!r} ne contient pas les deux labels; "
+                "aucune métrique par source fiable n'est possible."
+            )
+        per_source_metrics[source_id] = classification_metrics(
+            test_labels[source_mask], test_probabilities[source_mask], threshold
+        )
     gate = evaluate_release_gate(test_metrics)
 
     metrics_payload = {
@@ -522,7 +533,11 @@ def main() -> int:
             "threshold": threshold,
             "metrics": calibration_metrics,
         },
-        "test": {"metrics": test_metrics, "bootstrap_95": intervals},
+        "test": {
+            "metrics": test_metrics,
+            "bootstrap_95": intervals,
+            "per_source_metrics": per_source_metrics,
+        },
         "release_gate": gate.as_dict(),
         "elapsed_seconds": time.time() - started_at,
     }
