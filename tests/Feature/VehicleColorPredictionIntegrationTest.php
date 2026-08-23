@@ -177,7 +177,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-colors.index'))
             ->assertOk()
             ->assertSee('Noir')
-            ->assertSee('Acceptable pour revue humaine')
+            ->assertSee('Seuil scientifique validé atteint')
             ->assertDontSee($completed->input_stored_path)
             ->assertDontSee($completed->input_sha256)
             ->assertDontSee($completed->model_artifact_sha256);
