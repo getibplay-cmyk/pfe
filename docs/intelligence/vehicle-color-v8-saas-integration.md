@@ -128,6 +128,10 @@ cuDNN 9; la pile NVIDIA du worker doit donc être compatible. Ne jamais installe
 
 ## Exploitation et rollback
 
+- Les nouvelles analyses sont limitées par défaut à 5 par minute par
+  utilisateur et à 30 par heure par périmètre tenant/agence. Les variables
+  `COLOR_V8_USER_RATE_LIMIT_PER_MINUTE` et
+  `COLOR_V8_SCOPE_RATE_LIMIT_PER_HOUR` permettent un réglage de déploiement.
 - Une seule analyse `queued` ou `running` est autorisée par véhicule.
 - Une exécution expirée est fermée en `failed` avant un nouveau lancement.
 - Un échec ne conserve ni suggestion ni score et n’expose pas `stderr`.

@@ -230,6 +230,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/intelligence/vehicle-colors', [VehicleColorPredictionController::class, 'index'])
         ->name('intelligence.vehicle-colors.index');
     Route::post('/intelligence/vehicle-colors', [VehicleColorPredictionController::class, 'store'])
+        ->middleware('throttle:vehicle-color-v8')
         ->name('intelligence.vehicle-colors.store');
     Route::get('/intelligence/vehicle-colors/{colorPrediction}/input', [VehicleColorPredictionController::class, 'input'])
         ->name('intelligence.vehicle-colors.input');

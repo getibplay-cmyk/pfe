@@ -78,6 +78,36 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ->assertSee('Aucune action automatique');
     }
 
+    public function test_upload_rate_limit_is_segmented_by_actor_and_capped_by_scope(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime();
+        Queue::fake();
+        config([
+            'intelligence.vehicle_color_v8.rate_limits.user_per_minute' => 2,
+            'intelligence.vehicle_color_v8.rate_limits.scope_per_hour' => 3,
+        ]);
+
+        $submitInvalidImage = function (User $user) use ($fixture) {
+            return $this->actingAs($user)->post(route('intelligence.vehicle-colors.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'image' => UploadedFile::fake()->createWithContent('vehicle.svg', '<svg></svg>'),
+            ]);
+        };
+
+        $submitInvalidImage($fixture['user'])->assertSessionHasErrors('image');
+        $submitInvalidImage($fixture['user'])->assertSessionHasErrors('image');
+        $submitInvalidImage($fixture['user'])->assertStatus(429);
+
+        $secondUser = $this->user($fixture, 'tenant-owner', null);
+        $submitInvalidImage($secondUser)->assertSessionHasErrors('image');
+        $submitInvalidImage($secondUser)->assertStatus(429);
+
+        $this->assertSame(0, VehicleColorPredictionRun::withoutGlobalScopes()->count());
+        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/color-v8'));
+        Queue::assertNothingPushed();
+    }
+
     public function test_authorized_run_is_private_queued_executed_and_never_updates_vehicle_color(): void
     {
         $fixture = $this->fixture();
