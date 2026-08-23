@@ -1,8 +1,12 @@
 # PyTorch and TorchVision are provided by the Colab CUDA image and are recorded
 # in environment.json. Pinning a separate CUDA wheel here can silently break the
 # runtime/driver pairing.
-numpy==2.0.2
-pandas==2.2.2
+# NumPy 2.0.2 and pandas 2.2.2 do not publish CPython 3.13 wheels.
+# Current Colab runtimes use Python 3.13, so those pins trigger slow source
+# builds. These are the first compatible maintenance lines with CPython 3.13
+# wheels while preserving the NumPy 2.x / pandas 2.2 API used by the trainer.
+numpy==2.2.6
+pandas==2.2.3
 scikit-learn==1.6.1
 Pillow==11.3.0
 matplotlib==3.10.3
