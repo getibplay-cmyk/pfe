@@ -1001,10 +1001,19 @@ class VehicleColorPredictionIntegrationTest extends TestCase
                 'yellow' => 0.05,
                 '__reject__' => 0.15,
             ];
+
         if ($confidence !== null) {
-            $remaining = (1 - $confidence) / (count(VehicleColorContract::CLASSES) - 1);
-            $probabilities = array_fill_keys(VehicleColorContract::CLASSES, $remaining);
-            $probabilities['black'] = $confidence;
+            $probabilities = [
+                'black' => $confidence,
+                'blue' => 0.0036875,
+                'gray' => 0.0036875,
+                'green' => 0.0036875,
+                'orange' => 0.0036875,
+                'red' => 0.0036875,
+                'white' => 0.0036875,
+                'yellow' => 0.0036875,
+                '__reject__' => 0.0036875,
+            ];
         }
 
         return json_encode([
