@@ -184,6 +184,31 @@ class RentalUsageAnomalyIntegrationTest extends TestCase
         $this->assertSame(82, DB::table('migrations')->count());
     }
 
+    public function test_missing_private_snapshot_returns_a_safe_validation_error(): void
+    {
+        $fixture = $this->fixture();
+        $this->history($fixture, 1);
+        $this->actingAs($fixture['user'])
+            ->get(route('intelligence.export', $this->filters($fixture['agency'])))
+            ->assertOk()
+            ->streamedContent();
+        $export = IntelligenceDatasetExportRun::withoutGlobalScopes()->firstOrFail();
+        Storage::disk('local')->delete($export->stored_path);
+
+        Queue::fake();
+        $response = $this->actingAs($fixture['user'])
+            ->from(route('intelligence.rental-usage-anomalies.index'))
+            ->post(route('intelligence.rental-usage-anomalies.store', $export));
+
+        $response
+            ->assertRedirect(route('intelligence.rental-usage-anomalies.index'))
+            ->assertSessionHasErrors([
+                'export_run' => 'Le snapshot privé est absent ou son intégrité a changé. Régénérez un export RentFleet v1.1 avant de relancer l’analyse.',
+            ]);
+        $this->assertSame(0, RentalUsageAnomalyRun::withoutGlobalScopes()->count());
+        Queue::assertNothingPushed();
+    }
+
     private function fixture(): array
     {
         $tenant = Tenant::factory()->create([

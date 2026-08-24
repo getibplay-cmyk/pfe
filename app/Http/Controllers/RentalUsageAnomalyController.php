@@ -6,6 +6,7 @@ use App\Actions\Intelligence\QueueRentalUsageAnomalyRun;
 use App\Actions\Intelligence\RecordRentalUsageAnomalyReview;
 use App\Enums\RentalUsageAnomalyReviewDecision;
 use App\Exceptions\RentalUsageAnomalyAlreadyActiveException;
+use App\Exceptions\RentalUsageAnomalyExecutionException;
 use App\Http\Requests\ReviewRentalUsageAnomalyRequest;
 use App\Models\IntelligenceDatasetExportRun;
 use App\Models\RentalUsageAnomalyResult;
@@ -98,6 +99,15 @@ class RentalUsageAnomalyController extends Controller
             throw ValidationException::withMessages([
                 'export_run' => 'Une analyse de ce snapshot est déjà dans la queue Intelligence.',
             ]);
+        } catch (RentalUsageAnomalyExecutionException $exception) {
+            $message = match ($exception->getMessage()) {
+                'SOURCE_SNAPSHOT_INVALID' => 'Le snapshot privé est absent ou son intégrité a changé. Régénérez un export RentFleet v1.1 avant de relancer l’analyse.',
+                'RUNTIME_CONFIGURATION_INVALID' => 'Le runtime CPU des usages atypiques est indisponible. Vérifiez la configuration avant de relancer l’analyse.',
+                'QUEUE_DISPATCH_FAILED' => 'La queue Intelligence est momentanément indisponible. Réessayez après vérification du worker.',
+                default => 'L’analyse consultative n’a pas pu être ajoutée à la queue Intelligence.',
+            };
+
+            throw ValidationException::withMessages(['export_run' => $message]);
         }
 
         return redirect()->route('intelligence.rental-usage-anomalies.index', ['run' => $run->run_id])
