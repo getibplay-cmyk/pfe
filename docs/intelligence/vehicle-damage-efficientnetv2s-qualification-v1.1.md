@@ -60,23 +60,30 @@ sont pas publiées.
 - seuil choisi uniquement sur calibration : `0,495`;
 - le test final est évalué une seule fois après le gel du checkpoint, de la
   température et du seuil;
-- intervalles bootstrap : 1 000 réplications.
+- le protocole corrigé utilise 1 000 réplications bootstrap par image source
+  (`group_id`), et non par patch.
 
 ## Résultats du test final
 
-| Mesure | Valeur | IC bootstrap 95 % | Porte |
-|---|---:|---:|---:|
-| Balanced accuracy | 0,857633 | [0,832169 ; 0,882300] | >= 0,75 |
-| Macro-F1 | 0,852923 | [0,827809 ; 0,877692] | >= 0,75 |
-| Rappel dommage | 0,867117 | [0,835955 ; 0,898154] | >= 0,75 |
-| Précision dommage | 0,903756 | [0,875289 ; 0,930122] | information |
-| Spécificité | 0,848148 | [0,805965 ; 0,889668] | information |
-| ROC-AUC | 0,940057 | [0,924337 ; 0,954103] | information |
-| PR-AUC | 0,962940 | [0,951469 ; 0,973378] | information |
-| ECE | 0,025848 | [0,018681 ; 0,054022] | <= 0,08 |
-| Brier | 0,098411 | [0,084419 ; 0,113091] | information |
+| Mesure | Valeur | Porte |
+|---|---:|---:|
+| Balanced accuracy | 0,857633 | >= 0,75 |
+| Macro-F1 | 0,852923 | >= 0,75 |
+| Rappel dommage | 0,867117 | >= 0,75 |
+| Précision dommage | 0,903756 | information |
+| Spécificité | 0,848148 | information |
+| ROC-AUC | 0,940057 | information |
+| PR-AUC | 0,962940 | information |
+| ECE | 0,025848 | <= 0,08 |
+| Brier | 0,098411 | information |
 
 Perte test : `0,412120`. Toutes les portes passent sans exception.
+
+Les premiers intervalles calculés par patch ont été retirés : plusieurs patches
+d'une même image sont corrélés. Ils seront republiés uniquement après
+rééchantillonnage groupé des prédictions déjà gelées, sans nouvelle inférence ni
+nouvelle lecture des images du test. Cette correction ne change aucune valeur
+ponctuelle ni aucune porte de qualification.
 
 ## Vérification privée
 
@@ -88,8 +95,8 @@ privé, taille ou SHA-256 de ces artefacts n'est publié dans GitHub.
 ## Valeur PFE et limites
 
 Le modèle apporte une valeur démontrable au PFE : protocole anti-fuite,
-provenance officielle, split groupe, calibration, seuil versionné, incertitude
-bootstrap et export portable ONNX. Dans le SaaS, une photo de retour pourra être
+provenance officielle, split groupe, calibration, seuil versionné, verrou de test
+et export portable ONNX. Dans le SaaS, une photo de retour pourra être
 découpée en zones chevauchantes, scorée puis affichée sous forme de régions
 suspectes à vérifier par l'agent.
 
