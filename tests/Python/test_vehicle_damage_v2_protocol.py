@@ -150,6 +150,17 @@ class VehicleDamageV2ProtocolTest(unittest.TestCase):
         self.assertIn("onnx_drive_smoke_report.json", source)
         self.assertIn("str(DRIVE_RUN / MODEL_ONNX.name)", source)
 
+    def test_colab_reports_the_validation_metrics_for_best_checkpoint(self):
+        source = "\n".join(
+            line
+            for cell in CELLS
+            for line in cell.get("source", [])
+        )
+        self.assertIn("best = max(", source)
+        self.assertIn("key=lambda row: float(row['test_coco_eval_bbox'][0])", source)
+        self.assertIn("'best_validation_epoch'", source)
+        self.assertIn("coco_stats = best['test_coco_eval_bbox']", source)
+
     def test_converts_supervisely_polygon_and_verifies_raw_hash(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
