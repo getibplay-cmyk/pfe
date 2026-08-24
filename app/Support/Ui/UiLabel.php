@@ -140,6 +140,11 @@ class UiLabel
         'prediction.vehicle_color.run_failed' => 'Échec contrôlé de l’analyse couleur',
         'prediction.vehicle_color.input_viewed' => 'Photo privée de l’analyse couleur consultée',
         'prediction.vehicle_color.human_decision_recorded' => 'Décision humaine sur une couleur enregistrée',
+        'prediction.vehicle_damage.run_queued' => 'Analyse dommages ajoutée à la queue',
+        'prediction.vehicle_damage.run_succeeded' => 'Analyse dommages ONNX terminée',
+        'prediction.vehicle_damage.run_failed' => 'Échec contrôlé de l’analyse dommages',
+        'prediction.vehicle_damage.input_viewed' => 'Photo privée de l’analyse dommages consultée',
+        'prediction.vehicle_damage.human_decision_recorded' => 'Vérification humaine d’une zone candidate enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
         'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
@@ -249,6 +254,7 @@ class UiLabel
         'prediction.demo.review' => 'Générer, importer et revoir les preuves Intelligence synthétiques',
         'prediction.forecast.import' => 'Importer les prévisions de demande consultatives',
         'prediction.color.review' => 'Analyser et revoir la couleur d’un véhicule',
+        'prediction.damage.review' => 'Analyser et revoir les zones de dommage d’un retour',
     ];
 
     private const ENTITIES = [
@@ -263,6 +269,8 @@ class UiLabel
         'DemandForecast' => 'Prévision de demande',
         'VehicleColorPredictionRun' => 'Analyse de couleur véhicule',
         'VehicleColorPredictionReview' => 'Revue humaine de couleur véhicule',
+        'VehicleDamagePredictionRun' => 'Analyse de dommages véhicule',
+        'VehicleDamagePredictionReview' => 'Revue humaine de zone candidate',
     ];
 
     private const REPORT_LABELS = [
@@ -359,6 +367,9 @@ class UiLabel
     {
         if ($permission === 'prediction.color.review') {
             return 'Effet : analyse consultative et revue humaine auditée, sans modification automatique du véhicule.';
+        }
+        if ($permission === 'prediction.damage.review') {
+            return 'Effet : analyse consultative d’une photo de retour et revue humaine auditée, sans dommage, frais ni responsabilité automatiques.';
         }
 
         return str_ends_with($permission, '.view')

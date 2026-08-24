@@ -59,3 +59,20 @@ reported separately and does not replace the explicit 0.75 release floor.
 
 If any release condition fails, the script writes `STOP_NOT_QUALIFIED.json` and
 does not export `model.onnx`.
+
+## SaaS runtime
+
+The qualified ONNX is integrated into RentFleet through a separate,
+consultative-only runtime. Laravel sanitizes a completed return-inspection
+photo, queues the execution on `intelligence`, calls ONNX Runtime without
+application secrets, validates a closed JSON result, and displays coarse
+overlapping-patch candidates for human review.
+
+It never creates a damage report, charge, liability decision, vehicle change,
+or inspection change. The public qualification floor of `0.75` is a model
+release metric; it is not the calibrated patch threshold of `0.495`. Local
+RentFleet-photo validation remains mandatory.
+
+Deployment, private artifact verification, CPU/GPU setup, rollback, and test
+instructions are documented in
+`docs/intelligence/vehicle-damage-saas-integration.md`.

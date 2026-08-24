@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
+use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule;
@@ -198,6 +199,8 @@ class RentFleetDoctor extends Command
                     : 'bundle J5 privé exact absent ou empreinte/taille invalide'),
         );
 
+        $this->checkVehicleDamageRuntime($production);
+
         $colorEnabled = (bool) config('intelligence.vehicle_color_v8.enabled');
         if (! $colorEnabled) {
             $this->add(
@@ -262,6 +265,72 @@ class RentFleetDoctor extends Command
         );
     }
 
+    private function checkVehicleDamageRuntime(bool $production): void
+    {
+        $enabled = (bool) config('intelligence.vehicle_damage_v1.enabled');
+        if (! $enabled) {
+            $this->add(
+                'Runtime dommages EfficientNetV2-S',
+                'warn',
+                'désactivé par défaut; activation explicite requise après installation et contrôle',
+            );
+
+            return;
+        }
+
+        $binary = (string) config('intelligence.vehicle_damage_v1.python_binary');
+        $script = (string) config('intelligence.vehicle_damage_v1.runtime_script');
+        $sanitizer = (string) config('intelligence.vehicle_damage_v1.image_sanitizer_script');
+        $provider = (string) config('intelligence.vehicle_damage_v1.execution_provider');
+        $artifact = app(VehicleDamageModelArtifact::class);
+        $configured = $binary !== ''
+            && File::exists($script)
+            && File::exists($sanitizer)
+            && in_array($provider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true);
+        $versions = null;
+        if ($configured) {
+            try {
+                $probe = Process::path(sys_get_temp_dir())
+                    ->timeout(8)
+                    ->env([
+                        'PYTHONDONTWRITEBYTECODE' => '1',
+                        'ORT_DISABLE_TELEMETRY_EVENTS' => '1',
+                        'APP_KEY' => false,
+                        'DB_PASSWORD' => false,
+                        'MAIL_PASSWORD' => false,
+                        'AWS_SECRET_ACCESS_KEY' => false,
+                        'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
+                        'DEMO_PASSWORD' => false,
+                        'PGPASSWORD' => false,
+                    ])
+                    ->run([
+                        $binary,
+                        '-c',
+                        'import importlib.metadata,numpy,onnxruntime,sys; provider=sys.argv[1]; print(f\'{sys.version_info.major}.{sys.version_info.minor}|{numpy.__version__}|{importlib.metadata.version("Pillow")}|{onnxruntime.__version__}|{int(provider in onnxruntime.get_available_providers())}\')',
+                        $provider,
+                    ]);
+                if ($probe->successful()) {
+                    $versions = trim($probe->output());
+                }
+            } catch (Throwable) {
+                // Les chemins, empreintes et stderr du runtime ne sont jamais exposés.
+            }
+        }
+        $artifactReady = $artifact->configuredIsValid();
+        $ready = $configured
+            && $artifactReady
+            && $versions === '3.12|2.3.5|12.3.0|1.29.0|1';
+        $this->add(
+            'Runtime dommages EfficientNetV2-S',
+            $ready ? 'pass' : ($production ? 'fail' : 'warn'),
+            $ready
+                ? 'ONNX et carte vérifiés · Python 3.12 · numpy 2.3.5 · Pillow 12.3.0 · ONNX Runtime 1.29.0 · fournisseur disponible'
+                : ($artifactReady
+                    ? 'artefacts vérifiés; environnement Python ou fournisseur ONNX incomplet'
+                    : 'artefacts privés absents, empreintes non configurées ou carte invalide'),
+        );
+    }
+
     private function checkDatabase(): void
     {
         if (config('database.default') !== 'pgsql') {
@@ -321,12 +390,15 @@ class RentFleetDoctor extends Command
             $activeRuns += DB::table('vehicle_color_prediction_runs')
                 ->whereIn('status', ['queued', 'running'])
                 ->count();
+            $activeRuns += DB::table('vehicle_damage_prediction_runs')
+                ->whereIn('status', ['queued', 'running'])
+                ->count();
         } catch (Throwable) {
             // La vérification des migrations rapporte séparément une table absente.
         }
         $queueDetail = $queueConnection === 'database'
             ? 'database (worker intelligence requis; '.($activeRuns ?? 0).' exécution(s) active(s))'
-            : $queueConnection.' (database requis hors tests pour OR-Tools, HGB et couleur ONNX)';
+            : $queueConnection.' (database requis hors tests pour OR-Tools, HGB, couleur et dommages ONNX)';
         $this->add('Queue', $queueConnection === 'database' ? 'pass' : 'warn', $queueDetail);
 
         try {
