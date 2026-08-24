@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.example/schemas/rental-usage-anomaly-result-v1.0.0.json",
+  "title": "RentFleet consultative rental usage anomaly result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "source", "execution", "safety", "budgets", "rows"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "dataset_version", "sha256", "byte_size", "row_count"],
+      "properties": {
+        "schema_version": {"const": "1.1"},
+        "dataset_version": {"const": "rentfleet-real-returns-v1.1.0"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "byte_size": {"type": "integer", "minimum": 1, "maximum": 16777216},
+        "row_count": {"type": "integer", "minimum": 0, "maximum": 10000}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["compute", "primary", "challenger", "random_state", "runtime_sha256", "minimum_rows", "default_budget_basis_points", "status"],
+      "properties": {
+        "compute": {"const": "CPU"},
+        "primary": {"$ref": "#/$defs/primary"},
+        "challenger": {"$ref": "#/$defs/challenger"},
+        "random_state": {"const": 20260824},
+        "runtime_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "minimum_rows": {"const": 200},
+        "default_budget_basis_points": {"const": 100},
+        "status": {"enum": ["usable", "insufficient_data"]},
+        "reason": {"const": "MINIMUM_HISTORY_NOT_REACHED"}
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["human_review_required", "automatic_actions_allowed", "operational_effect", "forbidden_actions"],
+      "properties": {
+        "human_review_required": {"const": true},
+        "automatic_actions_allowed": {"const": false},
+        "operational_effect": {"const": "NO_OPERATIONAL_ACTION"},
+        "forbidden_actions": {
+          "const": ["SANCTION", "FEE_OR_CHARGE", "FRAUD_ACCUSATION", "CONTRACT_MUTATION"]
+        }
+      }
+    },
+    "budgets": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/budget"}
+    },
+    "rows": {
+      "type": "array",
+      "maxItems": 400,
+      "items": {"$ref": "#/$defs/row"}
+    }
+  },
+  "$defs": {
+    "primary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {"name": {"const": "robust_mad_top2"}, "version": {"const": "1.0.0"}}
+    },
+    "challenger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {"name": {"const": "isolation_forest"}, "version": {"const": "1.0.0"}}
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["basis_points", "requested_rate", "selected_count", "realized_rate", "primary_cutoff", "challenger_cutoff", "agreement_count", "union_count", "jaccard"],
+      "properties": {
+        "basis_points": {"enum": [50, 100, 200]},
+        "requested_rate": {"type": "number", "minimum": 0.005, "maximum": 0.02},
+        "selected_count": {"type": "integer", "minimum": 1, "maximum": 200},
+        "realized_rate": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.025},
+        "primary_cutoff": {"type": "number", "minimum": 0},
+        "challenger_cutoff": {"type": "number", "minimum": 0},
+        "agreement_count": {"type": "integer", "minimum": 0, "maximum": 200},
+        "union_count": {"type": "integer", "minimum": 1, "maximum": 400},
+        "jaccard": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row_id", "agency_key", "contract_key", "event_at", "features", "primary", "challenger"],
+      "properties": {
+        "row_id": {"type": "string", "pattern": "^r_[0-9a-f]{64}$"},
+        "agency_key": {"type": "string", "pattern": "^a_[0-9a-f]{64}$"},
+        "contract_key": {"type": "string", "pattern": "^c_[0-9a-f]{64}$"},
+        "event_at": {"type": "string", "format": "date-time"},
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["late_hours", "km_per_day", "fuel_drop_pct"],
+          "properties": {
+            "late_hours": {"$ref": "#/$defs/decimal"},
+            "km_per_day": {"$ref": "#/$defs/decimal"},
+            "fuel_drop_pct": {"$ref": "#/$defs/decimal"}
+          }
+        },
+        "primary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["score", "rank", "selected_budgets", "factors"],
+          "properties": {
+            "score": {"type": "number", "minimum": 0},
+            "rank": {"type": "integer", "minimum": 1, "maximum": 10000},
+            "selected_budgets": {"$ref": "#/$defs/selectedBudgets"},
+            "factors": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/factor"}}
+          }
+        },
+        "challenger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["score", "rank", "selected_budgets"],
+          "properties": {
+            "score": {"type": "number", "minimum": 0},
+            "rank": {"type": "integer", "minimum": 1, "maximum": 10000},
+            "selected_budgets": {"$ref": "#/$defs/selectedBudgets"}
+          }
+        }
+      }
+    },
+    "decimal": {"type": "string", "pattern": "^(?:0|[1-9][0-9]{0,8})\\.[0-9]{6}$"},
+    "selectedBudgets": {"type": "array", "uniqueItems": true, "items": {"enum": [50, 100, 200]}},
+    "factor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "value", "median", "mad", "positive_robust_deviation"],
+      "properties": {
+        "feature": {"enum": ["late_hours", "km_per_day", "fuel_drop_pct"]},
+        "value": {"$ref": "#/$defs/decimal"},
+        "median": {"type": "number", "minimum": 0},
+        "mad": {"type": "number", "minimum": 0},
+        "positive_robust_deviation": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}

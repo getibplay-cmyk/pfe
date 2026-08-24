@@ -255,6 +255,7 @@ class UiLabel
         'prediction.forecast.import' => 'Importer les prévisions de demande consultatives',
         'prediction.color.review' => 'Analyser et revoir la couleur d’un véhicule',
         'prediction.damage.review' => 'Analyser et revoir les zones de dommage d’un retour',
+        'prediction.anomaly.review' => 'Analyser et revoir les usages de location atypiques',
     ];
 
     private const ENTITIES = [
@@ -271,6 +272,9 @@ class UiLabel
         'VehicleColorPredictionReview' => 'Revue humaine de couleur véhicule',
         'VehicleDamagePredictionRun' => 'Analyse de dommages véhicule',
         'VehicleDamagePredictionReview' => 'Revue humaine de zone candidate',
+        'RentalUsageAnomalyRun' => 'Classement d’usages atypiques',
+        'RentalUsageAnomalyResult' => 'Résultat d’usage atypique',
+        'RentalUsageAnomalyReview' => 'Revue humaine d’usage atypique',
     ];
 
     private const REPORT_LABELS = [
@@ -370,6 +374,9 @@ class UiLabel
         }
         if ($permission === 'prediction.damage.review') {
             return 'Effet : analyse consultative d’une photo de retour et revue humaine auditée, sans dommage, frais ni responsabilité automatiques.';
+        }
+        if ($permission === 'prediction.anomaly.review') {
+            return 'Effet : classement consultatif et revue humaine append-only, sans sanction, frais, accusation ni modification de contrat.';
         }
 
         return str_ends_with($permission, '.view')

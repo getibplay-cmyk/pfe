@@ -26,6 +26,7 @@ use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RentalContractController;
+use App\Http\Controllers\RentalUsageAnomalyController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ReservationController;
@@ -218,6 +219,13 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.result-batches.decisions.store');
     Route::get('/intelligence/demand-forecasts', [DemandForecastController::class, 'index'])
         ->name('intelligence.demand-forecasts.index');
+    Route::get('/intelligence/rental-usage-anomalies', [RentalUsageAnomalyController::class, 'index'])
+        ->name('intelligence.rental-usage-anomalies.index');
+    Route::post('/intelligence/exports/{exportRun}/rental-usage-anomalies', [RentalUsageAnomalyController::class, 'store'])
+        ->middleware('throttle:rental-usage-anomaly-v1')
+        ->name('intelligence.rental-usage-anomalies.store');
+    Route::post('/intelligence/rental-usage-anomalies/results/{anomalyResult}/reviews', [RentalUsageAnomalyController::class, 'review'])
+        ->name('intelligence.rental-usage-anomalies.reviews.store');
     Route::get('/intelligence/demand-history/export', [DemandForecastController::class, 'export'])
         ->name('intelligence.demand-history.export');
     Route::get('/intelligence/demand-history/{historyRun}/manifest', [DemandForecastController::class, 'manifest'])

@@ -20,6 +20,32 @@ return [
         'decision_effect' => 'NO_OPERATIONAL_ACTION',
     ],
 
+    'rental_usage_anomaly' => [
+        'enabled' => env('RENTFLEET_ANOMALY_V1_ENABLED', false),
+        'runtime_queue' => 'intelligence',
+        'runtime_timeout_seconds' => 60,
+        'runtime_stale_after_seconds' => 600,
+        'rate_limits' => [
+            'user_per_minute' => env('ANOMALY_V1_USER_RATE_LIMIT_PER_MINUTE', 2),
+            'scope_per_hour' => env('ANOMALY_V1_SCOPE_RATE_LIMIT_PER_HOUR', 10),
+        ],
+        'python_binary' => env(
+            'ANOMALY_V1_PYTHON_BINARY',
+            env('INTELLIGENCE_PYTHON_BINARY', 'python'),
+        ),
+        'runtime_script' => base_path(
+            'scripts/intelligence/rental_usage_anomaly/run_rental_usage_anomaly.py',
+        ),
+        'minimum_rows' => 200,
+        'default_budget_basis_points' => 100,
+        'budgets_basis_points' => [50, 100, 200],
+        'mode' => 'consultative_only',
+        'human_validation_required' => true,
+        'automatic_actions_allowed' => false,
+        'operational_table_writes_allowed' => false,
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'demand_forecasting' => [
         'disk' => 'local',
         'max_upload_kilobytes' => 512,

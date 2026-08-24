@@ -200,6 +200,7 @@ class RentFleetDoctor extends Command
         );
 
         $this->checkVehicleDamageRuntime($production);
+        $this->checkRentalUsageAnomalyRuntime($production);
 
         $colorEnabled = (bool) config('intelligence.vehicle_color_v8.enabled');
         if (! $colorEnabled) {
@@ -331,6 +332,66 @@ class RentFleetDoctor extends Command
         );
     }
 
+    private function checkRentalUsageAnomalyRuntime(bool $production): void
+    {
+        $enabled = (bool) config('intelligence.rental_usage_anomaly.enabled');
+        if (! $enabled) {
+            $this->add(
+                'Runtime usages atypiques',
+                'warn',
+                'désactivé par défaut; activation explicite requise après installation et contrôle',
+            );
+
+            return;
+        }
+
+        $binary = (string) config('intelligence.rental_usage_anomaly.python_binary');
+        $script = (string) config('intelligence.rental_usage_anomaly.runtime_script');
+        $configured = $binary !== '' && File::exists($script);
+        $versions = null;
+        if ($configured) {
+            try {
+                $probe = Process::path(sys_get_temp_dir())
+                    ->timeout(8)
+                    ->env([
+                        'PYTHONDONTWRITEBYTECODE' => '1',
+                        'OMP_NUM_THREADS' => '1',
+                        'OPENBLAS_NUM_THREADS' => '1',
+                        'MKL_NUM_THREADS' => '1',
+                        'APP_KEY' => false,
+                        'DB_PASSWORD' => false,
+                        'MAIL_PASSWORD' => false,
+                        'AWS_SECRET_ACCESS_KEY' => false,
+                        'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
+                        'DEMO_PASSWORD' => false,
+                        'PGPASSWORD' => false,
+                    ])
+                    ->run([
+                        $binary,
+                        '-c',
+                        'import numpy,sklearn,sys; print(f\'{sys.version_info.major}.{sys.version_info.minor}|{numpy.__version__}|{sklearn.__version__}\')',
+                    ]);
+                if ($probe->successful()) {
+                    $versions = trim($probe->output());
+                }
+            } catch (Throwable) {
+                // Les chemins et stderr du runtime ne sont jamais exposés.
+            }
+        }
+        $scriptDigest = $configured ? hash_file('sha256', $script) : false;
+        $ready = $configured
+            && is_string($scriptDigest)
+            && preg_match('/^[a-f0-9]{64}$/D', $scriptDigest) === 1
+            && $versions === '3.12|2.0.2|1.6.1';
+        $this->add(
+            'Runtime usages atypiques',
+            $ready ? 'pass' : ($production ? 'fail' : 'warn'),
+            $ready
+                ? 'script versionné · CPU · Python 3.12 · numpy 2.0.2 · scikit-learn 1.6.1'
+                : 'Python 3.12, numpy 2.0.2 et scikit-learn 1.6.1 requis',
+        );
+    }
+
     private function checkDatabase(): void
     {
         if (config('database.default') !== 'pgsql') {
@@ -393,12 +454,15 @@ class RentFleetDoctor extends Command
             $activeRuns += DB::table('vehicle_damage_prediction_runs')
                 ->whereIn('status', ['queued', 'running'])
                 ->count();
+            $activeRuns += DB::table('rental_usage_anomaly_runs')
+                ->whereIn('status', ['queued', 'running'])
+                ->count();
         } catch (Throwable) {
             // La vérification des migrations rapporte séparément une table absente.
         }
         $queueDetail = $queueConnection === 'database'
             ? 'database (worker intelligence requis; '.($activeRuns ?? 0).' exécution(s) active(s))'
-            : $queueConnection.' (database requis hors tests pour OR-Tools, HGB, couleur et dommages ONNX)';
+            : $queueConnection.' (database requis hors tests pour OR-Tools, HGB, couleur, dommages ONNX et usages atypiques)';
         $this->add('Queue', $queueConnection === 'database' ? 'pass' : 'warn', $queueDetail);
 
         try {
