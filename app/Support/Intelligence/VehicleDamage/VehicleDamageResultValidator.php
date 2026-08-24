@@ -201,8 +201,8 @@ class VehicleDamageResultValidator
             return [null, null, []];
         }
         if (! is_bool($result['suggested_damage'] ?? null)
-            || ((! is_int($result['max_probability_damage'] ?? null)
-                    && ! is_float($result['max_probability_damage'] ?? null)))
+            || (! is_int($result['max_probability_damage'] ?? null)
+                && ! is_float($result['max_probability_damage'] ?? null))
             || ! is_finite((float) $result['max_probability_damage'])
             || (float) $result['max_probability_damage'] < 0
             || (float) $result['max_probability_damage'] > 1) {
@@ -224,7 +224,7 @@ class VehicleDamageResultValidator
                 || $region['height'] < 1
                 || $region['x'] + $region['width'] > $run->input_width
                 || $region['y'] + $region['height'] > $run->input_height
-                || ((! is_int($region['probability'] ?? null) && ! is_float($region['probability'] ?? null)))
+                || (! is_int($region['probability'] ?? null) && ! is_float($region['probability'] ?? null))
                 || ! is_finite((float) $region['probability'])
                 || (float) $region['probability'] < (float) $run->decision_threshold
                 || (float) $region['probability'] > 1

@@ -31,6 +31,7 @@ use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -651,7 +652,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         try {
             $operation();
             $this->fail('PostgreSQL devait refuser cette opération.');
-        } catch (\Illuminate\Database\QueryException $exception) {
+        } catch (QueryException $exception) {
             $this->assertSame('23514', $exception->errorInfo[0]);
         }
     }
