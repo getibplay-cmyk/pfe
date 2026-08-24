@@ -93,7 +93,9 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         $fixture = $this->fixture();
         $this->enableRuntime();
         Queue::fake();
-        $inspectionBefore = $fixture['inspection']->getAttributes();
+        $inspectionBefore = VehicleInspection::withoutGlobalScopes()
+            ->findOrFail($fixture['inspection']->id)
+            ->getAttributes();
 
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.vehicle-damages.store'), [
@@ -650,10 +652,10 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
     private function assertPostgreSqlConstraint(callable $operation): void
     {
         try {
-            $operation();
+            DB::transaction($operation);
             $this->fail('PostgreSQL devait refuser cette opération.');
         } catch (QueryException $exception) {
-            $this->assertSame('23514', $exception->errorInfo[0]);
+            $this->assertSame('23514', (string) $exception->getCode());
         }
     }
 }
