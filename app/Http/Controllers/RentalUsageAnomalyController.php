@@ -100,7 +100,7 @@ class RentalUsageAnomalyController extends Controller
                 'export_run' => 'Une analyse de ce snapshot est déjà dans la queue Intelligence.',
             ]);
         } catch (RentalUsageAnomalyExecutionException $exception) {
-            $message = match ($exception->getMessage()) {
+            $message = match ($exception->failureCode()) {
                 'SOURCE_SNAPSHOT_INVALID' => 'Le snapshot privé est absent ou son intégrité a changé. Régénérez un export RentFleet v1.1 avant de relancer l’analyse.',
                 'RUNTIME_CONFIGURATION_INVALID' => 'Le runtime CPU des usages atypiques est indisponible. Vérifiez la configuration avant de relancer l’analyse.',
                 'QUEUE_DISPATCH_FAILED' => 'La queue Intelligence est momentanément indisponible. Réessayez après vérification du worker.',
