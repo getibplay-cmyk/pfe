@@ -4,6 +4,7 @@ namespace App\Actions\Intelligence;
 
 use App\Enums\RentalUsageAnomalyRunStatus;
 use App\Exceptions\RentalUsageAnomalyExecutionException;
+use App\Models\RentalContract;
 use App\Models\RentalUsageAnomalyResult;
 use App\Models\RentalUsageAnomalyRun;
 use App\Models\User;
@@ -131,7 +132,7 @@ final class ExecuteRentalUsageAnomalyRun
         return $output;
     }
 
-    /** @param array<string, \App\Models\RentalContract> $contracts */
+    /** @param array<string, RentalContract> $contracts */
     private function persist(
         RentalUsageAnomalyRun $run,
         ValidatedRentalUsageAnomalyOutput $validated,
