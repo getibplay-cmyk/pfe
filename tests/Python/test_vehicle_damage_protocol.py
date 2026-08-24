@@ -1,11 +1,22 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from collections import Counter
+from pathlib import Path
 
 from scripts.intelligence.vehicle_damage.protocol import (
     ProtocolError,
     evaluate_release_gate,
+    file_sha256,
+    grouped_bootstrap_indices,
+    read_completed_run,
+    remove_stale_model_export,
+    sha256sum_lines,
     validate_manifest,
+    verify_manifest_files,
+    write_json,
+    write_run_completion,
 )
 
 
@@ -97,6 +108,67 @@ class VehicleDamageProtocolTest(unittest.TestCase):
         result = evaluate_release_gate(metrics)
         self.assertFalse(result.passed)
         self.assertEqual(2, len(result.reasons))
+
+    def test_verifies_image_contents_against_manifest_hash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            image = root / "data/images/sample.jpg"
+            proof = root / "licences/hitl-access-receipt.pdf"
+            image.parent.mkdir(parents=True)
+            proof.parent.mkdir(parents=True)
+            image.write_bytes(b"frozen-image")
+            proof.write_bytes(b"private-proof")
+            row = {
+                "image_path": "images/sample.jpg",
+                "sha256": file_sha256(image),
+                "license_proof": "hitl-access-receipt.pdf",
+            }
+
+            verify_manifest_files([row], root / "data", root / "licences")
+            image.write_bytes(b"modified-image")
+            with self.assertRaisesRegex(ProtocolError, "Empreinte SHA-256 différente"):
+                verify_manifest_files([row], root / "data", root / "licences")
+
+    def test_grouped_bootstrap_keeps_all_patches_of_a_group_together(self):
+        group_ids = ["vehicle-a", "vehicle-a", "vehicle-b", "vehicle-c", "vehicle-c"]
+        first = list(grouped_bootstrap_indices(group_ids, iterations=12, seed=42))
+        second = list(grouped_bootstrap_indices(group_ids, iterations=12, seed=42))
+        self.assertEqual(first, second)
+
+        group_members = {
+            "vehicle-a": (0, 1),
+            "vehicle-b": (2,),
+            "vehicle-c": (3, 4),
+        }
+        for sample in first:
+            counts = Counter(sample)
+            for indices in group_members.values():
+                multiplicities = {counts[index] for index in indices}
+                self.assertEqual(1, len(multiplicities))
+
+    def test_completed_run_guard_checks_frozen_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            artifact = output / "metrics.json"
+            write_json(artifact, {"release_gate": {"passed": True}})
+            (output / "SHA256SUMS").write_text(
+                "\n".join(sha256sum_lines([artifact], output)) + "\n",
+                encoding="utf-8",
+            )
+
+            self.assertTrue(read_completed_run(output))
+            write_run_completion(output, passed=True)
+            self.assertTrue(read_completed_run(output))
+            artifact.write_text("tampered\n", encoding="utf-8")
+            with self.assertRaisesRegex(ProtocolError, "Artefact absent ou modifié"):
+                read_completed_run(output)
+
+    def test_failed_run_removes_stale_onnx_export(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model = Path(directory) / "model.onnx"
+            model.write_bytes(b"stale-qualified-model")
+            remove_stale_model_export(directory)
+            self.assertFalse(model.exists())
 
 
 if __name__ == "__main__":
