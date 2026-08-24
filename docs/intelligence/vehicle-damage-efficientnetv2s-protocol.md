@@ -61,7 +61,12 @@ de dommage. Les images « pièces seules » ne sont jamais supposées intactes.
 - calibration scalaire de température sur le split calibration;
 - seuil choisi sur calibration pour maximiser la balanced accuracy sous la
   contrainte rappel dommage >= 0,75;
-- intervalles de confiance bootstrap 95 % sur le test.
+- intervalles de confiance bootstrap 95 % par `group_id` de l'image source,
+  jamais par patch supposé indépendant;
+- verrou durable écrit avant la première lecture du test et marqueur de fin
+  vérifié : un run repris ne peut pas évaluer le test une seconde fois;
+- chaque fichier image est re-haché et comparé au SHA-256 du manifeste avant
+  tout entraînement.
 
 Les augmentations restent plausibles pour une inspection : crop modéré, miroir
 horizontal, rotation de 5 degrés, variation légère de lumière/couleur et petit
