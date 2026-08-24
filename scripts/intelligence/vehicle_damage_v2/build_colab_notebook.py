@@ -259,6 +259,24 @@ CELLS = [
             '--input_size', '640',
             '--check',
         ], cwd=RTDETR_ROOT)
+
+        # PyTorch 2.11 may export an ONNX protobuf plus model.onnx.data even
+        # below 2 GB. Embed those tensors so the private SaaS artifact remains
+        # a single portable model.onnx file.
+        import onnx
+        from onnx.external_data_helper import convert_model_from_external_data, uses_external_data
+
+        exported_model = onnx.load(str(MODEL_ONNX), load_external_data=True)
+        convert_model_from_external_data(exported_model)
+        assert not any(uses_external_data(tensor) for tensor in exported_model.graph.initializer)
+        embedded_onnx = LOCAL_RUN / 'model.embedded.onnx'
+        onnx.save_model(exported_model, str(embedded_onnx), save_as_external_data=False)
+        onnx.checker.check_model(str(embedded_onnx))
+        MODEL_ONNX.unlink()
+        embedded_onnx.replace(MODEL_ONNX)
+        for external_data in LOCAL_RUN.glob(f'{MODEL_ONNX.name}.*'):
+            external_data.unlink()
+
         validation_image = next((COCO_ROOT / 'images/validation').iterdir())
         run([
             sys.executable, '-m', 'scripts.intelligence.vehicle_damage_v2.verify_onnx_smoke',
@@ -312,6 +330,19 @@ CELLS = [
             destination = DRIVE_RUN / artifact.name
             shutil.copy2(artifact, destination)
             manifest.append({'name': destination.name, 'bytes': destination.stat().st_size, 'sha256': sha256(destination)})
+        drive_smoke_report = DRIVE_RUN / 'onnx_drive_smoke_report.json'
+        run([
+            sys.executable, '-m', 'scripts.intelligence.vehicle_damage_v2.verify_onnx_smoke',
+            '--model', str(DRIVE_RUN / MODEL_ONNX.name),
+            '--image', str(validation_image),
+            '--report', str(drive_smoke_report),
+            '--provider', 'CUDAExecutionProvider',
+        ], cwd=REPO_DIR)
+        manifest.append({
+            'name': drive_smoke_report.name,
+            'bytes': drive_smoke_report.stat().st_size,
+            'sha256': sha256(drive_smoke_report),
+        })
         (DRIVE_RUN / 'SHA256SUMS.json').write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + '\\n', encoding='utf-8'
         )
