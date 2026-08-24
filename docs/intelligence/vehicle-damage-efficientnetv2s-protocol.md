@@ -1,9 +1,9 @@
 # Protocole v1.0.0 — assistant de dommages véhicule EfficientNetV2-S
 
 Statut : protocole préenregistré puis **qualifié en v1.1 le 2026-08-24** sur le
-test final gelé. La décision détaillée, les intervalles et les SHA-256 sont dans
-`vehicle-damage-efficientnetv2s-qualification-v1.1.md`. Les données et modèles
-restent dans le Drive privé.
+test final gelé. La décision détaillée et les intervalles publics sont dans
+`vehicle-damage-efficientnetv2s-qualification-v1.1.md`. Les données, modèles,
+tailles d'artefacts et empreintes cryptographiques restent dans le Drive privé.
 
 ## Question PFE et valeur ajoutée
 
