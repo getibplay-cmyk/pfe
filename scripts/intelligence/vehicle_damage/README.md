@@ -24,6 +24,20 @@ smoke test and refuses full training while the frozen manifest is missing.
 Private data, checkpoints, predictions, and model files stay in Drive. GitHub
 contains only code, protocol, schema, tests, and non-sensitive attestations.
 
+## Qualified v1.1 result
+
+The frozen v1.1 run on a Tesla T4 passed every preregistered release gate:
+
+- balanced accuracy: 0.857633;
+- macro-F1: 0.852923;
+- damage recall: 0.867117;
+- expected calibration error: 0.025848.
+
+The full aggregate report, confidence intervals, limitations, and artifact
+fingerprints are documented in
+`docs/intelligence/vehicle-damage-efficientnetv2s-qualification-v1.1.md`.
+The private dataset, model, and individual predictions are not published.
+
 ## Qualification gate
 
 All four conditions must pass on the untouched test set:
