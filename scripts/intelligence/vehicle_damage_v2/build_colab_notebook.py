@@ -292,14 +292,27 @@ CELLS = [
         #@title 11. Enregistrer les artefacts privés et la preuve agrégée dans Drive
         log_rows = [json.loads(line) for line in (LOCAL_RUN / 'log.txt').read_text(encoding='utf-8').splitlines() if line.strip()]
         last = log_rows[-1]
-        coco_stats = last.get('test_coco_eval_bbox', [])
+        validation_rows = [
+            row for row in log_rows
+            if len(row.get('test_coco_eval_bbox') or []) >= 2
+        ]
+        assert validation_rows, 'Aucune métrique COCO de validation dans log.txt.'
+        best = max(
+            validation_rows,
+            key=lambda row: float(row['test_coco_eval_bbox'][0]),
+        )
+        coco_stats = best['test_coco_eval_bbox']
+        final_coco_stats = last.get('test_coco_eval_bbox') or []
         summary = {
             'protocol_version': '2.0.0',
             'mode': MODE,
             'seed': SEED,
             'epochs_completed': int(last.get('epoch', -1)) + 1,
+            'best_validation_epoch': int(best.get('epoch', -1)) + 1,
             'validation_bbox_ap': float(coco_stats[0]) if len(coco_stats) > 0 else None,
             'validation_bbox_ap50': float(coco_stats[1]) if len(coco_stats) > 1 else None,
+            'final_validation_bbox_ap': float(final_coco_stats[0]) if len(final_coco_stats) > 0 else None,
+            'final_validation_bbox_ap50': float(final_coco_stats[1]) if len(final_coco_stats) > 1 else None,
             'legacy_test_read': False,
             'qualification': False,
             'release_gate_passed': False,
