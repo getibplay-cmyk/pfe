@@ -1,7 +1,9 @@
 # Protocole v1.0.0 — assistant de dommages véhicule EfficientNetV2-S
 
-Statut : préenregistré, entraînement réel bloqué tant qu'une source officielle
-et sa preuve d'autorisation ne sont pas présentes dans le Drive privé.
+Statut : protocole préenregistré puis **qualifié en v1.1 le 2026-08-24** sur le
+test final gelé. La décision détaillée, les intervalles et les SHA-256 sont dans
+`vehicle-damage-efficientnetv2s-qualification-v1.1.md`. Les données et modèles
+restent dans le Drive privé.
 
 ## Question PFE et valeur ajoutée
 
@@ -20,7 +22,7 @@ le premier jalon : une extension de localisation multi-classe reste secondaire.
 
 | `source_id` | Source officielle | Statut avant entraînement | Usage prévu |
 |---|---|---|---|
-| `hitl_car_parts_damage` | Humans in the Loop, Car Parts and Car Damages | CC0 1.0, formulaire officiel à compléter | source réelle initiale, positifs et candidats négatifs audités |
+| `hitl_car_parts_damage` | Humans in the Loop, Car Parts and Car Damages | CC0 1.0, accès officiel terminé et archive privée attestée | source réelle v1.1, positifs et négatifs par patches audités |
 | `cardd` | site officiel CarDD USTC | accord académique signé préalable | extension positive/localisation; insuffisant seul pour le binaire |
 | `tqvcd` | dépôt officiel des auteurs | données disponibles sur demande | extension binaire avec classes normal/cassé/écrasé |
 
@@ -42,6 +44,11 @@ Le manifeste CSV contient : `image_path`, `label`, `group_id`, `source_id`,
   quatre splits et un résultat par source est ajouté au rapport;
 - le test final n'est évalué qu'après choix du checkpoint, de la température et
   du seuil sur les autres splits.
+
+La v1.1 utilise des patches centrés sur les polygones de dommage. Les négatifs
+sont échantillonnés dans des régions de pièces uniquement sur les images qui
+possèdent à la fois annotations pièces et dommages, en excluant tous les pixels
+de dommage. Les images « pièces seules » ne sont jamais supposées intactes.
 
 ## Entraînement préenregistré
 
@@ -78,10 +85,11 @@ de test pseudonymisées et les SHA-256.
 
 ## Limites et intégration SaaS
 
-La classification d'une photo entière ne localise pas le dommage et peut apprendre
-des biais de cadrage, d'arrière-plan ou de source. Les photos floues, trop sombres,
-tronquées ou hors domaine doivent être rejetées ou envoyées à la revue humaine.
-Un jeu pilote RentFleet consenti et séparé est nécessaire avant une affirmation de
+La classification par patch peut proposer une zone candidate, mais ne fournit
+pas une segmentation pixel-précise et peut apprendre des biais de cadrage,
+d'arrière-plan ou de source. Les photos floues, trop sombres, tronquées ou hors
+domaine doivent être rejetées ou envoyées à la revue humaine. Un jeu pilote
+RentFleet consenti et séparé est nécessaire avant une affirmation de
 généralisation locale.
 
 L'intégration Laravel est une seconde PR, conditionnée par le succès scientifique.
