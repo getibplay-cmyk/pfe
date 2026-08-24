@@ -33,10 +33,11 @@ The frozen v1.1 run on a Tesla T4 passed every preregistered release gate:
 - damage recall: 0.867117;
 - expected calibration error: 0.025848.
 
-The full aggregate report, confidence intervals, limitations, and artifact
-fingerprints are documented in
+The public aggregate report, confidence intervals, methodology, and limitations
+are documented in
 `docs/intelligence/vehicle-damage-efficientnetv2s-qualification-v1.1.md`.
-The private dataset, model, and individual predictions are not published.
+The private dataset, model, individual predictions, artifact sizes, and
+integrity fingerprints are not published.
 
 ## Qualification gate
 
