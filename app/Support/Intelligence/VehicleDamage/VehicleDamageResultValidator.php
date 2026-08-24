@@ -222,8 +222,8 @@ class VehicleDamageResultValidator
                 || $region['y'] < 0
                 || $region['width'] < 1
                 || $region['height'] < 1
-                || $region['x'] + $region['width'] > $run->input_width
-                || $region['y'] + $region['height'] > $run->input_height
+                || $run->input_width < $region['x'] + $region['width']
+                || $run->input_height < $region['y'] + $region['height']
                 || (! is_int($region['probability'] ?? null) && ! is_float($region['probability'] ?? null))
                 || ! is_finite((float) $region['probability'])
                 || (float) $region['probability'] < (float) $run->decision_threshold
