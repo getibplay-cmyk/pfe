@@ -40,11 +40,17 @@ from torchvision.models import EfficientNet_V2_S_Weights, efficientnet_v2_s
 
 from protocol import (
     PROTOCOL_VERSION,
+    TEST_LOCK_NAME,
     evaluate_release_gate,
+    grouped_bootstrap_indices,
     load_manifest,
+    read_completed_run,
+    remove_stale_model_export,
     sha256sum_lines,
     validate_manifest,
+    verify_manifest_files,
     write_json,
+    write_run_completion,
 )
 
 
@@ -276,11 +282,13 @@ def choose_threshold(labels: np.ndarray, probabilities: np.ndarray, recall_floor
 def bootstrap_intervals(
     labels: np.ndarray,
     probabilities: np.ndarray,
+    group_ids: Sequence[str],
     threshold: float,
     iterations: int,
     seed: int,
 ) -> dict[str, dict[str, float]]:
-    rng = np.random.default_rng(seed)
+    if len(labels) != len(group_ids):
+        raise ValueError("labels et group_ids doivent avoir la même longueur")
     samples: dict[str, list[float]] = {
         "balanced_accuracy": [],
         "macro_f1": [],
@@ -292,8 +300,8 @@ def bootstrap_intervals(
         "brier": [],
         "ece": [],
     }
-    for _ in range(iterations):
-        indices = rng.integers(0, len(labels), len(labels))
+    for sampled_indices in grouped_bootstrap_indices(group_ids, iterations, seed):
+        indices = np.asarray(sampled_indices, dtype=np.int64)
         sampled_labels = labels[indices]
         if len(np.unique(sampled_labels)) < 2:
             continue
@@ -309,17 +317,6 @@ def bootstrap_intervals(
         for name, values in samples.items()
         if values
     }
-
-
-def verify_files(rows: Sequence[Mapping[str, str]], data_root: Path, license_root: Path) -> None:
-    missing_images = [row["image_path"] for row in rows if not (data_root / row["image_path"]).is_file()]
-    if missing_images:
-        preview = ", ".join(missing_images[:5])
-        raise FileNotFoundError(f"Images absentes ({len(missing_images)}): {preview}")
-    proof_paths = sorted({row["license_proof"] for row in rows})
-    missing_proofs = [proof for proof in proof_paths if not (license_root / proof).is_file()]
-    if missing_proofs:
-        raise FileNotFoundError(f"Preuves de licence absentes: {', '.join(missing_proofs)}")
 
 
 def make_loaders(rows, data_root: Path, batch_size: int, workers: int):
@@ -393,17 +390,60 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
+    output = Path(args.output)
+    output.mkdir(parents=True, exist_ok=True)
+    completed_gate = read_completed_run(output)
+    if completed_gate is not None:
+        if not args.resume:
+            raise RuntimeError(
+                "Ce dossier contient déjà un run terminé; utilisez un nouvel --output."
+            )
+        print(
+            json.dumps(
+                {
+                    "status": "ALREADY_COMPLETE",
+                    "release_gate_passed": completed_gate,
+                    "test_re_evaluated": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0 if completed_gate else 2
+
+    test_lock = output / TEST_LOCK_NAME
+    if test_lock.is_file():
+        raise RuntimeError(
+            "STOP: le verrou du test final existe sans attestation de fin. "
+            "Le test a pu être touché; reprenez dans un nouveau dossier --output."
+        )
+    ambiguous_final_artifacts = [
+        name
+        for name in (
+            "metrics.json",
+            "test_predictions.csv",
+            "model_card.json",
+            "model.onnx",
+            "STOP_NOT_QUALIFIED.json",
+            "SHA256SUMS",
+        )
+        if (output / name).exists()
+    ]
+    if ambiguous_final_artifacts:
+        raise RuntimeError(
+            "STOP: artefacts finaux sans attestation complète: "
+            + ", ".join(ambiguous_final_artifacts)
+            + ". Utilisez un nouveau dossier --output."
+        )
+
     if not torch.cuda.is_available():
         raise RuntimeError("GPU CUDA obligatoire pour ce lot Colab; aucun entraînement CPU silencieux.")
     if args.head_epochs < 0 or args.head_epochs >= args.epochs:
         raise ValueError("head-epochs doit être positif et strictement inférieur à epochs.")
 
     seed_everything(SEED)
-    output = Path(args.output)
-    output.mkdir(parents=True, exist_ok=True)
     rows = load_manifest(args.manifest)
     manifest_report = validate_manifest(rows)
-    verify_files(rows, Path(args.data_root), Path(args.license_root))
+    verify_manifest_files(rows, Path(args.data_root), Path(args.license_root))
     write_json(output / "manifest_summary.json", manifest_report.as_dict())
     write_json(output / "environment.json", environment_payload())
 
@@ -505,12 +545,29 @@ def main() -> int:
     threshold = choose_threshold(calibration_labels, calibration_probabilities, recall_floor=0.75)
     calibration_metrics = classification_metrics(calibration_labels, calibration_probabilities, threshold)
 
+    # This durable lock is written before the first test read. If the process
+    # crashes after this point, a resumed command must use a new output folder.
+    write_json(
+        test_lock,
+        {
+            "protocol_version": PROTOCOL_VERSION,
+            "status": "FINAL_TEST_LOCKED",
+            "test_rows": len(split_rows["test"]),
+        },
+    )
     # The frozen test set is touched only here, after all choices are locked.
     test_logits, test_labels, test_loss = collect_logits(model, loaders["test"], criterion, device)
     test_probabilities = softmax_damage_probability(test_logits, temperature)
     test_metrics = classification_metrics(test_labels, test_probabilities, threshold)
     test_metrics["loss"] = test_loss
-    intervals = bootstrap_intervals(test_labels, test_probabilities, threshold, args.bootstrap, SEED + 1)
+    intervals = bootstrap_intervals(
+        test_labels,
+        test_probabilities,
+        [row["group_id"] for row in split_rows["test"]],
+        threshold,
+        args.bootstrap,
+        SEED + 1,
+    )
     per_source_metrics: dict[str, dict[str, float]] = {}
     test_sources = np.array([row["source_id"] for row in split_rows["test"]])
     for source_id in sorted(set(test_sources)):
@@ -570,6 +627,7 @@ def main() -> int:
     write_json(output / "model_card.json", model_card)
 
     if gate.passed:
+        (output / "STOP_NOT_QUALIFIED.json").unlink(missing_ok=True)
         calibrated = CalibratedDamageModel(model.eval(), temperature).to(device)
         dummy = torch.zeros(1, 3, IMAGE_SIZE, IMAGE_SIZE, device=device)
         torch.onnx.export(
@@ -583,6 +641,10 @@ def main() -> int:
             dynamo=False,
         )
     else:
+        # Never leave a usable-looking export from another attempt in a failed
+        # output. The run guard above normally prevents reuse; this is a final
+        # fail-closed defence.
+        remove_stale_model_export(output)
         write_json(
             output / "STOP_NOT_QUALIFIED.json",
             {"status": "STOP", "reasons": list(gate.reasons), "onnx_exported": False},
@@ -596,6 +658,7 @@ def main() -> int:
     (output / "SHA256SUMS").write_text(
         "\n".join(sha256sum_lines(evidence_files, output)) + "\n", encoding="utf-8"
     )
+    write_run_completion(output, gate.passed)
     print(json.dumps({"release_gate": gate.as_dict(), "output": str(output)}, ensure_ascii=False, indent=2))
     return 0 if gate.passed else 2
 
