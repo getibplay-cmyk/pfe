@@ -8,4 +8,6 @@ onnx>=1.17,<2
 onnxscript>=0.5,<1
 onnxruntime-gpu>=1.20,<2
 packaging>=24,<27
-
+# Colab's current Python 3.13 image ships IPython 7.34 without its declared
+# optional console dependency. Keep `pip check` strict and reproducible.
+jedi>=0.19.2,<1
