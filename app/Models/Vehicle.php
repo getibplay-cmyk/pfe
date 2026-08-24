@@ -71,4 +71,9 @@ class Vehicle extends Model
     {
         return $this->hasMany(VehicleColorPredictionRun::class);
     }
+
+    public function damagePredictionRuns(): HasMany
+    {
+        return $this->hasMany(VehicleDamagePredictionRun::class);
+    }
 }

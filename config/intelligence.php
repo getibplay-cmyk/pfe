@@ -98,6 +98,50 @@ return [
         'decision_effect' => 'NO_OPERATIONAL_ACTION',
     ],
 
+    'vehicle_damage_v1' => [
+        'enabled' => env('RENTFLEET_DAMAGE_V1_ENABLED', false),
+        'disk' => 'local',
+        'runtime_queue' => 'intelligence',
+        'runtime_timeout_seconds' => 120,
+        'runtime_stale_after_seconds' => 900,
+        'image_sanitizer_timeout_seconds' => 15,
+        'max_upload_kilobytes' => 8192,
+        'max_image_dimension' => 8000,
+        'max_stored_image_dimension' => 2048,
+        'max_scan_patches' => 36,
+        'rate_limits' => [
+            'user_per_minute' => env('DAMAGE_V1_USER_RATE_LIMIT_PER_MINUTE', 3),
+            'scope_per_hour' => env('DAMAGE_V1_SCOPE_RATE_LIMIT_PER_HOUR', 20),
+        ],
+        'python_binary' => env(
+            'DAMAGE_V1_PYTHON_BINARY',
+            env('INTELLIGENCE_PYTHON_BINARY', 'python'),
+        ),
+        'execution_provider' => env('DAMAGE_V1_EXECUTION_PROVIDER', 'CPUExecutionProvider'),
+        'runtime_script' => base_path(
+            'scripts/intelligence/vehicle_damage/run_vehicle_damage_onnx.py',
+        ),
+        'image_sanitizer_script' => base_path(
+            'scripts/intelligence/vehicle_damage/sanitize_return_image.py',
+        ),
+        'model_path' => env(
+            'DAMAGE_V1_MODEL_PATH',
+            storage_path('app/private/intelligence/models/vehicle-damage-v1/model.onnx'),
+        ),
+        'model_card_path' => env(
+            'DAMAGE_V1_MODEL_CARD_PATH',
+            storage_path('app/private/intelligence/models/vehicle-damage-v1/model_card.json'),
+        ),
+        'model_sha256' => env('DAMAGE_V1_MODEL_SHA256'),
+        'model_card_sha256' => env('DAMAGE_V1_MODEL_CARD_SHA256'),
+        'mode' => 'consultative_only',
+        'human_validation_required' => true,
+        'automatic_actions_allowed' => false,
+        'operational_table_writes_allowed' => false,
+        'local_pilot_required' => true,
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'rule_baseline' => [
         'name' => 'rental_anomaly_rules',
         'version' => '1.0.0',

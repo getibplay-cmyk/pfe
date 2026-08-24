@@ -1,33 +1,110 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rentfleet.local/schemas/vehicle-damage-result-v1.0.0.json",
-  "title": "RentFleet consultative vehicle damage result",
+  "title": "RentFleet consultative vehicle-damage scan result",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "contract_version",
-    "model_id",
-    "artifact_sha256",
-    "prediction",
-    "probability_damage",
-    "decision_threshold",
-    "requires_human_review"
-  ],
+  "required": ["schema_version", "model", "input", "quality", "scan", "result", "safety"],
   "properties": {
-    "contract_version": {"const": "1.0.0"},
-    "model_id": {"const": "rentfleet-vehicle-damage-efficientnetv2s-v1"},
-    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "prediction": {
-      "type": "string",
-      "enum": ["aucun_dommage_visible", "dommage_visible"]
+    "schema_version": {"const": "1.0.0"},
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "artifact_sha256", "model_card_sha256", "decision_threshold"],
+      "properties": {
+        "name": {"const": "rentfleet_vehicle_damage_efficientnetv2s"},
+        "version": {"const": "s7-damage-efficientnetv2s-v1.1"},
+        "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "model_card_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "decision_threshold": {"const": 0.495}
+      }
     },
-    "probability_damage": {"type": "number", "minimum": 0, "maximum": 1},
-    "decision_threshold": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1},
-    "requires_human_review": {"const": true},
-    "warnings": {
-      "type": "array",
-      "items": {"type": "string"},
-      "uniqueItems": true
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "sha256", "bytes", "mime", "width", "height"],
+      "properties": {
+        "run_id": {"type": "string", "format": "uuid"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"type": "integer", "minimum": 1, "maximum": 8388608},
+        "mime": {"const": "image/jpeg"},
+        "width": {"type": "integer", "minimum": 1, "maximum": 2048},
+        "height": {"type": "integer", "minimum": 1, "maximum": 2048}
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reasons", "brightness", "contrast", "sharpness"],
+      "properties": {
+        "status": {"enum": ["usable", "abstained"]},
+        "reasons": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["TOO_SMALL", "TOO_DARK", "TOO_BRIGHT", "LOW_CONTRAST", "POSSIBLY_BLURRED"]
+          }
+        },
+        "brightness": {"type": "number", "minimum": 0, "maximum": 1},
+        "contrast": {"type": "number", "minimum": 0, "maximum": 1},
+        "sharpness": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "scan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "evaluated_patches", "overlap_ratio", "candidate_limit"],
+      "properties": {
+        "mode": {"const": "coarse_overlapping_patches"},
+        "evaluated_patches": {"type": "integer", "minimum": 0, "maximum": 64},
+        "overlap_ratio": {"const": 0.35},
+        "candidate_limit": {"const": 12}
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suggested_damage", "max_probability_damage", "candidate_count", "candidate_regions"],
+      "properties": {
+        "suggested_damage": {"type": ["boolean", "null"]},
+        "max_probability_damage": {
+          "anyOf": [
+            {"type": "number", "minimum": 0, "maximum": 1},
+            {"type": "null"}
+          ]
+        },
+        "candidate_count": {"type": "integer", "minimum": 0, "maximum": 12},
+        "candidate_regions": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["x", "y", "width", "height", "probability"],
+            "properties": {
+              "x": {"type": "integer", "minimum": 0},
+              "y": {"type": "integer", "minimum": 0},
+              "width": {"type": "integer", "minimum": 1},
+              "height": {"type": "integer", "minimum": 1},
+              "probability": {"type": "number", "minimum": 0.495, "maximum": 1}
+            }
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "human_validation_required", "automatic_business_action_allowed", "operational_effect", "local_pilot_required", "domain_validation_status", "pixel_precise_localization"],
+      "properties": {
+        "mode": {"const": "consultative_only"},
+        "human_validation_required": {"const": true},
+        "automatic_business_action_allowed": {"const": false},
+        "operational_effect": {"const": "NO_OPERATIONAL_ACTION"},
+        "local_pilot_required": {"const": true},
+        "domain_validation_status": {"const": "NOT_VALIDATED_ON_RENTFLEET_PHOTOS"},
+        "pixel_precise_localization": {"const": false}
+      }
     }
   }
 }

@@ -31,6 +31,18 @@
             </div>
         </x-section-card>
 
+        <x-section-card
+            title="Dommages visibles au retour · EfficientNetV2-S"
+            description="Assistant ONNX qualifié, scan par patches chevauchants et validation humaine obligatoire, sans décision métier automatique."
+        >
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                    Balanced accuracy 85,7633 % · macro-F1 85,2923 % · rappel dommage 86,7117 % · ECE 0,025848. Les régions proposées sont grossières et la validation locale RentFleet reste obligatoire.
+                </p>
+                <a href="{{ route('intelligence.vehicle-damages.index') }}" class="rf-button-secondary">Ouvrir l’assistant dommages</a>
+            </div>
+        </x-section-card>
+
         <x-section-card title="Cadre scientifique et humain" description="Les preuves disponibles n’exécutent aucune décision métier.">
             <ul class="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
                 <li><span class="font-medium">rental_anomaly_iforest 0.1.0</span> est un artefact synthétique historique du Lot 07B1, distinct du candidat public J9.</li>

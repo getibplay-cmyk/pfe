@@ -40,4 +40,9 @@ class VehicleInspection extends Model
     {
         return $this->morphMany(Document::class, 'documentable');
     }
+
+    public function damagePredictionRuns(): HasMany
+    {
+        return $this->hasMany(VehicleDamagePredictionRun::class);
+    }
 }
