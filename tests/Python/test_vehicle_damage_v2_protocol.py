@@ -6,6 +6,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
+from scripts.intelligence.vehicle_damage_v2.build_colab_notebook import CELLS
 from scripts.intelligence.vehicle_damage_v2.build_rtdetr_config import render_config
 from scripts.intelligence.vehicle_damage_v2.prepare_hitl_coco import build_split
 from scripts.intelligence.vehicle_damage_v2.protocol import (
@@ -138,6 +139,17 @@ class VehicleDamageV2ProtocolTest(unittest.TestCase):
         self.assertIn('ann_file: "/data/annotations/instances_train.json"', content)
         self.assertNotIn("instances_test", content)
 
+    def test_colab_embeds_onnx_weights_and_rechecks_the_drive_copy(self):
+        source = "\n".join(
+            line
+            for cell in CELLS
+            for line in cell.get("source", [])
+        )
+        self.assertIn("convert_model_from_external_data", source)
+        self.assertIn("save_as_external_data=False", source)
+        self.assertIn("onnx_drive_smoke_report.json", source)
+        self.assertIn("str(DRIVE_RUN / MODEL_ONNX.name)", source)
+
     def test_converts_supervisely_polygon_and_verifies_raw_hash(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -188,4 +200,3 @@ class VehicleDamageV2ProtocolTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
