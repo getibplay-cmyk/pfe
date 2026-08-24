@@ -1,5 +1,10 @@
 # S7 dommages v1.1 — intégration SaaS consultative
 
+> **Périmètre de lot :** cette tranche appartient au **Lot 08 Intelligence**,
+> postérieur et distinct du Lot 06 « release candidate sans IA ». Elle ne
+> modifie pas le périmètre gelé de cette release candidate et ne conditionne
+> aucun flux métier.
+
 ## Décision livrée
 
 Le modèle EfficientNetV2-S qualifié est intégré comme un assistant de contrôle

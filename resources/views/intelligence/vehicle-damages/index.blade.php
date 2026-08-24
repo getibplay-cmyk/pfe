@@ -101,23 +101,32 @@
                         <div class="mt-4 grid gap-5 lg:grid-cols-[minmax(16rem,28rem)_minmax(0,1fr)]">
                             <div>
                                 <a href="{{ route('intelligence.vehicle-damages.input', $run) }}" target="_blank" rel="noopener" class="block overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
-                                    <div class="relative">
-                                        <img src="{{ route('intelligence.vehicle-damages.input', $run) }}" alt="Photo privée du retour de {{ $run->vehicle->registration_number }}" class="h-auto max-h-[32rem] w-full object-contain" loading="lazy">
-                                        @if ($run->status->value === 'succeeded' && $run->quality_status === 'usable')
-                                            @foreach ($run->candidate_regions ?? [] as $index => $region)
-                                                @php
-                                                    $left = 100 * $region['x'] / $run->input_width;
-                                                    $top = 100 * $region['y'] / $run->input_height;
-                                                    $width = 100 * $region['width'] / $run->input_width;
-                                                    $height = 100 * $region['height'] / $run->input_height;
-                                                @endphp
-                                                <span
-                                                    class="absolute border-2 border-red-500 bg-red-500/10 text-[10px] font-bold text-white shadow"
-                                                    style="left: {{ number_format($left, 4, '.', '') }}%; top: {{ number_format($top, 4, '.', '') }}%; width: {{ number_format($width, 4, '.', '') }}%; height: {{ number_format($height, 4, '.', '') }}%;"
-                                                    aria-label="Zone candidate {{ $index + 1 }}, probabilité {{ number_format($region['probability'] * 100, 1, ',', ' ') }} %"
-                                                ><span class="bg-red-600 px-1">{{ $index + 1 }}</span></span>
-                                            @endforeach
-                                        @endif
+                                    @php
+                                        $overlayWidthRem = 32 * $run->input_width / $run->input_height;
+                                    @endphp
+                                    <div class="flex justify-center bg-slate-950">
+                                        <div
+                                            class="relative"
+                                            data-damage-overlay-frame
+                                            style="aspect-ratio: {{ $run->input_width }} / {{ $run->input_height }}; width: min(100%, {{ number_format($overlayWidthRem, 4, '.', '') }}rem);"
+                                        >
+                                            <img src="{{ route('intelligence.vehicle-damages.input', $run) }}" alt="Photo privée du retour de {{ $run->vehicle->registration_number }}" class="block h-full w-full object-contain" loading="lazy">
+                                            @if ($run->status->value === 'succeeded' && $run->quality_status === 'usable')
+                                                @foreach ($run->candidate_regions ?? [] as $index => $region)
+                                                    @php
+                                                        $left = 100 * $region['x'] / $run->input_width;
+                                                        $top = 100 * $region['y'] / $run->input_height;
+                                                        $width = 100 * $region['width'] / $run->input_width;
+                                                        $height = 100 * $region['height'] / $run->input_height;
+                                                    @endphp
+                                                    <span
+                                                        class="absolute border-2 border-red-500 bg-red-500/10 text-[10px] font-bold text-white shadow"
+                                                        style="left: {{ number_format($left, 4, '.', '') }}%; top: {{ number_format($top, 4, '.', '') }}%; width: {{ number_format($width, 4, '.', '') }}%; height: {{ number_format($height, 4, '.', '') }}%;"
+                                                        aria-label="Zone candidate {{ $index + 1 }}, probabilité {{ number_format($region['probability'] * 100, 1, ',', ' ') }} %"
+                                                    ><span class="bg-red-600 px-1">{{ $index + 1 }}</span></span>
+                                                @endforeach
+                                            @endif
+                                        </div>
                                     </div>
                                     <span class="block bg-white px-3 py-2 text-center text-xs font-medium text-indigo-700">Ouvrir la photo privée</span>
                                 </a>

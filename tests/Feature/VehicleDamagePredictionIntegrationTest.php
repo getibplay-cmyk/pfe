@@ -200,6 +200,22 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         $this->assertSame(0, DamageReport::withoutGlobalScopes()->count());
     }
 
+    public function test_candidate_overlay_uses_the_exact_portrait_image_ratio(): void
+    {
+        $fixture = $this->fixture();
+        $run = $this->completedRun($fixture, width: 600, height: 1200);
+
+        $page = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.vehicle-damages.index'))
+            ->assertOk();
+
+        $this->assertStringContainsString('data-damage-overlay-frame', $page->getContent());
+        $this->assertStringContainsString(
+            'aspect-ratio: 600 / 1200; width: min(100%, 16.0000rem);',
+            $page->getContent(),
+        );
+    }
+
     public function test_human_confirmation_is_append_only_and_has_no_operational_effect(): void
     {
         $fixture = $this->fixture();
@@ -411,8 +427,10 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
     private function completedRun(
         array $fixture,
         bool $qualityAbstention = false,
+        int $width = 768,
+        int $height = 768,
     ): VehicleDamagePredictionRun {
-        $this->enableRuntime();
+        $this->enableRuntime($width, $height);
         Queue::fake();
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.vehicle-damages.store'), [
@@ -428,7 +446,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         return VehicleDamagePredictionRun::withoutGlobalScopes()->findOrFail($run->id);
     }
 
-    private function enableRuntime(): void
+    private function enableRuntime(int $width = 768, int $height = 768): void
     {
         config(['intelligence.vehicle_damage_v1.enabled' => true]);
         $artifact = $this->mock(VehicleDamageModelArtifact::class);
@@ -438,7 +456,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         $artifact->shouldReceive('configuredModelSha256')->andReturn(str_repeat('a', 64));
         $artifact->shouldReceive('configuredModelCardSha256')->andReturn(str_repeat('b', 64));
         $sanitizer = $this->mock(VehicleDamageImageSanitizer::class);
-        $sanitizer->shouldReceive('sanitize')->andReturnUsing(function (): SanitizedVehicleDamageImage {
+        $sanitizer->shouldReceive('sanitize')->andReturnUsing(function () use ($height, $width): SanitizedVehicleDamageImage {
             $contents = $this->sanitizedBytes();
 
             return new SanitizedVehicleDamageImage(
@@ -447,8 +465,8 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
                 extension: 'jpg',
                 bytes: strlen($contents),
                 sha256: hash('sha256', $contents),
-                width: 768,
-                height: 768,
+                width: $width,
+                height: $height,
             );
         });
         $input = $this->mock(VehicleDamageInputArtifact::class);
@@ -598,6 +616,10 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         VehicleDamagePredictionRun $run,
         bool $qualityAbstention = false,
     ): string {
+        $leftPatchWidth = intdiv($run->input_width, 2);
+        $rightPatchWidth = $run->input_width - $leftPatchWidth;
+        $patchHeight = min($run->input_height, max($leftPatchWidth, $rightPatchWidth));
+
         return json_encode([
             'schema_version' => VehicleDamageContract::RESULT_SCHEMA_VERSION,
             'model' => [
@@ -633,8 +655,8 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
                 'max_probability_damage' => $qualityAbstention ? null : 0.91,
                 'candidate_count' => $qualityAbstention ? 0 : 2,
                 'candidate_regions' => $qualityAbstention ? [] : [
-                    ['x' => 0, 'y' => 0, 'width' => 384, 'height' => 384, 'probability' => 0.91],
-                    ['x' => 384, 'y' => 0, 'width' => 384, 'height' => 384, 'probability' => 0.78],
+                    ['x' => 0, 'y' => 0, 'width' => $leftPatchWidth, 'height' => $patchHeight, 'probability' => 0.91],
+                    ['x' => $leftPatchWidth, 'y' => 0, 'width' => $rightPatchWidth, 'height' => $patchHeight, 'probability' => 0.78],
                 ],
             ],
             'safety' => [
