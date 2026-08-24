@@ -7,11 +7,14 @@ verify provenance, split isolation, and release gates without downloading a mode
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
+import random
 import re
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Iterable, Mapping, Sequence
+from typing import Iterable, Iterator, Mapping, Sequence
 
 
 PROTOCOL_VERSION = "1.0.0"
@@ -52,6 +55,8 @@ MINIMUM_RELEASE_METRICS = {
     "damage_recall": 0.75,
 }
 MAXIMUM_RELEASE_METRICS = {"ece": 0.08}
+RUN_COMPLETE_NAME = "RUN_COMPLETE.json"
+TEST_LOCK_NAME = "TEST_EVALUATION_LOCK.json"
 
 
 class ProtocolError(ValueError):
@@ -94,6 +99,70 @@ def load_manifest(path: str | Path) -> list[dict[str, str]]:
         if missing:
             raise ProtocolError(f"Colonnes obligatoires absentes: {', '.join(missing)}")
         return [{key: (value or "").strip() for key, value in row.items()} for row in reader]
+
+
+def file_sha256(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        while chunk := handle.read(chunk_size):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def verify_manifest_files(
+    rows: Sequence[Mapping[str, str]],
+    data_root: str | Path,
+    license_root: str | Path,
+) -> None:
+    data_root_path = Path(data_root)
+    license_root_path = Path(license_root)
+    missing_images: list[str] = []
+    hash_mismatches: list[str] = []
+
+    for row in rows:
+        relative_path = str(row["image_path"])
+        image_path = data_root_path / relative_path
+        if not image_path.is_file():
+            missing_images.append(relative_path)
+            continue
+        if file_sha256(image_path) != str(row["sha256"]).lower():
+            hash_mismatches.append(relative_path)
+
+    if missing_images:
+        preview = ", ".join(missing_images[:5])
+        raise FileNotFoundError(f"Images absentes ({len(missing_images)}): {preview}")
+    if hash_mismatches:
+        preview = ", ".join(hash_mismatches[:5])
+        raise ProtocolError(
+            f"Empreinte SHA-256 différente du manifeste ({len(hash_mismatches)}): {preview}"
+        )
+
+    proof_paths = sorted({str(row["license_proof"]) for row in rows})
+    missing_proofs = [proof for proof in proof_paths if not (license_root_path / proof).is_file()]
+    if missing_proofs:
+        raise FileNotFoundError(f"Preuves de licence absentes: {', '.join(missing_proofs)}")
+
+
+def grouped_bootstrap_indices(
+    group_ids: Sequence[str], iterations: int, seed: int
+) -> Iterator[tuple[int, ...]]:
+    if iterations < 1:
+        raise ValueError("iterations doit être >= 1")
+    if not group_ids:
+        raise ValueError("group_ids ne peut pas être vide")
+
+    group_to_indices: dict[str, list[int]] = defaultdict(list)
+    for index, group_id in enumerate(group_ids):
+        group_to_indices[str(group_id)].append(index)
+    groups = sorted(group_to_indices)
+    rng = random.Random(seed)
+    for _ in range(iterations):
+        selected_groups = rng.choices(groups, k=len(groups))
+        yield tuple(
+            index
+            for group_id in selected_groups
+            for index in group_to_indices[group_id]
+        )
 
 
 def validate_manifest(rows: Sequence[Mapping[str, str]]) -> ManifestReport:
@@ -236,11 +305,83 @@ def write_json(path: str | Path, payload: Mapping[str, object]) -> None:
     )
 
 
-def sha256sum_lines(paths: Iterable[Path], relative_to: Path) -> list[str]:
-    import hashlib
+def verify_evidence_checksums(output: str | Path) -> None:
+    output_path = Path(output)
+    checksum_path = output_path / "SHA256SUMS"
+    if not checksum_path.is_file():
+        raise ProtocolError("SHA256SUMS absent; le run n'est pas attesté comme terminé.")
 
+    for line_number, line in enumerate(
+        checksum_path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        digest, separator, relative_name = line.partition("  ")
+        relative_path = PurePosixPath(relative_name)
+        if (
+            separator != "  "
+            or not SHA256_RE.fullmatch(digest)
+            or not relative_name
+            or relative_path.is_absolute()
+            or ".." in relative_path.parts
+        ):
+            raise ProtocolError(f"SHA256SUMS invalide à la ligne {line_number}.")
+        artifact = output_path / relative_path
+        if not artifact.is_file() or file_sha256(artifact) != digest:
+            raise ProtocolError(f"Artefact absent ou modifié: {relative_name}")
+
+
+def read_completed_run(output: str | Path) -> bool | None:
+    output_path = Path(output)
+    marker_path = output_path / RUN_COMPLETE_NAME
+    metrics_path = output_path / "metrics.json"
+    checksum_path = output_path / "SHA256SUMS"
+
+    if marker_path.is_file():
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        expected_checksum = str(marker.get("sha256sums_sha256", ""))
+        if not checksum_path.is_file() or file_sha256(checksum_path) != expected_checksum:
+            raise ProtocolError("Le marqueur de fin ne correspond pas à SHA256SUMS.")
+        verify_evidence_checksums(output_path)
+        passed = marker.get("release_gate_passed")
+        if not isinstance(passed, bool) or marker.get("test_evaluated_once") is not True:
+            raise ProtocolError("RUN_COMPLETE.json est invalide.")
+        return passed
+
+    # Compatibility guard for the already qualified v1.1 run, created before
+    # RUN_COMPLETE.json existed. Its frozen metrics and full checksum inventory
+    # are sufficient to prevent a second test evaluation.
+    if metrics_path.is_file() and checksum_path.is_file():
+        verify_evidence_checksums(output_path)
+        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+        passed = metrics.get("release_gate", {}).get("passed")
+        if not isinstance(passed, bool):
+            raise ProtocolError("metrics.json ne contient pas un release gate valide.")
+        return passed
+    return None
+
+
+def write_run_completion(output: str | Path, passed: bool) -> None:
+    output_path = Path(output)
+    checksum_path = output_path / "SHA256SUMS"
+    if not checksum_path.is_file():
+        raise ProtocolError("Impossible de terminer le run sans SHA256SUMS.")
+    write_json(
+        output_path / RUN_COMPLETE_NAME,
+        {
+            "protocol_version": PROTOCOL_VERSION,
+            "release_gate_passed": bool(passed),
+            "sha256sums_sha256": file_sha256(checksum_path),
+            "test_evaluated_once": True,
+        },
+    )
+
+
+def remove_stale_model_export(output: str | Path) -> None:
+    (Path(output) / "model.onnx").unlink(missing_ok=True)
+
+
+def sha256sum_lines(paths: Iterable[Path], relative_to: Path) -> list[str]:
     lines: list[str] = []
     for path in sorted(paths):
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        digest = file_sha256(path)
         lines.append(f"{digest}  {path.relative_to(relative_to).as_posix()}")
     return lines
