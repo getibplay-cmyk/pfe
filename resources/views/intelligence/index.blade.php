@@ -43,13 +43,25 @@
             </div>
         </x-section-card>
 
+        <x-section-card
+            title="Usages de location atypiques · CPU"
+            description="Classement explicable des exports réels v1.1, challenger Isolation Forest et revue humaine append-only."
+        >
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                    <code>robust_mad_top2</code> reste le classement principal aux budgets 0,5 %, 1 % et 2 %. Isolation Forest mesure uniquement le désaccord. Aucun score ne déclenche une sanction, des frais, une accusation ou une modification de contrat.
+                </p>
+                <a href="{{ route('intelligence.rental-usage-anomalies.index') }}" class="rf-button-secondary">Ouvrir les usages atypiques</a>
+            </div>
+        </x-section-card>
+
         <x-section-card title="Cadre scientifique et humain" description="Les preuves disponibles n’exécutent aucune décision métier.">
             <ul class="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
                 <li><span class="font-medium">rental_anomaly_iforest 0.1.0</span> est un artefact synthétique historique du Lot 07B1, distinct du candidat public J9.</li>
-                <li>Le benchmark public J9 a sélectionné <span class="font-medium">robust_mad_top2</span>, sans validation locale RentFleet et sans autorisation d’usage dans J13.</li>
+                <li>Le benchmark public J9 a sélectionné <span class="font-medium">robust_mad_top2</span>. Le pilote CPU distinct de J13 peut maintenant classer un export réel, sans revendiquer d’exactitude locale avant constitution d’étiquettes humaines.</li>
                 <li>L’export réel v1.1 ne contient aucune étiquette, cible, identité ou décision humaine.</li>
                 <li>Une anomalie ne prouve ni fraude, danger, dommage, faute ou responsabilité.</li>
-                <li>Aucune inférence, aucun entraînement, solveur ou calcul de modèle n’est exécuté par cet écran.</li>
+                <li>Cet écran d’accueil n’exécute aucun modèle ; chaque lancement explicite passe par la queue du module dédié.</li>
             </ul>
         </x-section-card>
 

@@ -600,3 +600,23 @@ append-only. La portée, les permissions et les limites sont détaillées dans
 php artisan test --filter=J12ContractAdapterTest
 php artisan test --filter=J12DisabledContractAdapterTest
 ```
+
+## Usages de location atypiques — pilote consultatif CPU
+
+Le module `/intelligence/rental-usage-anomalies` consomme directement les
+snapshots privés RentFleet v1.1. `robust_mad_top2` classe les lignes aux budgets
+0,5 %, 1 % et 2 % ; Isolation Forest reste un challenger de comparaison. Une
+revue humaine ajoute un événement PostgreSQL sans sanction, frais, accusation
+ou modification de contrat.
+
+```powershell
+py -3.12 -m venv .venv-anomaly-v1
+& .\.venv-anomaly-v1\Scripts\python.exe -m pip install --requirement .\scripts\intelligence\requirements-rental-usage-anomaly-runtime.txt
+& .\.venv-anomaly-v1\Scripts\python.exe -m pip check
+```
+
+Activez ensuite `RENTFLEET_ANOMALY_V1_ENABLED=true` et renseignez
+`ANOMALY_V1_PYTHON_BINARY` avec le chemin absolu de ce Python. Le runtime est
+CPU-only et s’abstient sous 200 retours admissibles. Le contrat, les limites et
+les commandes de vérification sont détaillés dans
+`docs/intelligence/rental-usage-anomaly-consultative-integration.md`.

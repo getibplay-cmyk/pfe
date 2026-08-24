@@ -88,6 +88,26 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('rental-usage-anomaly-v1', function (Request $request): array {
+            $user = $request->user();
+            $scope = implode('|', [
+                'tenant:'.($user?->tenant_id ?? 'guest'),
+                'agency:'.($user?->agency_id ?? 'all'),
+            ]);
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(max(
+                    1,
+                    (int) config('intelligence.rental_usage_anomaly.rate_limits.user_per_minute'),
+                ))->by('rental-usage-anomaly-v1:user:'.$scope.'|actor:'.$actor),
+                Limit::perHour(max(
+                    1,
+                    (int) config('intelligence.rental_usage_anomaly.rate_limits.scope_per_hour'),
+                ))->by('rental-usage-anomaly-v1:scope:'.$scope),
+            ];
+        });
+
         Event::listen(CommandStarting::class, function (CommandStarting $event): void {
             if (TestDatabaseGuard::protects($event->command)) {
                 TestDatabaseGuard::assertSafe(app());

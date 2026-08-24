@@ -70,6 +70,11 @@ class IntelligenceDatasetExportRun extends Model
         return $this->hasMany(IntelligenceResultBatch::class);
     }
 
+    public function anomalyRuns(): HasMany
+    {
+        return $this->hasMany(RentalUsageAnomalyRun::class);
+    }
+
     /** @return array<string, mixed> */
     public function manifest(): array
     {
