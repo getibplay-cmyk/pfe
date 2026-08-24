@@ -1,0 +1,61 @@
+name: Science vehicle damage
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: science-vehicle-damage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  protocol:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    env:
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONHASHSEED: "20260823"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup frozen Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: 3.12.13
+
+      - name: Validate protocol code and notebook
+        shell: bash
+        run: |
+          python -m py_compile \
+            scripts/intelligence/vehicle_damage/protocol.py \
+            scripts/intelligence/vehicle_damage/validate_manifest.py \
+            scripts/intelligence/vehicle_damage/train_efficientnetv2s.py \
+            scripts/intelligence/vehicle_damage/build_colab_notebook.py
+          python -m json.tool \
+            notebooks/colab/vehicle_damage_efficientnetv2s.ipynb \
+            >/dev/null
+          python -m json.tool \
+            docs/intelligence/schemas/vehicle-damage-result-v1.0.0.json \
+            >/dev/null
+
+      - name: Verify generated notebook is reproducible
+        shell: bash
+        run: |
+          cp notebooks/colab/vehicle_damage_efficientnetv2s.ipynb "$RUNNER_TEMP/notebook.ipynb"
+          python scripts/intelligence/vehicle_damage/build_colab_notebook.py
+          diff --unified "$RUNNER_TEMP/notebook.ipynb" \
+            notebooks/colab/vehicle_damage_efficientnetv2s.ipynb
+
+      - name: Test licence, split and release safeguards
+        run: python -m unittest -v tests/Python/test_vehicle_damage_protocol.py

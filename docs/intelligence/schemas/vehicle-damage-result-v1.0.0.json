@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rentfleet.local/schemas/vehicle-damage-result-v1.0.0.json",
+  "title": "RentFleet consultative vehicle damage result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "model_id",
+    "artifact_sha256",
+    "prediction",
+    "probability_damage",
+    "decision_threshold",
+    "requires_human_review"
+  ],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "model_id": {"const": "rentfleet-vehicle-damage-efficientnetv2s-v1"},
+    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "prediction": {
+      "type": "string",
+      "enum": ["aucun_dommage_visible", "dommage_visible"]
+    },
+    "probability_damage": {"type": "number", "minimum": 0, "maximum": 1},
+    "decision_threshold": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1},
+    "requires_human_review": {"const": true},
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  }
+}
