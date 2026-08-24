@@ -132,7 +132,7 @@ class VehicleDamageResultValidator
         $metrics = [];
         foreach (['brightness', 'contrast', 'sharpness'] as $name) {
             $value = $quality[$name] ?? null;
-            if ((! is_int($value) && ! is_float($value))
+            if (! is_int($value) && ! is_float($value)
                 || ! is_finite((float) $value)
                 || (float) $value < 0
                 || (float) $value > 1) {
