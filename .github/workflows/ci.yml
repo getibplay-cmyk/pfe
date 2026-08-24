@@ -362,7 +362,7 @@ jobs:
         run: npm run build
 
       - name: Check PHP formatting
-        run: vendor/bin/pint --test
+        run: COLUMNS=240 vendor/bin/pint --test -v
 
       - name: Apply database migrations
         run: php artisan migrate --force --no-interaction
