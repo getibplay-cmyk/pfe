@@ -39,6 +39,12 @@ are documented in
 The private dataset, model, individual predictions, artifact sizes, and
 integrity fingerprints are not published.
 
+The hardened protocol re-hashes every prepared image against the frozen
+manifest, resamples bootstrap intervals by source-image group, blocks a second
+test evaluation on resumed completed runs, and removes any stale ONNX export
+when a run is not qualified. These safeguards are covered by 13 pure-Python CI
+tests.
+
 ## Qualification gate
 
 All four conditions must pass on the untouched test set:
