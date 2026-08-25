@@ -67,6 +67,18 @@ results must be reported separately. They validate the E2 training
 mechanics but are not evidence of real-photo accuracy and never qualify the
 SaaS integration.
 
+E2.1 corrects an evaluator-order defect discovered after the first immutable
+run. With an Arabic dictionary, PaddleOCR v3.7.0 reverses contiguous ASCII
+groups and individual non-ASCII characters in its decoder. The pipeline keeps
+that raw output for audit and applies the same deterministic involution before
+grammar parsing. Re-scoring the unchanged run-01 challenger predictions gives
+100% synthetic exact-match for both formats on validation clean (128/128 each),
+calibration clean (128/128 each), and validation with all variants (384/384
+each). This is a post-processing correction, not a retraining or a real-photo
+claim. Future E2 selection also requires at least 90% exact-match in every
+synthetic format segment. The machine-readable audit is
+`docs/intelligence/evidence/moroccan-anpr-e2.1-decoder-order-rescore.json`.
+
 ## Colab E2 synthetic-only
 
 Open
@@ -82,9 +94,9 @@ group, 20 epochs and a T4-safe batch size of 64. It:
    configuration and 747-character dictionary;
 3. generates all images in ephemeral Colab storage, without any real image or
    `test` split, with a 50/50 legacy/unified format balance;
-4. measures the official baseline, fine-tunes a synthetic challenger and
-   rejects any per-format regression before applying validation exact-match and
-   the CER tie-break;
+4. measures the official baseline, fine-tunes a synthetic challenger, requires
+   at least 90% exact-match per format and rejects any per-format regression
+   before applying validation exact-match and the CER tie-break;
 5. copies the immutable result bundle to
    `RentFleet_PFE/S7_vehicle_vision_assistant/modeles/<RUN_ID>` in private
    Drive after verifying every SHA-256.

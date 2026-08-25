@@ -783,6 +783,7 @@ def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
             raw_text,
             bilingual_mapping=mapping,
             require_verified_bilingual=True,
+            paddle_arabic_output=True,
         )
         item["record"]["ocr_candidates"].append(
             {
@@ -830,7 +831,11 @@ def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
                             str(candidate["canonical"]),
                         )
                     )
-        consensus = select_consensus(candidates, bilingual_mapping=mapping)
+        consensus = select_consensus(
+            candidates,
+            bilingual_mapping=mapping,
+            paddle_arabic_output=True,
+        )
         group_rows.append(
             {
                 "group_id": group_id,

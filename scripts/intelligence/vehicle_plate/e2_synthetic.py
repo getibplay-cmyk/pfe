@@ -44,7 +44,7 @@ from scripts.intelligence.vehicle_plate.generate_synthetic_dataset import (
 )
 
 
-E2_VERSION = "1.1.2"
+E2_VERSION = "1.2.0"
 EXPECTED_SOURCE_ID = "synthetic_moroccan_plate_ofl_v2"
 EXPECTED_PADDLEOCR_SHA = "b03f46425e8ff4442b268ce449e3eef758146cd4"
 EXPECTED_CONFIG = Path(
@@ -57,6 +57,7 @@ OFFICIAL_PRETRAINED_URL = (
 )
 DEVELOPMENT_SPLITS = frozenset({"train", "validation", "calibration"})
 FORMAT_PROFILES = frozenset({"legacy_arabic", "unified_2026_arabic_latin"})
+MINIMUM_SYNTHETIC_FORMAT_EXACT = 0.90
 
 
 def _absolute_path_preserving_symlinks(path: str | Path) -> Path:
@@ -180,6 +181,7 @@ def _metric_prediction_text(
         raw_text,
         bilingual_mapping=OFFICIAL_SERIES_MAPPING,
         require_verified_bilingual=(format_profile == "unified_2026_arabic_latin"),
+        paddle_arabic_output=True,
     )
     if parsed.valid and parsed.canonical is not None:
         return (
@@ -271,12 +273,20 @@ def select_candidate(
     *,
     baseline_segments: Sequence[Mapping[str, float | int | str | None]] = (),
     challenger_segments: Sequence[Mapping[str, float | int | str | None]] = (),
+    minimum_segment_exact: float = MINIMUM_SYNTHETIC_FORMAT_EXACT,
 ) -> SelectionDecision:
+    if not 0.0 <= minimum_segment_exact <= 1.0:
+        raise ProtocolError("Plancher d'exact-match synthétique hors domaine [0,1].")
     if len(baseline_segments) != len(challenger_segments):
         raise ProtocolError("Segments baseline/challenger déséquilibrés.")
     for baseline_segment, challenger_segment in zip(
         baseline_segments, challenger_segments, strict=True
     ):
+        if float(challenger_segment["exact_match"]) < minimum_segment_exact:
+            return SelectionDecision(
+                "official_arabic_ppocrv5_incumbent",
+                "challenger_below_required_format_floor",
+            )
         if float(challenger_segment["exact_match"]) < float(
             baseline_segment["exact_match"]
         ):
@@ -724,6 +734,7 @@ def run_e2(
                 "independent_test_used": False,
                 "official_747_character_dictionary_preserved": True,
                 "required_format_segments": sorted(FORMAT_PROFILES),
+                "minimum_synthetic_format_exact": MINIMUM_SYNTHETIC_FORMAT_EXACT,
                 "detector_trained_by_this_experiment": False,
                 "recognizer_input_contract": "plate_crop_only",
             },
@@ -739,6 +750,7 @@ def run_e2(
             },
             "selection": {
                 "rule": (
+                    "require at least 0.90 exact-match on every synthetic format; "
                     "refuse regression on legacy or unified validation segment; "
                     "then maximize validation exact-match; break ties with lower CER"
                 ),

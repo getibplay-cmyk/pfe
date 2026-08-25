@@ -56,6 +56,9 @@ jobs:
             docs/intelligence/protocols/moroccan-anpr-v2.0.0.json \
             >/dev/null
           python -m json.tool \
+            docs/intelligence/evidence/moroccan-anpr-e2.1-decoder-order-rescore.json \
+            >/dev/null
+          python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
             >/dev/null
           python -m json.tool \

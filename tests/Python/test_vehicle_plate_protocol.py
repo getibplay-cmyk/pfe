@@ -15,6 +15,7 @@ from scripts.intelligence.vehicle_plate.protocol import (
     grouped_bootstrap_indices,
     normalize_ocr_text,
     parse_plate_text,
+    reverse_paddle_arabic_groups,
     select_consensus,
     validate_manifest,
     verify_manifest_files,
@@ -75,6 +76,27 @@ class VehiclePlateProtocolTest(unittest.TestCase):
         self.assertEqual("unified_2026", parsed.format_version)
         self.assertEqual("verified", parsed.bilingual_consistency)
         self.assertEqual("12345|أ|7", parsed.canonical)
+
+    def test_restores_paddle_arabic_group_order_as_an_involution(self):
+        visual = "MA27621فF31"
+        decoded = "F31فMA27621"
+        self.assertEqual(decoded, reverse_paddle_arabic_groups(visual))
+        self.assertEqual(visual, reverse_paddle_arabic_groups(decoded))
+
+    def test_parses_paddle_unified_output_with_interior_ma_signature(self):
+        parsed = parse_plate_text(
+            "A45أMA123",
+            bilingual_mapping=SERIES_MAPPING,
+            require_verified_bilingual=True,
+        )
+        self.assertTrue(parsed.valid)
+        self.assertEqual("123|أ|45", parsed.canonical)
+        self.assertEqual("verified", parsed.bilingual_consistency)
+
+    def test_explicit_paddle_order_resolves_short_legacy_numbers(self):
+        parsed = parse_plate_text("34أ12", paddle_arabic_output=True)
+        self.assertTrue(parsed.valid)
+        self.assertEqual("12|أ|34", parsed.canonical)
 
     def test_rejects_mismatched_2026_bilingual_plate(self):
         parsed = parse_plate_text(

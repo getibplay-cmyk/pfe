@@ -23,7 +23,11 @@ from scripts.intelligence.vehicle_plate.generate_synthetic_dataset import (
     _materialize_dataset,
     build_sample_plan,
 )
-from scripts.intelligence.vehicle_plate.protocol import REQUIRED_COLUMNS, ProtocolError
+from scripts.intelligence.vehicle_plate.protocol import (
+    REQUIRED_COLUMNS,
+    ProtocolError,
+    reverse_paddle_arabic_groups,
+)
 
 
 def _row(
@@ -159,9 +163,7 @@ class VehiclePlateE2SyntheticTest(unittest.TestCase):
                 series_latin="A",
             )
         ]
-        wrong = {
-            "unified": InferencePrediction("unified", "123أB45MA", 0.9)
-        }
+        wrong = {"unified": InferencePrediction("unified", "B45أMA123", 0.9)}
         wrong_metrics = evaluate_predictions(
             rows,
             wrong,
@@ -172,9 +174,7 @@ class VehiclePlateE2SyntheticTest(unittest.TestCase):
         self.assertEqual(0.0, wrong_metrics["exact_match"])
         self.assertEqual(0.0, wrong_metrics["bilingual_verified_rate"])
 
-        correct = {
-            "unified": InferencePrediction("unified", "123 أ A 45 MA", 0.9)
-        }
+        correct = {"unified": InferencePrediction("unified", "A45أMA123", 0.9)}
         correct_metrics = evaluate_predictions(
             rows,
             correct,
@@ -211,6 +211,16 @@ class VehiclePlateE2SyntheticTest(unittest.TestCase):
                 challenger_segments=[{"exact_match": 0.7}],
             ).selected_candidate,
         )
+
+    def test_selection_requires_minimum_exact_match_on_every_format(self):
+        decision = select_candidate(
+            {"exact_match": 0.5, "cer": 0.2},
+            {"exact_match": 0.95, "cer": 0.01},
+            baseline_segments=[{"exact_match": 0.0}, {"exact_match": 0.0}],
+            challenger_segments=[{"exact_match": 1.0}, {"exact_match": 0.89}],
+        )
+        self.assertEqual("official_arabic_ppocrv5_incumbent", decision.selected_candidate)
+        self.assertEqual("challenger_below_required_format_floor", decision.reason)
 
     def test_loader_rejects_test_and_real_source_before_training(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -364,7 +374,11 @@ class VehiclePlateE2SyntheticTest(unittest.TestCase):
                 ]
                 lines = []
                 for row in selected:
-                    text = row["recognition_text"] if announce.startswith("tuned") else "1-2"
+                    text = (
+                        reverse_paddle_arabic_groups(row["recognition_text"])
+                        if announce.startswith("tuned")
+                        else "1-2"
+                    )
                     lines.append(f"/eval/{row['sample_id']}.png\t{text}\t0.9\n")
                 prediction.write_text("".join(lines), encoding="utf-8")
 

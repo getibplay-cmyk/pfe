@@ -26,6 +26,7 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 TOKEN_RE = re.compile(r"[0-9]+|[A-Z]+|[\u0600-\u06ff]+")
 ARABIC_RE = re.compile(r"^[\u0600-\u06ff]{1,2}$")
 LATIN_RE = re.compile(r"^[A-Z]{1,2}$")
+PADDLE_ARABIC_ASCII_GROUP_RE = re.compile(r"[A-Z0-9 :*./%+\-]")
 
 REQUIRED_COLUMNS = (
     "sample_id",
@@ -177,6 +178,31 @@ def normalize_ocr_text(value: str) -> str:
     return "".join(character for character in normalized if character not in IGNORED_DIRECTIONAL_MARKS)
 
 
+def reverse_paddle_arabic_groups(value: str) -> str:
+    """Mirror PaddleOCR's pinned Arabic decoder group reversal.
+
+    PaddleOCR v3.7.0 reverses the order of contiguous ASCII groups and
+    individual non-ASCII characters when an Arabic dictionary is selected.
+    Applying the same involution to its decoded output restores the visual
+    plate order without guessing or altering the raw prediction retained for
+    audit.
+    """
+
+    groups: list[str] = []
+    ascii_group: list[str] = []
+    for character in normalize_ocr_text(value):
+        if PADDLE_ARABIC_ASCII_GROUP_RE.fullmatch(character):
+            ascii_group.append(character)
+            continue
+        if ascii_group:
+            groups.append("".join(ascii_group))
+            ascii_group = []
+        groups.append(character)
+    if ascii_group:
+        groups.append("".join(ascii_group))
+    return "".join(reversed(groups))
+
+
 def tokenize_plate_text(value: str) -> tuple[str, ...]:
     tokens = TOKEN_RE.findall(normalize_ocr_text(value))
     if len(tokens) > 3 and tokens and tokens[0] == "MA":
@@ -199,19 +225,12 @@ def _bilingual_consistency(
     return "verified" if expected == series_latin else "mismatch"
 
 
-def parse_plate_text(
+def _parse_plate_text_once(
     value: str,
     *,
     bilingual_mapping: Mapping[str, str] | None = None,
     require_verified_bilingual: bool = False,
 ) -> PlateParse:
-    """Parse legacy, international, and 2026 bilingual Moroccan plate text.
-
-    Two visual orders are accepted: serial-series-region and its complete
-    reverse. Ambiguous short-number cases retain the visual left-to-right order
-    and must be resolved by multi-view consensus or human confirmation.
-    """
-
     normalized_value = normalize_ocr_text(value)
     raw_tokens = TOKEN_RE.findall(normalized_value)
     has_ma_marker = bool(raw_tokens and (raw_tokens[0] == "MA" or raw_tokens[-1] == "MA"))
@@ -298,6 +317,64 @@ def parse_plate_text(
     )
 
 
+def parse_plate_text(
+    value: str,
+    *,
+    bilingual_mapping: Mapping[str, str] | None = None,
+    require_verified_bilingual: bool = False,
+    paddle_arabic_output: bool = False,
+) -> PlateParse:
+    """Parse legacy, international, and 2026 bilingual Moroccan plate text.
+
+    Two visual orders are accepted: serial-series-region and its complete
+    reverse. When ``paddle_arabic_output`` is true, the pinned PaddleOCR Arabic
+    decoder's deterministic group reversal is undone before parsing. Callers
+    must set that flag only for raw output produced by that decoder.
+
+    A narrow automatic fallback also recognizes the unambiguous unified-format
+    signature where PaddleOCR has moved the ``MA`` marker into the interior.
+    Ambiguous legacy short-number cases require the explicit decoder flag.
+    """
+
+    normalized_value = normalize_ocr_text(value)
+    if paddle_arabic_output:
+        return _parse_plate_text_once(
+            reverse_paddle_arabic_groups(normalized_value),
+            bilingual_mapping=bilingual_mapping,
+            require_verified_bilingual=require_verified_bilingual,
+        )
+
+    parsed = _parse_plate_text_once(
+        normalized_value,
+        bilingual_mapping=bilingual_mapping,
+        require_verified_bilingual=require_verified_bilingual,
+    )
+    if parsed.valid:
+        return parsed
+
+    raw_tokens = TOKEN_RE.findall(normalized_value)
+    marker_positions = [
+        index for index, token in enumerate(raw_tokens) if token == "MA"
+    ]
+    has_arabic = any(ARABIC_RE.fullmatch(token) for token in raw_tokens)
+    if (
+        has_arabic
+        and marker_positions
+        and all(
+            position not in {0, len(raw_tokens) - 1}
+            for position in marker_positions
+        )
+    ):
+        restored = _parse_plate_text_once(
+            reverse_paddle_arabic_groups(normalized_value),
+            bilingual_mapping=bilingual_mapping,
+            require_verified_bilingual=require_verified_bilingual,
+        )
+        if restored.valid:
+            return restored
+    return parsed
+
+
 def select_consensus(
     candidates: Sequence[ReadingCandidate],
     *,
@@ -307,6 +384,7 @@ def select_consensus(
     min_supporting_views: int = 2,
     single_view_confidence: float = 0.97,
     minimum_margin: float = 0.10,
+    paddle_arabic_output: bool = False,
 ) -> ConsensusResult:
     """Fuse independent photos and abstain when confidence or agreement is weak."""
 
@@ -325,6 +403,7 @@ def select_consensus(
             candidate.raw_text,
             bilingual_mapping=bilingual_mapping,
             require_verified_bilingual=True,
+            paddle_arabic_output=paddle_arabic_output,
         )
         if not parsed.valid or parsed.canonical is None:
             continue

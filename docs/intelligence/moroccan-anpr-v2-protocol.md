@@ -80,6 +80,17 @@ approxime les composants réglementaires; il ne remplace pas des photos réelles
 La cible CTC suit l'ordre visuel publié `MA | numéro | arabe/latin | territoire`,
 tandis que la métrique compare la forme canonique structurée.
 
+Erratum E2.1 : avec un chemin de dictionnaire contenant `arabic`, le décodeur
+PaddleOCR v3.7.0 active son inversion RTL puis renverse les groupes ASCII
+contigus et les caractères non ASCII. Les prédictions brutes restent archivées;
+le post-traitement applique exactement la même transformation involutive pour
+retrouver l'ordre visuel avant la grammaire. Le re-score sans réentraînement des
+prédictions immuables du run 01 atteint 128/128 sur chacun des deux formats en
+validation propre, 128/128 en calibration propre et 384/384 avec les trois
+variantes de validation. Ces scores restent exclusivement synthétiques.
+Le constat, le modèle source et les interdictions de qualification sont scellés
+dans `docs/intelligence/evidence/moroccan-anpr-e2.1-decoder-order-rescore.json`.
+
 ## Séparation
 
 - groupes par véhicule ou scène source, jamais par crop;
@@ -114,8 +125,9 @@ l'incumbent. Le challenger est initialisé depuis ses poids officiels et garde
 la configuration et le dictionnaire officiel de 747 caractères de PaddleOCR
 `v3.7.0` au commit `b03f46425e8ff4442b268ce449e3eef758146cd4`.
 
-La décision refuse d'abord toute régression d'exact-match sur l'ancien format
-arabe ou le format unifié arabe/latin, maximise ensuite l'exact-match agrégé,
+La décision exige d'abord au moins 90 % d'exact-match dans chacun des deux
+formats synthétiques, refuse toute régression sur l'ancien format arabe ou le
+format unifié arabe/latin, maximise ensuite l'exact-match agrégé,
 puis minimise le CER en cas d'égalité. La calibration est mesurée mais
 n'intervient pas dans la sélection. Aucun résultat synthétique ne franchit un gate réel : le statut
 reste `synthetic_e2_complete_not_qualified`, le holdout final reste fermé et
@@ -197,6 +209,7 @@ feature flag et laisse la saisie manuelle disponible.
 - PaddleOCR officiel : https://github.com/PaddlePaddle/PaddleOCR
 - Module officiel de reconnaissance : https://www.paddleocr.ai/main/en/version3.x/module_usage/text_recognition.html
 - configuration Arabic PP-OCRv5 officielle : https://github.com/PaddlePaddle/PaddleOCR/blob/v3.7.0/configs/rec/PP-OCRv5/multi_language/arabic_PP-OCRv5_mobile_rec.yaml
+- post-traitement RTL officiel figé : https://github.com/PaddlePaddle/PaddleOCR/blob/v3.7.0/ppocr/postprocess/rec_postprocess.py
 - dictionnaire PP-OCRv5 arabe officiel : https://github.com/PaddlePaddle/PaddleOCR/blob/v3.7.0/ppocr/utils/dict/ppocrv5_arabic_dict.txt
 - installation PaddlePaddle : https://www.paddlepaddle.org.cn/documentation/docs/en/install/index_en.html
 - TorchVision Faster R-CNN V2 : https://pytorch.org/vision/stable/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn_v2.html
