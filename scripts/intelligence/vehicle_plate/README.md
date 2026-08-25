@@ -73,7 +73,7 @@ Open
 `notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb`, select a
 GPU, and run all cells. The frozen pilot uses seed `20260825`, 1,024 training
 groups, 256 validation groups, 256 calibration groups, three variants per
-group, 20 epochs and batch size 128. It:
+group, 20 epochs and a T4-safe batch size of 64. It:
 
 1. checks out this scientific branch and PaddleOCR `v3.7.0` at commit
    `b03f46425e8ff4442b268ce449e3eef758146cd4`;

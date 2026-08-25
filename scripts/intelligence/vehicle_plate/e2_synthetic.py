@@ -44,7 +44,7 @@ from scripts.intelligence.vehicle_plate.generate_synthetic_dataset import (
 )
 
 
-E2_VERSION = "1.1.1"
+E2_VERSION = "1.1.2"
 EXPECTED_SOURCE_ID = "synthetic_moroccan_plate_ofl_v2"
 EXPECTED_PADDLEOCR_SHA = "b03f46425e8ff4442b268ce449e3eef758146cd4"
 EXPECTED_CONFIG = Path(
@@ -794,7 +794,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repository-sha", required=True)
     parser.add_argument("--paddleocr-sha", required=True)
     parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--seed", type=int, default=20260825)
     return parser
 

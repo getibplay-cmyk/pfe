@@ -62,6 +62,27 @@ def _row(
 
 
 class VehiclePlateE2SyntheticTest(unittest.TestCase):
+    def test_cli_default_batch_fits_t4_memory_budget(self):
+        arguments = e2_module.build_parser().parse_args(
+            [
+                "--python",
+                "/venv/bin/python",
+                "--paddleocr-dir",
+                "/PaddleOCR",
+                "--dataset-dir",
+                "/dataset",
+                "--output-dir",
+                "/output",
+                "--pretrained-prefix",
+                "/pretrained",
+                "--repository-sha",
+                "a" * 40,
+                "--paddleocr-sha",
+                e2_module.EXPECTED_PADDLEOCR_SHA,
+            ]
+        )
+        self.assertEqual(64, arguments.batch_size)
+
     def test_main_preserves_virtualenv_python_symlink(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

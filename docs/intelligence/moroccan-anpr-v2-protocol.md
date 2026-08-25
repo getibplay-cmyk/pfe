@@ -109,7 +109,7 @@ battre l'incumbent sur le pire domaine sans utiliser le test final.
 Le lancement E2 synthétique isole uniquement la composante OFL de E2; il ne
 remplace pas l'apport futur de données réelles licenciées. La graine
 `20260825`, les groupes `1024/256/256`, trois variantes, un équilibre 50/50
-ancien/unifié, 20 epochs et un batch de 128 sont gelés avant exécution. Le recognizer officiel Arabic PP-OCRv5 est
+ancien/unifié, 20 epochs et un batch de 64 compatible T4 sont gelés avant exécution. Le recognizer officiel Arabic PP-OCRv5 est
 l'incumbent. Le challenger est initialisé depuis ses poids officiels et garde
 la configuration et le dictionnaire officiel de 747 caractères de PaddleOCR
 `v3.7.0` au commit `b03f46425e8ff4442b268ce449e3eef758146cd4`.
