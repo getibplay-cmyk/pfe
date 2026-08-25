@@ -50,7 +50,8 @@ jobs:
             scripts/intelligence/vehicle_plate/detection_sources.py \
             scripts/intelligence/vehicle_plate/build_colab_notebook.py \
             scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py \
-            scripts/intelligence/vehicle_plate/build_e2_character_detector_notebook.py
+            scripts/intelligence/vehicle_plate/build_e2_character_detector_notebook.py \
+            scripts/intelligence/vehicle_plate/build_e31_detection_sources_notebook.py
           python -m json.tool \
             scripts/intelligence/vehicle_plate/colab_cells.json \
             >/dev/null
@@ -59,6 +60,9 @@ jobs:
             >/dev/null
           python -m json.tool \
             scripts/intelligence/vehicle_plate/e2_character_detector_cells.json \
+            >/dev/null
+          python -m json.tool \
+            scripts/intelligence/vehicle_plate/e31_detection_sources_cells.json \
             >/dev/null
           python -m json.tool \
             docs/intelligence/protocols/moroccan-anpr-v2.0.0.json \
@@ -87,6 +91,9 @@ jobs:
           python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb \
             >/dev/null
+          python -m json.tool \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2_e31_detection_sources.ipynb \
+            >/dev/null
 
       - name: Verify generated notebook is reproducible and output-free
         shell: bash
@@ -97,15 +104,20 @@ jobs:
             "$RUNNER_TEMP/e2-notebook.ipynb"
           cp notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb \
             "$RUNNER_TEMP/e22-notebook.ipynb"
+          cp notebooks/colab/moroccan_vehicle_plate_anpr_v2_e31_detection_sources.ipynb \
+            "$RUNNER_TEMP/e31-sources-notebook.ipynb"
           python scripts/intelligence/vehicle_plate/build_colab_notebook.py
           python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
           python scripts/intelligence/vehicle_plate/build_e2_character_detector_notebook.py
+          python scripts/intelligence/vehicle_plate/build_e31_detection_sources_notebook.py
           diff --unified "$RUNNER_TEMP/notebook.ipynb" \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb
           diff --unified "$RUNNER_TEMP/e2-notebook.ipynb" \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb
           diff --unified "$RUNNER_TEMP/e22-notebook.ipynb" \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb
+          diff --unified "$RUNNER_TEMP/e31-sources-notebook.ipynb" \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2_e31_detection_sources.ipynb
           python - <<'PY'
           import json
           from pathlib import Path
@@ -114,6 +126,7 @@ jobs:
               Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb"),
               Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb"),
               Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb"),
+              Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2_e31_detection_sources.ipynb"),
           ):
               notebook = json.loads(path.read_text(encoding="utf-8"))
               code_cells = [

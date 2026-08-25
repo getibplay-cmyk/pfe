@@ -132,6 +132,13 @@ Neither source is a Moroccan holdout. Upstream CCPD test folders are remapped
 to development, Open Images has no OCR truth here, and a future source-disjoint
 Moroccan evaluation remains mandatory.
 
+Open
+`notebooks/colab/moroccan_vehicle_plate_anpr_v2_e31_detection_sources.ipynb`
+to acquire the official CCPD2019 archive in ephemeral Colab storage and save
+only the bounded, sealed development bundle to private Drive. The notebook is
+pinned to both the RentFleet import code and the upstream CCPD repository
+revision; it produces no trained model and never touches the final holdout.
+
 ## Optional consented labelled smoke
 
 `colab_smoke.py` accepts only consented development rows, verifies every input
@@ -156,6 +163,7 @@ python -m unittest -v \
 
 python scripts/intelligence/vehicle_plate/build_colab_notebook.py
 python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
+python scripts/intelligence/vehicle_plate/build_e31_detection_sources_notebook.py
 ```
 
 The complete preregistration, experiments and release thresholds are in
