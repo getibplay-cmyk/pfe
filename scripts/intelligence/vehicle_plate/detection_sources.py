@@ -32,7 +32,7 @@ from scripts.intelligence.vehicle_plate.protocol import (
 )
 
 
-SOURCE_PREPARATION_VERSION = "1.0.0"
+SOURCE_PREPARATION_VERSION = "1.0.1"
 CCPD_SOURCE_ID = "ccpd_official_mit"
 CCPD_LICENSE_ID = "MIT"
 CCPD_CANONICAL_URL = "https://github.com/detectRecog/CCPD"
@@ -277,14 +277,24 @@ def _select_ccpd_images(
     *,
     seed: int,
     maximum_per_partition: int,
-) -> list[Path]:
+) -> tuple[list[Path], Counter[str], Counter[str]]:
     if maximum_per_partition < 1:
         raise ProtocolError("maximum_per_partition doit être >= 1.")
     by_partition: dict[str, list[Path]] = defaultdict(list)
+    annotated_partition_counts: Counter[str] = Counter()
+    ignored_unannotated_partition_counts: Counter[str] = Counter()
     for path in root.rglob("*"):
         if path.is_file() and path.suffix.lower() in {".jpg", ".jpeg"}:
+            partition = ccpd_partition(path, root)
+            # The official CCPD2019 archive includes ccpd_np, a negative-image
+            # partition whose simple numeric filenames carry no plate geometry.
+            # It cannot be materialised as a positive one-box detection sample.
+            if partition == "ccpd_np":
+                ignored_unannotated_partition_counts[partition] += 1
+                continue
             parse_ccpd_filename(path)
-            by_partition[ccpd_partition(path, root)].append(path)
+            by_partition[partition].append(path)
+            annotated_partition_counts[partition] += 1
     if not by_partition:
         raise ProtocolError(f"Aucune image CCPD trouvée sous {root}.")
     selected: list[Path] = []
@@ -296,7 +306,11 @@ def _select_ccpd_images(
             ).digest(),
         )
         selected.extend(ordered[:maximum_per_partition])
-    return sorted(selected, key=lambda path: path.relative_to(root).as_posix())
+    return (
+        sorted(selected, key=lambda path: path.relative_to(root).as_posix()),
+        annotated_partition_counts,
+        ignored_unannotated_partition_counts,
+    )
 
 
 def _assert_mit_license(path: Path) -> None:
@@ -330,7 +344,11 @@ def prepare_ccpd_detection_bundle(
         raise FileExistsError(destination)
     _assert_mit_license(license_file)
 
-    selected = _select_ccpd_images(
+    (
+        selected,
+        annotated_partition_counts,
+        ignored_unannotated_partition_counts,
+    ) = _select_ccpd_images(
         source_root, seed=int(seed), maximum_per_partition=int(maximum_per_partition)
     )
     records: list[dict[str, Any]] = []
@@ -508,8 +526,25 @@ def prepare_ccpd_detection_bundle(
                 "near_duplicate_review": "near_duplicate_review.csv",
                 "coco_annotations": annotation_paths,
             },
+            "source_discovery": {
+                "jpeg_images": (
+                    sum(annotated_partition_counts.values())
+                    + sum(ignored_unannotated_partition_counts.values())
+                ),
+                "annotated_geometry_images": sum(annotated_partition_counts.values()),
+                "ignored_unannotated_images": sum(
+                    ignored_unannotated_partition_counts.values()
+                ),
+                "annotated_partition_counts": dict(
+                    sorted(annotated_partition_counts.items())
+                ),
+                "ignored_unannotated_partition_counts": dict(
+                    sorted(ignored_unannotated_partition_counts.items())
+                ),
+            },
             "safeguards": {
                 "detection_boxes_only": True,
+                "unannotated_negative_images_used_as_positive": False,
                 "ccpd_sequence_field_parsed": False,
                 "ccpd_sequence_field_used_as_ocr_truth": False,
                 "contains_test_split": False,
@@ -519,6 +554,7 @@ def prepare_ccpd_detection_bundle(
             },
             "limits": [
                 "CCPD is a Chinese inter-domain development source, not Moroccan qualification evidence.",
+                "The unannotated ccpd_np negative-image partition is excluded from the positive one-box bundle.",
                 "The original upstream test subsets are consumed as development data only.",
                 "A new source-disjoint Moroccan holdout remains mandatory after model and threshold freeze.",
             ],

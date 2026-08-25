@@ -200,6 +200,12 @@ class DetectionSourceContractTest(unittest.TestCase):
                         pixels[x, y] = randomizer.randrange(256)
                 image.convert("RGB").save(source / ccpd_name(index), quality=92)
 
+            negative_source = root / "CCPD2019" / "ccpd_np"
+            negative_source.mkdir()
+            Image.new("RGB", (80, 40), color="black").save(
+                negative_source / "3899.jpg"
+            )
+
             license_file = root / "LICENSE"
             license_file.write_text(
                 "MIT License\nCopyright (c) 2017 CCPD\n"
@@ -222,7 +228,20 @@ class DetectionSourceContractTest(unittest.TestCase):
             )
             self.assertFalse(report["safeguards"]["ccpd_sequence_field_parsed"])
             self.assertFalse(report["safeguards"]["ccpd_sequence_field_used_as_ocr_truth"])
+            self.assertFalse(
+                report["safeguards"]["unannotated_negative_images_used_as_positive"]
+            )
             self.assertFalse(report["safeguards"]["contains_test_split"])
+            self.assertEqual(97, report["source_discovery"]["jpeg_images"])
+            self.assertEqual(
+                1, report["source_discovery"]["ignored_unannotated_images"]
+            )
+            self.assertEqual(
+                {"ccpd_np": 1},
+                report["source_discovery"][
+                    "ignored_unannotated_partition_counts"
+                ],
+            )
             self.assertEqual(
                 {"calibration", "train", "validation"},
                 set(report["artifacts"]["split_counts"]),
@@ -239,6 +258,30 @@ class DetectionSourceContractTest(unittest.TestCase):
             for row in rows:
                 group_splits.setdefault(row["group_id"], set()).add(row["split"])
             self.assertTrue(all(len(splits) == 1 for splits in group_splits.values()))
+
+    def test_malformed_positive_ccpd_name_remains_blocking(self):
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("Pillow absent")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "CCPD2019" / "ccpd_base"
+            source.mkdir(parents=True)
+            Image.new("RGB", (80, 40), color="black").save(source / "3899.jpg")
+            license_file = root / "LICENSE"
+            license_file.write_text(
+                "MIT License\nCopyright (c) 2017 CCPD\n"
+                "Permission is hereby granted, free of charge\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ProtocolError, "Nom CCPD inattendu"):
+                prepare_ccpd_detection_bundle(
+                    input_root=root / "CCPD2019",
+                    output_dir=root / "bundle",
+                    license_path=license_file,
+                )
 
 
 if __name__ == "__main__":
