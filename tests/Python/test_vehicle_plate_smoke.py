@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,6 +11,7 @@ from scripts.intelligence.vehicle_plate.colab_smoke import (
     EXPECTED_DETECTOR,
     OCR_MODEL_NAME,
     OCR_WORKER_SCHEMA_VERSION,
+    _invocation_path,
     aggregate_smoke_metrics,
     box_iou,
     discover_images,
@@ -45,6 +47,20 @@ class VehiclePlateSmokeTest(unittest.TestCase):
             writer = csv.DictWriter(handle, fieldnames=list(row))
             writer.writeheader()
             writer.writerow(row)
+
+    def test_ocr_invocation_path_preserves_virtualenv_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            system_python = Path(sys.executable).absolute()
+            ocr_python = Path(directory) / "venv" / "bin" / "python"
+            ocr_python.parent.mkdir(parents=True)
+            ocr_python.symlink_to(system_python)
+
+            self.assertEqual(ocr_python, _invocation_path(ocr_python))
+            self.assertEqual(system_python.resolve(), ocr_python.resolve())
+            self.assertNotEqual(
+                _invocation_path(system_python),
+                _invocation_path(ocr_python),
+            )
 
     def test_loads_consenting_development_labels(self):
         with tempfile.TemporaryDirectory() as directory:
