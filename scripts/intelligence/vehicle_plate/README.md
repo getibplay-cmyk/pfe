@@ -7,88 +7,123 @@ tests, and an output-free Colab notebook.
 
 ## Current status
 
-- detector incumbent: private Faster R-CNN ResNet-50 FPN V2 v1.2;
+- detector incumbent: private, hash-gated plate-localization model;
 - OCR baseline: official `arabic_PP-OCRv5_mobile_rec`;
 - qualification status: **not qualified**;
 - final independent holdout: not opened;
 - SaaS integration: blocked until the release gate passes.
 
-The historical detector has strong development results, but its secondary
-Moroccan set was already consumed. Those numbers may guide development and can
-never be reused as independent ANPR evidence.
+The detector's historical development sources were already consumed. They may
+guide development and can never be reused as independent ANPR evidence.
 
 ## Colab smoke
 
-Open `notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb`, select a GPU, and
-run the cells in order. The notebook:
-
-1. checks out `science/moroccan-anpr-v2`;
-2. creates a dedicated OCR virtual environment, then installs the official
-   CUDA-specific PaddlePaddle 3.3.0 wheel and PaddleOCR 3.7.0 inside it;
-3. verifies the private v1.2 detector checkpoint against its frozen selection;
-4. draws at most 24 deterministic images from an admitted, already-consumed
-   development archive;
-5. runs detection, conservative crop variants, geometric rectification and
-   the Arabic PP-OCRv5 recognizer;
-6. writes private predictions and an aggregate smoke report to Drive.
-
-PyTorch remains in Colab's system interpreter. PaddleOCR runs later in a
-separate process using the isolated virtual environment. This is a correctness
-guard: current Colab PyTorch and Paddle GPU wheels pin different cuDNN,
-cuSPARSELt and NCCL versions. Both stages still use the T4, but the detector
-model is released before the OCR process starts.
+The legacy smoke notebook verifies the private detector by hash, crops only the
+detected plate region, then runs the OCR worker in an isolated PaddlePaddle
+process. Private paths, checkpoint identifiers and input manifests belong to
+the private runbook and are deliberately omitted here.
 
 The default source has no OCR transcript labels, so the first run validates the
 pipeline but does not estimate accuracy. It never opens the future final test.
 
-## Optional consented labelled smoke
+## Synthetic OCR development set
 
-`colab_smoke.py` accepts a private CSV with these columns:
+`generate_synthetic_dataset.py` builds a deterministic, group-safe PaddleOCR
+development bundle without reading a real vehicle image. Each split contains
+both the historical one-line Arabic format and the unified 2026 format with an
+Arabic series, its official Latin equivalent and `MA`. The 15 mappings come
+from Moroccan arrêté n° 640.26, published in Bulletin officiel n° 7531 on
+3 August 2026. Unified recognition labels follow the published visual order:
+`MA`, serial number, Arabic/Latin series cell, then territorial code.
+
+The pinned Arabic font input is the official Noto Sans Arabic `v2.013`
+release. Its GitHub release asset reports this SHA-256:
 
 ```text
-image_path,group_id,split,target,plate_bbox,sha256,source_id,consent_status
+1301aceaea84c501cf2e6dcfb3182e2328c8eae5725817fcb239672bda7154f1
 ```
 
-- `split` is only `train`, `validation`, or `calibration`; `test` is rejected;
-- `target` is optional and uses canonical `serial|Arabic-series|region` form;
-- `plate_bbox` is optional JSON `[x1,y1,x2,y2]`;
-- every image is re-hashed;
-- `consent_status` must be `approved`;
-- every physical photo has its own view ID; preprocessing variants do not
-  manufacture multi-view agreement.
+The unified layout renders `MA` and the official Latin equivalent with Noto
+Sans from Google Fonts commit
+`6a003b5eb672dc8bf5bff5937cf5863f8b175445`. The pinned TTF and OFL proof have
+SHA-256 `bfb7bb691513f12e734dc346c03a03f784912432d7e3fa8e56efcf906fe86b3d`
+and `cee9892f9f0cc8fe882c9e9537ee6a89621d86ee7ceaf70b02e2b2b1c25c061a`.
+Two fonts are intentional: the Arabic release does not reliably render the
+Latin glyphs in the generated plate image.
 
-Example invocation inside the repository:
+The generated Colab notebook downloads and verifies the archive before calling
+the generator with its isolated OCR Python. Pillow, FreeType, the official
+mapping, seeds and format proportions are captured in the report.
 
-```bash
-python scripts/intelligence/vehicle_plate/colab_smoke.py \
-  --input-dir /content/private-development-images \
-  --labels /content/drive/MyDrive/private/anpr-smoke-labels.csv \
-  --checkpoint /content/anpr_detector_v1.2.0.pt \
-  --selection /content/drive/MyDrive/private/model-selection.json \
-  --ocr-python /content/venvs/rentfleet-paddleocr-v2/bin/python \
-  --output-dir /content/drive/MyDrive/private/anpr-smoke-run-02
-```
+The output contains `manifest.csv`, per-split PaddleOCR labels, a character
+dictionary, the exact Arabic and Latin fonts and both OFL proofs,
+`generation_report.json`, and
+`SHA256SUMS`. Variants of one canonical registration stay in the same group and
+split. The generator refuses an existing output directory and has no `test`
+option, so it cannot overwrite a previous run or open the independent holdout.
 
-The optional bilingual series mapping is accepted only when its JSON says it
-was verified against the official annex and provides an official HTTPS source.
-Without it, a new bilingual plate is deliberately rejected for human review.
+Wrong or missing Latin equivalents count as full-plate OCR errors. Synthetic
+results must be reported separately. They validate the E2 training
+mechanics but are not evidence of real-photo accuracy and never qualify the
+SaaS integration.
 
-## Private output
+## Colab E2 synthetic-only
 
-- `SMOKE_COMPLETE.json`: environment, timings, counts and aggregate metrics;
-- `PRIVATE_predictions.jsonl`: bounding boxes, OCR candidates and plate text.
+Open
+`notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb`, select a
+GPU, and run all cells. The frozen pilot uses seed `20260825`, 1,024 training
+groups, 256 validation groups, 256 calibration groups, three variants per
+group, 20 epochs and batch size 128. It:
 
-The second file contains vehicle identifiers and must never be committed or
-published. A smoke report always has `qualification_claim=false`.
+1. checks out this scientific branch and PaddleOCR `v3.7.0` at commit
+   `b03f46425e8ff4442b268ce449e3eef758146cd4`;
+2. verifies Noto Sans Arabic `v2.013`, the commit-pinned Noto Sans Latin font,
+   both OFL proofs, and the official Arabic PP-OCRv5 pretrained weights,
+   configuration and 747-character dictionary;
+3. generates all images in ephemeral Colab storage, without any real image or
+   `test` split, with a 50/50 legacy/unified format balance;
+4. measures the official baseline, fine-tunes a synthetic challenger and
+   rejects any per-format regression before applying validation exact-match and
+   the CER tie-break;
+5. copies the immutable result bundle to
+   `RentFleet_PFE/S7_vehicle_vision_assistant/modeles/<RUN_ID>` in private
+   Drive after verifying every SHA-256.
+
+`E2_SYNTHETIC_COMPLETE.json` always declares
+`synthetic_e2_complete_not_qualified`, `qualification_claim=false`,
+`final_test_opened=false` and `saas_integration_allowed=false`. The bundle also
+contains both candidate checkpoints, logs, synthetic predictions, the exact
+source/configuration/dictionary, font and OFL provenance, `pip-freeze.txt`, and
+`SHA256SUMS`. Raw generated images remain local to the Colab runtime; their
+manifest and aggregate image digest allow exact regeneration.
+
+E2 is deliberately a recognition experiment. The full ANPR chain is always
+`vehicle image -> plate detector -> bounded crop -> recognizer -> grammar and
+abstention`. Full-frame OCR is forbidden because it could return unrelated text.
+
+## Optional consented labelled smoke
+
+`colab_smoke.py` accepts only consented development rows, verifies every input
+hash and rejects `test`. Operational paths, private artifact names and the
+invocation are intentionally kept in the private runbook.
+
+The bilingual series mapping must match the official 15-pair mapping. A missing
+or inconsistent Arabic/Latin pair is rejected for human review.
+
+Private smoke outputs may contain vehicle identifiers and must never be
+committed or published. A smoke report always has `qualification_claim=false`.
 
 ## Validation
 
 ```bash
 python -m unittest -v \
   tests/Python/test_vehicle_plate_protocol.py \
-  tests/Python/test_vehicle_plate_smoke.py
+  tests/Python/test_vehicle_plate_smoke.py \
+  tests/Python/test_vehicle_plate_synthetic.py \
+  tests/Python/test_vehicle_plate_e2_synthetic.py
 
 python scripts/intelligence/vehicle_plate/build_colab_notebook.py
+python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
 ```
 
 The complete preregistration, experiments and release thresholds are in

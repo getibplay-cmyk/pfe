@@ -42,9 +42,15 @@ jobs:
             scripts/intelligence/vehicle_plate/protocol.py \
             scripts/intelligence/vehicle_plate/colab_smoke.py \
             scripts/intelligence/vehicle_plate/paddle_ocr_worker.py \
-            scripts/intelligence/vehicle_plate/build_colab_notebook.py
+            scripts/intelligence/vehicle_plate/generate_synthetic_dataset.py \
+            scripts/intelligence/vehicle_plate/e2_synthetic.py \
+            scripts/intelligence/vehicle_plate/build_colab_notebook.py \
+            scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
           python -m json.tool \
             scripts/intelligence/vehicle_plate/colab_cells.json \
+            >/dev/null
+          python -m json.tool \
+            scripts/intelligence/vehicle_plate/e2_synthetic_cells.json \
             >/dev/null
           python -m json.tool \
             docs/intelligence/protocols/moroccan-anpr-v2.0.0.json \
@@ -52,41 +58,57 @@ jobs:
           python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
             >/dev/null
+          python -m json.tool \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb \
+            >/dev/null
 
       - name: Verify generated notebook is reproducible and output-free
         shell: bash
         run: |
           cp notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
             "$RUNNER_TEMP/notebook.ipynb"
+          cp notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb \
+            "$RUNNER_TEMP/e2-notebook.ipynb"
           python scripts/intelligence/vehicle_plate/build_colab_notebook.py
+          python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
           diff --unified "$RUNNER_TEMP/notebook.ipynb" \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb
+          diff --unified "$RUNNER_TEMP/e2-notebook.ipynb" \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb
           python - <<'PY'
           import json
           from pathlib import Path
 
-          path = Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb")
-          notebook = json.loads(path.read_text(encoding="utf-8"))
-          code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
-          assert code_cells
-          assert all(cell["execution_count"] is None for cell in code_cells)
-          assert all(cell["outputs"] == [] for cell in code_cells)
-          for index, cell in enumerate(code_cells):
-              compile("".join(cell["source"]), f"cell-{index}", "exec")
+          for path in (
+              Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb"),
+              Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb"),
+          ):
+              notebook = json.loads(path.read_text(encoding="utf-8"))
+              code_cells = [
+                  cell for cell in notebook["cells"] if cell["cell_type"] == "code"
+              ]
+              assert code_cells
+              assert all(cell["execution_count"] is None for cell in code_cells)
+              assert all(cell["outputs"] == [] for cell in code_cells)
+              for index, cell in enumerate(code_cells):
+                  compile("".join(cell["source"]), f"{path.name}-cell-{index}", "exec")
           PY
 
       - name: Test split, licence, OCR and abstention safeguards
         run: |
           python -m unittest -v \
             tests/Python/test_vehicle_plate_protocol.py \
-            tests/Python/test_vehicle_plate_smoke.py
+            tests/Python/test_vehicle_plate_smoke.py \
+            tests/Python/test_vehicle_plate_synthetic.py \
+            tests/Python/test_vehicle_plate_e2_synthetic.py
 
       - name: Refuse committed private ANPR artifacts
         shell: bash
         run: |
           if find scripts/intelligence/vehicle_plate notebooks/colab docs/intelligence \
             -type f \( -name '*.pt' -o -name '*.pth' -o -name '*.onnx' \
-            -o -name 'PRIVATE_*' -o -name '*.jpg' -o -name '*.jpeg' \) \
+            -o -name '*.pdparams' -o -name 'PRIVATE_*' -o -name '*.jpg' \
+            -o -name '*.jpeg' \) \
             -print -quit | grep -q .; then
             echo 'Private ANPR artifact found in the repository.' >&2
             exit 1

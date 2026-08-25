@@ -11,16 +11,16 @@ s'abstenir. Il ne crée ni ne modifie jamais automatiquement un véhicule, une
 réservation, un contrat, une sanction, un paiement ou une preuve d'identité.
 
 Les plaques historiques à série arabe et le nouveau format bilingue arabe/latin
-doivent coexister pendant la transition. La correspondance arabe/latin n'est
-pas codée en dur : elle reste bloquée tant que l'annexe officielle n'a pas été
-archivée et attestée dans le Drive privé.
+doivent coexister pendant la transition. La correspondance arabe/latin suit les
+15 paires de l'arrêté n° 640.26 publié au Bulletin officiel n° 7531 le 3 août
+2026. Toute autre correspondance est rejetée.
 
 ## Baseline gelée
 
-Le détecteur de départ est
-`fasterrcnn_resnet50_fpn_v2_multidomain_v1.2.0`, seuil `0,425`, entrée minimale
-768 et maximale 1280. Son checkpoint privé est accepté seulement si son SHA-256
-correspond au fichier de sélection privé v1.2.
+Le détecteur de départ est un modèle privé de localisation de plaques dont
+l'architecture et les paramètres opérationnels restent dans le registre privé.
+Son checkpoint est accepté seulement si son SHA-256 correspond à la sélection
+gelée.
 
 Ses résultats de développement antérieurs sont :
 
@@ -53,7 +53,9 @@ matricule n'est envoyé sur la console.
 | Moroccan Vehicle Registration Plates v2 | détection, développement | CC0-1.0, admise par l'audit S7 |
 | Ayoub Alaoui Moroccan Plates v2 | détection, développement | CC-BY-SA-4.0, admise |
 | Keremberke license-plate detection, révision `a51194c7…` | détection, développement | CC-BY-4.0, admise |
-| Synthèse déterministe avec Noto Arabic | OCR, développement | police sous SIL OFL-1.1; paramètres et graines gelés |
+| Synthèse déterministe avec Noto Sans Arabic + Noto Sans | OCR, développement | deux polices sous SIL OFL-1.1; révisions, empreintes, paramètres et graines gelés |
+| UC3M-LP | recherche détection/OCR latin inter-domaines, optionnelle | ODbL-1.0; non marocaine, obligations ODbL à préserver; jamais preuve de qualification |
+| UFPR-ALPR | benchmark scientifique seulement | licence académique/non commerciale; exclue de tout entraînement SaaS |
 | Photos RentFleet | pilote privé seulement | consentement, minimisation et manifeste SHA-256 obligatoires |
 | Corpus UM6P 705 images | aucun entraînement ni preuve | quarantaine jusqu'à preuve de licence exacte |
 | Futur holdout marocain | test final unique | source-disjointe, non téléchargée et labels fermés |
@@ -61,6 +63,22 @@ matricule n'est envoyé sur la console.
 Une image ne reçoit jamais une transcription inventée. Une annotation de boîte
 ne vaut pas vérité OCR. Les variantes synthétiques restent reportées séparément
 des images réelles et ne peuvent pas constituer le holdout final.
+
+Le générateur synthétique v1.1 rend à parts égales les plaques historiques
+arabes et le nouveau format unifié arabe/latin avec `MA`. Il exige Noto Sans
+Arabic v2.013 pour l'arabe et les chiffres, ainsi qu'une Noto Sans latine gelée
+sur un commit Google Fonts pour `MA` et l'équivalent latin. Les deux preuves SIL
+OFL 1.1 et leurs empreintes exactes sont vérifiées. Le run archive les
+empreintes des bundles sources, des polices, des licences, de chaque image et
+du manifeste. Il produit seulement `train`, `validation` et `calibration`; son
+CLI n'expose aucun split `test` et refuse d'écraser un dossier existant.
+
+Le mapping gelé est : `أ/A`, `ب/B`, `د/D`, `ه/H`, `و/E`, `ط/T`, `ي/Y`, `ك/K`,
+`ل/L`, `م/M`, `ن/N`, `ص/C`, `ف/F`, `ر/R`, `س/S`. Une erreur sur le caractère
+latin redondant compte comme erreur de plaque complète. Le rendu synthétique
+approxime les composants réglementaires; il ne remplace pas des photos réelles.
+La cible CTC suit l'ordre visuel publié `MA | numéro | arabe/latin | territoire`,
+tandis que la métrique compare la forme canonique structurée.
 
 ## Séparation
 
@@ -76,7 +94,7 @@ des images réelles et ne peuvent pas constituer le holdout final.
 
 | ID | Changement unique | Décision |
 |---|---|---|
-| E0 | détecteur v1.2 + crop brut + Arabic PP-OCRv5 | baseline obligatoire |
+| E0 | détecteur privé gelé + crop brut + Arabic PP-OCRv5 | baseline obligatoire |
 | E1 | marges 3/8/15 %, autocontraste et rectification perspective | conserver seulement si exact-match validation augmente sans dégrader le rappel détecteur |
 | E2 | fine-tuning du recognizer sur synthèse OFL + réel licencié | sélectionner par exact-match validation, départager par CER |
 | E3 | grammaire, calibration des seuils et consensus de clichés physiques | maximiser la couverture sous contrainte d'exactitude sélective |
@@ -85,6 +103,23 @@ des images réelles et ne peuvent pas constituer le holdout final.
 Un challenger de détection (par exemple RT-DETR) n'est lancé que si l'analyse
 d'erreurs E0/E1 montre que la localisation, et non l'OCR, est le goulot. Il doit
 battre l'incumbent sur le pire domaine sans utiliser le test final.
+
+### Sous-expérience E2 synthétique
+
+Le lancement E2 synthétique isole uniquement la composante OFL de E2; il ne
+remplace pas l'apport futur de données réelles licenciées. La graine
+`20260825`, les groupes `1024/256/256`, trois variantes, un équilibre 50/50
+ancien/unifié, 20 epochs et un batch de 128 sont gelés avant exécution. Le recognizer officiel Arabic PP-OCRv5 est
+l'incumbent. Le challenger est initialisé depuis ses poids officiels et garde
+la configuration et le dictionnaire officiel de 747 caractères de PaddleOCR
+`v3.7.0` au commit `b03f46425e8ff4442b268ce449e3eef758146cd4`.
+
+La décision refuse d'abord toute régression d'exact-match sur l'ancien format
+arabe ou le format unifié arabe/latin, maximise ensuite l'exact-match agrégé,
+puis minimise le CER en cas d'égalité. La calibration est mesurée mais
+n'intervient pas dans la sélection. Aucun résultat synthétique ne franchit un gate réel : le statut
+reste `synthetic_e2_complete_not_qualified`, le holdout final reste fermé et
+l'intégration SaaS reste interdite.
 
 ## Prétraitement autorisé
 
@@ -134,9 +169,20 @@ Le smoke public est généré depuis `colab_cells.json` et ne contient aucune
 sortie. Il utilise un petit échantillon déterministe d'une source de
 développement déjà vue. Il mesure le fonctionnement et la latence; sans CSV
 annoté, les métriques d'exactitude restent nulles. Tous les matricules et
-prédictions restent dans `PRIVATE_predictions.jsonl` sur Drive. Le smoke exige
+prédictions restent dans un artefact privé sur Drive. Le smoke exige
 que `pip check` soit vert à la fois dans l'interpréteur PyTorch système et dans
 le venv PaddleOCR isolé.
+
+Le notebook E2 synthétique est généré séparément depuis
+`e2_synthetic_cells.json`. Les images sont créées dans le stockage éphémère
+Colab. Seul le bundle final de modèle, métriques, logs et provenance OFL est
+copié dans le Drive privé après vérification de `SHA256SUMS`; aucun artefact
+réel ou label du holdout n'est lu.
+
+E2 n'entraîne pas le détecteur. Le contrat d'inférence complet impose
+`photo véhicule -> détecteur de plaque -> crop borné -> recognizer`. Appliquer
+l'OCR directement à toute la photo est interdit afin d'éviter l'extraction de
+texte sans rapport avec l'immatriculation.
 
 ## Conditions d'intégration SaaS
 
@@ -150,8 +196,15 @@ feature flag et laisse la saisie manuelle disponible.
 
 - PaddleOCR officiel : https://github.com/PaddlePaddle/PaddleOCR
 - Module officiel de reconnaissance : https://www.paddleocr.ai/main/en/version3.x/module_usage/text_recognition.html
-- dictionnaire arabe officiel : https://github.com/PaddlePaddle/PaddleOCR/blob/v3.7.0/ppocr/utils/dict/arabic_dict.txt
+- configuration Arabic PP-OCRv5 officielle : https://github.com/PaddlePaddle/PaddleOCR/blob/v3.7.0/configs/rec/PP-OCRv5/multi_language/arabic_PP-OCRv5_mobile_rec.yaml
+- dictionnaire PP-OCRv5 arabe officiel : https://github.com/PaddlePaddle/PaddleOCR/blob/v3.7.0/ppocr/utils/dict/ppocrv5_arabic_dict.txt
 - installation PaddlePaddle : https://www.paddlepaddle.org.cn/documentation/docs/en/install/index_en.html
 - TorchVision Faster R-CNN V2 : https://pytorch.org/vision/stable/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn_v2.html
 - article UM6P pour comparaison scientifique, données non admises : https://arxiv.org/abs/2104.08244
 - Noto Arabic et licence OFL : https://github.com/notofonts/arabic
+- release Noto Sans Arabic v2.013 : https://github.com/notofonts/arabic/releases/tag/NotoSansArabic-v2.013
+- Noto Sans latin gelé sur Google Fonts : https://github.com/google/fonts/tree/6a003b5eb672dc8bf5bff5937cf5863f8b175445/ofl/notosans
+- UC3M-LP (ODbL-1.0) : https://github.com/ramajoballester/UC3M-LP
+- UFPR-ALPR (usage académique/non commercial) : https://github.com/raysonlaroca/ufpr-alpr-dataset
+- format des labels PaddleOCR : https://www.paddleocr.ai/v3.3.2/en/version2.x/ppocr/model_train/recognition.html
+- annonce NARSA/MAP sur l'arrêté n° 640.26 et le modèle unifié : https://snrtnews.com/fr/article/plaques-dimmatriculation-la-narsa-annonce-lharmonisation-du-modele-utilise-au-maroc-et-a
