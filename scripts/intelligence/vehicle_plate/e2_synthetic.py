@@ -44,7 +44,7 @@ from scripts.intelligence.vehicle_plate.generate_synthetic_dataset import (
 )
 
 
-E2_VERSION = "1.1.0"
+E2_VERSION = "1.1.1"
 EXPECTED_SOURCE_ID = "synthetic_moroccan_plate_ofl_v2"
 EXPECTED_PADDLEOCR_SHA = "b03f46425e8ff4442b268ce449e3eef758146cd4"
 EXPECTED_CONFIG = Path(
@@ -57,6 +57,12 @@ OFFICIAL_PRETRAINED_URL = (
 )
 DEVELOPMENT_SPLITS = frozenset({"train", "validation", "calibration"})
 FORMAT_PROFILES = frozenset({"legacy_arabic", "unified_2026_arabic_latin"})
+
+
+def _absolute_path_preserving_symlinks(path: str | Path) -> Path:
+    """Return an absolute path without dereferencing a virtualenv launcher."""
+
+    return Path(os.path.abspath(os.fspath(path)))
 
 
 @dataclass(frozen=True)
@@ -796,7 +802,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = build_parser().parse_args(argv)
     report = run_e2(
-        python_executable=arguments.python.resolve(),
+        # ``venv/bin/python`` is commonly a symlink. Resolving it selects the
+        # system interpreter and silently drops the venv where Paddle is
+        # installed, so keep the launcher path while making it absolute.
+        python_executable=_absolute_path_preserving_symlinks(arguments.python),
         paddleocr_dir=arguments.paddleocr_dir.resolve(),
         dataset_dir=arguments.dataset_dir.resolve(),
         output_dir=arguments.output_dir.resolve(),

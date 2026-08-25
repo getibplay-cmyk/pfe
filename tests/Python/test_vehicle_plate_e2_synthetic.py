@@ -62,6 +62,47 @@ def _row(
 
 
 class VehiclePlateE2SyntheticTest(unittest.TestCase):
+    def test_main_preserves_virtualenv_python_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            system_python = root / "system-python"
+            system_python.write_bytes(b"python")
+            venv_python = root / "venv" / "bin" / "python"
+            venv_python.parent.mkdir(parents=True)
+            venv_python.symlink_to(system_python)
+            arguments = SimpleNamespace(
+                python=venv_python,
+                paddleocr_dir=root / "PaddleOCR",
+                dataset_dir=root / "dataset",
+                output_dir=root / "output",
+                pretrained_prefix=root / "pretrained",
+                repository_sha="a" * 40,
+                paddleocr_sha=e2_module.EXPECTED_PADDLEOCR_SHA,
+                epochs=1,
+                batch_size=1,
+                seed=20260825,
+            )
+            parser = mock.Mock()
+            parser.parse_args.return_value = arguments
+            report = {
+                "status": "synthetic_e2_complete_not_qualified",
+                "metrics": {},
+                "selection": {},
+                "qualification_claim": False,
+                "final_test_opened": False,
+            }
+            with (
+                mock.patch.object(e2_module, "build_parser", return_value=parser),
+                mock.patch.object(
+                    e2_module, "run_e2", return_value=report
+                ) as run_e2,
+            ):
+                self.assertEqual(0, e2_module.main([]))
+
+            invoked_python = run_e2.call_args.kwargs["python_executable"]
+            self.assertEqual(venv_python, invoked_python)
+            self.assertNotEqual(venv_python.resolve(), invoked_python)
+
     def test_parses_official_inference_result_shape(self):
         with tempfile.TemporaryDirectory() as directory:
             result = Path(directory) / "predictions.txt"
