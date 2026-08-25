@@ -26,11 +26,12 @@ from scripts.intelligence.vehicle_plate.protocol import (
 )
 
 
-CHARACTER_PROTOCOL_VERSION = "1.0.0"
+CHARACTER_PROTOCOL_VERSION = "1.1.0"
 DIGITS = tuple("0123456789")
 ARABIC_SERIES = tuple(OFFICIAL_SERIES_MAPPING)
 LATIN_SERIES = tuple(dict.fromkeys(OFFICIAL_SERIES_MAPPING.values()))
-CHARACTER_ALPHABET = DIGITS + ARABIC_SERIES + LATIN_SERIES
+COUNTRY_MARKER_TOKEN = "MA"
+CHARACTER_ALPHABET = DIGITS + ARABIC_SERIES + LATIN_SERIES + (COUNTRY_MARKER_TOKEN,)
 CLASS_TO_ID = {character: index for index, character in enumerate(CHARACTER_ALPHABET, 1)}
 ID_TO_CLASS = {class_id: character for character, class_id in CLASS_TO_ID.items()}
 BACKGROUND_CLASS_ID = 0
@@ -39,8 +40,8 @@ DEFAULT_SCORE_THRESHOLD = 0.45
 DEFAULT_IOU_THRESHOLD = 0.50
 
 
-if len(CLASS_TO_ID) != 40:
-    raise AssertionError("L'alphabet ANPR marocain doit contenir exactement 40 classes.")
+if len(CLASS_TO_ID) != 41:
+    raise AssertionError("L'alphabet ANPR marocain doit contenir exactement 41 classes.")
 
 
 @dataclass(frozen=True)
@@ -223,18 +224,14 @@ def reconstruct_moroccan_plate(
         expected_latin = OFFICIAL_SERIES_MAPPING[series_arabic.label]
         if series_latin.label != expected_latin:
             return _reject("arabic_latin_series_mismatch", digits + in_series_cell)
-        marker_candidates = sorted(
-            (
-                item
-                for item in eligible
-                if item.center_x < serial_cluster[0].box[0] and item.label in {"M", "A"}
-            ),
-            key=lambda item: item.center_x,
-        )
+        marker_candidates = [
+            item
+            for item in eligible
+            if item.center_x < serial_cluster[0].box[0]
+            and item.label == COUNTRY_MARKER_TOKEN
+        ]
         if require_ma_marker_for_unified:
-            if len(marker_candidates) != 2 or "".join(
-                item.label for item in marker_candidates
-            ) != "MA":
+            if len(marker_candidates) != 1:
                 return _reject("unified_ma_marker_missing_or_ambiguous", digits + in_series_cell)
             selected = [*marker_candidates, *serial_cluster, series_arabic, series_latin, *region_cluster]
         else:

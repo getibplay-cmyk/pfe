@@ -8,6 +8,7 @@ from pathlib import Path
 from scripts.intelligence.vehicle_plate.character_detector import (
     CHARACTER_ALPHABET,
     CLASS_TO_ID,
+    COUNTRY_MARKER_TOKEN,
     MODEL_NUM_CLASSES,
     CharacterDetection,
     load_source_registry,
@@ -38,14 +39,15 @@ def detection(label: str, x: float, y: float = 55, score: float = 0.9):
 
 class CharacterDetectorContractTest(unittest.TestCase):
     def test_alphabet_has_digits_all_official_pairs_and_background(self):
-        self.assertEqual(40, len(CHARACTER_ALPHABET))
-        self.assertEqual(40, len(CLASS_TO_ID))
-        self.assertEqual(41, MODEL_NUM_CLASSES)
-        self.assertEqual(tuple(range(1, 41)), tuple(CLASS_TO_ID.values()))
+        self.assertEqual(41, len(CHARACTER_ALPHABET))
+        self.assertEqual(41, len(CLASS_TO_ID))
+        self.assertEqual(42, MODEL_NUM_CLASSES)
+        self.assertEqual(tuple(range(1, 42)), tuple(CLASS_TO_ID.values()))
         self.assertTrue(set("0123456789أبدهوطيكلمنصفرسABDHETYKLMNCFRS").issubset(CLASS_TO_ID))
+        self.assertIn(COUNTRY_MARKER_TOKEN, CLASS_TO_ID)
 
     def test_reconstructs_unified_plate_and_checks_bilingual_pair(self):
-        predictions = [detection("M", 20), detection("A", 40)]
+        predictions = [detection(COUNTRY_MARKER_TOKEN, 30)]
         predictions.extend(detection(label, x) for label, x in zip("12345", range(105, 206, 25)))
         predictions.extend([detection("أ", 285, 35), detection("A", 285, 78)])
         predictions.extend([detection("1", 445), detection("2", 465)])
@@ -56,6 +58,16 @@ class CharacterDetectorContractTest(unittest.TestCase):
         self.assertEqual("12345|أ|12", reading.canonical)
         self.assertEqual("MA12345أA12", reading.recognition_text)
         self.assertEqual("unified_2026_arabic_latin", reading.format_profile)
+
+        split_marker = [item for item in predictions if item.label != COUNTRY_MARKER_TOKEN]
+        split_marker.extend([detection("M", 20), detection("A", 40)])
+        rejected_marker = reconstruct_moroccan_plate(
+            split_marker, image_width=520, image_height=110
+        )
+        self.assertFalse(rejected_marker.accepted)
+        self.assertEqual(
+            ("unified_ma_marker_missing_or_ambiguous",), rejected_marker.reasons
+        )
 
         wrong = [item for item in predictions if not (item.label == "A" and item.center_x == 285)]
         wrong.append(detection("B", 285, 78))
@@ -212,7 +224,7 @@ class CharacterDetectorContractTest(unittest.TestCase):
             document = json.loads(
                 (output / "annotations/instances_train.json").read_text(encoding="utf-8")
             )
-            self.assertEqual(40, len(document["categories"]))
+            self.assertEqual(41, len(document["categories"]))
             self.assertEqual(3, len(document["annotations"]))
             audit = audit_dataset_bundles(
                 [output], source_registry_path=DEFAULT_SOURCE_REGISTRY

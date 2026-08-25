@@ -3,9 +3,9 @@
     {
       "cell_type": "markdown",
       "source": [
-        "# ANPR marocain v2 : E2.2 détecteur de caractères\n",
+        "# ANPR marocain v2 : E2.3 détecteur de caractères avec token MA\n",
         "\n",
-        "Ce notebook entraîne un challenger léger `SSDLite320 MobileNetV3` sur des **crops de plaque uniquement**. Il détecte 40 classes fermées : chiffres `0–9`, les 15 séries arabes officielles et leurs 15 équivalents latins. La grammaire reconstruit ensuite la chaîne complète et s’abstient si la plaque, le marqueur `MA` ou la paire arabe/latin est incohérente.\n"
+        "Ce notebook entraîne un challenger léger `SSDLite320 MobileNetV3` sur des **crops de plaque uniquement**. Il détecte 41 classes fermées : chiffres `0–9`, les 15 séries arabes officielles, leurs 15 équivalents latins et le signe distinctif `MA` comme token visuel unique. La grammaire reconstruit ensuite la chaîne complète et s’abstient si la plaque, le marqueur ou la paire arabe/latin est incohérente.\n"
       ]
     },
     {
@@ -24,7 +24,7 @@
     {
       "cell_type": "code",
       "source": [
-        "#@title 1. Monter Drive, vérifier le GPU et geler E2.2\n",
+        "#@title 1. Monter Drive, vérifier le GPU et geler E2.3\n",
         "from google.colab import drive\n",
         "drive.mount('/content/drive')\n",
         "\n",
@@ -42,12 +42,12 @@
         "EPOCHS = 12 #@param {type:'integer'}\n",
         "BATCH_SIZE = 16 #@param {type:'integer'}\n",
         "SCORE_THRESHOLD = 0.45 #@param {type:'number'}\n",
-        "RUN_ID = 'anpr_v2_e2_character_ssdlite_seed20260825_run01' #@param {type:'string'}\n",
+        "RUN_ID = 'anpr_v2_e23_character_ssdlite_ma_token_seed20260825_run01' #@param {type:'string'}\n",
         "assert SEED == 20260825\n",
         "assert (TRAIN_GROUPS, VALIDATION_GROUPS, CALIBRATION_GROUPS) == (1024, 256, 256)\n",
         "assert VARIANTS_PER_GROUP == 3 and UNIFIED_FRACTION == 0.5\n",
         "assert EPOCHS == 12 and BATCH_SIZE == 16 and SCORE_THRESHOLD == 0.45\n",
-        "USER_OUTPUT_ROOT = Path('/content/drive/MyDrive/moroccan-anpr-e22-runs')\n",
+        "USER_OUTPUT_ROOT = Path('/content/drive/MyDrive/moroccan-anpr-e23-runs')\n",
         "SAVED_OUTPUT = USER_OUTPUT_ROOT / RUN_ID\n",
         "assert not SAVED_OUTPUT.exists(), f'Aucun écrasement autorisé: {SAVED_OUTPUT}'\n",
         "print({'gpu': torch.cuda.get_device_name(0), 'torch': torch.__version__, 'run_id': RUN_ID, 'final_test_opened': False})\n"
@@ -91,7 +91,7 @@
         "import PIL, torchvision\n",
         "from torchvision.models import MobileNet_V3_Large_Weights\n",
         "from torchvision.models.detection import ssdlite320_mobilenet_v3_large\n",
-        "probe = ssdlite320_mobilenet_v3_large(weights=None, weights_backbone=None, num_classes=41)\n",
+        "probe = ssdlite320_mobilenet_v3_large(weights=None, weights_backbone=None, num_classes=42)\n",
         "del probe\n",
         "torch.cuda.empty_cache()\n",
         "print({'python': sys.version.split()[0], 'torch': torch.__version__, 'torchvision': torchvision.__version__, 'pillow': PIL.__version__, 'cuda': torch.version.cuda, 'model': 'ssdlite320_mobilenet_v3_large', 'torchvision_license': 'BSD-3-Clause', 'pip_check': 'clean' if not pip_issues else 'known_colab_base_missing_jedi_only'})\n"
@@ -141,8 +141,8 @@
     {
       "cell_type": "code",
       "source": [
-        "#@title 5. Générer le COCO synthétique de 40 classes sans split test\n",
-        "DATASET_DIR = Path('/content/anpr_e22_character_dataset')\n",
+        "#@title 5. Générer le COCO synthétique de 41 classes sans split test\n",
+        "DATASET_DIR = Path('/content/anpr_e23_character_dataset')\n",
         "assert not DATASET_DIR.exists(), f'Aucun écrasement autorisé: {DATASET_DIR}'\n",
         "generate_command = [\n",
         "    sys.executable, str(REPO_DIR / 'scripts/intelligence/vehicle_plate/generate_character_detection_dataset.py'),\n",
@@ -157,7 +157,7 @@
         "generation = json.loads((DATASET_DIR / 'generation_report.json').read_text(encoding='utf-8'))\n",
         "assert generation['qualification_claim'] is False and generation['final_test_opened'] is False\n",
         "assert generation['contains_real_vehicle_data'] is False\n",
-        "assert len(generation['configuration']['alphabet']) == 40\n",
+        "assert len(generation['configuration']['alphabet']) == 41\n",
         "assert set(generation['artifacts']['coco_annotations']) == {'train', 'validation', 'calibration'}\n",
         "assert not (DATASET_DIR / 'annotations/instances_test.json').exists()\n",
         "print({'groups': generation['artifacts']['groups'], 'images': generation['artifacts']['images'], 'characters': generation['artifacts']['characters'], 'classes': len(generation['configuration']['alphabet']), 'formats': generation['configuration']['format_group_counts'], 'test_rows': 0})\n"
@@ -167,7 +167,7 @@
       "cell_type": "code",
       "source": [
         "#@title 6. Entraîner SSDLite et sélectionner uniquement sur validation\n",
-        "LOCAL_OUTPUT = Path('/content/anpr_e22_character_run')\n",
+        "LOCAL_OUTPUT = Path('/content/anpr_e23_character_run')\n",
         "assert not LOCAL_OUTPUT.exists(), f'Aucun écrasement autorisé: {LOCAL_OUTPUT}'\n",
         "train_command = [\n",
         "    sys.executable, str(REPO_DIR / 'scripts/intelligence/vehicle_plate/e2_character_detector.py'),\n",
@@ -179,6 +179,7 @@
         "subprocess.run(train_command, cwd=REPO_DIR, check=True)\n",
         "report = json.loads((LOCAL_OUTPUT / 'E2_CHARACTER_COMPLETE.json').read_text(encoding='utf-8'))\n",
         "assert report['status'] == 'synthetic_character_e2_complete_not_qualified'\n",
+        "assert report['character_protocol_version'] == '1.1.0' and report['trainer_version'] == '1.1.0'\n",
         "assert report['synthetic_only'] is True and report['final_test_opened'] is False\n",
         "assert report['qualification_claim'] is False and report['saas_integration_allowed'] is False\n",
         "assert report['replacement_of_paddleocr_allowed'] is False\n",

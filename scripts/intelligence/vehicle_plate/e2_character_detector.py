@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train and evaluate the E2.2 Moroccan plate character-detector challenger.
+"""Train and evaluate the E2.3 Moroccan plate character-detector challenger.
 
 The model consumes only bounded plate crops. Selection uses clean development
 validation; calibration is reported after selection and never influences it.
@@ -49,7 +49,7 @@ from scripts.intelligence.vehicle_plate.protocol import (
 )
 
 
-TRAINER_VERSION = "1.0.0"
+TRAINER_VERSION = "1.1.0"
 ARCHITECTURE = "torchvision_ssdlite320_mobilenet_v3_large"
 EXPECTED_SPLITS = ("train", "validation", "calibration")
 DEFAULT_SOURCE_REGISTRY = (
@@ -346,7 +346,7 @@ def _train_epoch(model: Any, loader: Any, optimizer: Any, scaler: Any, device: A
             losses = model(images, targets)
             loss = sum(losses.values())
         if not torch.isfinite(loss):
-            raise ProtocolError(f"Loss non finie pendant E2.2: {float(loss.detach())}.")
+            raise ProtocolError(f"Loss non finie pendant E2.3: {float(loss.detach())}.")
         scaler.scale(loss).backward()
         scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=10.0)
@@ -530,7 +530,7 @@ def run_experiment(args: argparse.Namespace) -> Mapping[str, Any]:
     if not 0.0 <= float(args.weight_decay) <= 0.1:
         raise ProtocolError("weight_decay doit être compris entre 0 et 0.1.")
     if not torch.cuda.is_available():
-        raise ProtocolError("E2.2 exige un GPU CUDA Colab.")
+        raise ProtocolError("E2.3 exige un GPU CUDA Colab.")
     device = torch.device("cuda")
     _seed_everything(int(args.seed))
 

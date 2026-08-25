@@ -55,7 +55,10 @@ matricule n'est envoyé sur la console.
 | Keremberke license-plate detection, révision `a51194c7…` | détection, développement | CC-BY-4.0, admise |
 | Synthèse déterministe avec Noto Sans Arabic + Noto Sans | OCR, développement | deux polices sous SIL OFL-1.1; révisions, empreintes, paramètres et graines gelés |
 | UC3M-LP | recherche détection/OCR latin inter-domaines, optionnelle | ODbL-1.0; non marocaine, obligations ODbL à préserver; jamais preuve de qualification |
+| CCPD | détection de plaque inter-domaines, optionnelle | MIT; labels OCR chinois interdits comme vérité marocaine |
+| Open Images V7 | détection de plaque inter-domaines, optionnelle | annotations CC-BY-4.0; licence et attribution de chaque image à vérifier; jamais vérité OCR |
 | UFPR-ALPR | benchmark scientifique seulement | licence académique/non commerciale; exclue de tout entraînement SaaS |
+| RodoSol-ALPR | benchmark scientifique seulement | licence académique/non commerciale; exclue de tout entraînement SaaS |
 | Photos RentFleet | pilote privé seulement | consentement, minimisation et manifeste SHA-256 obligatoires |
 | Corpus UM6P 705 images | aucun entraînement ni preuve | quarantaine jusqu'à preuve de licence exacte |
 | Futur holdout marocain | test final unique | source-disjointe, non téléchargée et labels fermés |
@@ -64,8 +67,10 @@ Une image ne reçoit jamais une transcription inventée. Une annotation de boît
 ne vaut pas vérité OCR. Les variantes synthétiques restent reportées séparément
 des images réelles et ne peuvent pas constituer le holdout final.
 
-Le générateur synthétique v1.1 rend à parts égales les plaques historiques
-arabes et le nouveau format unifié arabe/latin avec `MA`. Il exige Noto Sans
+Le générateur synthétique de caractères v1.1 rend à parts égales les plaques historiques
+arabes et le nouveau format unifié arabe/latin avec `MA`. Pour la détection,
+`MA` est une seule classe sémantique de signe distinctif; `M` et `A` restent
+des classes séparées lorsqu'ils représentent une série latine. Il exige Noto Sans
 Arabic v2.013 pour l'arabe et les chiffres, ainsi qu'une Noto Sans latine gelée
 sur un commit Google Fonts pour `MA` et l'équivalent latin. Les deux preuves SIL
 OFL 1.1 et leurs empreintes exactes sont vérifiées. Le run archive les
@@ -90,6 +95,18 @@ validation propre, 128/128 en calibration propre et 384/384 avec les trois
 variantes de validation. Ces scores restent exclusivement synthétiques.
 Le constat, le modèle source et les interdictions de qualification sont scellés
 dans `docs/intelligence/evidence/moroccan-anpr-e2.1-decoder-order-rescore.json`.
+
+Diagnostic E2.2 run 01 : l'historique immuable montre qu'aux époques 6 à 12
+le détecteur atteignait 100 % d'exact-match sur les 128 plaques historiques,
+100 % de précision caractère IoU50 et 94,617 % de rappel. Les 128 plaques
+unifiées étaient néanmoins toutes rejetées par
+`unified_ma_marker_missing_or_ambiguous`. Les 128 faux négatifs sur 2 378
+tokens cibles correspondent exactement à un petit glyphe du marqueur par
+plaque unifiée. La sélection prudente du pire format a donc conservé l'époque
+1, seule époque ayant encore un exact-match unifié non nul. Le protocole
+caractère v1.1 corrige l'unité d'annotation : le signe réglementaire `MA` est
+détecté comme un token unique, plus grand et non ambigu, sans abaisser le seuil
+de score `0,45`, sans inventer de caractère et sans ouvrir le test final.
 
 ## Séparation
 
@@ -218,6 +235,10 @@ feature flag et laisse la saisie manuelle disponible.
 - release Noto Sans Arabic v2.013 : https://github.com/notofonts/arabic/releases/tag/NotoSansArabic-v2.013
 - Noto Sans latin gelé sur Google Fonts : https://github.com/google/fonts/tree/6a003b5eb672dc8bf5bff5937cf5863f8b175445/ofl/notosans
 - UC3M-LP (ODbL-1.0) : https://github.com/ramajoballester/UC3M-LP
+- CCPD (MIT) : https://github.com/detectRecog/CCPD
+- Open Images V7, téléchargement et métadonnées : https://storage.googleapis.com/openimages/web/download_v7.html
+- Open Images V7, licences : https://storage.googleapis.com/openimages/web/factsfigures_v7.html#licenses
 - UFPR-ALPR (usage académique/non commercial) : https://github.com/raysonlaroca/ufpr-alpr-dataset
+- RodoSol-ALPR (usage académique/non commercial) : https://github.com/raysonlaroca/rodosol-alpr-dataset
 - format des labels PaddleOCR : https://www.paddleocr.ai/v3.3.2/en/version2.x/ppocr/model_train/recognition.html
 - annonce NARSA/MAP sur l'arrêté n° 640.26 et le modèle unifié : https://snrtnews.com/fr/article/plaques-dimmatriculation-la-narsa-annonce-lharmonisation-du-modele-utilise-au-maroc-et-a

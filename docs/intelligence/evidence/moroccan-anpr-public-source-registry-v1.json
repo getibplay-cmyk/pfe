@@ -58,6 +58,31 @@
       ]
     },
     {
+      "source_id": "open_images_v7_vehicle_registration_plate",
+      "title": "Open Images V7 — Vehicle registration plate",
+      "canonical_url": "https://storage.googleapis.com/openimages/web/download_v7.html",
+      "license_id": "Annotations-CC-BY-4.0; images-per-item-CC-BY-2.0-listed",
+      "public_status": "researched_not_imported",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "public_candidate_roles": [
+        "plate_detection_development"
+      ],
+      "independent_evidence_allowed": false,
+      "required_import_gates": [
+        "filter_only_human_verified_vehicle_registration_plate_boxes",
+        "retain_image_id_author_original_landing_url_and_per_image_license",
+        "verify_each_selected_image_license_before_download",
+        "use_a_deterministic_bounded_development_subset",
+        "cross_source_sha256_and_perceptual_deduplication",
+        "do_not_treat_plate_boxes_as_character_or_ocr_truth"
+      ],
+      "notes": [
+        "Official annotations are CC BY 4.0; images require per-image license and attribution review.",
+        "Useful only for generic vehicle-to-plate localization and not Moroccan OCR qualification."
+      ]
+    },
+    {
       "source_id": "roboflow_naima_moroccan_plate_detection_v4",
       "title": "moroccan license plate detection by Naima El Menani",
       "canonical_url": "https://universe.roboflow.com/naima-el-menani/moroccan-license-plate-detection/dataset/4",
@@ -206,6 +231,19 @@
       "independent_evidence_allowed": false,
       "notes": [
         "Explicitly restricted to academic, non-commercial research and redistribution is forbidden."
+      ]
+    },
+    {
+      "source_id": "rodosol_alpr_academic_only",
+      "title": "RodoSol-ALPR",
+      "canonical_url": "https://github.com/raysonlaroca/rodosol-alpr-dataset",
+      "license_id": "Academic-NonCommercial",
+      "public_status": "not_used_due_to_public_noncommercial_terms",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "notes": [
+        "Access requires accepting academic, non-commercial terms; it is excluded from deployable SaaS training."
       ]
     },
     {

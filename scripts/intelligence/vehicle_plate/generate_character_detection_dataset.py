@@ -4,7 +4,8 @@
 This is a new E2.2 development bundle. It reuses the frozen plate plan and
 renderer without changing the E2.1 PaddleOCR images. Character masks are
 rotated with the same geometric transform as the rendered plate, producing
-boxes for digits, all 15 Arabic series, all 15 Latin equivalents and ``MA``.
+boxes for digits, all 15 Arabic series, all 15 Latin equivalents and one
+semantic ``MA`` country-marker token.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from scripts.intelligence.vehicle_plate.character_detector import (
     CHARACTER_ALPHABET,
     CHARACTER_PROTOCOL_VERSION,
     CLASS_TO_ID,
+    COUNTRY_MARKER_TOKEN,
 )
 from scripts.intelligence.vehicle_plate.generate_synthetic_dataset import (
     DEFAULT_GROUP_COUNTS,
@@ -63,7 +65,7 @@ from scripts.intelligence.vehicle_plate.protocol import (
 )
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.1.0"
 EXTRA_MANIFEST_COLUMNS = (
     "recognition_text",
     "format_profile",
@@ -150,6 +152,26 @@ def _text_character_masks(
     return items, start_index + len(text)
 
 
+def _text_token_mask(
+    *,
+    text: str,
+    label: str,
+    center: tuple[float, float],
+    font: Any,
+    role: str,
+    reading_index: int,
+    image_size: tuple[int, int] = (520, 110),
+) -> tuple[CharacterBox, Any]:
+    """Render one multi-glyph semantic token into a single detection mask."""
+
+    from PIL import Image, ImageDraw
+
+    mask = Image.new("L", image_size, color=0)
+    draw = ImageDraw.Draw(mask)
+    draw.text(center, text, font=font, fill=255, anchor="mm")
+    return CharacterBox(label, (0, 0, 1, 1), role, reading_index), mask
+
+
 def build_character_boxes(
     sample: SyntheticSample,
     font_path: Path,
@@ -181,14 +203,16 @@ def build_character_boxes(
     if sample.format_profile == "unified_2026_arabic_latin":
         if not sample.series_latin:
             raise ProtocolError("Correspondance latine absente du profil unifié.")
-        additions, reading_index = _text_character_masks(
+        marker = _text_token_mask(
             text="MA",
+            label=COUNTRY_MARKER_TOKEN,
             center=(43, 56),
             font=country_font,
             role="country_marker",
-            start_index=reading_index,
+            reading_index=reading_index,
         )
-        masked.extend(additions)
+        masked.append(marker)
+        reading_index += 1
         additions, reading_index = _text_character_masks(
             text=parsed.serial,
             center=(214, 56),
