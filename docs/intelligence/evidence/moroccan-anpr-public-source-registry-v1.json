@@ -38,7 +38,7 @@
       "title": "CCPD (Chinese City Parking Dataset)",
       "canonical_url": "https://github.com/detectRecog/CCPD",
       "license_id": "MIT",
-      "public_status": "researched_not_imported",
+      "public_status": "e31_detection_import_pipeline_ready_not_downloaded",
       "e22_training_enabled": false,
       "e22_allowed_tasks": [],
       "public_candidate_roles": [
@@ -52,6 +52,12 @@
         "use_only_a_deterministic_development_subset",
         "do_not_treat_chinese_sequence_labels_as_moroccan_ocr_truth"
       ],
+      "implemented_safeguards": [
+        "parser_reads_only_geometry_fields_and_never_decodes_the_sequence_field",
+        "exact_sha256_and_dhash_near_duplicates_are_grouped_before_split",
+        "only_train_validation_calibration_development_splits_are_generated",
+        "mit_license_proof_and_repository_revision_are_recorded"
+      ],
       "notes": [
         "Useful for generic blur, tilt, rotation and plate-localization robustness.",
         "The first sequence symbol is Chinese; it must not be used as Moroccan OCR truth."
@@ -62,7 +68,7 @@
       "title": "Open Images V7 — Vehicle registration plate",
       "canonical_url": "https://storage.googleapis.com/openimages/web/download_v7.html",
       "license_id": "Annotations-CC-BY-4.0; images-per-item-CC-BY-2.0-listed",
-      "public_status": "researched_not_imported",
+      "public_status": "e31_candidate_manifest_only_pending_per_image_license_review",
       "e22_training_enabled": false,
       "e22_allowed_tasks": [],
       "public_candidate_roles": [
@@ -76,6 +82,12 @@
         "use_a_deterministic_bounded_development_subset",
         "cross_source_sha256_and_perceptual_deduplication",
         "do_not_treat_plate_boxes_as_character_or_ocr_truth"
+      ],
+      "implemented_safeguards": [
+        "only_xclick_manual_boxes_are_selected",
+        "group_depiction_and_inside_boxes_are_rejected",
+        "cc_by_2_0_metadata_and_attribution_fields_are_required",
+        "download_and_training_flags_remain_false_while_external_review_is_pending"
       ],
       "notes": [
         "Official annotations are CC BY 4.0; images require per-image license and attribution review.",

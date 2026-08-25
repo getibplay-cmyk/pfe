@@ -113,6 +113,25 @@ E2 is deliberately a recognition experiment. The full ANPR chain is always
 `vehicle image -> plate detector -> bounded crop -> recognizer -> grammar and
 abstention`. Full-frame OCR is forbidden because it could return unrelated text.
 
+## E3.1 detection-source preparation
+
+`detection_sources.py` prepares only full-frame plate-localisation data. Its
+CCPD mode verifies the official MIT proof, parses only the geometry fields in
+the seven-part filename, creates a one-class COCO bundle, computes SHA-256 and
+64-bit difference hashes, groups exact/near duplicates before splitting, and
+emits only `train`, `validation`, and `calibration`. The Chinese sequence field
+is deliberately opaque and never appears as an OCR target.
+
+The Open Images mode creates a no-download candidate CSV from manual `xclick`
+boxes for `/m/01jfm_`. It requires per-item CC BY 2.0 metadata and attribution,
+but keeps download and training disabled until the original landing page is
+reviewed for every image. This follows Open Images' own warning that its image
+licence listings carry no warranty.
+
+Neither source is a Moroccan holdout. Upstream CCPD test folders are remapped
+to development, Open Images has no OCR truth here, and a future source-disjoint
+Moroccan evaluation remains mandatory.
+
 ## Optional consented labelled smoke
 
 `colab_smoke.py` accepts only consented development rows, verifies every input
@@ -132,7 +151,8 @@ python -m unittest -v \
   tests/Python/test_vehicle_plate_protocol.py \
   tests/Python/test_vehicle_plate_smoke.py \
   tests/Python/test_vehicle_plate_synthetic.py \
-  tests/Python/test_vehicle_plate_e2_synthetic.py
+  tests/Python/test_vehicle_plate_e2_synthetic.py \
+  tests/Python/test_vehicle_plate_detection_sources.py
 
 python scripts/intelligence/vehicle_plate/build_colab_notebook.py
 python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
