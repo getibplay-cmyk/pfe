@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "moroccan-anpr-e2.3-ma-token-run01",
+  "created_on": "2026-08-25",
+  "status": "synthetic_character_e2_complete_not_qualified",
+  "source_run": {
+    "run_id": "anpr_v2_e23_character_ssdlite_ma_token_seed20260825_run01",
+    "repository_sha": "96ff785c2eec76eb717ff93c52b06dda5883b843",
+    "logical_drive_path": "MyDrive/moroccan-anpr-e23-runs/anpr_v2_e23_character_ssdlite_ma_token_seed20260825_run01",
+    "character_protocol_version": "1.1.0",
+    "trainer_version": "1.1.0",
+    "architecture": "torchvision_ssdlite320_mobilenet_v3_large",
+    "gpu": "Tesla T4",
+    "torch": "2.11.0+cu128",
+    "torchvision": "0.26.0+cu128"
+  },
+  "change_under_test": {
+    "description": "Detect the regulatory MA sign as one semantic visual token instead of two tiny M and A marker boxes.",
+    "foreground_classes_before": 40,
+    "foreground_classes_after": 41,
+    "latin_series_m_and_a_remain_individual_classes": true,
+    "score_threshold_before": 0.45,
+    "score_threshold_after": 0.45,
+    "architecture_changed": false,
+    "grammar_relaxed": false
+  },
+  "dataset": {
+    "synthetic_only": true,
+    "seed": 20260825,
+    "groups": 1536,
+    "images": 4608,
+    "character_boxes": 40524,
+    "foreground_classes": 41,
+    "split_image_counts": {
+      "train": 3072,
+      "validation": 768,
+      "calibration": 768
+    },
+    "format_group_counts": {
+      "legacy_arabic": 768,
+      "unified_2026_arabic_latin": 768
+    },
+    "test_rows": 0,
+    "contains_real_vehicle_data": false
+  },
+  "training": {
+    "epochs": 12,
+    "batch_size": 16,
+    "learning_rate": 0.0005,
+    "weight_decay": 0.0001,
+    "score_threshold": 0.45,
+    "selection_order": [
+      "worst_format_validation_exact",
+      "aggregate_validation_exact",
+      "validation_cer"
+    ],
+    "calibration_used_for_selection": false,
+    "selected_epoch": 3,
+    "epoch_summaries": [
+      {
+        "epoch": 1,
+        "train_loss": 3.771247065626085,
+        "character_precision_iou50": 0.987290289781393,
+        "character_recall_iou50": 0.8631111111111112,
+        "full_plate_exact": 0.41015625,
+        "legacy_arabic_exact": 0.5078125,
+        "unified_2026_arabic_latin_exact": 0.3125,
+        "cer": 0.4381484437350359
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.3645268621233602,
+        "character_precision_iou50": 1.0,
+        "character_recall_iou50": 0.9951111111111111,
+        "full_plate_exact": 0.95703125,
+        "legacy_arabic_exact": 0.9296875,
+        "unified_2026_arabic_latin_exact": 0.984375,
+        "cer": 0.03910614525139665
+      },
+      {
+        "epoch": 3,
+        "train_loss": 0.24107231106609106,
+        "character_precision_iou50": 1.0,
+        "character_recall_iou50": 1.0,
+        "full_plate_exact": 1.0,
+        "legacy_arabic_exact": 1.0,
+        "unified_2026_arabic_latin_exact": 1.0,
+        "cer": 0.0
+      }
+    ]
+  },
+  "selected_metrics": {
+    "validation_clean": {
+      "sample_count": 256,
+      "character_precision_iou50": 1.0,
+      "character_recall_iou50": 1.0,
+      "full_plate_exact": 1.0,
+      "cer": 0.0,
+      "selective_coverage": 1.0,
+      "legacy_arabic_exact": 1.0,
+      "unified_2026_arabic_latin_exact": 1.0,
+      "latency_ms_per_crop_median": 16.091338468726235,
+      "latency_ms_per_crop_p95": 25.18145125003457,
+      "rejection_reasons": {}
+    },
+    "calibration_clean": {
+      "sample_count": 256,
+      "character_precision_iou50": 1.0,
+      "character_recall_iou50": 0.999113867966327,
+      "full_plate_exact": 0.9921875,
+      "cer": 0.007560684440907282,
+      "selective_coverage": 0.9921875,
+      "legacy_arabic_exact": 0.9921875,
+      "unified_2026_arabic_latin_exact": 0.9921875,
+      "latency_ms_per_crop_median": 12.46978728124759,
+      "latency_ms_per_crop_p95": 21.668749187483627,
+      "rejection_reasons": {
+        "expected_exactly_two_digit_clusters": 2
+      }
+    }
+  },
+  "artifact_hashes": {
+    "E2_CHARACTER_COMPLETE.json": "07dbcd782202340157dee0d10778acfced00eb12aea2f982d06b0270684d3b96",
+    "checkpoints/character_detector_ssdlite320.pt": "a5872c10be18a1abf6b365c01ee53b42142c69e53c8afcb138b4a2c6ef461343",
+    "runtime-pip-freeze.txt": "3f19072d14d0f03ed64a58c3ab31ea6268bef1f2991330f6c602ad72c6d53fe0",
+    "training_history.json": "390dec7025487ab1165eaf2968e448450de14fa7765227183df3175db441b559"
+  },
+  "finding": {
+    "e22_failure_signature_removed": true,
+    "unified_ma_marker_missing_or_ambiguous_at_selected_epoch": 0,
+    "interpretation": "The E2.2 unified-format collapse was caused by the split marker annotation, not by a need to lower the score threshold or relax the plate grammar."
+  },
+  "claims": {
+    "synthetic_only": true,
+    "qualification_claim": false,
+    "real_photo_accuracy_claim": false,
+    "full_vehicle_plate_detector_evaluated": false,
+    "end_to_end_anpr_evaluated": false,
+    "final_test_opened": false,
+    "replacement_of_paddleocr_allowed": false,
+    "saas_integration_allowed": false
+  }
+}

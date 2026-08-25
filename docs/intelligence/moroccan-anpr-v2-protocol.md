@@ -108,6 +108,19 @@ caractère v1.1 corrige l'unité d'annotation : le signe réglementaire `MA` est
 détecté comme un token unique, plus grand et non ambigu, sans abaisser le seuil
 de score `0,45`, sans inventer de caractère et sans ouvrir le test final.
 
+Résultat E2.3 run 01 : le changement d'unité d'annotation est confirmé sans
+autre modification d'architecture, de seuil ou de grammaire. L'époque 3 atteint
+100 % d'exact-match sur les 128 plaques historiques et les 128 plaques unifiées
+de validation propre, avec 100 % de précision et de rappel caractère IoU50. La
+calibration propre, exclue de la sélection, atteint 127/128 sur chacun des deux
+formats, soit 254/256 (99,21875 %), avec deux abstentions
+`expected_exactly_two_digit_clusters`. Les quatre artefacts du run sont scellés
+par SHA-256 dans
+`docs/intelligence/evidence/moroccan-anpr-e2.3-ma-token-run01.json`. Ces scores
+restent synthétiques : le détecteur de plaque pleine image, les photos réelles et
+le test final indépendant n'ont pas été évalués, et l'intégration SaaS reste
+interdite.
+
 ## Séparation
 
 - groupes par véhicule ou scène source, jamais par crop;
