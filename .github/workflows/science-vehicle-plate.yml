@@ -41,6 +41,7 @@ jobs:
           python -m py_compile \
             scripts/intelligence/vehicle_plate/protocol.py \
             scripts/intelligence/vehicle_plate/colab_smoke.py \
+            scripts/intelligence/vehicle_plate/paddle_ocr_worker.py \
             scripts/intelligence/vehicle_plate/build_colab_notebook.py
           python -m json.tool \
             scripts/intelligence/vehicle_plate/colab_cells.json \

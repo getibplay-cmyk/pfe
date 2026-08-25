@@ -24,6 +24,7 @@
     "package_version": "3.7.0",
     "model": "arabic_PP-OCRv5_mobile_rec",
     "model_language": "ar",
+    "runtime": "isolated_gpu_process_and_virtual_environment",
     "specialized_fine_tuning_required_before_release": true
   },
   "formats": [
@@ -80,6 +81,7 @@
     "unlicensed_or_unconsented_images",
     "synthetic_data_as_independent_test",
     "generative_super_resolution_or_inpainting",
+    "pytorch_and_paddle_gpu_packages_in_same_python_environment",
     "preprocessing_variants_counted_as_independent_views",
     "automatic_vehicle_record_mutation",
     "automatic_contract_payment_or_sanction"

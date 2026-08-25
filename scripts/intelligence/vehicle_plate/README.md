@@ -23,14 +23,20 @@ Open `notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb`, select a GPU, and
 run the cells in order. The notebook:
 
 1. checks out `science/moroccan-anpr-v2`;
-2. installs the CUDA-specific official PaddlePaddle 3.3.0 wheel and PaddleOCR
-   3.7.0;
+2. creates a dedicated OCR virtual environment, then installs the official
+   CUDA-specific PaddlePaddle 3.3.0 wheel and PaddleOCR 3.7.0 inside it;
 3. verifies the private v1.2 detector checkpoint against its frozen selection;
 4. draws at most 24 deterministic images from an admitted, already-consumed
    development archive;
 5. runs detection, conservative crop variants, geometric rectification and
    the Arabic PP-OCRv5 recognizer;
 6. writes private predictions and an aggregate smoke report to Drive.
+
+PyTorch remains in Colab's system interpreter. PaddleOCR runs later in a
+separate process using the isolated virtual environment. This is a correctness
+guard: current Colab PyTorch and Paddle GPU wheels pin different cuDNN,
+cuSPARSELt and NCCL versions. Both stages still use the T4, but the detector
+model is released before the OCR process starts.
 
 The default source has no OCR transcript labels, so the first run validates the
 pipeline but does not estimate accuracy. It never opens the future final test.
@@ -59,6 +65,7 @@ python scripts/intelligence/vehicle_plate/colab_smoke.py \
   --labels /content/drive/MyDrive/private/anpr-smoke-labels.csv \
   --checkpoint /content/anpr_detector_v1.2.0.pt \
   --selection /content/drive/MyDrive/private/model-selection.json \
+  --ocr-python /content/venvs/rentfleet-paddleocr-v2/bin/python \
   --output-dir /content/drive/MyDrive/private/anpr-smoke-run-02
 ```
 

@@ -8,6 +8,8 @@ from pathlib import Path
 
 from scripts.intelligence.vehicle_plate.colab_smoke import (
     EXPECTED_DETECTOR,
+    OCR_MODEL_NAME,
+    OCR_WORKER_SCHEMA_VERSION,
     aggregate_smoke_metrics,
     box_iou,
     discover_images,
@@ -16,6 +18,7 @@ from scripts.intelligence.vehicle_plate.colab_smoke import (
     load_bilingual_mapping,
     load_detector_selection,
     load_smoke_labels,
+    validate_ocr_worker_payload,
     verify_checkpoint,
 )
 from scripts.intelligence.vehicle_plate.protocol import ProtocolError, file_sha256
@@ -117,6 +120,41 @@ class VehiclePlateSmokeTest(unittest.TestCase):
 
     def test_extracts_documented_paddleocr_json_shape(self):
         self.assertEqual(("12345 أ 7", 0.98), extract_ocr_result(FakeOcrResult()))
+
+    def test_accepts_closed_isolated_ocr_worker_contract(self):
+        payload = {
+            "schema_version": OCR_WORKER_SCHEMA_VERSION,
+            "model_name": OCR_MODEL_NAME,
+            "count": 1,
+            "results": [{"crop_id": "crop-00000", "raw_text": "12345 أ 7", "score": 0.98}],
+            "timings_seconds": {"ocr_load": 1.5, "ocr_inference_total": 0.2},
+            "environment": {
+                "isolated_process": True,
+                "device": "gpu:0",
+                "paddle_cuda_compiled": True,
+            },
+        }
+        results = validate_ocr_worker_payload(payload, ["crop-00000"])
+        self.assertEqual("12345 أ 7", results["crop-00000"]["raw_text"])
+
+    def test_rejects_incomplete_or_non_isolated_ocr_worker_contract(self):
+        payload = {
+            "schema_version": OCR_WORKER_SCHEMA_VERSION,
+            "model_name": OCR_MODEL_NAME,
+            "count": 0,
+            "results": [],
+            "timings_seconds": {"ocr_load": 1.0, "ocr_inference_total": 0.0},
+            "environment": {
+                "isolated_process": False,
+                "device": "gpu:0",
+                "paddle_cuda_compiled": True,
+            },
+        }
+        with self.assertRaisesRegex(ProtocolError, "isolation"):
+            validate_ocr_worker_payload(payload, [])
+        payload["environment"]["isolated_process"] = True
+        with self.assertRaisesRegex(ProtocolError, "exactement un résultat"):
+            validate_ocr_worker_payload(payload, ["crop-00000"])
 
     def test_aggregate_metrics_counts_abstention_as_end_to_end_error(self):
         metrics = aggregate_smoke_metrics(

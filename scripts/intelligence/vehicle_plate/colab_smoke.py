@@ -10,12 +10,16 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gc
 import json
 import math
+import os
 import platform
 import re
 import statistics
+import subprocess
 import sys
+import tempfile
 import time
 from collections import defaultdict
 from dataclasses import asdict, dataclass
@@ -44,6 +48,7 @@ DEVELOPMENT_SPLITS = frozenset({"train", "validation", "calibration"})
 EXPECTED_DETECTOR = "fasterrcnn_resnet50_fpn_v2_multidomain_v1.2.0"
 EXPECTED_ARCHITECTURE = "fasterrcnn_resnet50_fpn_v2"
 OCR_MODEL_NAME = "arabic_PP-OCRv5_mobile_rec"
+OCR_WORKER_SCHEMA_VERSION = "1.0.0"
 SMOKE_VERSION = "2.0.0"
 
 
@@ -298,6 +303,65 @@ def extract_ocr_result(result: Any) -> tuple[str, float]:
     return text, score
 
 
+def validate_ocr_worker_payload(
+    payload: Mapping[str, Any], expected_crop_ids: Sequence[str]
+) -> dict[str, dict[str, Any]]:
+    """Validate the closed JSON contract returned by the isolated OCR process."""
+
+    if payload.get("schema_version") != OCR_WORKER_SCHEMA_VERSION:
+        raise ProtocolError("Version de sortie du worker OCR inattendue.")
+    if payload.get("model_name") != OCR_MODEL_NAME:
+        raise ProtocolError("Modèle inattendu dans la sortie du worker OCR.")
+    rows = payload.get("results")
+    if not isinstance(rows, list):
+        raise ProtocolError("Sortie du worker OCR sans liste de résultats.")
+    expected = list(expected_crop_ids)
+    if len(expected) != len(set(expected)):
+        raise ProtocolError("Identifiants de crops attendus dupliqués.")
+    validated: dict[str, dict[str, Any]] = {}
+    for index, row in enumerate(rows):
+        if not isinstance(row, Mapping):
+            raise ProtocolError(f"Résultat OCR {index}: objet attendu.")
+        crop_id = str(row.get("crop_id", ""))
+        if not crop_id or crop_id in validated:
+            raise ProtocolError(f"Résultat OCR {index}: identifiant absent ou dupliqué.")
+        try:
+            score = float(row.get("score"))
+        except (TypeError, ValueError) as error:
+            raise ProtocolError(f"Résultat OCR {index}: score invalide.") from error
+        if not math.isfinite(score) or not 0.0 <= score <= 1.0:
+            raise ProtocolError(f"Résultat OCR {index}: score hors domaine [0,1].")
+        validated[crop_id] = {
+            "crop_id": crop_id,
+            "raw_text": str(row.get("raw_text", "")),
+            "score": score,
+        }
+    if set(validated) != set(expected):
+        raise ProtocolError("Le worker OCR n'a pas retourné exactement un résultat par crop.")
+    try:
+        declared_count = int(payload.get("count"))
+    except (TypeError, ValueError) as error:
+        raise ProtocolError("Compteur du worker OCR invalide.") from error
+    if declared_count != len(expected):
+        raise ProtocolError("Compteur du worker OCR incohérent.")
+    timings = payload.get("timings_seconds")
+    environment = payload.get("environment")
+    if not isinstance(timings, Mapping) or not isinstance(environment, Mapping):
+        raise ProtocolError("Métadonnées du worker OCR absentes.")
+    for key in ("ocr_load", "ocr_inference_total"):
+        try:
+            value = float(timings[key])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ProtocolError(f"Durée {key!r} du worker OCR invalide.") from error
+        if not math.isfinite(value) or value < 0.0:
+            raise ProtocolError(f"Durée {key!r} du worker OCR hors domaine.")
+    if environment.get("isolated_process") is not True:
+        raise ProtocolError("Le worker OCR n'atteste pas l'isolation du processus.")
+    if environment.get("device") != "gpu:0" or environment.get("paddle_cuda_compiled") is not True:
+        raise ProtocolError("Le worker OCR n'atteste pas l'exécution CUDA gpu:0.")
+    return validated
+
+
 def _json_safe(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {str(key): _json_safe(item) for key, item in value.items()}
@@ -508,17 +572,9 @@ def _crop_variants(image: Any, detection: Detection) -> list[tuple[str, Any]]:
     return variants
 
 
-def _create_ocr(device: str):
-    from paddleocr import TextRecognition
-
-    return TextRecognition(model_name=OCR_MODEL_NAME, device=device)
-
-
-def _environment() -> dict[str, Any]:
+def _detector_environment() -> dict[str, Any]:
     import cv2
     import numpy
-    import paddle
-    import paddleocr
     import PIL
     import torch
     import torchvision
@@ -528,31 +584,110 @@ def _environment() -> dict[str, Any]:
         "torch": torch.__version__,
         "torchvision": torchvision.__version__,
         "torch_cuda": torch.version.cuda,
-        "paddle": paddle.__version__,
-        "paddleocr": paddleocr.__version__,
         "opencv": cv2.__version__,
         "numpy": numpy.__version__,
         "pillow": PIL.__version__,
         "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+        "process_role": "detector",
     }
 
 
+def _run_isolated_ocr(
+    pending_ocr: Sequence[dict[str, Any]],
+    ocr_python: Path,
+    batch_size: int,
+    timeout_seconds: int,
+) -> tuple[dict[str, dict[str, Any]], Mapping[str, Any], Mapping[str, Any]]:
+    worker = Path(__file__).with_name("paddle_ocr_worker.py").resolve()
+    if not worker.is_file():
+        raise ProtocolError("Worker PaddleOCR absent du dépôt.")
+    if not ocr_python.is_file():
+        raise ProtocolError("Interpréteur OCR isolé absent.")
+    if ocr_python.resolve() == Path(sys.executable).resolve():
+        raise ProtocolError("L'OCR Paddle doit utiliser un interpréteur distinct de PyTorch.")
+
+    with tempfile.TemporaryDirectory(prefix="rentfleet-anpr-ocr-") as directory:
+        root = Path(directory)
+        crop_root = root / "crops"
+        crop_root.mkdir()
+        manifest_rows: list[dict[str, str]] = []
+        expected_ids: list[str] = []
+        for index, item in enumerate(pending_ocr):
+            crop_id = f"crop-{index:05d}"
+            relative_name = f"{crop_id}.png"
+            image = item.pop("image")
+            image.save(crop_root / relative_name, format="PNG")
+            item["crop_id"] = crop_id
+            expected_ids.append(crop_id)
+            manifest_rows.append({"crop_id": crop_id, "image_path": relative_name})
+
+        manifest_path = root / "manifest.json"
+        result_path = root / "result.json"
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": OCR_WORKER_SCHEMA_VERSION,
+                    "model_name": OCR_MODEL_NAME,
+                    "batch_size": batch_size,
+                    "crops": manifest_rows,
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        environment = os.environ.copy()
+        environment["PADDLE_PDX_MODEL_SOURCE"] = "BOS"
+        try:
+            completed = subprocess.run(
+                [
+                    str(ocr_python),
+                    str(worker),
+                    "--manifest",
+                    str(manifest_path),
+                    "--crop-root",
+                    str(crop_root),
+                    "--output",
+                    str(result_path),
+                ],
+                cwd=REPOSITORY_ROOT,
+                env=environment,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise ProtocolError("Le worker OCR isolé a dépassé son délai.") from error
+        if completed.returncode != 0:
+            diagnostic = (completed.stderr or completed.stdout or "").strip()[-2000:]
+            raise ProtocolError(
+                f"Le worker OCR isolé a échoué (code {completed.returncode}): {diagnostic}"
+            )
+        if not result_path.is_file():
+            raise ProtocolError("Le worker OCR n'a pas produit son contrat JSON.")
+        payload = read_json(result_path)
+        results = validate_ocr_worker_payload(payload, expected_ids)
+        return results, payload["timings_seconds"], payload["environment"]
+
+
 def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
-    import numpy as np
-    import paddle
     import torch
     from PIL import Image, ImageFile
 
     ImageFile.LOAD_TRUNCATED_IMAGES = False
     if not torch.cuda.is_available():
         raise RuntimeError("GPU Torch absent: activez un runtime GPU Colab.")
-    if not paddle.is_compiled_with_cuda() or paddle.device.cuda.device_count() < 1:
-        raise RuntimeError("GPU Paddle absent: vérifiez le wheel CUDA installé.")
 
     input_root = Path(args.input_dir).resolve()
     checkpoint_path = Path(args.checkpoint).resolve()
     selection_path = Path(args.selection).resolve()
+    ocr_python = Path(args.ocr_python).resolve()
     output = Path(args.output_dir).resolve()
+    if not 60 <= int(args.ocr_timeout_seconds) <= 3600:
+        raise ProtocolError("Délai OCR hors limites [60,3600] secondes.")
     output.mkdir(parents=True, exist_ok=True)
     private_predictions_path = output / "PRIVATE_predictions.jsonl"
     if private_predictions_path.exists():
@@ -619,46 +754,44 @@ def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
                         "quality_passed": (
                             not detection.ambiguous and crop.width >= 80 and crop.height >= 20
                         ),
-                        "image": np.ascontiguousarray(np.asarray(crop)[:, :, ::-1]),
+                        "image": crop,
                     }
                 )
         image_records.append(record)
 
     del detector
+    gc.collect()
     torch.cuda.empty_cache()
 
-    ocr_started = time.perf_counter()
-    ocr = _create_ocr("gpu:0")
-    ocr_load_seconds = time.perf_counter() - ocr_started
-    ocr_seconds = 0.0
     batch_size = max(1, min(int(args.ocr_batch_size), 16))
-    for offset in range(0, len(pending_ocr), batch_size):
-        batch = pending_ocr[offset : offset + batch_size]
-        tick = time.perf_counter()
-        outputs = ocr.predict(input=[item["image"] for item in batch], batch_size=len(batch))
-        ocr_seconds += time.perf_counter() - tick
-        if len(outputs) != len(batch):
-            raise ProtocolError("PaddleOCR n'a pas retourné un résultat par crop.")
-        for item, result in zip(batch, outputs, strict=True):
-            raw_text, score = extract_ocr_result(result)
-            parsed = parse_plate_text(
-                raw_text,
-                bilingual_mapping=mapping,
-                require_verified_bilingual=True,
-            )
-            item["record"]["ocr_candidates"].append(
-                {
-                    "view_id": item["view_id"],
-                    "variant_id": item["variant_id"],
-                    "raw_text": raw_text,
-                    "ocr_confidence": score,
-                    "detector_confidence": item["detector_confidence"],
-                    "quality_passed": item["quality_passed"],
-                    "canonical": parsed.canonical,
-                    "parse_valid": parsed.valid,
-                    "parse_reasons": list(parsed.reasons),
-                }
-            )
+    ocr_results, ocr_timings, ocr_environment = _run_isolated_ocr(
+        pending_ocr,
+        ocr_python,
+        batch_size,
+        int(args.ocr_timeout_seconds),
+    )
+    for item in pending_ocr:
+        result = ocr_results[str(item["crop_id"])]
+        raw_text = str(result["raw_text"])
+        score = float(result["score"])
+        parsed = parse_plate_text(
+            raw_text,
+            bilingual_mapping=mapping,
+            require_verified_bilingual=True,
+        )
+        item["record"]["ocr_candidates"].append(
+            {
+                "view_id": item["view_id"],
+                "variant_id": item["variant_id"],
+                "raw_text": raw_text,
+                "ocr_confidence": score,
+                "detector_confidence": item["detector_confidence"],
+                "quality_passed": item["quality_passed"],
+                "canonical": parsed.canonical,
+                "parse_valid": parsed.valid,
+                "parse_reasons": list(parsed.reasons),
+            }
+        )
 
     grouped_records: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in image_records:
@@ -735,6 +868,8 @@ def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
         "ocr": {
             "model_name": OCR_MODEL_NAME,
             "bilingual_mapping_verified": mapping is not None,
+            "runtime_isolated": True,
+            "device": "gpu:0",
         },
         "counts": {
             "images": len(images),
@@ -745,11 +880,15 @@ def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
         "timings_seconds": {
             "detector_load": detector_load_seconds,
             "detector_inference_total": detector_seconds,
-            "ocr_load": ocr_load_seconds,
-            "ocr_inference_total": ocr_seconds,
+            "ocr_load": float(ocr_timings["ocr_load"]),
+            "ocr_inference_total": float(ocr_timings["ocr_inference_total"]),
             "wall_total": time.perf_counter() - started,
         },
-        "environment": _environment(),
+        "environment": {
+            "detector_process": _detector_environment(),
+            "ocr_process": _json_safe(ocr_environment),
+            "separate_python_environments": True,
+        },
         "privacy": {
             "predictions_file": private_predictions_path.name,
             "predictions_must_remain_private": True,
@@ -769,11 +908,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--input-dir", required=True)
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--selection", required=True)
+    parser.add_argument("--ocr-python", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--labels")
     parser.add_argument("--series-mapping")
     parser.add_argument("--max-images", type=int, default=24)
     parser.add_argument("--ocr-batch-size", type=int, default=8)
+    parser.add_argument("--ocr-timeout-seconds", type=int, default=900)
     return parser
 
 

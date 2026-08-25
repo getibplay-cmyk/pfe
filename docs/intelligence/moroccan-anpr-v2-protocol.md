@@ -39,6 +39,13 @@ métrique RentFleet ni une précision de plaque complète. Le dictionnaire offic
 contient chiffres, lettres latines et caractères arabes, ce qui permet un
 baseline pertinent avant spécialisation.
 
+Sur Colab, PyTorch et PaddlePaddle GPU sont installés dans deux environnements
+Python distincts et exécutés dans deux processus successifs. Ce cloisonnement
+est bloquant : les distributions GPU observées le 25 août 2026 imposent des
+versions différentes de cuDNN, cuSPARSELt et NCCL. Les crops intermédiaires sont
+des fichiers temporaires locaux, supprimés à la fin du worker OCR; aucun
+matricule n'est envoyé sur la console.
+
 ## Sources et gouvernance
 
 | Source | Usage autorisé | Statut |
@@ -127,7 +134,9 @@ Le smoke public est généré depuis `colab_cells.json` et ne contient aucune
 sortie. Il utilise un petit échantillon déterministe d'une source de
 développement déjà vue. Il mesure le fonctionnement et la latence; sans CSV
 annoté, les métriques d'exactitude restent nulles. Tous les matricules et
-prédictions restent dans `PRIVATE_predictions.jsonl` sur Drive.
+prédictions restent dans `PRIVATE_predictions.jsonl` sur Drive. Le smoke exige
+que `pip check` soit vert à la fois dans l'interpréteur PyTorch système et dans
+le venv PaddleOCR isolé.
 
 ## Conditions d'intégration SaaS
 
