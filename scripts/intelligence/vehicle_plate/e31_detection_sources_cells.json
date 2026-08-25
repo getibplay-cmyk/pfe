@@ -104,7 +104,7 @@
         "LOCAL_BUNDLE = Path('/content/anpr-e31-ccpd-detection-bundle')\n",
         "assert not LOCAL_BUNDLE.exists()\n",
         "prepare_command = [\n",
-        "    sys.executable, str(REPO_DIR / 'scripts/intelligence/vehicle_plate/detection_sources.py'),\n",
+        "    sys.executable, '-m', 'scripts.intelligence.vehicle_plate.detection_sources',\n",
         "    'ccpd', '--input-root', str(CCPD_EXTRACTED), '--output-dir', str(LOCAL_BUNDLE),\n",
         "    '--license', str(CCPD_REPO / 'LICENSE'), '--seed', str(SEED),\n",
         "    '--maximum-per-partition', str(MAXIMUM_PER_CCPD_PARTITION),\n",

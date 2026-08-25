@@ -26,6 +26,30 @@ def ccpd_name(index: int) -> str:
 
 
 class DetectionSourceContractTest(unittest.TestCase):
+    def test_colab_invokes_detection_source_as_package_module(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        cells_path = (
+            repository_root
+            / "scripts/intelligence/vehicle_plate/e31_detection_sources_cells.json"
+        )
+        cells = json.loads(cells_path.read_text(encoding="utf-8"))["cells"]
+        source = "".join(
+            line
+            for cell in cells
+            if cell["cell_type"] == "code"
+            for line in cell["source"]
+        )
+        self.assertIn(
+            "sys.executable, '-m', "
+            "'scripts.intelligence.vehicle_plate.detection_sources'",
+            source,
+        )
+        self.assertNotIn(
+            "    sys.executable, str(REPO_DIR / "
+            "'scripts/intelligence/vehicle_plate/detection_sources.py')",
+            source,
+        )
+
     def test_ccpd_parser_reads_geometry_and_ignores_sequence(self):
         parsed = parse_ccpd_filename(ccpd_name(16))
         self.assertEqual((10, 10, 50, 30), (
