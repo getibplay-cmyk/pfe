@@ -1,0 +1,238 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "moroccan-anpr-public-source-registry-v1",
+  "frozen_at": "2026-08-25",
+  "purpose": "public_research_metadata_and_e22_synthetic_allowlist",
+  "qualification_claim": false,
+  "final_test_opened": false,
+  "rules": {
+    "blind_dataset_union_forbidden": true,
+    "exact_sha256_deduplication_required": true,
+    "perceptual_near_duplicate_review_required": true,
+    "source_and_scene_group_split_required": true,
+    "original_images_only_for_split_counts": true,
+    "upstream_test_partitions_are_remapped_to_development_validation": true,
+    "detection_boxes_are_not_ocr_truth": true,
+    "independent_evidence_requires_a_future_source_disjoint_moroccan_holdout": true
+  },
+  "sources": [
+    {
+      "source_id": "synthetic_moroccan_plate_ofl_v2",
+      "title": "Deterministic Moroccan plate synthesis with Noto fonts",
+      "canonical_url": "https://github.com/notofonts/arabic/releases/tag/NotoSansArabic-v2.013",
+      "license_id": "SYNTHETIC-OFL-1.1",
+      "public_status": "used_by_e22_synthetic",
+      "e22_training_enabled": true,
+      "e22_allowed_tasks": [
+        "character_detection",
+        "plate_recognition"
+      ],
+      "independent_evidence_allowed": false,
+      "notes": [
+        "Covers all 15 official Arabic/Latin series pairs, digits and the MA marker.",
+        "Synthetic scores are mechanics evidence only and never real-photo qualification evidence."
+      ]
+    },
+    {
+      "source_id": "ccpd_official_mit",
+      "title": "CCPD (Chinese City Parking Dataset)",
+      "canonical_url": "https://github.com/detectRecog/CCPD",
+      "license_id": "MIT",
+      "public_status": "researched_not_imported",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "public_candidate_roles": [
+        "plate_detection_development"
+      ],
+      "independent_evidence_allowed": false,
+      "observed_scale": "more_than_300000_images",
+      "required_import_gates": [
+        "download_from_an_official_link_listed_by_the_canonical_repository",
+        "retain_original_filename_annotations",
+        "use_only_a_deterministic_development_subset",
+        "do_not_treat_chinese_sequence_labels_as_moroccan_ocr_truth"
+      ],
+      "notes": [
+        "Useful for generic blur, tilt, rotation and plate-localization robustness.",
+        "The first sequence symbol is Chinese; it must not be used as Moroccan OCR truth."
+      ]
+    },
+    {
+      "source_id": "roboflow_naima_moroccan_plate_detection_v4",
+      "title": "moroccan license plate detection by Naima El Menani",
+      "canonical_url": "https://universe.roboflow.com/naima-el-menani/moroccan-license-plate-detection/dataset/4",
+      "license_id": "CC-BY-4.0",
+      "public_status": "researched_not_imported",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "observed_original_project_images": 2588,
+      "observed_classes": [
+        "LP"
+      ],
+      "required_import_gates": [
+        "export_unaugmented_originals",
+        "recover_origin_and_collection_description",
+        "cross_source_sha256_and_perceptual_deduplication",
+        "verify_no_fork_overlap_with_other_public_moroccan_sources"
+      ],
+      "notes": [
+        "Detection boxes only; it cannot train the character recognizer.",
+        "Several public projects show suspiciously similar counts, so lineage must be resolved before training."
+      ]
+    },
+    {
+      "source_id": "roboflow_smarttechinnov_read_plate_v2",
+      "title": "read license plate v2 by SmartTechInnov",
+      "canonical_url": "https://universe.roboflow.com/smarttechinnov/read-license-plate-1w2dp/dataset/2",
+      "license_id": "CC-BY-4.0",
+      "public_status": "researched_not_imported",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "observed_version_images": 718,
+      "observed_split": {
+        "train": 428,
+        "validation": 147,
+        "upstream_test_remapped_to_development_validation": 143
+      },
+      "observed_classes": [
+        "-",
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "a",
+        "b",
+        "ch",
+        "d",
+        "h",
+        "t",
+        "w",
+        "waw",
+        "y"
+      ],
+      "required_import_gates": [
+        "recover_origin_and_collection_description",
+        "manually_verify_every_transliteration_to_unicode_mapping",
+        "exclude_separator_class_from_the_character_alphabet",
+        "cross_source_sha256_and_perceptual_deduplication"
+      ],
+      "notes": [
+        "Version 2 has no declared preprocessing or augmentation and is preferred over augmented version 3.",
+        "The class set is legacy and incomplete for the 15 official bilingual series pairs."
+      ]
+    },
+    {
+      "source_id": "roboflow_egyptian_plate_public_domain_v1",
+      "title": "Egyptian License Plate Dataset by catsAndDogs",
+      "canonical_url": "https://universe.roboflow.com/catsanddogs-rml3f/egyptian-license-plate-dataset-jkyv8",
+      "license_id": "Public-Domain-claimed",
+      "public_status": "researched_not_imported",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "observed_project_images": 2095,
+      "observed_classes_count": 79,
+      "required_import_gates": [
+        "prove_original_image_and_annotation_lineage",
+        "collapse_duplicate_unicode_and_transliteration_classes_by_reviewed_map",
+        "remove_eastern_arabic_digit_duplicates_or_map_them_explicitly",
+        "cross_source_sha256_and_perceptual_deduplication"
+      ],
+      "notes": [
+        "Potentially useful because it exposes Unicode Arabic character boxes, but its 79-class ontology contains duplicates and malformed labels."
+      ]
+    },
+    {
+      "source_id": "roboflow_egyptian_characters_marwanswork_v1",
+      "title": "egyptian_license_plates_characters by Marwanswork",
+      "canonical_url": "https://universe.roboflow.com/marwanswork/egyptian_license_plates_characters",
+      "license_id": "MIT-claimed",
+      "public_status": "researched_not_imported",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "observed_original_project_images": 260,
+      "observed_classes_count": 30,
+      "required_import_gates": [
+        "prove_original_image_and_annotation_lineage",
+        "manually_verify_transliterated_arabic_class_mapping",
+        "separate_plate_boxes_from_character_boxes",
+        "cross_source_sha256_and_perceptual_deduplication"
+      ],
+      "notes": [
+        "Small but potentially useful for Arabic character-box transfer; a platform licence badge alone is insufficient provenance."
+      ]
+    },
+    {
+      "source_id": "uc3m_lp_16b9768b",
+      "title": "UC3M-LP",
+      "canonical_url": "https://github.com/ramajoballester/UC3M-LP",
+      "revision": "16b9768ba48d59e5f5cc27fb0873f18e6f5644f3",
+      "license_id": "ODbL-1.0-with-added-commercial-contact-restriction",
+      "public_status": "researched_not_imported",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "observed_counts": {
+        "images": 1975,
+        "plates": 2547,
+        "characters": 12757
+      },
+      "required_import_gates": [
+        "obtain_written_commercial_permission_if_saas_use_is_planned",
+        "clarify_individual_image_content_rights",
+        "preserve_odbl_attribution_and_share_alike_obligations"
+      ],
+      "notes": [
+        "Technically strong Latin/digit character boxes, but the repository LICENSE adds a commercial-use contact requirement and says ODbL does not itself license individual image contents."
+      ]
+    },
+    {
+      "source_id": "ufpr_alpr_academic_only",
+      "title": "UFPR-ALPR",
+      "canonical_url": "https://web.inf.ufpr.br/vri/databases/ufpr-alpr/license-agreement/",
+      "license_id": "Academic-NonCommercial",
+      "public_status": "not_used_due_to_public_noncommercial_terms",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "notes": [
+        "Explicitly restricted to academic, non-commercial research and redistribution is forbidden."
+      ]
+    },
+    {
+      "source_id": "iranis_gpl3",
+      "title": "Iranis Persian license plate characters",
+      "canonical_url": "https://github.com/alitourani/Iranis-dataset",
+      "license_id": "GPL-3.0-claimed",
+      "public_status": "not_used_pending_copyleft_compatibility_review",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "notes": [
+        "Useful shared Arabic glyph shapes, but excluded from the SaaS-capable model pending a separate legal compatibility decision."
+      ]
+    },
+    {
+      "source_id": "ir_lpr_gpl3_other",
+      "title": "IR-LPR",
+      "canonical_url": "https://github.com/mut-deep/IR-LPR",
+      "license_id": "GPL-3.0-and-other-licenses",
+      "public_status": "not_used_pending_mixed_license_review",
+      "e22_training_enabled": false,
+      "e22_allowed_tasks": [],
+      "independent_evidence_allowed": false,
+      "notes": [
+        "Mixed or copyleft licensing is not admitted for the deployable model without a dedicated legal review."
+      ]
+    }
+  ]
+}

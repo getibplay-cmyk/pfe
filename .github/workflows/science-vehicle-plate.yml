@@ -43,14 +43,21 @@ jobs:
             scripts/intelligence/vehicle_plate/colab_smoke.py \
             scripts/intelligence/vehicle_plate/paddle_ocr_worker.py \
             scripts/intelligence/vehicle_plate/generate_synthetic_dataset.py \
+            scripts/intelligence/vehicle_plate/character_detector.py \
+            scripts/intelligence/vehicle_plate/generate_character_detection_dataset.py \
             scripts/intelligence/vehicle_plate/e2_synthetic.py \
+            scripts/intelligence/vehicle_plate/e2_character_detector.py \
             scripts/intelligence/vehicle_plate/build_colab_notebook.py \
-            scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
+            scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py \
+            scripts/intelligence/vehicle_plate/build_e2_character_detector_notebook.py
           python -m json.tool \
             scripts/intelligence/vehicle_plate/colab_cells.json \
             >/dev/null
           python -m json.tool \
             scripts/intelligence/vehicle_plate/e2_synthetic_cells.json \
+            >/dev/null
+          python -m json.tool \
+            scripts/intelligence/vehicle_plate/e2_character_detector_cells.json \
             >/dev/null
           python -m json.tool \
             docs/intelligence/protocols/moroccan-anpr-v2.0.0.json \
@@ -65,10 +72,16 @@ jobs:
             docs/intelligence/evidence/moroccan-anpr-um6p-2104.08244-source-audit.json \
             >/dev/null
           python -m json.tool \
+            docs/intelligence/evidence/moroccan-anpr-public-source-registry-v1.json \
+            >/dev/null
+          python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
             >/dev/null
           python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb \
+            >/dev/null
+          python -m json.tool \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb \
             >/dev/null
 
       - name: Verify generated notebook is reproducible and output-free
@@ -78,12 +91,17 @@ jobs:
             "$RUNNER_TEMP/notebook.ipynb"
           cp notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb \
             "$RUNNER_TEMP/e2-notebook.ipynb"
+          cp notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb \
+            "$RUNNER_TEMP/e22-notebook.ipynb"
           python scripts/intelligence/vehicle_plate/build_colab_notebook.py
           python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py
+          python scripts/intelligence/vehicle_plate/build_e2_character_detector_notebook.py
           diff --unified "$RUNNER_TEMP/notebook.ipynb" \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb
           diff --unified "$RUNNER_TEMP/e2-notebook.ipynb" \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb
+          diff --unified "$RUNNER_TEMP/e22-notebook.ipynb" \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb
           python - <<'PY'
           import json
           from pathlib import Path
@@ -91,6 +109,7 @@ jobs:
           for path in (
               Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb"),
               Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_synthetic.ipynb"),
+              Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2_e2_character_detector.ipynb"),
           ):
               notebook = json.loads(path.read_text(encoding="utf-8"))
               code_cells = [
@@ -109,7 +128,8 @@ jobs:
             tests/Python/test_vehicle_plate_protocol.py \
             tests/Python/test_vehicle_plate_smoke.py \
             tests/Python/test_vehicle_plate_synthetic.py \
-            tests/Python/test_vehicle_plate_e2_synthetic.py
+            tests/Python/test_vehicle_plate_e2_synthetic.py \
+            tests/Python/test_vehicle_plate_character_detector.py
 
       - name: Refuse committed private ANPR artifacts
         shell: bash
