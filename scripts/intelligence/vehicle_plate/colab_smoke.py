@@ -52,6 +52,11 @@ OCR_WORKER_SCHEMA_VERSION = "1.0.0"
 SMOKE_VERSION = "2.0.0"
 
 
+def _invocation_path(value: str | os.PathLike[str]) -> Path:
+    """Return an absolute invocation path without dereferencing venv symlinks."""
+    return Path(os.path.abspath(os.fspath(value)))
+
+
 @dataclass(frozen=True)
 class SmokeLabel:
     image_path: str
@@ -603,7 +608,7 @@ def _run_isolated_ocr(
         raise ProtocolError("Worker PaddleOCR absent du dépôt.")
     if not ocr_python.is_file():
         raise ProtocolError("Interpréteur OCR isolé absent.")
-    if ocr_python.resolve() == Path(sys.executable).resolve():
+    if _invocation_path(ocr_python) == _invocation_path(sys.executable):
         raise ProtocolError("L'OCR Paddle doit utiliser un interpréteur distinct de PyTorch.")
 
     with tempfile.TemporaryDirectory(prefix="rentfleet-anpr-ocr-") as directory:
@@ -684,7 +689,7 @@ def run_smoke(args: argparse.Namespace) -> dict[str, Any]:
     input_root = Path(args.input_dir).resolve()
     checkpoint_path = Path(args.checkpoint).resolve()
     selection_path = Path(args.selection).resolve()
-    ocr_python = Path(args.ocr_python).resolve()
+    ocr_python = _invocation_path(args.ocr_python)
     output = Path(args.output_dir).resolve()
     if not 60 <= int(args.ocr_timeout_seconds) <= 3600:
         raise ProtocolError("Délai OCR hors limites [60,3600] secondes.")
