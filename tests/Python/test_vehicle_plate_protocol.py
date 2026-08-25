@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from collections import Counter
@@ -24,6 +25,7 @@ from scripts.intelligence.vehicle_plate.protocol import (
 
 
 SERIES_MAPPING = {"أ": "A", "ب": "B", "د": "D"}
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class VehiclePlateProtocolTest(unittest.TestCase):
@@ -298,6 +300,34 @@ class VehiclePlateProtocolTest(unittest.TestCase):
             write_test_lock(lock, manifest_sha256="a" * 64)
             with self.assertRaisesRegex(ProtocolError, "déjà été évalué"):
                 write_test_lock(lock, manifest_sha256="a" * 64)
+
+    def test_public_source_audits_keep_unqualified_sources_blocked(self):
+        evidence_root = PROJECT_ROOT / "docs/intelligence/evidence"
+        zenodo = json.loads(
+            (evidence_root / "moroccan-anpr-zenodo-17618637-lineage-audit.json")
+            .read_text(encoding="utf-8")
+        )
+        self.assertEqual(261, zenodo["candidate"]["documented_image_count"])
+        self.assertEqual("public_metadata_only", zenodo["independence_review"]["scope"])
+        self.assertTrue(zenodo["publication_scope"]["public_source_facts_only"])
+        self.assertFalse(
+            zenodo["publication_scope"]["private_lineage_metadata_published"]
+        )
+        self.assertFalse(zenodo["decision"]["independent_e4_eligible"])
+        self.assertFalse(zenodo["decision"]["labels_opened_for_this_audit"])
+        self.assertFalse(zenodo["decision"]["saas_integration_allowed"])
+
+        um6p = json.loads(
+            (evidence_root / "moroccan-anpr-um6p-2104.08244-source-audit.json")
+            .read_text(encoding="utf-8")
+        )
+        self.assertTrue(um6p["licence_assessment"]["paper_is_cc_by_4_0"])
+        self.assertFalse(
+            um6p["licence_assessment"]["separate_dataset_archive_licence_proven"]
+        )
+        self.assertFalse(um6p["decision"]["real_ocr_training_eligible"])
+        self.assertTrue(um6p["decision"]["source_remains_quarantined"])
+        self.assertFalse(um6p["decision"]["saas_integration_allowed"])
 
 
 if __name__ == "__main__":

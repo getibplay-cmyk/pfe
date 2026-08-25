@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "moroccan-anpr-um6p-2104.08244-source-audit",
+  "created_on": "2026-08-25",
+  "status": "quarantined_pending_exact_dataset_licence_and_sequence_manifest",
+  "primary_publication": {
+    "title": "Open data for Moroccan license plates for OCR applications : data collection, labeling, and model construction",
+    "url": "https://arxiv.org/abs/2104.08244",
+    "paper_licence": "CC-BY-4.0",
+    "documented_unique_vehicle_images": 705,
+    "documented_tasks": [
+      "plate_detection",
+      "character_detection_and_classification"
+    ],
+    "documented_plate_character_classes": {
+      "total": 17,
+      "digits": 10,
+      "arabic_letters": 7
+    },
+    "original_dataset_page": "https://msda.um6p.ma/msda_datasets"
+  },
+  "public_source_review": {
+    "exact_dataset_archive_licence_proven": false,
+    "plate_level_sequence_manifest_proven": false,
+    "private_or_archive_identifiers_published": false,
+    "interpretation": "The paper licence and a public download do not by themselves prove rights for separately distributed image archives or provide full-plate OCR truth."
+  },
+  "licence_assessment": {
+    "paper_is_cc_by_4_0": true,
+    "separate_dataset_archive_licence_proven": false,
+    "commercial_saas_compatibility_claim": false
+  },
+  "decision": {
+    "real_ocr_training_eligible": false,
+    "independent_test_eligible": false,
+    "source_remains_quarantined": true,
+    "reason": "No exact dataset-archive licence proof or plate-level sequence manifest was established by the public audit.",
+    "manual_transcriptions_may_be_invented": false,
+    "saas_integration_allowed": false
+  },
+  "admission_requirements": [
+    "obtain the original dataset archive with an explicit licence applying to images and annotations",
+    "freeze the archive hash and licence proof in the private evidence register",
+    "verify a plate-level sequence manifest rather than treating character boxes as full-plate OCR truth",
+    "deduplicate by vehicle or scene against every consumed development source",
+    "keep any admitted real OCR development data disjoint from the future final holdout"
+  ],
+  "fallback": {
+    "path": "new_consent_based_private_rentfleet_development_collection",
+    "minimum_controls": [
+      "documented consent and purpose limitation",
+      "private storage and private integrity manifest",
+      "vehicle_or_scene_grouped splits",
+      "Arabic letters, Latin letters and digits represented",
+      "plate detector crop required before recognition",
+      "no full-frame OCR"
+    ]
+  }
+}

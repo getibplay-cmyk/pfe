@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "moroccan-anpr-zenodo-17618637-lineage-audit",
+  "created_on": "2026-08-25",
+  "status": "rejected_as_independent_test_before_annotation_open",
+  "candidate": {
+    "title": "Moroccan ALPR Detector Benchmark - Test Set",
+    "doi": "10.5281/zenodo.17618637",
+    "record_url": "https://zenodo.org/records/17618637",
+    "associated_article_url": "https://link.springer.com/article/10.1007/s10791-026-10332-5",
+    "published_on": "2025-11-15",
+    "documented_image_count": 261,
+    "documented_annotation_format": "Pascal VOC XML",
+    "documented_classes": [
+      "license_plate"
+    ],
+    "associated_primary_article_declares": "CC-BY-4.0",
+    "documented_role": "plate_detection_test_only",
+    "ocr_transcripts_documented": false,
+    "end_to_end_anpr_ground_truth_documented": false
+  },
+  "independence_review": {
+    "scope": "public_metadata_only",
+    "result": "independence_from_rentfleet_development_not_publicly_established",
+    "protocol_action": "Reject conservatively as the independent final test before annotation access."
+  },
+  "publication_scope": {
+    "public_source_facts_only": true,
+    "private_lineage_metadata_published": false
+  },
+  "decision": {
+    "independent_e4_eligible": false,
+    "reason": "Independence from RentFleet development cannot be established from public metadata alone.",
+    "labels_opened_for_this_audit": false,
+    "one_shot_evaluation_started": false,
+    "detector_qualification_claim": false,
+    "ocr_qualification_claim": false,
+    "end_to_end_qualification_claim": false,
+    "final_test_evaluation_count": 0,
+    "saas_integration_allowed": false,
+    "permitted_future_role": "consumed_detection_research_reference_only"
+  },
+  "next_requirement": {
+    "new_postfreeze_source_required": true,
+    "independent_lineage_required": true,
+    "image_only_exact_and_perceptual_audit_before_label_open": true,
+    "one_shot_evaluation_max": 1
+  }
+}
