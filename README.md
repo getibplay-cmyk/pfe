@@ -146,6 +146,15 @@ versionner son bundle privé. Suivre le guide
 pour installer l’artefact exact, préparer Python 3.12 et démarrer le worker
 `intelligence`.
 
+### ANPR marocain v2 — développement scientifique
+
+Le smoke GPU pour détecter puis lire une plaque marocaine est disponible dans
+[`notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb`](notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb).
+Il réutilise le détecteur privé v1.2, ajoute l'OCR arabe, la rectification et
+l'abstention, sans ouvrir le futur test indépendant. Le modèle reste non
+qualifié et n'est pas encore activé dans le SaaS. Voir le
+[`protocole ANPR v2`](docs/intelligence/moroccan-anpr-v2-protocol.md).
+
 ## État du lot 00
 
 - authentification Breeze Blade et connexion disponibles ;

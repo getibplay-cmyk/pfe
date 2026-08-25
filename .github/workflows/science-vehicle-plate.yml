@@ -1,0 +1,92 @@
+name: Science vehicle plate ANPR
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - science/moroccan-anpr-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: science-vehicle-plate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  protocol:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    env:
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONHASHSEED: "20260825"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup frozen Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: 3.12.13
+
+      - name: Validate code and JSON contracts
+        shell: bash
+        run: |
+          python -m py_compile \
+            scripts/intelligence/vehicle_plate/protocol.py \
+            scripts/intelligence/vehicle_plate/colab_smoke.py \
+            scripts/intelligence/vehicle_plate/build_colab_notebook.py
+          python -m json.tool \
+            scripts/intelligence/vehicle_plate/colab_cells.json \
+            >/dev/null
+          python -m json.tool \
+            docs/intelligence/protocols/moroccan-anpr-v2.0.0.json \
+            >/dev/null
+          python -m json.tool \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
+            >/dev/null
+
+      - name: Verify generated notebook is reproducible and output-free
+        shell: bash
+        run: |
+          cp notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
+            "$RUNNER_TEMP/notebook.ipynb"
+          python scripts/intelligence/vehicle_plate/build_colab_notebook.py
+          diff --unified "$RUNNER_TEMP/notebook.ipynb" \
+            notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb")
+          notebook = json.loads(path.read_text(encoding="utf-8"))
+          code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
+          assert code_cells
+          assert all(cell["execution_count"] is None for cell in code_cells)
+          assert all(cell["outputs"] == [] for cell in code_cells)
+          for index, cell in enumerate(code_cells):
+              compile("".join(cell["source"]), f"cell-{index}", "exec")
+          PY
+
+      - name: Test split, licence, OCR and abstention safeguards
+        run: |
+          python -m unittest -v \
+            tests/Python/test_vehicle_plate_protocol.py \
+            tests/Python/test_vehicle_plate_smoke.py
+
+      - name: Refuse committed private ANPR artifacts
+        shell: bash
+        run: |
+          if find scripts/intelligence/vehicle_plate notebooks/colab docs/intelligence \
+            -type f \( -name '*.pt' -o -name '*.pth' -o -name '*.onnx' \
+            -o -name 'PRIVATE_*' -o -name '*.jpg' -o -name '*.jpeg' \) \
+            -print -quit | grep -q .; then
+            echo 'Private ANPR artifact found in the repository.' >&2
+            exit 1
+          fi

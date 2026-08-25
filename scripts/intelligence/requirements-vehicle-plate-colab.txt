@@ -1,0 +1,7 @@
+# PaddlePaddle GPU is installed separately from the official CUDA-specific
+# index after the Colab runtime reports its CUDA generation.
+paddleocr==3.7.0
+
+# Colab imports this dependency but does not always install it. Keeping
+# `pip check` strict catches a broken scientific environment early.
+jedi==0.19.2
