@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "moroccan-anpr-e3.2-detection-transfer-protocol",
+  "frozen_on": "2026-08-26",
+  "status": "preregistered_development_not_executed_not_qualified",
+  "objective": "measure whether balanced CCPD transfer improves cross-domain plate localisation without materially degrading either already-consumed Moroccan development anchor",
+  "architecture": {
+    "name": "torchvision_fasterrcnn_resnet50_fpn_v2",
+    "min_size": 768,
+    "max_size": 1280,
+    "classes_including_background": 2,
+    "initialization": "selected_private_development_checkpoint",
+    "new_torchvision_weights_downloaded": false,
+    "upstream_pretrained_lineage_inherited": true,
+    "upstream_pretrained_lineage_relicensed_by_e32": false,
+    "torchvision_code_license": "BSD-3-Clause"
+  },
+  "training": {
+    "seed": 20260825,
+    "epochs": 3,
+    "batch_size": 1,
+    "gradient_accumulation_steps": 2,
+    "optimizer": "AdamW",
+    "learning_rate": 0.000025,
+    "weight_decay": 0.0001,
+    "mixed_precision": true,
+    "samples_per_source_per_epoch": 1536,
+    "balanced_source_roles": [
+      "already_consumed_primary_moroccan_development",
+      "already_consumed_secondary_moroccan_development",
+      "already_admitted_generic_global_development",
+      "ccpd_official_mit_e31_train"
+    ]
+  },
+  "development_domains": {
+    "selection": [
+      "already_consumed_primary_moroccan_validation",
+      "already_consumed_secondary_moroccan_validation",
+      "ccpd_e31_validation"
+    ],
+    "calibration": [
+      "already_consumed_primary_moroccan_calibration",
+      "already_consumed_secondary_moroccan_calibration",
+      "ccpd_e31_calibration"
+    ],
+    "independent_evidence": false
+  },
+  "selection": {
+    "moroccan_anchor_noninferiority_margin_map50": 0.02,
+    "moroccan_anchor_noninferiority_margin_recall": 0.02,
+    "ranking": [
+      "maximize_worst_domain_map50",
+      "maximize_worst_domain_recall",
+      "maximize_macro_domain_map50"
+    ],
+    "fallback": "retain_the_warm_start_incumbent_if_no_eligible_epoch_improves_the_preregistered_key"
+  },
+  "threshold_calibration": {
+    "grid_minimum": 0.05,
+    "grid_maximum": 0.95,
+    "grid_step": 0.025,
+    "preferred_rule": "maximize_macro_f1_subject_to_recall_at_least_0.95_on_all_three_development_domains",
+    "fallback_rule": "maximize_worst_domain_recall_then_macro_f1"
+  },
+  "public_source": {
+    "source_id": "ccpd_official_mit",
+    "canonical_url": "https://github.com/detectRecog/CCPD",
+    "license_id": "MIT",
+    "role": "inter_domain_plate_detection_development_only",
+    "ocr_sequence_used": false,
+    "moroccan_qualification_allowed": false
+  },
+  "safeguards": {
+    "private_paths_or_ids_in_public_notebook": false,
+    "private_hashes_in_public_protocol": false,
+    "test_split_accepted": false,
+    "future_holdout_downloaded": false,
+    "future_holdout_labels_opened": false,
+    "final_test_evaluation_count": 0,
+    "automatic_vehicle_record_mutation": false,
+    "qualification_claim": false,
+    "saas_integration_allowed": false
+  },
+  "references": [
+    "https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn_v2.html",
+    "https://github.com/pytorch/vision/blob/main/LICENSE",
+    "https://github.com/detectRecog/CCPD"
+  ]
+}
