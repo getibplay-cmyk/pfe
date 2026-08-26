@@ -1,0 +1,159 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "moroccan-anpr-e3.2-detection-transfer-run01",
+  "created_on": "2026-08-26",
+  "status": "balanced_detection_transfer_development_complete_not_qualified",
+  "protocol": {
+    "evidence_id": "moroccan-anpr-e3.2-detection-transfer-protocol",
+    "execution_repository_sha": "ac957bab9d6c63adb52f7833a87e47693d53a77c",
+    "trainer_version": "1.0.0",
+    "seed": 20260825,
+    "architecture": "fasterrcnn_resnet50_fpn_v2",
+    "min_size": 768,
+    "max_size": 1280,
+    "epochs": 3,
+    "batch_size": 1,
+    "gradient_accumulation_steps": 2,
+    "learning_rate": 0.000025,
+    "weight_decay": 0.0001,
+    "samples_per_source_per_epoch": 1536,
+    "new_torchvision_weights_downloaded": false,
+    "upstream_pretrained_lineage_inherited": true
+  },
+  "development_scope": {
+    "independent_evidence": false,
+    "ccpd_official_mit": {
+      "train_images": 6581,
+      "validation_images": 814,
+      "calibration_images": 797,
+      "ocr_sequence_used": false
+    },
+    "private_aggregate_counts": {
+      "training_rows": 7213,
+      "primary_validation_images": 206,
+      "secondary_consumed_validation_images": 84,
+      "primary_calibration_images": 207,
+      "secondary_consumed_calibration_images": 42
+    }
+  },
+  "selection": {
+    "selected": "challenger",
+    "selected_epoch": 1,
+    "reason": "challenger_improves_three_domain_key_and_moroccan_anchors_are_noninferior",
+    "moroccan_noninferiority_margin_map50": 0.02,
+    "moroccan_noninferiority_margin_recall": 0.02,
+    "selected_model_artifact_published": false
+  },
+  "incumbent_validation": {
+    "ccpd_public": {
+      "map50": 0.5700879688323968,
+      "recall": 0.5835380835380836
+    },
+    "moroccan_primary_consumed": {
+      "map50": 0.9982225541448843,
+      "recall": 1.0
+    },
+    "moroccan_secondary_consumed": {
+      "map50": 0.879062178716524,
+      "recall": 0.9186046511627907
+    },
+    "macro_domain_map50": 0.8157909005646017,
+    "worst_domain_map50": 0.5700879688323968,
+    "worst_domain_recall": 0.5835380835380836
+  },
+  "selected_validation": {
+    "score_threshold": 0.001,
+    "ccpd_public": {
+      "images": 814,
+      "map50": 0.9762913722858138,
+      "recall": 0.9815724815724816,
+      "precision": 0.7757281553398059,
+      "f1": 0.8665943600867679
+    },
+    "moroccan_primary_consumed": {
+      "images": 206,
+      "map50": 0.9993758569982095,
+      "recall": 1.0,
+      "precision": 0.7953667953667953,
+      "f1": 0.886021505376344
+    },
+    "moroccan_secondary_consumed": {
+      "images": 84,
+      "map50": 0.9106736543887503,
+      "recall": 0.9186046511627907,
+      "precision": 0.6810344827586207,
+      "f1": 0.7821782178217822
+    },
+    "macro_domain_map50": 0.9621136278909246,
+    "worst_domain_map50": 0.9106736543887503,
+    "worst_domain_recall": 0.9186046511627907
+  },
+  "epoch_summaries": [
+    {
+      "epoch": 1,
+      "train_loss": 0.03658278094106512,
+      "worst_domain_map50": 0.9106736543887503,
+      "worst_domain_recall": 0.9186046511627907,
+      "macro_domain_map50": 0.9621136278909246,
+      "moroccan_anchor_noninferior": true
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.03146720163461699,
+      "worst_domain_map50": 0.9019187068988763,
+      "worst_domain_recall": 0.9186046511627907,
+      "macro_domain_map50": 0.956902421033298,
+      "moroccan_anchor_noninferior": true
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.02785927854226126,
+      "worst_domain_map50": 0.8966790108567838,
+      "worst_domain_recall": 0.9069767441860465,
+      "macro_domain_map50": 0.9557685261197738,
+      "moroccan_anchor_noninferior": true
+    }
+  ],
+  "calibration": {
+    "score_threshold": 0.075,
+    "outcome": "fallback_maximize_worst_domain_recall_then_macro_f1",
+    "moroccan_primary_consumed": {
+      "precision": 0.976303317535545,
+      "recall": 0.9951690821256038,
+      "f1": 0.985645933014354
+    },
+    "moroccan_secondary_consumed": {
+      "precision": 0.88,
+      "recall": 1.0,
+      "f1": 0.9361702127659575
+    },
+    "ccpd_public": {
+      "precision": 0.9737876802096985,
+      "recall": 0.9322459222082811,
+      "f1": 0.9525641025641026
+    },
+    "macro_f1": 0.9581267494481379,
+    "worst_domain_precision": 0.88,
+    "worst_domain_recall": 0.9322459222082811
+  },
+  "integrity": {
+    "sha256sum_verified_artifacts": 9,
+    "sha256sum_verification_passed": true,
+    "private_artifact_hashes_published": false
+  },
+  "public_disclosure": {
+    "private_drive_paths_or_ids_included": false,
+    "private_artifact_hashes_included": false,
+    "private_images_or_labels_included": false,
+    "model_weights_included": false
+  },
+  "claims": {
+    "development_only": true,
+    "independent_moroccan_evidence": false,
+    "moroccan_accuracy_claim": false,
+    "end_to_end_anpr_evaluated": false,
+    "final_test_opened": false,
+    "qualification_claim": false,
+    "saas_integration_allowed": false
+  }
+}

@@ -97,9 +97,8 @@ group, 20 epochs and a T4-safe batch size of 64. It:
 4. measures the official baseline, fine-tunes a synthetic challenger, requires
    at least 90% exact-match per format and rejects any per-format regression
    before applying validation exact-match and the CER tie-break;
-5. copies the immutable result bundle to
-   `RentFleet_PFE/S7_vehicle_vision_assistant/modeles/<RUN_ID>` in private
-   Drive after verifying every SHA-256.
+5. copies the immutable result bundle to an access-controlled private run
+   location after verifying every SHA-256.
 
 `E2_SYNTHETIC_COMPLETE.json` always declares
 `synthetic_e2_complete_not_qualified`, `qualification_claim=false`,
@@ -145,6 +144,38 @@ The completed bounded-source run is recorded in
 `docs/intelligence/evidence/moroccan-anpr-e3.1-ccpd-source-audit.json`; private
 Drive identifiers and artifact hashes remain only in the sealed private run.
 
+## E3.2 balanced detection transfer
+
+`e32_detection_transfer.py` keeps the Faster R-CNN architecture and image
+resolution fixed while balancing four development sources per epoch: the two
+already-consumed Moroccan domains, the admitted generic global source, and the
+bounded CCPD bundle from E3.1. Candidate epochs are eligible only when neither
+Moroccan anchor regresses by more than two points in mAP50 or recall. Ranking
+then maximizes worst-domain mAP50, worst-domain recall, and macro-domain mAP50.
+
+Run 01 completed three resumable epochs and selected epoch 1. Against the
+warm-start incumbent, worst-domain mAP50 increased from `0.570088` to
+`0.910674`, worst-domain recall increased from `0.583538` to `0.918605`, and
+macro-domain mAP50 increased from `0.815791` to `0.962114`. The selected
+development metrics were:
+
+| Consumed development domain | mAP50 | Recall |
+|---|---:|---:|
+| CCPD public validation | 0.976291 | 0.981572 |
+| Moroccan primary validation | 0.999376 | 1.000000 |
+| Moroccan secondary validation | 0.910674 | 0.918605 |
+
+Threshold calibration used the three calibration domains and selected `0.075`
+through the preregistered fallback rule, maximizing worst-domain recall before
+macro F1. All nine sealed artifacts passed `sha256sum -c`; their private hashes,
+paths, identifiers, model weights, images, and labels are not published.
+
+These are development results on already-consumed Moroccan cohorts, not
+independent evidence. The future Moroccan holdout remains closed, end-to-end
+OCR was not evaluated, no qualification claim is made, and SaaS integration
+remains blocked. The sanitized machine-readable result is
+`docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-run01.json`.
+
 ## Optional consented labelled smoke
 
 `colab_smoke.py` accepts only consented development rows, verifies every input
@@ -165,7 +196,8 @@ python -m unittest -v \
   tests/Python/test_vehicle_plate_smoke.py \
   tests/Python/test_vehicle_plate_synthetic.py \
   tests/Python/test_vehicle_plate_e2_synthetic.py \
-  tests/Python/test_vehicle_plate_detection_sources.py
+  tests/Python/test_vehicle_plate_detection_sources.py \
+  tests/Python/test_vehicle_plate_e32_detection_transfer.py
 
 python scripts/intelligence/vehicle_plate/build_colab_notebook.py
 python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py

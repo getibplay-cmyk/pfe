@@ -121,6 +121,31 @@ restent synthétiques : le détecteur de plaque pleine image, les photos réelle
 le test final indépendant n'ont pas été évalués, et l'intégration SaaS reste
 interdite.
 
+Résultat E3.2 run 01 : le transfert de détection équilibré a exécuté les trois
+époques préenregistrées avec 1 536 exemples de chacun des quatre domaines par
+époque. Les trois epochs respectent les marges de non-infériorité marocaines,
+mais l'époque 1 conserve la meilleure clé lexicographique. Face à l'incumbent,
+le pire mAP50 de domaine passe de 0,570088 à 0,910674, le pire rappel de
+0,583538 à 0,918605 et le mAP50 macro-domaines de 0,815791 à 0,962114.
+
+| Domaine de développement déjà consommé | mAP50 sélectionné | Rappel sélectionné |
+|---|---:|---:|
+| CCPD public | 0,976291 | 0,981572 |
+| marocain primaire | 0,999376 | 1,000000 |
+| marocain secondaire | 0,910674 | 0,918605 |
+
+La calibration séparée sélectionne le seuil 0,075 par la règle de repli gelée
+« maximiser le pire rappel, puis le F1 macro », car aucun seuil ne satisfait la
+contrainte préférée de rappel d'au moins 0,95 sur les trois domaines. Les neuf
+artefacts privés passent `sha256sum -c`, sans publier leurs chemins,
+identifiants, empreintes, poids, images ou labels. Le résumé assaini est scellé
+dans
+`docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-run01.json`.
+Ces métriques restent du développement sur des cohortes marocaines déjà
+consommées : le holdout indépendant demeure fermé, l'OCR bout en bout n'est pas
+évalué, aucune qualification n'est revendiquée et l'intégration SaaS reste
+interdite.
+
 ## Séparation
 
 - groupes par véhicule ou scène source, jamais par crop;

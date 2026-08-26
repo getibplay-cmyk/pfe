@@ -309,6 +309,42 @@ class E32DetectionTransferContractTest(unittest.TestCase):
         self.assertNotIn("MyDrive", module_text)
         self.assertNotIn("S7_06", module_text)
 
+    def test_public_run_evidence_is_sanitized_and_not_qualified(self):
+        result_path = (
+            ROOT
+            / "docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-run01.json"
+        )
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            "balanced_detection_transfer_development_complete_not_qualified",
+            result["status"],
+        )
+        self.assertEqual("challenger", result["selection"]["selected"])
+        self.assertEqual(1, result["selection"]["selected_epoch"])
+        self.assertEqual(0.075, result["calibration"]["score_threshold"])
+        self.assertTrue(result["integrity"]["sha256sum_verification_passed"])
+        self.assertEqual(9, result["integrity"]["sha256sum_verified_artifacts"])
+        self.assertFalse(result["claims"]["final_test_opened"])
+        self.assertFalse(result["claims"]["qualification_claim"])
+        self.assertFalse(result["claims"]["saas_integration_allowed"])
+        self.assertFalse(result["claims"]["independent_moroccan_evidence"])
+
+        serialized = json.dumps(result, sort_keys=True)
+        for forbidden in (
+            "RentFleet_PFE",
+            "MyDrive",
+            "S7_06",
+            "drive.google.com",
+            "selected_model_sha256",
+            "warm_start_sha256",
+        ):
+            self.assertNotIn(forbidden, serialized)
+        self.assertFalse(
+            result["public_disclosure"]["private_artifact_hashes_included"]
+        )
+        self.assertFalse(result["public_disclosure"]["model_weights_included"])
+
 
 if __name__ == "__main__":
     unittest.main()
