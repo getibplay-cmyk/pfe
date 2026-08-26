@@ -287,7 +287,7 @@ class E32DetectionTransferContractTest(unittest.TestCase):
         self.assertIn("weights_backbone=None", source)
         self.assertNotIn("Weights.DEFAULT", source)
 
-    def test_public_protocol_and_notebook_do_not_embed_private_inputs(self):
+    def test_public_protocol_and_module_do_not_embed_private_inputs(self):
         protocol_path = (
             ROOT
             / "docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-protocol.json"
@@ -301,23 +301,13 @@ class E32DetectionTransferContractTest(unittest.TestCase):
         self.assertFalse(protocol["safeguards"]["saas_integration_allowed"])
         self.assertFalse(protocol["architecture"]["new_torchvision_weights_downloaded"])
 
-        cells_path = (
+        module_text = (
             ROOT
-            / "scripts/intelligence/vehicle_plate/e32_detection_transfer_cells.json"
-        )
-        cells_text = cells_path.read_text(encoding="utf-8")
-        self.assertIn("PRIVATE_ADAPTER_PATH = ''", cells_text)
-        self.assertNotIn("RentFleet_PFE", cells_text)
-        self.assertNotIn("S7_06", cells_text)
-        notebook_path = (
-            ROOT
-            / "notebooks/colab/moroccan_vehicle_plate_anpr_v2_e32_detection_transfer.ipynb"
-        )
-        notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
-        code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
-        self.assertTrue(code_cells)
-        self.assertTrue(all(cell["execution_count"] is None for cell in code_cells))
-        self.assertTrue(all(cell["outputs"] == [] for cell in code_cells))
+            / "scripts/intelligence/vehicle_plate/e32_detection_transfer.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("RentFleet_PFE", module_text)
+        self.assertNotIn("MyDrive", module_text)
+        self.assertNotIn("S7_06", module_text)
 
 
 if __name__ == "__main__":

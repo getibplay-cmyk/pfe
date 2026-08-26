@@ -48,6 +48,7 @@ jobs:
             scripts/intelligence/vehicle_plate/e2_synthetic.py \
             scripts/intelligence/vehicle_plate/e2_character_detector.py \
             scripts/intelligence/vehicle_plate/detection_sources.py \
+            scripts/intelligence/vehicle_plate/e32_detection_transfer.py \
             scripts/intelligence/vehicle_plate/build_colab_notebook.py \
             scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py \
             scripts/intelligence/vehicle_plate/build_e2_character_detector_notebook.py \
@@ -84,6 +85,9 @@ jobs:
             >/dev/null
           python -m json.tool \
             docs/intelligence/evidence/moroccan-anpr-e3.1-ccpd-source-audit.json \
+            >/dev/null
+          python -m json.tool \
+            docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-protocol.json \
             >/dev/null
           python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
@@ -150,7 +154,8 @@ jobs:
             tests/Python/test_vehicle_plate_synthetic.py \
             tests/Python/test_vehicle_plate_e2_synthetic.py \
             tests/Python/test_vehicle_plate_character_detector.py \
-            tests/Python/test_vehicle_plate_detection_sources.py
+            tests/Python/test_vehicle_plate_detection_sources.py \
+            tests/Python/test_vehicle_plate_e32_detection_transfer.py
 
       - name: Refuse committed private ANPR artifacts
         shell: bash
