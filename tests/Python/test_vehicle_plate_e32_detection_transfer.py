@@ -320,15 +320,36 @@ class E32DetectionTransferContractTest(unittest.TestCase):
             "balanced_detection_transfer_development_complete_not_qualified",
             result["status"],
         )
+        self.assertEqual("1.0.1", result["schema_version"])
+        self.assertEqual("2026-08-26", result["amended_on"])
+        self.assertEqual(
+            "clarify_replacement_holdout_scope_without_changing_run_metrics",
+            result["amendment_reason"],
+        )
         self.assertEqual("challenger", result["selection"]["selected"])
         self.assertEqual(1, result["selection"]["selected_epoch"])
         self.assertEqual(0.075, result["calibration"]["score_threshold"])
         self.assertTrue(result["integrity"]["sha256sum_verification_passed"])
         self.assertEqual(9, result["integrity"]["sha256sum_verified_artifacts"])
         self.assertFalse(result["claims"]["final_test_opened"])
+        self.assertEqual(
+            "replacement_independent_holdout",
+            result["claims"]["final_test_reference"],
+        )
         self.assertFalse(result["claims"]["qualification_claim"])
         self.assertFalse(result["claims"]["saas_integration_allowed"])
         self.assertFalse(result["claims"]["independent_moroccan_evidence"])
+        self.assertTrue(
+            result["holdout_context"]["historic_independent_holdout_consumed"]
+        )
+        self.assertFalse(result["holdout_context"]["historic_holdout_gate_passed"])
+        self.assertFalse(result["holdout_context"]["historic_holdout_reuse_allowed"])
+        self.assertTrue(
+            result["holdout_context"]["replacement_independent_holdout_required"]
+        )
+        self.assertFalse(
+            result["holdout_context"]["replacement_holdout_opened_by_e32"]
+        )
 
         serialized = json.dumps(result, sort_keys=True)
         for forbidden in (
@@ -344,6 +365,20 @@ class E32DetectionTransferContractTest(unittest.TestCase):
             result["public_disclosure"]["private_artifact_hashes_included"]
         )
         self.assertFalse(result["public_disclosure"]["model_weights_included"])
+
+        protocol_text = (
+            ROOT / "docs/intelligence/moroccan-anpr-v2-protocol.md"
+        ).read_text(encoding="utf-8")
+        readme_text = (
+            ROOT / "scripts/intelligence/vehicle_plate/README.md"
+        ).read_text(encoding="utf-8")
+        protocol_flat = " ".join(protocol_text.split())
+        readme_flat = " ".join(readme_text.split())
+        self.assertIn("holdout indépendant historique", protocol_flat)
+        self.assertIn("holdout indépendant de remplacement", protocol_flat)
+        self.assertIn("historic independent holdout", readme_flat)
+        self.assertIn("replacement independent holdout", readme_flat)
+        self.assertNotIn("final independent holdout: not opened", readme_text)
 
 
 if __name__ == "__main__":

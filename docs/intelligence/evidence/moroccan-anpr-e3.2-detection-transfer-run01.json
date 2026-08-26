@@ -1,7 +1,9 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.0.1",
   "evidence_id": "moroccan-anpr-e3.2-detection-transfer-run01",
   "created_on": "2026-08-26",
+  "amended_on": "2026-08-26",
+  "amendment_reason": "clarify_replacement_holdout_scope_without_changing_run_metrics",
   "status": "balanced_detection_transfer_development_complete_not_qualified",
   "protocol": {
     "evidence_id": "moroccan-anpr-e3.2-detection-transfer-protocol",
@@ -35,6 +37,13 @@
       "primary_calibration_images": 207,
       "secondary_consumed_calibration_images": 42
     }
+  },
+  "holdout_context": {
+    "historic_independent_holdout_consumed": true,
+    "historic_holdout_gate_passed": false,
+    "historic_holdout_reuse_allowed": false,
+    "replacement_independent_holdout_required": true,
+    "replacement_holdout_opened_by_e32": false
   },
   "selection": {
     "selected": "challenger",
@@ -153,6 +162,7 @@
     "moroccan_accuracy_claim": false,
     "end_to_end_anpr_evaluated": false,
     "final_test_opened": false,
+    "final_test_reference": "replacement_independent_holdout",
     "qualification_claim": false,
     "saas_integration_allowed": false
   }

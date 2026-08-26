@@ -1,7 +1,9 @@
 # Protocole préenregistré — ANPR marocain v2
 
-Statut au 25 août 2026 : **développement, non qualifié**. Le test final
-indépendant n'a pas été ouvert et l'intégration SaaS reste interdite.
+Statut au 26 août 2026 : **développement, non qualifié**. Un holdout
+indépendant historique a déjà été ouvert exactement une fois, a échoué aux
+gates et est définitivement retiré. E3.2 n'a ouvert aucun holdout de
+remplacement; celui-ci reste obligatoire et l'intégration SaaS reste interdite.
 
 ## Question et périmètre
 
@@ -61,11 +63,11 @@ matricule n'est envoyé sur la console.
 | RodoSol-ALPR | benchmark scientifique seulement | licence académique/non commerciale; exclue de tout entraînement SaaS |
 | Photos RentFleet | pilote privé seulement | consentement, minimisation et manifeste SHA-256 obligatoires |
 | Corpus UM6P 705 images | aucun entraînement ni preuve | quarantaine jusqu'à preuve de licence exacte |
-| Futur holdout marocain | test final unique | source-disjointe, non téléchargée et labels fermés |
+| Holdout marocain de remplacement | test final unique | source-disjointe, non téléchargée et labels fermés |
 
 Une image ne reçoit jamais une transcription inventée. Une annotation de boîte
 ne vaut pas vérité OCR. Les variantes synthétiques restent reportées séparément
-des images réelles et ne peuvent pas constituer le holdout final.
+des images réelles et ne peuvent pas constituer le holdout final de remplacement.
 
 Le générateur synthétique de caractères v1.1 rend à parts égales les plaques historiques
 arabes et le nouveau format unifié arabe/latin avec `MA`. Pour la détection,
@@ -106,7 +108,8 @@ plaque unifiée. La sélection prudente du pire format a donc conservé l'époqu
 1, seule époque ayant encore un exact-match unifié non nul. Le protocole
 caractère v1.1 corrige l'unité d'annotation : le signe réglementaire `MA` est
 détecté comme un token unique, plus grand et non ambigu, sans abaisser le seuil
-de score `0,45`, sans inventer de caractère et sans ouvrir le test final.
+de score `0,45`, sans inventer de caractère et sans ouvrir le holdout final de
+remplacement.
 
 Résultat E2.3 run 01 : le changement d'unité d'annotation est confirmé sans
 autre modification d'architecture, de seuil ou de grammaire. L'époque 3 atteint
@@ -118,8 +121,8 @@ formats, soit 254/256 (99,21875 %), avec deux abstentions
 par SHA-256 dans
 `docs/intelligence/evidence/moroccan-anpr-e2.3-ma-token-run01.json`. Ces scores
 restent synthétiques : le détecteur de plaque pleine image, les photos réelles et
-le test final indépendant n'ont pas été évalués, et l'intégration SaaS reste
-interdite.
+le holdout final de remplacement n'ont pas été évalués, et l'intégration SaaS
+reste interdite.
 
 Résultat E3.2 run 01 : le transfert de détection équilibré a exécuté les trois
 époques préenregistrées avec 1 536 exemples de chacun des quatre domaines par
@@ -142,19 +145,21 @@ identifiants, empreintes, poids, images ou labels. Le résumé assaini est scell
 dans
 `docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-run01.json`.
 Ces métriques restent du développement sur des cohortes marocaines déjà
-consommées : le holdout indépendant demeure fermé, l'OCR bout en bout n'est pas
-évalué, aucune qualification n'est revendiquée et l'intégration SaaS reste
-interdite.
+consommées. Le holdout historique demeure consommé et interdit de réutilisation;
+E3.2 n'a pas ouvert le holdout indépendant de remplacement. L'OCR bout en bout
+n'est pas évalué, aucune qualification n'est revendiquée et l'intégration SaaS
+reste interdite.
 
 ## Séparation
 
 - groupes par véhicule ou scène source, jamais par crop;
-- `train`, `validation`, `calibration`, puis `test` indépendant;
+- `train`, `validation`, `calibration`, puis `test` indépendant de remplacement;
 - dédoublonnage exact par SHA-256 et revue des quasi-doublons perceptuels;
 - aucune source du test indépendant dans les trois splits de développement;
 - toutes les photos d'un même véhicule restent dans un seul split;
 - le smoke refuse toute ligne `test` et n'écrit aucun verrou de test;
-- le test final est évalué une seule fois après gel complet.
+- le holdout historique n'est jamais réutilisé;
+- le test final de remplacement est évalué une seule fois après gel complet.
 
 ## Expériences préenregistrées
 
@@ -168,7 +173,8 @@ interdite.
 
 Un challenger de détection (par exemple RT-DETR) n'est lancé que si l'analyse
 d'erreurs E0/E1 montre que la localisation, et non l'OCR, est le goulot. Il doit
-battre l'incumbent sur le pire domaine sans utiliser le test final.
+battre l'incumbent sur le pire domaine sans utiliser le test final de
+remplacement.
 
 ### Sous-expérience E2 synthétique
 
@@ -185,8 +191,8 @@ formats synthétiques, refuse toute régression sur l'ancien format arabe ou le
 format unifié arabe/latin, maximise ensuite l'exact-match agrégé,
 puis minimise le CER en cas d'égalité. La calibration est mesurée mais
 n'intervient pas dans la sélection. Aucun résultat synthétique ne franchit un gate réel : le statut
-reste `synthetic_e2_complete_not_qualified`, le holdout final reste fermé et
-l'intégration SaaS reste interdite.
+reste `synthetic_e2_complete_not_qualified`, le holdout final de remplacement
+reste fermé et l'intégration SaaS reste interdite.
 
 ## Prétraitement autorisé
 
@@ -244,7 +250,7 @@ Le notebook E2 synthétique est généré séparément depuis
 `e2_synthetic_cells.json`. Les images sont créées dans le stockage éphémère
 Colab. Seul le bundle final de modèle, métriques, logs et provenance OFL est
 copié dans le Drive privé après vérification de `SHA256SUMS`; aucun artefact
-réel ou label du holdout n'est lu.
+réel ou label du holdout de remplacement n'est lu.
 
 E2 n'entraîne pas le détecteur. Le contrat d'inférence complet impose
 `photo véhicule -> détecteur de plaque -> crop borné -> recognizer`. Appliquer

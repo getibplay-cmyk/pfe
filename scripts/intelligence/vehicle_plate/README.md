@@ -10,7 +10,8 @@ tests, and an output-free Colab notebook.
 - detector incumbent: private, hash-gated plate-localization model;
 - OCR baseline: official `arabic_PP-OCRv5_mobile_rec`;
 - qualification status: **not qualified**;
-- final independent holdout: not opened;
+- historic independent holdout: consumed once and permanently retired;
+- replacement independent holdout: required and not opened by E3.2;
 - SaaS integration: blocked until the release gate passes.
 
 The detector's historical development sources were already consumed. They may
@@ -24,7 +25,8 @@ process. Private paths, checkpoint identifiers and input manifests belong to
 the private runbook and are deliberately omitted here.
 
 The default source has no OCR transcript labels, so the first run validates the
-pipeline but does not estimate accuracy. It never opens the future final test.
+pipeline but does not estimate accuracy. It never opens the replacement final
+test.
 
 ## Synthetic OCR development set
 
@@ -60,7 +62,8 @@ dictionary, the exact Arabic and Latin fonts and both OFL proofs,
 `generation_report.json`, and
 `SHA256SUMS`. Variants of one canonical registration stay in the same group and
 split. The generator refuses an existing output directory and has no `test`
-option, so it cannot overwrite a previous run or open the independent holdout.
+option, so it cannot overwrite a previous run or open the replacement
+independent holdout.
 
 Wrong or missing Latin equivalents count as full-plate OCR errors. Synthetic
 results must be reported separately. They validate the E2 training
@@ -108,6 +111,10 @@ source/configuration/dictionary, font and OFL provenance, `pip-freeze.txt`, and
 `SHA256SUMS`. Raw generated images remain local to the Colab runtime; their
 manifest and aggregate image digest allow exact regeneration.
 
+Here `final_test_opened=false` refers to the required replacement holdout. The
+historic independent holdout was already consumed once and is never reused for
+selection, calibration, or requalification.
+
 E2 is deliberately a recognition experiment. The full ANPR chain is always
 `vehicle image -> plate detector -> bounded crop -> recognizer -> grammar and
 abstention`. Full-frame OCR is forbidden because it could return unrelated text.
@@ -139,7 +146,8 @@ Open
 to acquire the official CCPD2019 archive in ephemeral Colab storage and save
 only the bounded, sealed development bundle to private Drive. The notebook is
 pinned to both the RentFleet import code and the upstream CCPD repository
-revision; it produces no trained model and never touches the final holdout.
+revision; it produces no trained model and never touches the replacement final
+holdout.
 The completed bounded-source run is recorded in
 `docs/intelligence/evidence/moroccan-anpr-e3.1-ccpd-source-audit.json`; private
 Drive identifiers and artifact hashes remain only in the sealed private run.
@@ -171,9 +179,10 @@ macro F1. All nine sealed artifacts passed `sha256sum -c`; their private hashes,
 paths, identifiers, model weights, images, and labels are not published.
 
 These are development results on already-consumed Moroccan cohorts, not
-independent evidence. The future Moroccan holdout remains closed, end-to-end
-OCR was not evaluated, no qualification claim is made, and SaaS integration
-remains blocked. The sanitized machine-readable result is
+independent evidence. The historic holdout remains consumed and retired; E3.2
+did not open the required replacement holdout. End-to-end OCR was not evaluated,
+no qualification claim is made, and SaaS integration remains blocked. The
+sanitized machine-readable result is
 `docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-run01.json`.
 
 ## Optional consented labelled smoke
