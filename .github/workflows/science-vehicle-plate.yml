@@ -83,6 +83,9 @@ jobs:
             docs/intelligence/evidence/moroccan-anpr-e2.3-ma-token-run01.json \
             >/dev/null
           python -m json.tool \
+            docs/intelligence/evidence/moroccan-anpr-e3.1-ccpd-source-audit.json \
+            >/dev/null
+          python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
             >/dev/null
           python -m json.tool \

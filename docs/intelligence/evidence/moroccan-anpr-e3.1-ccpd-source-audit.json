@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "moroccan-anpr-e3.1-ccpd-source-audit",
+  "created_on": "2026-08-26",
+  "status": "public_source_preparation_audit_not_qualification",
+  "reproducibility": {
+    "source_preparation_repository_sha": "465ec9c14c02c21ca69f2bff3acb9fefe3cead46",
+    "notebook_publication_sha": "f7e1e450c42205988b2e1bb44ec0750bfe4787df",
+    "source_preparation_version": "1.0.1",
+    "seed": 20260825,
+    "maximum_per_partition": 1024,
+    "maximum_dhash_hamming_distance": 4,
+    "split_policy": "group_hash_80_10_10"
+  },
+  "public_source": {
+    "source_id": "ccpd_official_mit",
+    "canonical_url": "https://github.com/detectRecog/CCPD",
+    "repository_sha": "02aaea15137c4d2fe662e57d257c6822356e9304",
+    "license_id": "MIT",
+    "official_archive_bytes": 13164924944,
+    "jpeg_images": 355013,
+    "annotated_geometry_images": 351977,
+    "ignored_unannotated_images": 3036,
+    "ignored_unannotated_partition_counts": {
+      "ccpd_np": 3036
+    },
+    "annotated_partition_counts": {
+      "ccpd_base": 199996,
+      "ccpd_blur": 20611,
+      "ccpd_challenge": 50003,
+      "ccpd_db": 10132,
+      "ccpd_fn": 20967,
+      "ccpd_rotate": 10053,
+      "ccpd_tilt": 30216,
+      "ccpd_weather": 9999
+    }
+  },
+  "bounded_development_bundle_summary": {
+    "images": 8192,
+    "groups": 8074,
+    "near_duplicate_pairs": 118,
+    "source_partition_counts": {
+      "ccpd_base": 1024,
+      "ccpd_blur": 1024,
+      "ccpd_challenge": 1024,
+      "ccpd_db": 1024,
+      "ccpd_fn": 1024,
+      "ccpd_rotate": 1024,
+      "ccpd_tilt": 1024,
+      "ccpd_weather": 1024
+    },
+    "split_counts": {
+      "train": 6581,
+      "validation": 814,
+      "calibration": 797
+    }
+  },
+  "safeguards": {
+    "detection_boxes_only": true,
+    "ccpd_sequence_field_parsed": false,
+    "ccpd_sequence_field_used_as_ocr_truth": false,
+    "unannotated_negative_images_used_as_positive": false,
+    "contains_test_split": false,
+    "upstream_test_subsets_remapped_to_development": true,
+    "open_images_images_downloaded": 0,
+    "open_images_training_enabled": false,
+    "final_test_opened": false
+  },
+  "public_disclosure": {
+    "private_drive_identifiers_included": false,
+    "private_artifact_hashes_included": false
+  },
+  "claims": {
+    "model_trained": false,
+    "qualification_claim": false,
+    "moroccan_real_photo_accuracy_claim": false,
+    "end_to_end_anpr_evaluated": false,
+    "saas_integration_allowed": false
+  }
+}

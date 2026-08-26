@@ -26,6 +26,37 @@ def ccpd_name(index: int) -> str:
 
 
 class DetectionSourceContractTest(unittest.TestCase):
+    def test_e31_public_run_evidence_is_self_consistent(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        evidence_path = (
+            repository_root
+            / "docs/intelligence/evidence/moroccan-anpr-e3.1-ccpd-source-audit.json"
+        )
+        evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+        source = evidence["public_source"]
+        bundle = evidence["bounded_development_bundle_summary"]
+        self.assertEqual(
+            source["jpeg_images"],
+            source["annotated_geometry_images"] + source["ignored_unannotated_images"],
+        )
+        self.assertEqual(bundle["images"], sum(bundle["split_counts"].values()))
+        self.assertEqual(bundle["images"], sum(bundle["source_partition_counts"].values()))
+        self.assertNotIn("ccpd_np", bundle["source_partition_counts"])
+        self.assertEqual(
+            {"ccpd_np": 3036}, source["ignored_unannotated_partition_counts"]
+        )
+        self.assertFalse(evidence["safeguards"]["ccpd_sequence_field_parsed"])
+        self.assertFalse(
+            evidence["safeguards"]["ccpd_sequence_field_used_as_ocr_truth"]
+        )
+        self.assertFalse(evidence["safeguards"]["contains_test_split"])
+        self.assertFalse(evidence["claims"]["model_trained"])
+        self.assertFalse(evidence["claims"]["qualification_claim"])
+        self.assertFalse(evidence["claims"]["saas_integration_allowed"])
+        self.assertFalse(evidence["public_disclosure"]["private_drive_identifiers_included"])
+        self.assertFalse(evidence["public_disclosure"]["private_artifact_hashes_included"])
+        self.assertNotIn("artifact_hashes", evidence)
+
     def test_colab_invokes_detection_source_as_package_module(self):
         repository_root = Path(__file__).resolve().parents[2]
         cells_path = (

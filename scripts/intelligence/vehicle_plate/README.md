@@ -117,10 +117,13 @@ abstention`. Full-frame OCR is forbidden because it could return unrelated text.
 
 `detection_sources.py` prepares only full-frame plate-localisation data. Its
 CCPD mode verifies the official MIT proof, parses only the geometry fields in
-the seven-part filename, creates a one-class COCO bundle, computes SHA-256 and
-64-bit difference hashes, groups exact/near duplicates before splitting, and
-emits only `train`, `validation`, and `calibration`. The Chinese sequence field
-is deliberately opaque and never appears as an OCR target.
+the seven-part filename in annotated partitions, creates a one-class COCO
+bundle, computes SHA-256 and 64-bit difference hashes, groups exact/near
+duplicates before splitting, and emits only `train`, `validation`, and
+`calibration`. The official `ccpd_np` negative-image partition has no encoded
+box and is explicitly counted then excluded from this positive one-box bundle.
+The Chinese sequence field is deliberately opaque and never appears as an OCR
+target.
 
 The Open Images mode creates a no-download candidate CSV from manual `xclick`
 boxes for `/m/01jfm_`. It requires per-item CC BY 2.0 metadata and attribution,
@@ -138,6 +141,9 @@ to acquire the official CCPD2019 archive in ephemeral Colab storage and save
 only the bounded, sealed development bundle to private Drive. The notebook is
 pinned to both the RentFleet import code and the upstream CCPD repository
 revision; it produces no trained model and never touches the final holdout.
+The completed bounded-source run is recorded in
+`docs/intelligence/evidence/moroccan-anpr-e3.1-ccpd-source-audit.json`; private
+Drive identifiers and artifact hashes remain only in the sealed private run.
 
 ## Optional consented labelled smoke
 
