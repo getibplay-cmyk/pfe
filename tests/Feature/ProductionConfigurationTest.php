@@ -80,6 +80,7 @@ class ProductionConfigurationTest extends TestCase
             'Lot03DemoSeeder.php',
             'Lot04DemoSeeder.php',
             'Lot05DemoSeeder.php',
+            'RentFleetDemoV1HistoricalSeeder.php',
         ];
 
         foreach ($demoSeeders as $seeder) {

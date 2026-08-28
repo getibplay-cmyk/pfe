@@ -36,10 +36,14 @@ interactive. Les seeders refusent l’environnement `production`.
 | Administration plateforme | `platform@rentfleet.test` |
 
 Le jeu attendu contient deux entreprises clientes, trois agences, six rôles métier, au moins
-seize véhicules, douze clients/conducteurs, réservations variées, huit contrats,
-factures et cautions, deux maintenances, une police proche d’échéance et un
-sinistre fictif en revue. Vérifier ces ordres de grandeur avec le dashboard et
-`rentfleet:doctor`, sans les présenter comme des données réelles.
+seize véhicules, douze clients/conducteurs, les scénarios interactifs des Lots
+03 à 05 et l’historique homogène `rentfleet_demo_v1`. Celui-ci ajoute exactement
+240 réservations et contrats, 180 factures/paiements et 240 retours admissibles
+pour le module d’anomalies. Les maintenances, cautions, assurances et sinistres
+interactifs existants sont conservés. Vérifier ces ordres de grandeur avec le
+dashboard, le test dédié et `rentfleet:doctor`, sans les présenter comme des
+données réelles. La provenance, les limites et l’installation non destructive
+sont détaillées dans [la fiche de la base v1](rentfleet-demo-v1.md).
 
 ## Parcours navigateur Lot 06C
 

@@ -181,6 +181,11 @@ dans ce gestionnaire est celle à utiliser pour les comptes fictifs ; aucun mot
 de passe fonctionnel n’est documenté ou versionné. Sans cette variable, le
 seeder génère une valeur forte aléatoire qu’il n’affiche et ne journalise pas.
 
+Le seeding complet ajoute aussi la base historique fictive et déterministe
+[`rentfleet_demo_v1`](docs/demo/rentfleet-demo-v1.md) : 240 cycles retournés,
+180 scénarios financiers et 240 lignes éligibles au module d’anomalies, avec
+provenance et contrôle de licence documentés.
+
 Routes principales :
 
 - `/tenant` : informations de l’entreprise courante ;
