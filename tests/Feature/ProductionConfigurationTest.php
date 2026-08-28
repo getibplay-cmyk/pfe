@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -80,6 +81,7 @@ class ProductionConfigurationTest extends TestCase
             'Lot03DemoSeeder.php',
             'Lot04DemoSeeder.php',
             'Lot05DemoSeeder.php',
+            'RentFleetDemoV1HistoricalSeeder.php',
         ];
 
         foreach ($demoSeeders as $seeder) {
@@ -95,6 +97,25 @@ class ProductionConfigurationTest extends TestCase
         foreach (['.env.example', '.env.production.example'] as $example) {
             $source = file_get_contents(base_path($example));
             $this->assertMatchesRegularExpression('/^DEMO_PASSWORD=\s*$/m', $source, $example);
+        }
+    }
+
+    public function test_demo_installer_is_exactly_scoped_and_non_destructive(): void
+    {
+        $source = file_get_contents(app_path('Console/Commands/InstallDemoDatabaseCommand.php'));
+        $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
+
+        $this->assertStringContainsString("expectedDatabase === 'rentfleet_demo'", $source);
+        $this->assertStringContainsString("app()->environment('production')", $source);
+        $this->assertStringContainsString("\$this->call('migrate'", $source);
+        $this->assertStringContainsString(DatabaseSeeder::class, $source);
+        $this->assertSame(
+            ['@php artisan rentfleet:demo:install --no-interaction'],
+            $composer['scripts']['demo:install'] ?? null,
+        );
+
+        foreach (['migrate:fresh', 'migrate:refresh', 'migrate:reset', 'db:wipe'] as $destructiveCommand) {
+            $this->assertStringNotContainsString($destructiveCommand, $source);
         }
     }
 

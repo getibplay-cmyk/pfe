@@ -181,6 +181,41 @@ dans ce gestionnaire est celle à utiliser pour les comptes fictifs ; aucun mot
 de passe fonctionnel n’est documenté ou versionné. Sans cette variable, le
 seeder génère une valeur forte aléatoire qu’il n’affiche et ne journalise pas.
 
+Le seeding complet ajoute aussi la base historique fictive et déterministe
+[`rentfleet_demo_v1`](docs/demo/rentfleet-demo-v1.md) : 240 cycles retournés,
+180 scénarios financiers et 240 lignes éligibles au module d’anomalies, avec
+provenance et contrôle de licence documentés.
+
+### Installation de démonstration depuis un clone ou un `git pull`
+
+Les migrations créent le schéma ; les seeders restent nécessaires uniquement
+pour ajouter les données fictives. La commande du projet orchestre les deux sans
+supprimer de table et refuse toute cible autre que la base exacte
+`rentfleet_demo` :
+
+```powershell
+git pull
+composer install
+npm ci
+
+# Copier .env.example vers .env lors du premier clone, puis configurer :
+# DB_DATABASE=rentfleet_demo
+# Définir DEMO_PASSWORD avec une valeur forte uniquement dans .env, hors Git.
+php artisan optimize:clear
+# Uniquement si APP_KEY est encore vide :
+php artisan key:generate
+
+php artisan rentfleet:demo:install
+npm run build
+php artisan rentfleet:doctor --expect-database=rentfleet_demo
+```
+
+`composer demo:install` est un raccourci équivalent à la commande Artisan.
+Une seconde exécution vérifie les migrations et ne duplique pas
+`rentfleet_demo_v1`. Une base réelle ou de production reçoit seulement les
+migrations et ses données métier réelles ; les seeders de démonstration y sont
+interdits.
+
 Routes principales :
 
 - `/tenant` : informations de l’entreprise courante ;

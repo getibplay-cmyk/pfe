@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             Lot03DemoSeeder::class,
             Lot04DemoSeeder::class,
             Lot05DemoSeeder::class,
+            RentFleetDemoV1HistoricalSeeder::class,
         ]);
 
         app(GenerateOperationalNotifications::class)->handle();

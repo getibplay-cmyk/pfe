@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_version": "rentfleet_demo_v1",
+  "generated_data": {
+    "fictional": true,
+    "tenant_slug": "atlas-location-demo",
+    "timezone": "UTC",
+    "event_period": {
+      "starts_at": "2025-02-01T11:00:00Z",
+      "ends_at": "2026-08-18T08:00:00Z"
+    },
+    "expected_delta": {
+      "reservations": 240,
+      "rental_contracts": 240,
+      "contract_drivers": 240,
+      "contract_versions": 240,
+      "contract_acceptances": 240,
+      "vehicle_blocks": 240,
+      "vehicle_inspections": 480,
+      "inspection_items": 1440,
+      "invoices": 180,
+      "invoice_lines": 180,
+      "payments": 180,
+      "payment_allocations": 180,
+      "anomaly_eligible_contracts": 240
+    },
+    "financial_states": {
+      "paid_and_closed": 120,
+      "partially_paid_and_returned": 60,
+      "returned_without_invoice": 60
+    }
+  },
+  "sources": [
+    {
+      "name": "Suivi de la location des automobiles MouvAuto",
+      "publisher": "Communauté d'Agglomération du Pays de Saint-Omer",
+      "url": "https://www.data.gouv.fr/datasets/suivi-de-la-location-des-automobiles-mouvauto",
+      "license": "Licence Ouverte 2.0",
+      "source_rows": 583,
+      "complete_duration_distance_pairs": 379,
+      "usage": "24 profils statistiques représentatifs durée-distance"
+    }
+  ],
+  "audited_but_not_redistributed": [
+    {
+      "dataset_type": "clients pédagogiques",
+      "rows": 19,
+      "reason": "origine et licence non vérifiables ; données personnelles"
+    },
+    {
+      "dataset_type": "propriétaires pédagogiques",
+      "rows": 13,
+      "reason": "origine et licence non vérifiables ; doublons et données personnelles"
+    },
+    {
+      "dataset_type": "véhicules pédagogiques",
+      "rows": 20,
+      "reason": "origine et licence non vérifiables ; immatriculations non reprises"
+    },
+    {
+      "dataset_type": "locations pédagogiques",
+      "rows": 133,
+      "reason": "clés dupliquées, dates incohérentes et durées majoritairement nulles"
+    }
+  ],
+  "evaluated_not_used": [
+    {
+      "name": "Car sharing bookings in Turin",
+      "url": "https://data.mendeley.com/datasets/drtn5499j2/1",
+      "license": "CC BY 4.0",
+      "reason": "libre-service géolocalisé, domaine et géographie non comparables"
+    },
+    {
+      "name": "National Travel Survey ad hoc analyses",
+      "url": "https://www.gov.uk/government/statistical-data-sets/ad-hoc-national-travel-survey-analysis",
+      "reason": "déplacements généraux, pas de cycle contractuel de location"
+    }
+  ],
+  "generator": {
+    "seeder": "Database\\Seeders\\RentFleetDemoV1HistoricalSeeder",
+    "deterministic": true,
+    "money_representation": "integer minor units converted to numeric(14,2)",
+    "idempotency_marker": "RES-DEMO-V1-%",
+    "minimum_anomaly_rows": 200
+  },
+  "privacy": {
+    "real_pii_in_generated_data": false,
+    "raw_educational_csv_rows_copied": false,
+    "shared_database_dump": false
+  }
+}
