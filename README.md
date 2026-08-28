@@ -200,7 +200,8 @@ npm ci
 
 # Copier .env.example vers .env lors du premier clone, puis configurer :
 # DB_DATABASE=rentfleet_demo
-# DEMO_PASSWORD=<valeur forte conservée hors Git>
+# DEMO_PASSWORD=
+# Renseigner cette valeur forte uniquement dans le fichier local, hors Git.
 php artisan optimize:clear
 # Uniquement si APP_KEY est encore vide :
 php artisan key:generate
