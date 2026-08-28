@@ -14,6 +14,17 @@ tests, and an output-free Colab notebook.
 - replacement independent holdout: required and not opened by E3.2;
 - SaaS integration: blocked until the release gate passes.
 
+An additional code-only review fallback now reuses the same official PP-OCRv5
+recognizer on bounded serial, Arabic-series and territorial-code zones when the
+full-crop reading is empty or rejected. It produces a human-review suggestion,
+not an accepted registration. The Laravel result contract and disabled feature
+flag are prepared, but no route, table or production activation is part of this
+scientific branch. See
+[`moroccan-anpr-hybrid-feedback.md`](../../../docs/intelligence/moroccan-anpr-hybrid-feedback.md).
+
+The fallback deliberately excludes every code or weight from the unlicensed
+`essanhaji/moroccan-lpr-ocr` repository.
+
 The detector's historical development sources were already consumed. They may
 guide development and can never be reused as independent ANPR evidence.
 

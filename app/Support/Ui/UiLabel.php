@@ -9,7 +9,7 @@ class UiLabel
 {
     private const LABELS = [
         'active' => 'Actif', 'inactive' => 'Inactif', 'archived' => 'Archivé', 'suspended' => 'Suspendu',
-        'draft' => 'Brouillon', 'pending' => 'En attente', 'confirmed' => 'Confirmée', 'converted' => 'Convertie',
+        'draft' => 'Brouillon', 'pending' => 'En attente', 'confirmed' => 'Confirmée', 'corrected' => 'Corrigée', 'converted' => 'Convertie',
         'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'accepted' => 'Accepté', 'ignored' => 'Ignoré',
         'return_pending' => 'Retour à traiter', 'returned' => 'Retourné', 'closed' => 'Clôturé',
         'issued' => 'Émise', 'partially_paid' => 'Partiellement payée', 'paid' => 'Payée', 'void' => 'Annulée',
@@ -66,7 +66,7 @@ class UiLabel
     ];
 
     private const TONES = [
-        'active' => 'success', 'confirmed' => 'success', 'accepted' => 'success', 'accepted_for_demo_review' => 'success', 'paid' => 'success',
+        'active' => 'success', 'confirmed' => 'success', 'corrected' => 'info', 'accepted' => 'success', 'accepted_for_demo_review' => 'success', 'paid' => 'success',
         'completed' => 'success', 'approved' => 'success', 'settled' => 'success', 'verified' => 'success', 'validated' => 'success',
         'pending' => 'warning', 'ready' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
         'planned' => 'warning', 'under_review' => 'warning', 'submitted' => 'warning', 'suspended' => 'warning',
@@ -145,6 +145,11 @@ class UiLabel
         'prediction.vehicle_damage.run_failed' => 'Échec contrôlé de l’analyse dommages',
         'prediction.vehicle_damage.input_viewed' => 'Photo privée de l’analyse dommages consultée',
         'prediction.vehicle_damage.human_decision_recorded' => 'Vérification humaine d’une zone candidate enregistrée',
+        'prediction.vehicle_plate.run_queued' => 'Analyse de plaque ajoutée à la queue',
+        'prediction.vehicle_plate.run_succeeded' => 'Analyse locale de plaque terminée',
+        'prediction.vehicle_plate.run_failed' => 'Échec contrôlé de l’analyse de plaque',
+        'prediction.vehicle_plate.input_viewed' => 'Crop privé de plaque consulté',
+        'prediction.vehicle_plate.human_correction_recorded' => 'Correction humaine de plaque enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
         'notification.updated' => 'Notification actualisée', 'notification.resolved' => 'Notification résolue',
@@ -255,6 +260,7 @@ class UiLabel
         'prediction.forecast.import' => 'Importer les prévisions de demande consultatives',
         'prediction.color.review' => 'Analyser et revoir la couleur d’un véhicule',
         'prediction.damage.review' => 'Analyser et revoir les zones de dommage d’un retour',
+        'prediction.plate.review' => 'Analyser et corriger une plaque de véhicule',
         'prediction.anomaly.review' => 'Analyser et revoir les usages de location atypiques',
     ];
 
@@ -272,6 +278,8 @@ class UiLabel
         'VehicleColorPredictionReview' => 'Revue humaine de couleur véhicule',
         'VehicleDamagePredictionRun' => 'Analyse de dommages véhicule',
         'VehicleDamagePredictionReview' => 'Revue humaine de zone candidate',
+        'VehiclePlatePredictionRun' => 'Analyse OCR de plaque',
+        'VehiclePlatePredictionReview' => 'Correction humaine de plaque',
         'RentalUsageAnomalyRun' => 'Classement d’usages atypiques',
         'RentalUsageAnomalyResult' => 'Résultat d’usage atypique',
         'RentalUsageAnomalyReview' => 'Revue humaine d’usage atypique',
@@ -374,6 +382,9 @@ class UiLabel
         }
         if ($permission === 'prediction.damage.review') {
             return 'Effet : analyse consultative d’une photo de retour et revue humaine auditée, sans dommage, frais ni responsabilité automatiques.';
+        }
+        if ($permission === 'prediction.plate.review') {
+            return 'Effet : OCR local consultatif et correction humaine auditée, sans modification automatique de l’immatriculation.';
         }
         if ($permission === 'prediction.anomaly.review') {
             return 'Effet : classement consultatif et revue humaine append-only, sans sanction, frais, accusation ni modification de contrat.';

@@ -1,0 +1,6 @@
+# Install PaddlePaddle 3.3.0 first from the official CPU or CUDA-specific
+# index for the target host, then install this file in the same isolated venv.
+paddleocr==3.7.0
+
+# Keep the isolated environment internally consistent under strict `pip check`.
+jedi==0.19.2

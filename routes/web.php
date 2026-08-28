@@ -40,6 +40,7 @@ use App\Http\Controllers\VehicleColorPredictionController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleDamagePredictionController;
 use App\Http\Controllers\VehicleInspectionController;
+use App\Http\Controllers\VehiclePlatePredictionController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
@@ -254,6 +255,15 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.vehicle-damages.input');
     Route::post('/intelligence/vehicle-damages/{damagePrediction}/reviews', [VehicleDamagePredictionController::class, 'review'])
         ->name('intelligence.vehicle-damages.reviews.store');
+    Route::get('/intelligence/vehicle-plates', [VehiclePlatePredictionController::class, 'index'])
+        ->name('intelligence.vehicle-plates.index');
+    Route::post('/intelligence/vehicle-plates', [VehiclePlatePredictionController::class, 'store'])
+        ->middleware('throttle:vehicle-plate-hybrid')
+        ->name('intelligence.vehicle-plates.store');
+    Route::get('/intelligence/vehicle-plates/{platePrediction}/input', [VehiclePlatePredictionController::class, 'input'])
+        ->name('intelligence.vehicle-plates.input');
+    Route::post('/intelligence/vehicle-plates/{platePrediction}/reviews', [VehiclePlatePredictionController::class, 'review'])
+        ->name('intelligence.vehicle-plates.reviews.store');
     Route::get('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'index'])
         ->name('intelligence.fleet-reallocation.index');
     Route::post('/intelligence/fleet-reallocation/runs', [FleetReallocationProposalController::class, 'queueRun'])

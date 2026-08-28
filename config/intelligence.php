@@ -168,6 +168,45 @@ return [
         'decision_effect' => 'NO_OPERATIONAL_ACTION',
     ],
 
+    'vehicle_plate_hybrid_review' => [
+        // The runtime remains disabled until the private corrected pilot and
+        // the preregistered release gate are complete. The contract can be
+        // integrated and tested without activating a business action.
+        'enabled' => env('RENTFLEET_PLATE_HYBRID_REVIEW_ENABLED', false),
+        'disk' => 'local',
+        'runtime_queue' => 'intelligence',
+        'runtime_timeout_seconds' => 120,
+        'runtime_stale_after_seconds' => 900,
+        'image_sanitizer_timeout_seconds' => 15,
+        'max_upload_kilobytes' => 2048,
+        'max_image_dimension' => 8000,
+        'max_stored_image_dimension' => 2048,
+        'rate_limits' => [
+            'user_per_minute' => env('PLATE_HYBRID_USER_RATE_LIMIT_PER_MINUTE', 5),
+            'scope_per_hour' => env('PLATE_HYBRID_SCOPE_RATE_LIMIT_PER_HOUR', 30),
+        ],
+        'python_binary' => env(
+            'PLATE_HYBRID_PYTHON_BINARY',
+            env('INTELLIGENCE_PYTHON_BINARY', 'python'),
+        ),
+        'device' => env('PLATE_HYBRID_DEVICE', 'cpu'),
+        'runtime_script' => base_path(
+            'scripts/intelligence/vehicle_plate/hybrid_ocr_worker.py',
+        ),
+        'image_sanitizer_script' => base_path(
+            'scripts/intelligence/color_v8/sanitize_vehicle_image.py',
+        ),
+        'mode' => 'consultative_review_only',
+        'human_validation_required' => true,
+        'automatic_actions_allowed' => false,
+        'operational_table_writes_allowed' => false,
+        'correction_capture_allowed' => true,
+        'daily_feedback_capture_allowed' => true,
+        'automatic_daily_retraining_allowed' => false,
+        'release_gate_required' => true,
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'rule_baseline' => [
         'name' => 'rental_anomaly_rules',
         'version' => '1.0.0',

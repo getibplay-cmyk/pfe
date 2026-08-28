@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/runtime-intelligence
+      - science/moroccan-anpr-v2
   push:
     branches:
       - main
