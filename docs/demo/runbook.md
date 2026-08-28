@@ -15,15 +15,17 @@ npm run build
 
 Pour une démonstration web persistante, créer séparément `rentfleet_demo`,
 copier la configuration vers un fichier local non versionné, vérifier le nom
-avec `php artisan db:show`, puis seulement exécuter `migrate:fresh --seed` sur
-cette base dédiée. Aucun raccourci destructif n’est fourni par le dépôt.
-Créer une valeur forte dans le gestionnaire de secrets de l’opérateur, puis
-l’injecter localement dans `DEMO_PASSWORD` avant le seeding. La récupérer
-ensuite depuis ce même gestionnaire pour la connexion, sans l’afficher dans le
-terminal, une capture ou un journal. Aucun mot de passe fixe n’est versionné.
-Si la variable est absente, le seeder génère une valeur aléatoire forte qu’il
-n’affiche pas ; ce mode convient aux tests automatisés, pas à une démonstration
-interactive. Les seeders refusent l’environnement `production`.
+avec `php artisan db:show`, puis exécuter `php artisan rentfleet:demo:install`.
+Cette commande applique les migrations sans suppression, exige la cible exacte
+`rentfleet_demo`, refuse une base métier déjà remplie et installe ensuite le jeu
+fictif complet. Aucun raccourci destructif n’est fourni par le dépôt. Créer une
+valeur forte dans le gestionnaire de secrets de l’opérateur, puis l’injecter
+localement dans `DEMO_PASSWORD` avant l’installation. La récupérer ensuite
+depuis ce même gestionnaire pour la connexion, sans l’afficher dans le terminal,
+une capture ou un journal. Aucun mot de passe fixe n’est versionné. La commande
+interactive refuse un mot de passe absent ou non conforme ; le mode aléatoire
+non affiché reste réservé aux tests automatisés. Les seeders refusent
+l’environnement `production`.
 
 ## Comptes et données attendues
 

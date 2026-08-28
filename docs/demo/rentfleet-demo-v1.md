@@ -103,14 +103,20 @@ Le garde-fou du projet refuse toute autre cible destructive.
 ### Première installation dans une base dédiée `rentfleet_demo`
 
 Créer une base PostgreSQL vide dédiée et utiliser un fichier d’environnement
-local non versionné. Vérifier visuellement la cible avant toute écriture :
+local non versionné. Définir `DB_DATABASE=rentfleet_demo`, conserver une valeur
+forte dans `DEMO_PASSWORD`, puis vérifier visuellement la cible avant toute
+écriture :
 
 ```powershell
 php artisan db:show
-php artisan migrate --force
-php artisan db:seed --class='Database\Seeders\DatabaseSeeder' --force
-php artisan rentfleet:doctor
+php artisan rentfleet:demo:install
+php artisan rentfleet:doctor --expect-database=rentfleet_demo
 ```
+
+La commande exécute les migrations puis le `DatabaseSeeder` dans l’ordre requis.
+Les migrations seules produisent volontairement un schéma vide ; les données de
+démonstration restent séparées afin de ne jamais atteindre la production. Le
+raccourci `composer demo:install` produit le même résultat.
 
 Ne jamais lancer `migrate:fresh`, `db:wipe`, `migrate:reset` ou
 `migrate:refresh` sur `rentfleet` ou `rentfleet_demo`.
