@@ -534,7 +534,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
     private function assertPostgreSqlConstraint(callable $callback): void
     {
         try {
-            $callback();
+            DB::transaction($callback);
             $this->fail('PostgreSQL aurait dû refuser cette mutation.');
         } catch (QueryException $exception) {
             $this->assertSame('23514', (string) $exception->getCode());
