@@ -403,10 +403,7 @@ jobs:
         run: npm run build
 
       - name: Check PHP formatting
-        run: |
-          vendor/bin/pint app/Support/Intelligence/VehicleDamage/VehicleDamageResultValidator.php
-          git --no-pager diff -- app/Support/Intelligence/VehicleDamage/VehicleDamageResultValidator.php
-          exit 1
+        run: vendor/bin/pint --test
 
       - name: Apply database migrations
         run: php artisan migrate --force --no-interaction

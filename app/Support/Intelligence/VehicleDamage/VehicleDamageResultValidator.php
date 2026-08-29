@@ -152,14 +152,8 @@ class VehicleDamageResultValidator
         mixed $scan,
         string $qualityStatus,
         VehicleDamagePredictionRun $run,
-    ): int
-    {
+    ): int {
         $backend = VehicleDamageContract::backendForModelName($run->model_name);
-        $maximumEvaluatedPatches = $backend === VehicleDamageContract::BACKEND_RTDETRV2_S ? 1 : 64;
-        $overlapRatioMatches = is_array($scan) && $backend !== null && $this->numericEquals(
-            $scan['overlap_ratio'] ?? null,
-            VehicleDamageContract::overlapRatioForBackend($backend),
-        );
         if (! is_array($scan)
             || ! $this->hasExactKeys(
                 $scan,
@@ -169,8 +163,13 @@ class VehicleDamageResultValidator
             || $scan['mode'] !== VehicleDamageContract::scanModeForBackend($backend)
             || ! is_int($scan['evaluated_patches'] ?? null)
             || $scan['evaluated_patches'] < 0
-            || $scan['evaluated_patches'] > $maximumEvaluatedPatches
-            || $overlapRatioMatches !== true
+            || $scan['evaluated_patches'] > (
+                $backend === VehicleDamageContract::BACKEND_RTDETRV2_S ? 1 : 64
+            )
+            || ! $this->numericEquals(
+                $scan['overlap_ratio'] ?? null,
+                VehicleDamageContract::overlapRatioForBackend($backend),
+            )
             || $scan['candidate_limit'] !== VehicleDamageContract::MAX_CANDIDATES
             || ($qualityStatus === 'abstained' && $scan['evaluated_patches'] !== 0)
             || ($backend === VehicleDamageContract::BACKEND_RTDETRV2_S
