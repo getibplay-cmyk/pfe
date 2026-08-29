@@ -103,11 +103,22 @@ class VehicleColorPredictionRun extends Model
 
     public function hasDisplayableCandidate(): bool
     {
-        return $this->status === VehicleColorPredictionStatus::Succeeded
-            && is_string($this->suggested_color)
-            && in_array($this->suggested_color, VehicleColorContract::SUPPORTED_COLORS, true)
-            && is_numeric($this->confidence)
-            && (float) $this->confidence >= VehicleColorContract::CONSULTATIVE_DISPLAY_THRESHOLD;
+        if ($this->status !== VehicleColorPredictionStatus::Succeeded
+            || ! is_string($this->suggested_color)
+            || ! in_array($this->suggested_color, VehicleColorContract::SUPPORTED_COLORS, true)
+            || ! is_numeric($this->confidence)) {
+            return false;
+        }
+
+        $confidence = (float) $this->confidence;
+
+        return is_finite($confidence) && $confidence >= 0 && $confidence <= 1;
+    }
+
+    public function hasLowConfidenceCandidate(): bool
+    {
+        return $this->hasDisplayableCandidate()
+            && (float) $this->confidence < VehicleColorContract::CONSULTATIVE_DISPLAY_THRESHOLD;
     }
 
     public function consultativeStatus(): string

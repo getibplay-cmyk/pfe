@@ -106,13 +106,24 @@
                             </a>
                             <div>
                                 @if ($run->status->value === 'succeeded')
-                                    <div class="grid gap-3 text-sm sm:grid-cols-3">
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Couleur la plus probable</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance du modèle</p><p class="mt-1 font-semibold">{{ number_format((float) $run->confidence * 100, 2, ',', ' ') }} %</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Statut consultatif</p><p class="mt-1"><x-status-badge :value="$run->consultativeStatus()" /></p></div>
-                                    </div>
-                                    @if ($run->hasDisplayableCandidate() && ! $run->model_accepted)
-                                        <p class="mt-3 text-xs leading-5 text-amber-800">La couleur est affichée à partir de 75 % pour faciliter le contrôle visuel. Le seuil scientifique de 97,7 % reste inchangé et cette indication ne peut produire aucune modification automatique.</p>
+                                    @if ($run->hasDisplayableCandidate())
+                                        <div class="grid gap-3 text-sm sm:grid-cols-3">
+                                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Couleur la plus probable</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
+                                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance du modèle</p><p class="mt-1 font-semibold">{{ number_format((float) $run->confidence * 100, 2, ',', ' ') }} %</p></div>
+                                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Statut consultatif</p><p class="mt-1"><x-status-badge :value="$run->consultativeStatus()" /></p></div>
+                                        </div>
+                                        @if ($run->hasLowConfidenceCandidate())
+                                            <div class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-900">
+                                                <p class="font-semibold">Suggestion à faible confiance — vérification visuelle obligatoire.</p>
+                                                <p>Comparez directement la photo au véhicule avant toute décision humaine.</p>
+                                            </div>
+                                        @endif
+                                        <p class="mt-3 text-xs leading-5 text-amber-800">Confirmation humaine obligatoire. Le seuil scientifique de {{ number_format($contract['threshold'] * 100, 1, ',', ' ') }} % reste inchangé et cette suggestion ne peut produire aucune modification automatique.</p>
+                                    @else
+                                        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                                            <p class="font-semibold">{{ $run->outcomeLabel() }}</p>
+                                            <p class="mt-1">Aucune couleur valide n’est disponible pour cette analyse.</p>
+                                        </div>
                                     @endif
 
                                     @if ($run->review)
@@ -127,7 +138,7 @@
                                             <div>
                                                 <x-input-label :for="'color-decision-'.$run->id" value="Décision humaine" required />
                                                 <select id="color-decision-{{ $run->id }}" name="decision" class="mt-1 block w-full rounded-lg border-slate-300" required>
-                                                    @if ($run->model_accepted)<option value="accepted">Accepter la suggestion</option>@endif
+                                                    @if ($run->hasDisplayableCandidate() && $run->model_accepted)<option value="accepted">Accepter la suggestion</option>@endif
                                                     <option value="rejected">Rejeter la suggestion</option>
                                                     <option value="ignored">Ignorer cette analyse</option>
                                                 </select>
