@@ -1,0 +1,90 @@
+{
+  "protocol_id": "rentfleet-moroccan-anpr",
+  "version": "2.0.0",
+  "frozen_on": "2026-08-25",
+  "status": "preregistered_development_not_qualified",
+  "advisory_only": true,
+  "final_test": {
+    "evaluation_count": 0,
+    "labels_opened": false,
+    "must_be_source_disjoint": true,
+    "one_shot": true
+  },
+  "incumbent_detector": {
+    "name": "fasterrcnn_resnet50_fpn_v2_multidomain_v1.2.0",
+    "architecture": "fasterrcnn_resnet50_fpn_v2",
+    "threshold": 0.425,
+    "min_size": 768,
+    "max_size": 1280,
+    "selection_role": "development_only_not_independent_evidence",
+    "private_sha256_required": true
+  },
+  "ocr_baseline": {
+    "framework": "PaddleOCR",
+    "package_version": "3.7.0",
+    "model": "arabic_PP-OCRv5_mobile_rec",
+    "model_language": "ar",
+    "runtime": "isolated_gpu_process_and_virtual_environment",
+    "specialized_fine_tuning_required_before_release": true
+  },
+  "formats": [
+    "legacy_arabic",
+    "international_latin",
+    "unified_2026_bilingual"
+  ],
+  "experiments": [
+    {
+      "id": "E0",
+      "change": "incumbent_detector_raw_crop_official_arabic_ocr",
+      "role": "mandatory_baseline"
+    },
+    {
+      "id": "E1",
+      "change": "bounded_padding_autocontrast_perspective_rectification",
+      "selection_metric": "validation_full_plate_exact"
+    },
+    {
+      "id": "E2",
+      "change": "specialized_recognizer_fine_tuning_on_admitted_data",
+      "selection_metric": "validation_full_plate_exact_then_cer"
+    },
+    {
+      "id": "E3",
+      "change": "grammar_threshold_calibration_physical_multiview_consensus",
+      "selection_metric": "coverage_subject_to_selective_exact"
+    },
+    {
+      "id": "E4",
+      "change": "one_shot_source_disjoint_final_evaluation",
+      "selection_metric": "none_no_iteration_after_labels_open"
+    }
+  ],
+  "release_gate": {
+    "minimum": {
+      "detection_map50": 0.95,
+      "detection_recall": 0.95,
+      "ocr_full_plate_exact": 0.9,
+      "selective_exact": 0.97,
+      "selective_coverage": 0.7,
+      "end_to_end_exact": 0.9
+    },
+    "maximum": {
+      "ocr_cer": 0.02
+    },
+    "stretch": {
+      "end_to_end_exact": 0.95
+    }
+  },
+  "forbidden": [
+    "final_test_reuse",
+    "cross_group_split_leakage",
+    "unlicensed_or_unconsented_images",
+    "synthetic_data_as_independent_test",
+    "generative_super_resolution_or_inpainting",
+    "pytorch_and_paddle_gpu_packages_in_same_python_environment",
+    "preprocessing_variants_counted_as_independent_views",
+    "automatic_vehicle_record_mutation",
+    "automatic_contract_payment_or_sanction"
+  ],
+  "saas_integration_allowed": false
+}

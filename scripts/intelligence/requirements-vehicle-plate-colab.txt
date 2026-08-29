@@ -1,0 +1,8 @@
+# Installed only inside /content/venvs/rentfleet-paddleocr-v2. PaddlePaddle GPU
+# is installed first from the official CUDA-specific index after Colab reports
+# its CUDA generation. Never install this file in Colab's system interpreter:
+# Paddle and the preinstalled PyTorch pin incompatible NVIDIA support wheels.
+paddleocr==3.7.0
+
+# Keep the isolated environment internally consistent under strict `pip check`.
+jedi==0.19.2

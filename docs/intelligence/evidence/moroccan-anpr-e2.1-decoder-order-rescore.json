@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_id": "moroccan-anpr-e2.1-paddle-arabic-decoder-order-rescore",
+  "created_on": "2026-08-25",
+  "status": "synthetic_e2_complete_not_qualified",
+  "source_run": {
+    "run_id": "anpr_v2_e2_synthetic_ppocrv5_seed20260825_run01",
+    "repository_sha": "e35080d402d009308d2178809fd481f89c731284",
+    "selected_artifact": "model/best_accuracy.pdparams",
+    "selected_model_sha256": "41e2fde4cfd641ae9db8bf43055082d6484fbe7b33b4041a04662f0c2dc8d147",
+    "prediction_artifacts_unchanged": true,
+    "model_retrained_for_rescore": false
+  },
+  "cause": {
+    "framework": "PaddleOCR",
+    "framework_version": "3.7.0",
+    "framework_commit": "b03f46425e8ff4442b268ce449e3eef758146cd4",
+    "official_source": "https://github.com/PaddlePaddle/PaddleOCR/blob/v3.7.0/ppocr/postprocess/rec_postprocess.py",
+    "finding": "The Arabic decoder applies pred_reverse to decoded text, reversing contiguous ASCII groups and individual non-ASCII characters.",
+    "original_evaluator_defect": "Raw decoder output was compared without first restoring the published visual order."
+  },
+  "rescore_method": {
+    "steps": [
+      "retain the raw OCR prediction unchanged for audit",
+      "normalize Unicode, digits, directional marks and alef variants",
+      "apply the pinned PaddleOCR pred_reverse group transformation as an involution",
+      "parse the restored visual order with the Moroccan plate grammar",
+      "verify the Arabic-to-Latin series mapping for the unified format",
+      "compare the full structured plate key"
+    ],
+    "manifest_rows": 4608,
+    "missing_prediction_manifest_matches": 0
+  },
+  "corrected_challenger_metrics": {
+    "validation_clean": {
+      "sample_count": 256,
+      "exact_match": 1.0,
+      "legacy_arabic": {
+        "sample_count": 128,
+        "exact_match": 1.0
+      },
+      "unified_2026_arabic_latin": {
+        "sample_count": 128,
+        "exact_match": 1.0
+      }
+    },
+    "calibration_clean": {
+      "sample_count": 256,
+      "exact_match": 1.0,
+      "legacy_arabic": {
+        "sample_count": 128,
+        "exact_match": 1.0
+      },
+      "unified_2026_arabic_latin": {
+        "sample_count": 128,
+        "exact_match": 1.0
+      }
+    },
+    "validation_all_variants": {
+      "sample_count": 768,
+      "exact_match": 1.0,
+      "legacy_arabic": {
+        "sample_count": 384,
+        "exact_match": 1.0
+      },
+      "unified_2026_arabic_latin": {
+        "sample_count": 384,
+        "exact_match": 1.0
+      }
+    }
+  },
+  "selection_guard_added": {
+    "minimum_exact_match_per_synthetic_format": 0.9,
+    "applies_to_real_release_gate": false
+  },
+  "claims": {
+    "synthetic_only": true,
+    "qualification_claim": false,
+    "real_photo_accuracy_claim": false,
+    "detector_evaluated": false,
+    "end_to_end_anpr_evaluated": false,
+    "final_test_opened": false,
+    "saas_integration_allowed": false
+  }
+}
