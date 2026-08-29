@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import sys
@@ -59,6 +60,33 @@ def _policy() -> dict[str, object]:
     }
 
 
+def _attestation(onnx_path: Path) -> dict[str, object]:
+    return {
+        "schema_version": BUILDER.ATTESTATION_SCHEMA_VERSION,
+        "exporter": BUILDER.EXPORTER_ID,
+        "exporter_source_sha256": BUILDER.sha256(BUILDER.EXPORTER_PATH),
+        "official_upstream": {
+            "repository": BUILDER.UPSTREAM_REPOSITORY,
+            "commit": BUILDER.UPSTREAM_COMMIT,
+        },
+        "checkpoint": {
+            "filename": BUILDER.CHECKPOINT_FILENAME,
+            "bytes": BUILDER.CHECKPOINT_BYTES,
+            "sha256": BUILDER.CHECKPOINT_SHA256,
+        },
+        "onnx": {
+            "filename": onnx_path.name,
+            "bytes": onnx_path.stat().st_size,
+            "sha256": hashlib.sha256(onnx_path.read_bytes()).hexdigest(),
+        },
+        "export_contract": {
+            "input_size": 640,
+            "outputs": ["labels", "boxes", "scores"],
+            "external_data": False,
+        },
+    }
+
+
 class VehicleDamageRtDetrBundleTest(unittest.TestCase):
     def test_approved_public_policy_is_accepted(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -75,6 +103,57 @@ class VehicleDamageRtDetrBundleTest(unittest.TestCase):
             path.write_text(json.dumps(policy), encoding="utf-8")
             with self.assertRaises(RuntimeError):
                 BUILDER.validate_policy(path)
+
+    def test_export_attestation_binds_the_exact_onnx(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            onnx_path = Path(directory) / "model.onnx"
+            onnx_path.write_bytes(b"approved-onnx")
+            onnx_sha256 = hashlib.sha256(onnx_path.read_bytes()).hexdigest()
+            attestation_path = Path(directory) / "export_attestation.json"
+            attestation_path.write_text(json.dumps(_attestation(onnx_path)), encoding="utf-8")
+
+            validated = BUILDER.validate_export_attestation(
+                attestation_path,
+                onnx_path,
+                onnx_sha256,
+            )
+
+        self.assertEqual(BUILDER.CHECKPOINT_SHA256, validated["checkpoint"]["sha256"])
+
+    def test_stale_onnx_is_rejected_even_when_structurally_compatible(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            onnx_path = Path(directory) / "model.onnx"
+            onnx_path.write_bytes(b"approved-onnx")
+            attestation_path = Path(directory) / "export_attestation.json"
+            attestation_path.write_text(json.dumps(_attestation(onnx_path)), encoding="utf-8")
+            onnx_path.write_bytes(b"stale-compatible-onnx")
+
+            with self.assertRaisesRegex(RuntimeError, "Export ONNX (size|hash) mismatch"):
+                BUILDER.validate_export_attestation(
+                    attestation_path,
+                    onnx_path,
+                    hashlib.sha256(onnx_path.read_bytes()).hexdigest(),
+                )
+
+    def test_wrong_checkpoint_or_upstream_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            onnx_path = Path(directory) / "model.onnx"
+            onnx_path.write_bytes(b"approved-onnx")
+            onnx_sha256 = hashlib.sha256(onnx_path.read_bytes()).hexdigest()
+            for field in ("checkpoint", "official_upstream"):
+                attestation = _attestation(onnx_path)
+                if field == "checkpoint":
+                    attestation[field]["sha256"] = "0" * 64
+                else:
+                    attestation[field]["commit"] = "0" * 40
+                attestation_path = Path(directory) / f"{field}.json"
+                attestation_path.write_text(json.dumps(attestation), encoding="utf-8")
+                with self.assertRaises(RuntimeError):
+                    BUILDER.validate_export_attestation(
+                        attestation_path,
+                        onnx_path,
+                        onnx_sha256,
+                    )
 
 
 if __name__ == "__main__":

@@ -16,6 +16,10 @@ from pathlib import Path
 UPSTREAM_COMMIT = "068dfde65f2667ad6555883c69d73de886518cad"
 CHECKPOINT_SHA256 = "3544b693d9014392b5a9a0d87e6951646455ed268ca1825ee5aa4fe07cd7b92e"
 CHECKPOINT_BYTES = 80_772_267
+CHECKPOINT_FILENAME = "selected_checkpoint_soup_19_24_29_inference_only.pth"
+ATTESTATION_SCHEMA_VERSION = "1.0.0"
+EXPORTER_ID = "rentfleet_rtdetrv2_s_onnx_export"
+UPSTREAM_REPOSITORY = "https://github.com/lyuwenyu/RT-DETR"
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +27,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--upstream", required=True, type=Path, help="Checkout officiel RT-DETR épinglé.")
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument(
+        "--attestation",
+        type=Path,
+        help="Reçu JSON privé; par défaut export_attestation.json à côté de l'ONNX.",
+    )
     return parser.parse_args()
 
 
@@ -92,11 +101,64 @@ def materialize_single_file_onnx(raw_output: Path, output: Path) -> None:
         raise RuntimeError("Single-file ONNX consolidation failed.") from exception
 
 
+def export_attestation(onnx_path: Path) -> dict[str, object]:
+    """Return a path-free receipt that binds this ONNX to the approved export inputs."""
+    return {
+        "schema_version": ATTESTATION_SCHEMA_VERSION,
+        "exporter": EXPORTER_ID,
+        "exporter_source_sha256": sha256(Path(__file__).resolve()),
+        "official_upstream": {
+            "repository": UPSTREAM_REPOSITORY,
+            "commit": UPSTREAM_COMMIT,
+        },
+        "checkpoint": {
+            "filename": CHECKPOINT_FILENAME,
+            "bytes": CHECKPOINT_BYTES,
+            "sha256": CHECKPOINT_SHA256,
+        },
+        "onnx": {
+            "filename": onnx_path.name,
+            "bytes": onnx_path.stat().st_size,
+            "sha256": sha256(onnx_path),
+        },
+        "export_contract": {
+            "input_size": 640,
+            "outputs": ["labels", "boxes", "scores"],
+            "external_data": False,
+        },
+    }
+
+
+def write_json_atomically(path: Path, value: dict[str, object]) -> None:
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.stem}-",
+        suffix=".json",
+        dir=path.parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump(value, stream, ensure_ascii=False, indent=2, sort_keys=True)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
 def main() -> int:
     args = parse_args()
     upstream = args.upstream.resolve()
     checkpoint = args.checkpoint.resolve()
     output = args.output.resolve()
+    attestation_path = (
+        args.attestation.resolve()
+        if args.attestation is not None
+        else output.with_name("export_attestation.json")
+    )
     pytorch_root = upstream / "rtdetrv2_pytorch"
     exporter = pytorch_root / "tools" / "export_onnx.py"
     base_config = pytorch_root / "configs" / "rtdetrv2" / "rtdetrv2_r18vd_120e_coco.yml"
@@ -112,9 +174,17 @@ def main() -> int:
         raise RuntimeError("The selected checkpoint is unavailable.")
     if checkpoint.stat().st_size != CHECKPOINT_BYTES or sha256(checkpoint) != CHECKPOINT_SHA256:
         raise RuntimeError("The selected checkpoint identity does not match the approved soup.")
-    if output.exists() or output.is_symlink():
-        raise RuntimeError("Refusing to overwrite an existing ONNX artifact.")
+    if output == attestation_path:
+        raise RuntimeError("The ONNX and attestation paths must differ.")
+    if (
+        output.exists()
+        or output.is_symlink()
+        or attestation_path.exists()
+        or attestation_path.is_symlink()
+    ):
+        raise RuntimeError("Refusing to overwrite an existing export artifact.")
     output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    attestation_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory(prefix="rentfleet-rtdetr-export-") as directory:
         export_config = Path(directory) / "rentfleet_rtdetrv2_s_export.yml"
@@ -154,19 +224,28 @@ def main() -> int:
             materialize_single_file_onnx(raw_output, output)
         except Exception:
             output.unlink(missing_ok=True)
+            attestation_path.unlink(missing_ok=True)
             raise
 
-    if not output.is_file() or not 1_000_000 <= output.stat().st_size <= 536_870_912:
+    try:
+        if not output.is_file() or not 1_000_000 <= output.stat().st_size <= 536_870_912:
+            raise RuntimeError("The exported ONNX artifact has an invalid size.")
+        os.chmod(output, 0o600)
+        receipt = export_attestation(output)
+        write_json_atomically(attestation_path, receipt)
+    except Exception:
         output.unlink(missing_ok=True)
-        raise RuntimeError("The exported ONNX artifact has an invalid size.")
-    os.chmod(output, 0o600)
+        attestation_path.unlink(missing_ok=True)
+        raise
+
     print(
         json.dumps(
             {
+                "attestation_sha256": sha256(attestation_path),
                 "checkpoint_sha256": CHECKPOINT_SHA256,
                 "input_size": 640,
                 "onnx_bytes": output.stat().st_size,
-                "onnx_sha256": sha256(output),
+                "onnx_sha256": receipt["onnx"]["sha256"],
                 "outputs": ["labels", "boxes", "scores"],
                 "upstream_commit": UPSTREAM_COMMIT,
             },

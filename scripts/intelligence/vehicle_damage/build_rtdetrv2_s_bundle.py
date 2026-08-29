@@ -17,6 +17,10 @@ CHECKPOINT_SHA256 = "3544b693d9014392b5a9a0d87e6951646455ed268ca1825ee5aa4fe07cd
 CHECKPOINT_BYTES = 80_772_267
 DECISION_THRESHOLD = 0.8236151337623596
 UPSTREAM_COMMIT = "068dfde65f2667ad6555883c69d73de886518cad"
+UPSTREAM_REPOSITORY = "https://github.com/lyuwenyu/RT-DETR"
+ATTESTATION_SCHEMA_VERSION = "1.0.0"
+EXPORTER_ID = "rentfleet_rtdetrv2_s_onnx_export"
+EXPORTER_PATH = Path(__file__).resolve().with_name("export_rtdetrv2_s_onnx.py")
 
 
 def parse_args() -> argparse.Namespace:
@@ -24,6 +28,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--policy", required=True, type=Path)
     parser.add_argument("--onnx", required=True, type=Path)
+    parser.add_argument(
+        "--export-attestation",
+        type=Path,
+        help="Reçu d'export; par défaut export_attestation.json à côté de l'ONNX.",
+    )
     parser.add_argument("--output", required=True, type=Path)
     return parser.parse_args()
 
@@ -117,11 +126,64 @@ def validate_onnx(path: Path) -> str:
     return sha256(path)
 
 
+def validate_export_attestation(
+    path: Path,
+    onnx_path: Path,
+    onnx_sha256: str,
+) -> dict[str, object]:
+    require(path.is_file() and not path.is_symlink(), "Export attestation unavailable.")
+    require(100 <= path.stat().st_size <= 65_536, "Export attestation size invalid.")
+    attestation = json.loads(path.read_text(encoding="utf-8"))
+    require(isinstance(attestation, dict), "Export attestation invalid.")
+    require(
+        attestation.get("schema_version") == ATTESTATION_SCHEMA_VERSION,
+        "Export attestation version mismatch.",
+    )
+    require(attestation.get("exporter") == EXPORTER_ID, "Export attestation producer mismatch.")
+    require(EXPORTER_PATH.is_file(), "Pinned exporter source unavailable.")
+    require(
+        attestation.get("exporter_source_sha256") == sha256(EXPORTER_PATH),
+        "Exporter source mismatch.",
+    )
+
+    upstream = attestation.get("official_upstream")
+    require(isinstance(upstream, dict), "Export upstream evidence missing.")
+    require(
+        upstream.get("repository") == UPSTREAM_REPOSITORY,
+        "Export upstream repository mismatch.",
+    )
+    require(upstream.get("commit") == UPSTREAM_COMMIT, "Export upstream commit mismatch.")
+
+    checkpoint = attestation.get("checkpoint")
+    require(isinstance(checkpoint, dict), "Export checkpoint evidence missing.")
+    require(checkpoint.get("filename") == CHECKPOINT_FILENAME, "Export checkpoint name mismatch.")
+    require(checkpoint.get("bytes") == CHECKPOINT_BYTES, "Export checkpoint size mismatch.")
+    require(checkpoint.get("sha256") == CHECKPOINT_SHA256, "Export checkpoint hash mismatch.")
+
+    onnx = attestation.get("onnx")
+    require(isinstance(onnx, dict), "Export ONNX evidence missing.")
+    require(onnx.get("filename") == onnx_path.name, "Export ONNX filename mismatch.")
+    require(onnx.get("bytes") == onnx_path.stat().st_size, "Export ONNX size mismatch.")
+    require(onnx.get("sha256") == onnx_sha256, "Export ONNX hash mismatch.")
+
+    contract = attestation.get("export_contract")
+    require(isinstance(contract, dict), "Export contract missing.")
+    require(contract.get("input_size") == 640, "Export input-size mismatch.")
+    require(contract.get("outputs") == ["labels", "boxes", "scores"], "Export outputs mismatch.")
+    require(contract.get("external_data") is False, "External ONNX data forbidden.")
+    return attestation
+
+
 def main() -> int:
     args = parse_args()
     checkpoint = args.checkpoint.resolve()
     policy_path = args.policy.resolve()
     onnx_path = args.onnx.resolve()
+    attestation_path = (
+        args.export_attestation.resolve()
+        if args.export_attestation is not None
+        else onnx_path.with_name("export_attestation.json")
+    )
     output = args.output.resolve()
     require(checkpoint.is_file() and not checkpoint.is_symlink(), "Checkpoint unavailable.")
     require(checkpoint.name == CHECKPOINT_FILENAME, "Checkpoint filename mismatch.")
@@ -129,6 +191,8 @@ def main() -> int:
     require(sha256(checkpoint) == CHECKPOINT_SHA256, "Checkpoint SHA-256 mismatch.")
     policy = validate_policy(policy_path)
     onnx_sha256 = validate_onnx(onnx_path)
+    validate_export_attestation(attestation_path, onnx_path, onnx_sha256)
+    attestation_sha256 = sha256(attestation_path)
     require(not output.exists() and not output.is_symlink(), "Refusing to overwrite a bundle.")
     output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 
@@ -181,6 +245,7 @@ def main() -> int:
         },
         "provenance": {
             "official_upstream_commit": UPSTREAM_COMMIT,
+            "export_attestation_sha256": attestation_sha256,
             "policy_sha256": sha256(policy_path),
         },
     }
@@ -189,6 +254,15 @@ def main() -> int:
     try:
         shutil.copyfile(onnx_path, temporary / "model.onnx")
         shutil.copyfile(policy_path, temporary / "selected_inference_policy.json")
+        shutil.copyfile(attestation_path, temporary / "export_attestation.json")
+        require(
+            sha256(temporary / "model.onnx") == onnx_sha256,
+            "ONNX changed during bundle build.",
+        )
+        require(
+            sha256(temporary / "export_attestation.json") == attestation_sha256,
+            "Export attestation changed during bundle build.",
+        )
         card_path = temporary / "model_card.json"
         card_path.write_text(
             json.dumps(card, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
@@ -196,7 +270,12 @@ def main() -> int:
         )
         checksums = {
             name: sha256(temporary / name)
-            for name in ["model.onnx", "model_card.json", "selected_inference_policy.json"]
+            for name in [
+                "model.onnx",
+                "model_card.json",
+                "selected_inference_policy.json",
+                "export_attestation.json",
+            ]
         }
         (temporary / "SHA256SUMS").write_text(
             "".join(f"{digest}  {name}\n" for name, digest in checksums.items()),

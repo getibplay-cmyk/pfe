@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import subprocess
 import sys
@@ -73,6 +74,20 @@ class VehicleDamageRtDetrExportTest(unittest.TestCase):
 
         self.assertEqual([True, False], [external for _, external in loads])
         self.assertEqual([False], saves)
+
+    def test_export_attestation_binds_onnx_checkpoint_and_upstream(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            onnx_path = Path(directory) / "model.onnx"
+            onnx_path.write_bytes(b"closed-onnx")
+            attestation = EXPORTER.export_attestation(onnx_path)
+
+        self.assertEqual(EXPORTER.CHECKPOINT_SHA256, attestation["checkpoint"]["sha256"])
+        self.assertEqual(EXPORTER.UPSTREAM_COMMIT, attestation["official_upstream"]["commit"])
+        self.assertEqual(
+            hashlib.sha256(b"closed-onnx").hexdigest(),
+            attestation["onnx"]["sha256"],
+        )
+        self.assertEqual("model.onnx", attestation["onnx"]["filename"])
 
     def test_colab_and_runtime_pins_share_a_numpy_2_2_environment(self) -> None:
         colab = (ROOT / "scripts/intelligence/requirements-vehicle-damage-colab.txt").read_text()
