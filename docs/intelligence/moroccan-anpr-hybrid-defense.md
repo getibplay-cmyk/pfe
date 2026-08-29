@@ -99,9 +99,11 @@ python -m venv .venv-plate-ocr
 
 La dernière commande précharge le recognizer avant la démonstration. Renseigner
 ensuite son interpréteur dans `PLATE_HYBRID_PYTHON_BINARY`, fixer
-`DB_QUEUE_RETRY_AFTER=420`, lancer le worker de queue avec un timeout d'au moins
-350 secondes et n'activer le feature flag que dans l'environnement de
-démonstration.
+`DB_QUEUE_RETRY_AFTER=660`, lancer le worker de queue avec un timeout d'au moins
+630 secondes et n'activer le feature flag que dans l'environnement de
+démonstration. Le timeout propre à chaque job est calculé comme la somme des
+timeouts détecteur et OCR, augmentée de 30 secondes de marge ; il ne peut donc
+pas interrompre un stage encore dans sa limite autorisée.
 
 ## Preuve privée agrégée
 

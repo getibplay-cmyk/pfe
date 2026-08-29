@@ -92,6 +92,24 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->assertSee('1 783 lignes restantes');
     }
 
+    public function test_job_timeout_covers_both_runtime_stages_and_process_overhead(): void
+    {
+        config([
+            'intelligence.vehicle_plate_hybrid_review.detector.timeout_seconds' => 300,
+            'intelligence.vehicle_plate_hybrid_review.runtime_timeout_seconds' => 120,
+        ]);
+
+        $job = new RunVehiclePlatePrediction('run-timeout', 1, 1);
+
+        $this->assertSame(450, $job->timeout);
+        $this->assertGreaterThan(300 + 120, $job->timeout);
+
+        config(['intelligence.vehicle_plate_hybrid_review.runtime_timeout_seconds' => 300]);
+
+        $maximalJob = new RunVehiclePlatePrediction('run-maximal-timeout', 1, 1);
+        $this->assertSame(630, $maximalJob->timeout);
+    }
+
     public function test_private_crop_is_queued_executed_and_never_updates_vehicle_registration(): void
     {
         $fixture = $this->fixture();

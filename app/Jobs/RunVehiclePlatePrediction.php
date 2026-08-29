@@ -16,9 +16,13 @@ class RunVehiclePlatePrediction implements ShouldQueue
 {
     use Queueable;
 
+    private const PROCESS_OVERHEAD_SECONDS = 30;
+
+    private const MAX_STAGE_TIMEOUT_SECONDS = 300;
+
     public int $tries = 1;
 
-    public int $timeout = 350;
+    public int $timeout;
 
     public bool $failOnTimeout = true;
 
@@ -26,7 +30,15 @@ class RunVehiclePlatePrediction implements ShouldQueue
         public readonly string $runId,
         public readonly int $tenantId,
         public readonly int $actorId,
-    ) {}
+    ) {
+        $detectorTimeout = $this->boundedStageTimeout((int) config(
+            'intelligence.vehicle_plate_hybrid_review.detector.timeout_seconds',
+        ));
+        $ocrTimeout = $this->boundedStageTimeout((int) config(
+            'intelligence.vehicle_plate_hybrid_review.runtime_timeout_seconds',
+        ));
+        $this->timeout = $detectorTimeout + $ocrTimeout + self::PROCESS_OVERHEAD_SECONDS;
+    }
 
     public function handle(ExecuteVehiclePlatePrediction $execute): void
     {
@@ -76,5 +88,10 @@ class RunVehiclePlatePrediction implements ShouldQueue
         } catch (Throwable) {
             // Le registre conserve déjà l’échec si l’audit est indisponible.
         }
+    }
+
+    private function boundedStageTimeout(int $timeout): int
+    {
+        return min(self::MAX_STAGE_TIMEOUT_SECONDS, max(1, $timeout));
     }
 }

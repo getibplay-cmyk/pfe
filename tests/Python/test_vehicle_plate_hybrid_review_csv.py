@@ -125,6 +125,20 @@ class VehiclePlateHybridReviewCsvTest(unittest.TestCase):
                 payload(),
             )
 
+    def test_refuses_reusing_one_result_for_labels_with_the_same_basename(self):
+        one_result = payload()
+        one_result["count"] = 1
+        one_result["results"] = [one_result["results"][0]]
+
+        with self.assertRaisesRegex(ProtocolError, "réutilisé"):
+            build_review_rows(
+                [
+                    {"image": "dir-a/1.png", "prediction": "", "correction": ""},
+                    {"image": "dir-b/1.png", "prediction": "", "correction": ""},
+                ],
+                one_result,
+            )
+
     def test_writes_a_new_file_and_never_overwrites_it(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

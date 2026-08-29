@@ -108,7 +108,12 @@ def build_review_rows(
             raise ProtocolError(
                 f"Aucun résultat hybride pour l'image {row.get('image', '')!r}."
             )
-        matched_crop_ids.add(str(result["crop_id"]))
+        crop_id = str(result["crop_id"])
+        if crop_id in matched_crop_ids:
+            raise ProtocolError(
+                f"Résultat hybride réutilisé pour plusieurs lignes labels: {crop_id!r}."
+            )
+        matched_crop_ids.add(crop_id)
         suggestion = result["suggestion"]
         canonical = str(suggestion.get("canonical") or "")
         display_text = str(suggestion.get("display_text") or "")
