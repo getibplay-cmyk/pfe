@@ -77,9 +77,13 @@ class VehicleDamageRtDetrExportTest(unittest.TestCase):
     def test_colab_and_runtime_pins_share_a_numpy_2_2_environment(self) -> None:
         colab = (ROOT / "scripts/intelligence/requirements-vehicle-damage-colab.txt").read_text()
         runtime = (ROOT / "scripts/intelligence/requirements-vehicle-damage-runtime.txt").read_text()
+        gpu_runtime = (
+            ROOT / "scripts/intelligence/requirements-vehicle-damage-runtime-gpu.txt"
+        ).read_text()
         self.assertIn("onnxscript==0.6.2", colab)
         self.assertIn("numpy==2.2.6", colab)
         self.assertIn("numpy==2.2.6", runtime)
+        self.assertIn("numpy==2.2.6", gpu_runtime)
 
 
 if __name__ == "__main__":

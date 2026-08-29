@@ -324,12 +324,12 @@ class RentFleetDoctor extends Command
         $artifactReady = $artifact->configuredIsValid();
         $ready = $configured
             && $artifactReady
-            && $versions === '3.12|2.3.5|12.3.0|1.29.0|1';
+            && $versions === '3.12|2.2.6|12.3.0|1.29.0|1';
         $this->add(
             $runtimeLabel,
             $ready ? 'pass' : ($production ? 'fail' : 'warn'),
             $ready
-                ? 'ONNX et carte vérifiés · Python 3.12 · numpy 2.3.5 · Pillow 12.3.0 · ONNX Runtime 1.29.0 · fournisseur disponible'
+                ? 'ONNX et carte vérifiés · Python 3.12 · numpy 2.2.6 · Pillow 12.3.0 · ONNX Runtime 1.29.0 · fournisseur disponible'
                 : ($artifactReady
                     ? 'artefacts vérifiés; environnement Python ou fournisseur ONNX incomplet'
                     : 'artefacts privés absents, empreintes non configurées ou carte invalide'),
