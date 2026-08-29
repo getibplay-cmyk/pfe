@@ -1,9 +1,9 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="Assistant dommages · EfficientNetV2-S"
+            title="Assistant dommages · {{ $contract['backend'] === 'rtdetrv2_s' ? 'RT-DETRv2-S' : 'EfficientNetV2-S' }}"
             eyebrow="Intelligence consultative"
-            description="Analysez une photo privée liée à une inspection de retour, visualisez des zones candidates grossières puis consignez une vérification humaine. Aucun dommage, frais ou responsabilité n’est créé automatiquement."
+            description="Analysez une photo privée liée à une inspection de retour, visualisez des zones candidates puis consignez une vérification humaine. Aucun dommage, frais ou responsabilité n’est créé automatiquement."
         >
             <x-slot:actions>
                 <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
@@ -31,16 +31,32 @@
             </div>
         </x-section-card>
 
-        <x-section-card title="Qualification scientifique v1.1" description="Résultats du test final gelé sur la source publique HITL; la validation locale RentFleet reste à réaliser.">
-            <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
-                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Balanced accuracy</p><p class="mt-1 font-semibold">{{ number_format($contract['balanced_accuracy'] * 100, 2, ',', ' ') }} %</p></div>
-                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Macro-F1</p><p class="mt-1 font-semibold">{{ number_format($contract['macro_f1'] * 100, 2, ',', ' ') }} %</p></div>
-                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Rappel dommage</p><p class="mt-1 font-semibold">{{ number_format($contract['damage_recall'] * 100, 2, ',', ' ') }} %</p></div>
-                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">ECE</p><p class="mt-1 font-semibold">{{ number_format($contract['ece'], 4, ',', ' ') }}</p></div>
-                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Seuil de patch calibré</p><p class="mt-1 font-semibold">{{ number_format($contract['decision_threshold'] * 100, 1, ',', ' ') }} %</p></div>
-            </div>
-            <p class="mt-4 text-xs leading-5 text-slate-500">Le plancher de qualification de 75 % concerne les métriques du modèle, pas le seuil d’inférence. Le seuil de patch 49,5 % a été choisi sur le split de calibration. Une région affichée reste une proposition à contrôler, jamais une segmentation précise ni une preuve de responsabilité.</p>
-        </x-section-card>
+        @if ($contract['backend'] === 'rtdetrv2_s')
+            <x-section-card title="Pilote RT-DETRv2-S" description="Checkpoint soup 19/24/29 optimisé sur la validation de développement, sans calibration ni consultation du test final.">
+                <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">AP validation</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_ap'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">AP50 validation</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_ap50'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">AP75 validation</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_ap75'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Seuil précision 90</p><p class="mt-1 font-semibold">{{ number_format($contract['decision_threshold'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Précision IoU50 au seuil</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_precision_iou50'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Rappel IoU50 au seuil</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_recall_iou50'] * 100, 2, ',', ' ') }} %</p></div>
+                </div>
+                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                    Le profil retenu privilégie fortement la précision, au prix d’un rappel de 22,59 %. Le gate scientifique AP ≥ 40 % et AP50 ≥ 65 % n’est pas atteint. Ce backend est donc limité à un pilote consultatif avec revue humaine obligatoire ; ses boîtes ne constituent ni une segmentation précise ni une preuve de responsabilité.
+                </div>
+            </x-section-card>
+        @else
+            <x-section-card title="Qualification scientifique v1.1" description="Résultats du test final gelé sur la source publique HITL; la validation locale RentFleet reste à réaliser.">
+                <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Balanced accuracy</p><p class="mt-1 font-semibold">{{ number_format($contract['balanced_accuracy'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Macro-F1</p><p class="mt-1 font-semibold">{{ number_format($contract['macro_f1'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Rappel dommage</p><p class="mt-1 font-semibold">{{ number_format($contract['damage_recall'] * 100, 2, ',', ' ') }} %</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">ECE</p><p class="mt-1 font-semibold">{{ number_format($contract['ece'], 4, ',', ' ') }}</p></div>
+                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Seuil de patch calibré</p><p class="mt-1 font-semibold">{{ number_format($contract['decision_threshold'] * 100, 1, ',', ' ') }} %</p></div>
+                </div>
+                <p class="mt-4 text-xs leading-5 text-slate-500">Le plancher de qualification de 75 % concerne les métriques du modèle, pas le seuil d’inférence. Le seuil de patch 49,5 % a été choisi sur le split de calibration. Une région affichée reste une proposition à contrôler, jamais une segmentation précise ni une preuve de responsabilité.</p>
+            </x-section-card>
+        @endif
 
         @if (auth()->user()->hasPermission('prediction.damage.review'))
             <x-section-card title="Nouvelle analyse de retour" description="Seules les inspections de retour terminées et autorisées sont proposées.">
@@ -136,7 +152,7 @@
                                 @if ($run->status->value === 'succeeded')
                                     <div class="grid gap-3 text-sm sm:grid-cols-3">
                                         <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Résultat consultatif</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Score maximal de patch</p><p class="mt-1 font-semibold">{{ $run->max_probability_damage === null ? '—' : number_format((float) $run->max_probability_damage * 100, 2, ',', ' ').' %' }}</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Score maximal</p><p class="mt-1 font-semibold">{{ $run->max_probability_damage === null ? '—' : number_format((float) $run->max_probability_damage * 100, 2, ',', ' ').' %' }}</p></div>
                                         <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Zones affichées</p><p class="mt-1 font-semibold">{{ count($run->candidate_regions ?? []) }}</p></div>
                                     </div>
 
@@ -148,9 +164,9 @@
                                             </ul>
                                         </div>
                                     @elseif ($run->suggested_damage)
-                                        <p class="mt-4 text-sm leading-6 text-amber-900">Les cadres rouges indiquent des patches candidats. Ils peuvent se chevaucher et ne délimitent pas précisément un dommage.</p>
+                                        <p class="mt-4 text-sm leading-6 text-amber-900">Les cadres rouges indiquent des zones candidates. Ils ne délimitent pas précisément un dommage.</p>
                                     @else
-                                        <p class="mt-4 text-sm leading-6 text-slate-600">Aucun patch ne franchit le seuil calibré. Ce résultat n’exclut pas un dommage hors champ, minuscule ou différent du domaine d’entraînement.</p>
+                                        <p class="mt-4 text-sm leading-6 text-slate-600">Aucune détection ne franchit le seuil sélectionné. Ce résultat n’exclut pas un dommage hors champ, minuscule ou différent du domaine d’entraînement.</p>
                                     @endif
 
                                     @if ($run->review)

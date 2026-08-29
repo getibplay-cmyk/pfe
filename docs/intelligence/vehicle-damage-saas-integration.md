@@ -1,4 +1,4 @@
-# S7 dommages v1.1 — intégration SaaS consultative
+# S7 dommages RT-DETRv2-S — pilote SaaS consultatif
 
 > **Périmètre de lot :** cette tranche appartient au **Lot 08 Intelligence**,
 > postérieur et distinct du Lot 06 « release candidate sans IA ». Elle ne
@@ -7,11 +7,12 @@
 
 ## Décision livrée
 
-Le modèle EfficientNetV2-S qualifié est intégré comme un assistant de contrôle
-des photos d'inspection de retour. Laravel assainit et conserve la photo sur le
+Le checkpoint RT-DETRv2-S `soup_19_24_29_centered_nms_0.72` remplace le backend
+EfficientNetV2-S pour le pilote. Laravel assainit et conserve la photo sur le
 stockage privé, crée une exécution PostgreSQL, puis délègue l'inférence ONNX à
 un job de la queue `intelligence`. Le résultat est revalidé par Laravel avant
-d'être affiché sous forme de zones candidates grossières.
+d'être affiché sous forme de boîtes candidates. L'ancien backend reste
+sélectionnable pour un rollback sans supprimer l'historique.
 
 Le module est **consultatif uniquement** : confirmer ou rejeter une suggestion
 ne crée jamais de `damage_report`, de frais, de responsabilité, de retenue ou de
@@ -22,39 +23,46 @@ Le flag reste fermé par défaut :
 
 ```dotenv
 RENTFLEET_DAMAGE_V1_ENABLED=false
+DAMAGE_V1_BACKEND=rtdetrv2_s
 ```
 
 ## Contrat scientifique gelé
 
 | Élément | Valeur publique gelée |
 |---|---:|
-| Modèle | EfficientNetV2-S |
-| Version SaaS | `s7-damage-efficientnetv2s-v1.1` |
-| Balanced accuracy test | 0,857633 |
-| Macro-F1 test | 0,852923 |
-| Rappel dommage test | 0,867117 |
-| ECE test | 0,025848 |
-| Plancher de qualification | 0,75 |
-| Seuil de décision calibré | 0,495 |
+| Modèle | RT-DETRv2-S R18vd, entrée 640 |
+| Version SaaS | `s7-damage-rtdetrv2-s-soup192429-v1.0` |
+| Checkpoints moyennés | époques 19/24/29, poids 0,25/0,50/0,25 |
+| AP validation | 0,296775 |
+| AP50 validation | 0,477584 |
+| AP75 validation | 0,286214 |
+| NMS | hard, class-agnostic, IoU 0,72 |
+| Profil | `precision_90` |
+| Seuil de décision | 0,8236151338 |
+| Précision IoU50 au seuil | 0,900901 |
+| Rappel IoU50 au seuil | 0,225861 |
+| Gate exigé | AP ≥ 0,40 et AP50 ≥ 0,65 — **échoué** |
 
-Le plancher `0,75` s'applique aux métriques de qualification du modèle. Il ne
-doit pas être confondu avec le seuil de décision `0,495`, choisi uniquement sur
-le split de calibration puis gelé avant le test final.
+Ces mesures et le seuil ont été choisis sur la même validation de
+développement : ils sont optimistes et ne constituent pas une qualification
+finale. Le profil haute précision diminue les faux positifs mais manque une
+part importante des dommages. Ni calibration ni test final n'ont été utilisés;
+le test final reste scellé.
 
-Les tailles et SHA-256 de `model.onnx` et `model_card.json` restent privés. Le
-SaaS exige que ces deux empreintes soient fournies dans l'environnement local,
-recalcule les empreintes et refuse une carte dont l'identité, le prétraitement,
-le seuil ou la release gate ne correspondent pas au contrat gelé.
+Le SaaS exige les SHA-256 locaux de `model.onnx` et `model_card.json`, recalcule
+les empreintes et refuse une carte dont le checkpoint, le prétraitement, le
+seuil, le NMS, les preuves de validation ou les garde-fous ne correspondent pas
+au contrat fermé.
 
 ## Périmètre et limites
 
 - seules les inspections de type `return` au statut `completed` sont éligibles;
-- l'image est évaluée par patches carrés chevauchants;
-- les cadres indiquent des régions candidates, pas les contours exacts d'un
+- l'image entière est redimensionnée en RGB 640 × 640 pour une passe RT-DETR;
+- les cadres indiquent des boîtes candidates, pas les contours exacts d'un
   dommage;
 - une photo trop petite, sombre, surexposée, peu contrastée ou potentiellement
   floue produit une abstention et aucune inférence;
-- une absence de patch positif n'exclut pas un dommage hors champ, minuscule ou
+- une absence de boîte positive n'exclut pas un dommage hors champ, minuscule ou
   hors domaine;
 - la qualification publique ne valide pas encore les photos réelles RentFleet;
   un pilote local consenti reste obligatoire.
@@ -83,6 +91,36 @@ le seuil ou la release gate ne correspondent pas au contrat gelé.
 10. Tous les résultats et toutes les revues portent
     `NO_OPERATIONAL_ACTION`.
 
+## Export et bundle privés
+
+L'export suit le script officiel, épinglé au commit enregistré par le run. Il
+ne charge aucun dataloader et ne reçoit aucun chemin de calibration ou de test.
+Dans un environnement disposant de PyTorch, TorchVision et `onnx` :
+
+```bash
+git clone https://github.com/lyuwenyu/RT-DETR.git /chemin/RT-DETR-pinned
+git -C /chemin/RT-DETR-pinned checkout 068dfde65f2667ad6555883c69d73de886518cad
+python -m pip install \
+  --requirement scripts/intelligence/requirements-vehicle-damage-colab.txt
+python scripts/intelligence/vehicle_damage/export_rtdetrv2_s_onnx.py \
+  --upstream /chemin/RT-DETR-pinned \
+  --checkpoint /chemin/prive/selected_checkpoint_soup_19_24_29_inference_only.pth \
+  --output /chemin/prive/export/model.onnx
+python scripts/intelligence/vehicle_damage/build_rtdetrv2_s_bundle.py \
+  --checkpoint /chemin/prive/selected_checkpoint_soup_19_24_29_inference_only.pth \
+  --policy /chemin/prive/selected_inference_policy.json \
+  --onnx /chemin/prive/export/model.onnx \
+  --output /chemin/prive/rentfleet-rtdetrv2-s-bundle
+```
+
+L'exporteur vérifie le checkpoint avant d'autoriser le chargeur historique de
+PyTorch et incorpore les éventuels poids ONNX externalisés dans un fichier
+autonome. Le constructeur vérifie le checkpoint public exact (80 772 267
+octets et SHA-256
+`3544b693d9014392b5a9a0d87e6951646455ed268ca1825ee5aa4fe07cd7b92e`), la
+politique, la structure ONNX, l'absence de données externes et les scellés avant
+d'écrire atomiquement le bundle.
+
 ## Installation CPU recommandée
 
 Après le pull, préparer un environnement Python 3.12 privé :
@@ -105,10 +143,11 @@ Configurer les chemins et empreintes privés sans ouvrir le module :
 
 ```dotenv
 RENTFLEET_DAMAGE_V1_ENABLED=false
+DAMAGE_V1_BACKEND=rtdetrv2_s
 DAMAGE_V1_PYTHON_BINARY=/chemin/.venv-damage-v1/bin/python
 DAMAGE_V1_EXECUTION_PROVIDER=CPUExecutionProvider
-DAMAGE_V1_MODEL_PATH=/chemin/prive/rentfleet/vehicle-damage-v1/model.onnx
-DAMAGE_V1_MODEL_CARD_PATH=/chemin/prive/rentfleet/vehicle-damage-v1/model_card.json
+DAMAGE_V1_MODEL_PATH=/chemin/prive/rentfleet-rtdetrv2-s-bundle/model.onnx
+DAMAGE_V1_MODEL_CARD_PATH=/chemin/prive/rentfleet-rtdetrv2-s-bundle/model_card.json
 DAMAGE_V1_MODEL_SHA256=<sha256-prive-model.onnx>
 DAMAGE_V1_MODEL_CARD_SHA256=<sha256-prive-model_card.json>
 ```
@@ -117,7 +156,7 @@ La commande suivante vérifie la paire source puis la copie atomiquement avec
 des permissions privées vers les chemins configurés :
 
 ```bash
-php artisan rentfleet:damage-v1:install "/chemin/prive/du-run-qualifie"
+php artisan rentfleet:damage-v1:install "/chemin/prive/rentfleet-rtdetrv2-s-bundle"
 ```
 
 Appliquer et vérifier le déploiement :
@@ -174,10 +213,18 @@ ensemble dans le même environnement.
 - pour arrêter les nouvelles analyses, remettre le flag à `false`, reconstruire
   le cache de configuration et laisser les jobs présents se terminer ou
   expirer;
+- pour revenir à l'ancien runtime, laisser d'abord le flag à `false`, installer
+  sa paire privée puis définir `DAMAGE_V1_BACKEND=efficientnetv2s`; ne jamais
+  réutiliser les SHA-256 du nouveau backend;
 - un rollback ne doit pas supprimer les registres, photos ou revues existants.
 
 ## Références techniques
 
+- RT-DETR officiel : <https://github.com/lyuwenyu/RT-DETR>
+- Export ONNX officiel :
+  <https://github.com/lyuwenyu/RT-DETR/blob/main/rtdetrv2_pytorch/tools/export_onnx.py>
+- Checkpoint et politique d’inférence : artefacts transmis uniquement par
+  le canal privé d’exploitation ; aucun lien privé n’est versionné.
 - ONNX Runtime Python : <https://onnxruntime.ai/docs/get-started/with-python.html>
 - ONNX Runtime, optimisation et quantification :
   <https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html>

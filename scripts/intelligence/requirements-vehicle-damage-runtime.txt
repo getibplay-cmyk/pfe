@@ -1,3 +1,5 @@
-numpy==2.3.5
+# Keep compatibility with the NumPy <2.3 constraint used by Colab's Numba
+# while retaining CPython 3.13 wheels and ONNX Runtime compatibility.
+numpy==2.2.6
 onnxruntime==1.29.0
 Pillow==12.3.0

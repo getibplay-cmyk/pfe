@@ -89,9 +89,15 @@ jobs:
         run: |
           python -m py_compile \
             scripts/intelligence/vehicle_damage/run_vehicle_damage_onnx.py \
+            scripts/intelligence/vehicle_damage/export_rtdetrv2_s_onnx.py \
+            scripts/intelligence/vehicle_damage/build_rtdetrv2_s_bundle.py \
+            scripts/intelligence/vehicle_damage/run_vehicle_damage_rtdetrv2_onnx.py \
             scripts/intelligence/vehicle_damage/sanitize_return_image.py
           python -m unittest -v \
             tests/Python/test_vehicle_damage_runtime.py \
+            tests/Python/test_vehicle_damage_rtdetrv2_export.py \
+            tests/Python/test_vehicle_damage_rtdetrv2_bundle.py \
+            tests/Python/test_vehicle_damage_rtdetrv2_runtime.py \
             tests/Python/test_vehicle_damage_image_sanitizer.py
 
   science-rental-usage-anomaly-runtime:
