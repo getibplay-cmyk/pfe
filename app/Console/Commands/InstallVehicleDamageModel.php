@@ -12,7 +12,7 @@ use Throwable;
 class InstallVehicleDamageModel extends Command
 {
     protected $signature = 'rentfleet:damage-v1:install
-                            {source : Dossier local du run EfficientNetV2-S qualifié}
+                            {source : Dossier local du bundle ONNX correspondant au backend configuré}
                             {--replace : Remplacer une paire cible invalide existante}';
 
     protected $description = 'Vérifie puis installe l’ONNX dommages et sa carte dans le stockage privé.';
@@ -38,7 +38,7 @@ class InstallVehicleDamageModel extends Command
         $sourceModelCard = $directory.DIRECTORY_SEPARATOR.VehicleDamageContract::MODEL_CARD_FILENAME;
         if (! $artifact->validPair($sourceModel, $sourceModelCard)) {
             $this->components->error(
-                'Paire refusée : SHA-256 privés, carte du modèle ou release gate invalides.',
+                'Paire refusée : SHA-256 privés ou contrat fermé du modèle invalides.',
             );
 
             return self::FAILURE;

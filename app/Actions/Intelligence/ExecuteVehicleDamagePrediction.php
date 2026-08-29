@@ -54,6 +54,11 @@ final class ExecuteVehicleDamagePrediction
                 || $inspection->agency_id !== $run->agency_id) {
                 throw new VehicleDamageExecutionException('RETURN_INSPECTION_UNAVAILABLE');
             }
+            if ($run->model_name !== VehicleDamageContract::modelName()
+                || $run->model_version !== VehicleDamageContract::modelVersion()
+                || abs((float) $run->decision_threshold - VehicleDamageContract::decisionThreshold()) > 0.000001) {
+                throw new VehicleDamageExecutionException('MODEL_BACKEND_MISMATCH');
+            }
             if (! $this->modelArtifact->configuredIsValid()
                 || ! hash_equals($run->model_artifact_sha256, $this->modelArtifact->configuredModelSha256())
                 || ! hash_equals($run->model_card_sha256, $this->modelArtifact->configuredModelCardSha256())) {

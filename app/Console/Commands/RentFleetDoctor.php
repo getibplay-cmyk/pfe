@@ -269,9 +269,13 @@ class RentFleetDoctor extends Command
     private function checkVehicleDamageRuntime(bool $production): void
     {
         $enabled = (bool) config('intelligence.vehicle_damage_v1.enabled');
+        $backend = (string) config('intelligence.vehicle_damage_v1.backend');
+        $runtimeLabel = $backend === 'rtdetrv2_s'
+            ? 'Runtime dommages RT-DETRv2-S'
+            : 'Runtime dommages EfficientNetV2-S';
         if (! $enabled) {
             $this->add(
-                'Runtime dommages EfficientNetV2-S',
+                $runtimeLabel,
                 'warn',
                 'désactivé par défaut; activation explicite requise après installation et contrôle',
             );
@@ -322,7 +326,7 @@ class RentFleetDoctor extends Command
             && $artifactReady
             && $versions === '3.12|2.3.5|12.3.0|1.29.0|1';
         $this->add(
-            'Runtime dommages EfficientNetV2-S',
+            $runtimeLabel,
             $ready ? 'pass' : ($production ? 'fail' : 'warn'),
             $ready
                 ? 'ONNX et carte vérifiés · Python 3.12 · numpy 2.3.5 · Pillow 12.3.0 · ONNX Runtime 1.29.0 · fournisseur disponible'

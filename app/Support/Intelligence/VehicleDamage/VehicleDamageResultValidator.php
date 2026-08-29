@@ -53,8 +53,8 @@ class VehicleDamageResultValidator
                 'pixel_precise_localization',
             ])
             || $payload['schema_version'] !== VehicleDamageContract::RESULT_SCHEMA_VERSION
-            || $model['name'] !== VehicleDamageContract::MODEL_NAME
-            || $model['version'] !== VehicleDamageContract::MODEL_VERSION
+            || $model['name'] !== $run->model_name
+            || $model['version'] !== $run->model_version
             || $model['artifact_sha256'] !== $run->model_artifact_sha256
             || $model['model_card_sha256'] !== $run->model_card_sha256
             || ! $this->numericEquals($model['decision_threshold'], (float) $run->decision_threshold)
@@ -75,7 +75,7 @@ class VehicleDamageResultValidator
         }
 
         [$qualityStatus, $qualityReasons, $qualityMetrics] = $this->quality($payload['quality'] ?? null);
-        $evaluatedPatches = $this->scan($payload['scan'] ?? null, $qualityStatus);
+        $evaluatedPatches = $this->scan($payload['scan'] ?? null, $qualityStatus, $run);
         [$maxProbability, $suggestedDamage, $regions] = $this->result(
             $payload['result'] ?? null,
             $run,
@@ -148,23 +148,34 @@ class VehicleDamageResultValidator
         return [$quality['status'], $reasons, $metrics];
     }
 
-    private function scan(mixed $scan, string $qualityStatus): int
+    private function scan(
+        mixed $scan,
+        string $qualityStatus,
+        VehicleDamagePredictionRun $run,
+    ): int
     {
+        $backend = VehicleDamageContract::backendForModelName($run->model_name);
         if (! is_array($scan)
             || ! $this->hasExactKeys(
                 $scan,
                 ['mode', 'evaluated_patches', 'overlap_ratio', 'candidate_limit'],
             )
-            || $scan['mode'] !== 'coarse_overlapping_patches'
+            || $backend === null
+            || $scan['mode'] !== VehicleDamageContract::scanModeForBackend($backend)
             || ! is_int($scan['evaluated_patches'] ?? null)
             || $scan['evaluated_patches'] < 0
-            || $scan['evaluated_patches'] > min(
-                64,
-                (int) config('intelligence.vehicle_damage_v1.max_scan_patches'),
+            || $scan['evaluated_patches'] > (
+                $backend === VehicleDamageContract::BACKEND_RTDETRV2_S ? 1 : 64
             )
-            || ! $this->numericEquals($scan['overlap_ratio'] ?? null, VehicleDamageContract::OVERLAP_RATIO)
+            || ! $this->numericEquals(
+                $scan['overlap_ratio'] ?? null,
+                VehicleDamageContract::overlapRatioForBackend($backend),
+            )
             || $scan['candidate_limit'] !== VehicleDamageContract::MAX_CANDIDATES
-            || ($qualityStatus === 'abstained' && $scan['evaluated_patches'] !== 0)) {
+            || ($qualityStatus === 'abstained' && $scan['evaluated_patches'] !== 0)
+            || ($backend === VehicleDamageContract::BACKEND_RTDETRV2_S
+                && $qualityStatus === 'usable'
+                && $scan['evaluated_patches'] !== 1)) {
             throw new VehicleDamageExecutionException('DAMAGE_OUTPUT_SCAN_INVALID');
         }
 
