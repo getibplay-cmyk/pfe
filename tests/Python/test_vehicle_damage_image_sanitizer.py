@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -40,7 +41,13 @@ class VehicleDamageImageSanitizerTest(unittest.TestCase):
             self.assertEqual("jpg", manifest["extension"])
             self.assertEqual((480, 640), (manifest["width"], manifest["height"]))
             self.assertTrue(manifest["metadata_removed"])
-            self.assertEqual(0o600, output.stat().st_mode & 0o777)
+            # Windows exposes only a limited read-only mapping through
+            # ``st_mode`` and commonly reports 0o666 even after chmod(0o600).
+            # Keep the confidentiality assertion strict on POSIX, where these
+            # permission bits are authoritative; NTFS access is governed by
+            # the ACL of Laravel's private storage directory.
+            if os.name == "posix":
+                self.assertEqual(0o600, output.stat().st_mode & 0o777)
             self.assertNotIn(b"private-return-location", output.read_bytes())
             with Image.open(output) as sanitized:
                 self.assertEqual("JPEG", sanitized.format)

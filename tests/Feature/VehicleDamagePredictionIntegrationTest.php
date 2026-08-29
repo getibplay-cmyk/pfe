@@ -50,13 +50,15 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         Storage::fake('local');
         $this->seed(RolesPermissionsSeeder::class);
         config([
+            'intelligence.vehicle_damage_v1.backend' => VehicleDamageContract::BACKEND_RTDETRV2_S,
             'intelligence.vehicle_damage_v1.enabled' => false,
             'intelligence.vehicle_damage_v1.disk' => 'local',
             'intelligence.vehicle_damage_v1.python_binary' => 'python',
             'intelligence.vehicle_damage_v1.execution_provider' => 'CPUExecutionProvider',
             'intelligence.vehicle_damage_v1.runtime_script' => base_path(
-                'scripts/intelligence/vehicle_damage/run_vehicle_damage_onnx.py',
+                'scripts/intelligence/vehicle_damage/run_vehicle_damage_rtdetrv2_onnx.py',
             ),
+            'intelligence.vehicle_damage_v1.max_scan_patches' => 1,
             'intelligence.vehicle_damage_v1.image_sanitizer_script' => base_path(
                 'scripts/intelligence/vehicle_damage/sanitize_return_image.py',
             ),
@@ -85,6 +87,8 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-damages.index'))
             ->assertOk()
             ->assertSee('Désactivé par défaut')
+            ->assertSee('RT-DETRv2-S')
+            ->assertSee('Rappel IoU50 au seuil')
             ->assertSee('Aucune action automatique');
     }
 
@@ -110,6 +114,9 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         $this->assertSame($fixture['inspection']->id, $run->vehicle_inspection_id);
         $this->assertSame(str_repeat('a', 64), $run->model_artifact_sha256);
         $this->assertSame(str_repeat('b', 64), $run->model_card_sha256);
+        $this->assertSame(VehicleDamageContract::MODEL_NAME, $run->model_name);
+        $this->assertSame(VehicleDamageContract::MODEL_VERSION, $run->model_version);
+        $this->assertSame('0.8236151338', $run->decision_threshold);
         $this->assertSame(VehicleDamageContract::OPERATIONAL_EFFECT, $run->operational_effect);
         $this->assertSame(
             'intelligence/vehicle-damage/inputs/'.$run->tenant_id.'/'.$run->run_id.'.jpg',
@@ -132,20 +139,27 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         $this->assertSame(VehicleDamagePredictionStatus::Succeeded, $completed->status);
         $this->assertSame('usable', $completed->quality_status);
         $this->assertTrue($completed->suggested_damage);
-        $this->assertSame('0.9100000', $completed->max_probability_damage);
+        $this->assertSame('0.9100000000', $completed->max_probability_damage);
         $this->assertCount(2, $completed->candidate_regions);
         $this->assertSame(0, DamageReport::withoutGlobalScopes()->count());
         $this->assertSame(
             $inspectionBefore,
             VehicleInspection::withoutGlobalScopes()->findOrFail($fixture['inspection']->id)->getAttributes(),
         );
-        Process::assertRan(fn ($process): bool => is_array($process->command)
-            && $process->command[0] === 'python'
-            && $process->command[1] === config('intelligence.vehicle_damage_v1.runtime_script')
-            && in_array('--model-card', $process->command, true)
-            && in_array('--max-patches', $process->command, true)
-            && in_array('CPUExecutionProvider', $process->command, true)
-            && $process->timeout === 120);
+        Process::assertRan(function ($process): bool {
+            if (! is_array($process->command)) {
+                return false;
+            }
+            $maxPatchesIndex = array_search('--max-patches', $process->command, true);
+
+            return $process->command[0] === 'python'
+                && $process->command[1] === config('intelligence.vehicle_damage_v1.runtime_script')
+                && in_array('--model-card', $process->command, true)
+                && is_int($maxPatchesIndex)
+                && ($process->command[$maxPatchesIndex + 1] ?? null) === '1'
+                && in_array('CPUExecutionProvider', $process->command, true)
+                && $process->timeout === 120;
+        });
         $this->assertDatabaseHas('audit_logs', ['action' => 'prediction.vehicle_damage.run_queued']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'prediction.vehicle_damage.run_succeeded']);
 
@@ -154,7 +168,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
             ->assertOk()
             ->assertSee('Zone candidate à vérifier')
             ->assertSee('91,00 %')
-            ->assertSee('Les cadres rouges indiquent des patches candidats')
+            ->assertSee('Les cadres rouges indiquent des zones candidates')
             ->assertDontSee($completed->input_stored_path)
             ->assertDontSee($completed->input_sha256)
             ->assertDontSee($completed->model_artifact_sha256);
@@ -248,7 +262,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
             ->update(['decision' => 'rejected']));
         $this->assertPostgreSqlConstraint(fn () => DB::table('vehicle_damage_prediction_runs')
             ->where('id', $run->id)
-            ->update(['max_probability_damage' => '0.9900000']));
+            ->update(['max_probability_damage' => '0.9900000000']));
     }
 
     public function test_only_completed_return_inspections_are_eligible(): void
@@ -623,11 +637,11 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
         return json_encode([
             'schema_version' => VehicleDamageContract::RESULT_SCHEMA_VERSION,
             'model' => [
-                'name' => VehicleDamageContract::MODEL_NAME,
-                'version' => VehicleDamageContract::MODEL_VERSION,
+                'name' => VehicleDamageContract::modelName(),
+                'version' => VehicleDamageContract::modelVersion(),
                 'artifact_sha256' => $run->model_artifact_sha256,
                 'model_card_sha256' => $run->model_card_sha256,
-                'decision_threshold' => VehicleDamageContract::DECISION_THRESHOLD,
+                'decision_threshold' => VehicleDamageContract::decisionThreshold(),
             ],
             'input' => [
                 'run_id' => $run->run_id,
@@ -645,9 +659,9 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
                 'sharpness' => $qualityAbstention ? 0.01 : 0.30,
             ],
             'scan' => [
-                'mode' => 'coarse_overlapping_patches',
-                'evaluated_patches' => $qualityAbstention ? 0 : 12,
-                'overlap_ratio' => VehicleDamageContract::OVERLAP_RATIO,
+                'mode' => VehicleDamageContract::scanMode(),
+                'evaluated_patches' => $qualityAbstention ? 0 : 1,
+                'overlap_ratio' => VehicleDamageContract::overlapRatio(),
                 'candidate_limit' => VehicleDamageContract::MAX_CANDIDATES,
             ],
             'result' => [
@@ -656,7 +670,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
                 'candidate_count' => $qualityAbstention ? 0 : 2,
                 'candidate_regions' => $qualityAbstention ? [] : [
                     ['x' => 0, 'y' => 0, 'width' => $leftPatchWidth, 'height' => $patchHeight, 'probability' => 0.91],
-                    ['x' => $leftPatchWidth, 'y' => 0, 'width' => $rightPatchWidth, 'height' => $patchHeight, 'probability' => 0.78],
+                    ['x' => $leftPatchWidth, 'y' => 0, 'width' => $rightPatchWidth, 'height' => $patchHeight, 'probability' => 0.86],
                 ],
             ],
             'safety' => [

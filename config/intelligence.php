@@ -1,5 +1,10 @@
 <?php
 
+$damageBackend = env('DAMAGE_V1_BACKEND', 'rtdetrv2_s');
+$damageBackend = in_array($damageBackend, ['rtdetrv2_s', 'efficientnetv2s'], true)
+    ? $damageBackend
+    : 'rtdetrv2_s';
+
 return [
     'export_hmac_key' => env('INTELLIGENCE_EXPORT_HMAC_KEY'),
 
@@ -126,6 +131,7 @@ return [
 
     'vehicle_damage_v1' => [
         'enabled' => env('RENTFLEET_DAMAGE_V1_ENABLED', false),
+        'backend' => $damageBackend,
         'disk' => 'local',
         'runtime_queue' => 'intelligence',
         'runtime_timeout_seconds' => 120,
@@ -134,7 +140,7 @@ return [
         'max_upload_kilobytes' => 8192,
         'max_image_dimension' => 8000,
         'max_stored_image_dimension' => 2048,
-        'max_scan_patches' => 36,
+        'max_scan_patches' => $damageBackend === 'rtdetrv2_s' ? 1 : 36,
         'rate_limits' => [
             'user_per_minute' => env('DAMAGE_V1_USER_RATE_LIMIT_PER_MINUTE', 3),
             'scope_per_hour' => env('DAMAGE_V1_SCOPE_RATE_LIMIT_PER_HOUR', 20),
@@ -144,19 +150,23 @@ return [
             env('INTELLIGENCE_PYTHON_BINARY', 'python'),
         ),
         'execution_provider' => env('DAMAGE_V1_EXECUTION_PROVIDER', 'CPUExecutionProvider'),
-        'runtime_script' => base_path(
-            'scripts/intelligence/vehicle_damage/run_vehicle_damage_onnx.py',
-        ),
+        'runtime_script' => base_path($damageBackend === 'rtdetrv2_s'
+            ? 'scripts/intelligence/vehicle_damage/run_vehicle_damage_rtdetrv2_onnx.py'
+            : 'scripts/intelligence/vehicle_damage/run_vehicle_damage_onnx.py'),
         'image_sanitizer_script' => base_path(
             'scripts/intelligence/vehicle_damage/sanitize_return_image.py',
         ),
         'model_path' => env(
             'DAMAGE_V1_MODEL_PATH',
-            storage_path('app/private/intelligence/models/vehicle-damage-v1/model.onnx'),
+            storage_path($damageBackend === 'rtdetrv2_s'
+                ? 'app/private/intelligence/models/vehicle-damage-rtdetrv2-s/model.onnx'
+                : 'app/private/intelligence/models/vehicle-damage-v1/model.onnx'),
         ),
         'model_card_path' => env(
             'DAMAGE_V1_MODEL_CARD_PATH',
-            storage_path('app/private/intelligence/models/vehicle-damage-v1/model_card.json'),
+            storage_path($damageBackend === 'rtdetrv2_s'
+                ? 'app/private/intelligence/models/vehicle-damage-rtdetrv2-s/model_card.json'
+                : 'app/private/intelligence/models/vehicle-damage-v1/model_card.json'),
         ),
         'model_sha256' => env('DAMAGE_V1_MODEL_SHA256'),
         'model_card_sha256' => env('DAMAGE_V1_MODEL_CARD_SHA256'),
