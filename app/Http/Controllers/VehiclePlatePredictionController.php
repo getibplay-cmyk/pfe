@@ -138,6 +138,7 @@ class VehiclePlatePredictionController extends Controller
         ]);
 
         $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
+
         return $this->streamPrivateArtifact(
             $disk,
             (string) $platePrediction->input_stored_path,
