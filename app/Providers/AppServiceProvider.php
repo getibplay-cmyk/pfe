@@ -88,6 +88,30 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('vehicle-plate-hybrid', function (Request $request): array {
+            $user = $request->user();
+            $scope = implode('|', [
+                'tenant:'.($user?->tenant_id ?? 'guest'),
+                'agency:'.($user?->agency_id ?? 'all'),
+            ]);
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(max(
+                    1,
+                    (int) config(
+                        'intelligence.vehicle_plate_hybrid_review.rate_limits.user_per_minute',
+                    ),
+                ))->by('vehicle-plate-hybrid:user:'.$scope.'|actor:'.$actor),
+                Limit::perHour(max(
+                    1,
+                    (int) config(
+                        'intelligence.vehicle_plate_hybrid_review.rate_limits.scope_per_hour',
+                    ),
+                ))->by('vehicle-plate-hybrid:scope:'.$scope),
+            ];
+        });
+
         RateLimiter::for('rental-usage-anomaly-v1', function (Request $request): array {
             $user = $request->user();
             $scope = implode('|', [

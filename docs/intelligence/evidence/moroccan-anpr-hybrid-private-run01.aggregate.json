@@ -1,0 +1,38 @@
+{
+  "evidence_id": "moroccan-anpr-hybrid-private-run01",
+  "evidence_kind": "aggregate_private_review_snapshot",
+  "pilot_date": "2026-08-28",
+  "privacy": "aggregate_only",
+  "row_count": 1819,
+  "model_version": "arabic_PP-OCRv5_mobile_rec+hybrid-1.0.0",
+  "tool": {
+    "status_counts": {
+      "ambiguous_segmented_suggestion": 231,
+      "complete_primary_suggestion": 68,
+      "complete_segmented_suggestion": 522,
+      "empty_suggestion": 95,
+      "partial_segmented_suggestion": 903
+    },
+    "complete_suggestion_count": 821,
+    "complete_suggestion_rate": 0.45134689,
+    "fallback_count": 1656,
+    "fallback_rate": 0.91039032
+  },
+  "human_review": {
+    "correction_cells_nonempty": 845,
+    "pending_count": 1783,
+    "preserved_historical_corrections": 36
+  },
+  "scientific_interpretation": {
+    "accuracy_qualified": false,
+    "accuracy_value": null,
+    "reason": "Manual review is incomplete and no independent preregistered test set has been evaluated."
+  },
+  "safeguards": {
+    "contains_crop_identifiers": false,
+    "contains_plate_text": false,
+    "human_review_required": true,
+    "automatic_vehicle_update_allowed": false,
+    "operational_effect": "NO_OPERATIONAL_ACTION"
+  }
+}

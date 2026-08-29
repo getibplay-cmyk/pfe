@@ -12,7 +12,19 @@ tests, and an output-free Colab notebook.
 - qualification status: **not qualified**;
 - historic independent holdout: consumed once and permanently retired;
 - replacement independent holdout: required and not opened by E3.2;
-- SaaS integration: blocked until the release gate passes.
+- SaaS technical pilot: integrated behind a disabled feature flag;
+- production activation: blocked until the release gate passes.
+
+An additional code-only review fallback now reuses the same official PP-OCRv5
+recognizer on bounded serial, Arabic-series and territorial-code zones when the
+full-crop reading is empty or rejected. It produces a human-review suggestion,
+not an accepted registration. The Laravel route, private artifacts, PostgreSQL
+registry and append-only human review are integrated behind the disabled flag;
+this is an engineering pilot, not a scientific qualification. See
+[`moroccan-anpr-hybrid-feedback.md`](../../../docs/intelligence/moroccan-anpr-hybrid-feedback.md).
+
+The fallback deliberately excludes every code or weight from the unlicensed
+`essanhaji/moroccan-lpr-ocr` repository.
 
 The detector's historical development sources were already consumed. They may
 guide development and can never be reused as independent ANPR evidence.
@@ -181,9 +193,36 @@ paths, identifiers, model weights, images, and labels are not published.
 These are development results on already-consumed Moroccan cohorts, not
 independent evidence. The historic holdout remains consumed and retired; E3.2
 did not open the required replacement holdout. End-to-end OCR was not evaluated,
-no qualification claim is made, and SaaS integration remains blocked. The
+no qualification claim is made, and production activation remains blocked. The
 sanitized machine-readable result is
 `docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-run01.json`.
+
+## Feature-gated SaaS pilot
+
+`plate_detector_worker.py` is the bounded localisation adapter used by the
+disabled-by-default SaaS pilot. It verifies the private E3.2 checkpoint hash,
+loads `fasterrcnn_resnet50_fpn_v2` with `weights_only=True`, and returns exactly
+one of `detected`, `no_detection`, or `ambiguous`. Only an unambiguous bounded
+JPEG crop is handed to `hybrid_ocr_worker.py`; full-frame OCR is forbidden.
+
+Detection and OCR use separate virtual environments. For the detector pair
+used by the private E3.2 run, install the official CPU wheels with:
+
+```bash
+python -m venv .venv-plate-detector
+.venv-plate-detector/bin/python -m pip install \
+  torch==2.11.0 torchvision==0.26.0 \
+  --index-url https://download.pytorch.org/whl/cpu
+.venv-plate-detector/bin/python -m pip install \
+  -r scripts/intelligence/requirements-vehicle-plate-detector-runtime.txt
+```
+
+On Windows replace `.venv-plate-detector/bin/python` with
+`.venv-plate-detector\\Scripts\\python.exe`. Configure the private checkpoint
+path and digest through `PLATE_DETECTOR_MODEL_PATH` and
+`PLATE_DETECTOR_MODEL_SHA256`; never commit either artifact or private digest.
+The calibrated development threshold is `0.075`. The pilot remains consultative,
+requires human review, and does not update a vehicle registration.
 
 ## Optional consented labelled smoke
 
@@ -206,7 +245,8 @@ python -m unittest -v \
   tests/Python/test_vehicle_plate_synthetic.py \
   tests/Python/test_vehicle_plate_e2_synthetic.py \
   tests/Python/test_vehicle_plate_detection_sources.py \
-  tests/Python/test_vehicle_plate_e32_detection_transfer.py
+  tests/Python/test_vehicle_plate_e32_detection_transfer.py \
+  tests/Python/test_vehicle_plate_detector_worker.py
 
 python scripts/intelligence/vehicle_plate/build_colab_notebook.py
 python scripts/intelligence/vehicle_plate/build_e2_synthetic_notebook.py

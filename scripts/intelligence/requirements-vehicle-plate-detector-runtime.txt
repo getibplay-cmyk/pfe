@@ -1,0 +1,6 @@
+# Install the checkpoint-compatible pair first from the official PyTorch index:
+# CPU (Linux/Windows):
+#   python -m pip install torch==2.11.0 torchvision==0.26.0 \
+#     --index-url https://download.pytorch.org/whl/cpu
+# For CUDA, choose the matching official index and keep the same package pair.
+Pillow==12.3.0

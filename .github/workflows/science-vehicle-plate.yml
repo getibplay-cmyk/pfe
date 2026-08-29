@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - science/moroccan-anpr-v2
   push:
     branches:
       - main
@@ -38,10 +39,30 @@ jobs:
       - name: Validate code and JSON contracts
         shell: bash
         run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          requirements = Path(
+              "scripts/intelligence/requirements-vehicle-plate-runtime.txt"
+          ).read_text(encoding="utf-8").splitlines()
+          assert "paddleocr==3.7.0" in requirements
+          assert "jedi==0.19.2" in requirements
+          detector_requirements = Path(
+              "scripts/intelligence/requirements-vehicle-plate-detector-runtime.txt"
+          ).read_text(encoding="utf-8")
+          assert "torch==2.11.0" in detector_requirements
+          assert "torchvision==0.26.0" in detector_requirements
+          assert "Pillow==12.3.0" in detector_requirements
+          PY
           python -m py_compile \
             scripts/intelligence/vehicle_plate/protocol.py \
             scripts/intelligence/vehicle_plate/colab_smoke.py \
             scripts/intelligence/vehicle_plate/paddle_ocr_worker.py \
+            scripts/intelligence/vehicle_plate/hybrid_fallback.py \
+            scripts/intelligence/vehicle_plate/hybrid_ocr_worker.py \
+            scripts/intelligence/vehicle_plate/plate_detector_worker.py \
+            scripts/intelligence/vehicle_plate/build_hybrid_review_csv.py \
+            scripts/intelligence/vehicle_plate/summarize_hybrid_review.py \
             scripts/intelligence/vehicle_plate/generate_synthetic_dataset.py \
             scripts/intelligence/vehicle_plate/character_detector.py \
             scripts/intelligence/vehicle_plate/generate_character_detection_dataset.py \
@@ -91,6 +112,9 @@ jobs:
             >/dev/null
           python -m json.tool \
             docs/intelligence/evidence/moroccan-anpr-e3.2-detection-transfer-run01.json \
+            >/dev/null
+          python -m json.tool \
+            docs/intelligence/evidence/moroccan-anpr-hybrid-private-run01.aggregate.json \
             >/dev/null
           python -m json.tool \
             notebooks/colab/moroccan_vehicle_plate_anpr_v2.ipynb \
@@ -149,7 +173,7 @@ jobs:
                   compile("".join(cell["source"]), f"{path.name}-cell-{index}", "exec")
           PY
 
-      - name: Test split, licence, OCR and abstention safeguards
+      - name: Test split, licence, OCR, fallback and review safeguards
         run: |
           python -m unittest -v \
             tests/Python/test_vehicle_plate_protocol.py \
@@ -158,7 +182,12 @@ jobs:
             tests/Python/test_vehicle_plate_e2_synthetic.py \
             tests/Python/test_vehicle_plate_character_detector.py \
             tests/Python/test_vehicle_plate_detection_sources.py \
-            tests/Python/test_vehicle_plate_e32_detection_transfer.py
+            tests/Python/test_vehicle_plate_e32_detection_transfer.py \
+            tests/Python/test_vehicle_plate_detector_worker.py \
+            tests/Python/test_vehicle_plate_hybrid_fallback.py \
+            tests/Python/test_vehicle_plate_hybrid_worker.py \
+            tests/Python/test_vehicle_plate_hybrid_review_csv.py \
+            tests/Python/test_vehicle_plate_hybrid_review_summary.py
 
       - name: Refuse committed private ANPR artifacts
         shell: bash

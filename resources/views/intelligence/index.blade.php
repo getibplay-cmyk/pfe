@@ -44,6 +44,18 @@
         </x-section-card>
 
         <x-section-card
+            title="Plaques marocaines · ANPR hybride"
+            description="Photo complète, détection privée, OCR local du crop, fallback par zones et correction humaine append-only, sans mise à jour automatique du véhicule."
+        >
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                    Le pilote privé a traité 1 819 crops et produit 821 suggestions complètes. La revue manuelle reste incomplète : ces chiffres prouvent le fonctionnement et la couverture, pas encore l’exactitude locale.
+                </p>
+                <a href="{{ route('intelligence.vehicle-plates.index') }}" class="rf-button-secondary">Ouvrir la revue des plaques</a>
+            </div>
+        </x-section-card>
+
+        <x-section-card
             title="Usages de location atypiques · CPU"
             description="Classement explicable des exports réels v1.1, challenger Isolation Forest et revue humaine append-only."
         >

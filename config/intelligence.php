@@ -168,6 +168,64 @@ return [
         'decision_effect' => 'NO_OPERATIONAL_ACTION',
     ],
 
+    'vehicle_plate_hybrid_review' => [
+        // The runtime remains disabled until the private corrected pilot and
+        // the preregistered release gate are complete. The contract can be
+        // integrated and tested without activating a business action.
+        'enabled' => env('RENTFLEET_PLATE_HYBRID_REVIEW_ENABLED', false),
+        'disk' => 'local',
+        'runtime_queue' => 'intelligence',
+        'runtime_timeout_seconds' => 120,
+        'runtime_stale_after_seconds' => 900,
+        'image_sanitizer_timeout_seconds' => 15,
+        'max_upload_kilobytes' => 8192,
+        'max_image_dimension' => 8000,
+        'max_stored_image_dimension' => 2048,
+        'rate_limits' => [
+            'user_per_minute' => env('PLATE_HYBRID_USER_RATE_LIMIT_PER_MINUTE', 5),
+            'scope_per_hour' => env('PLATE_HYBRID_SCOPE_RATE_LIMIT_PER_HOUR', 30),
+        ],
+        'python_binary' => env(
+            'PLATE_HYBRID_PYTHON_BINARY',
+            env('INTELLIGENCE_PYTHON_BINARY', 'python'),
+        ),
+        'device' => env('PLATE_HYBRID_DEVICE', 'cpu'),
+        'runtime_script' => base_path(
+            'scripts/intelligence/vehicle_plate/hybrid_ocr_worker.py',
+        ),
+        // Detection and OCR intentionally use separate Python environments.
+        // The private checkpoint path and digest are supplied only at runtime.
+        'detector' => [
+            'python_binary' => env('PLATE_DETECTOR_PYTHON_BINARY', 'python'),
+            'device' => env('PLATE_DETECTOR_DEVICE', 'cpu'),
+            'timeout_seconds' => (int) env('PLATE_DETECTOR_TIMEOUT_SECONDS', 180),
+            'threshold' => (float) env('PLATE_DETECTOR_THRESHOLD', 0.075),
+            'crop_padding_ratio' => (float) env('PLATE_DETECTOR_CROP_PADDING_RATIO', 0.04),
+            'runtime_script' => base_path(
+                'scripts/intelligence/vehicle_plate/plate_detector_worker.py',
+            ),
+            'model_path' => env(
+                'PLATE_DETECTOR_MODEL_PATH',
+                storage_path(
+                    'app/private/intelligence/models/vehicle-plate/detector_e32_selected.pt',
+                ),
+            ),
+            'model_sha256' => env('PLATE_DETECTOR_MODEL_SHA256'),
+        ],
+        'image_sanitizer_script' => base_path(
+            'scripts/intelligence/color_v8/sanitize_vehicle_image.py',
+        ),
+        'mode' => 'consultative_review_only',
+        'human_validation_required' => true,
+        'automatic_actions_allowed' => false,
+        'operational_table_writes_allowed' => false,
+        'correction_capture_allowed' => true,
+        'daily_feedback_capture_allowed' => true,
+        'automatic_daily_retraining_allowed' => false,
+        'release_gate_required' => true,
+        'decision_effect' => 'NO_OPERATIONAL_ACTION',
+    ],
+
     'rule_baseline' => [
         'name' => 'rental_anomaly_rules',
         'version' => '1.0.0',
