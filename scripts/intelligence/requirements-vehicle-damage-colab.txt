@@ -12,7 +12,9 @@ Pillow==11.3.0
 matplotlib==3.10.3
 seaborn==0.13.2
 onnx==1.18.0
-onnxscript==0.3.2
+# PyTorch 2.11 imports onnxscript._framework_apis.torch_2_11 during export.
+# ONNXScript 0.6.0 introduced that API; use the latest compatible patch line.
+onnxscript==0.6.2
 # Colab's IPython package declares Jedi but the base image omits it; pinning the
 # Python 3.13-compatible wheel keeps `pip check` a strict, useful gate.
 jedi==0.19.2

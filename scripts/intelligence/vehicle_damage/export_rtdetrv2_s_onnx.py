@@ -42,6 +42,11 @@ def run(command: list[str], cwd: Path) -> str:
             **os.environ,
             "PYTHONDONTWRITEBYTECODE": "1",
             "CUDA_VISIBLE_DEVICES": "",
+            # PyTorch 2.6+ defaults torch.load() to weights_only=True. The
+            # selected checkpoint is trusted only after the byte count and
+            # SHA-256 checks below, so the pinned exporter may use its legacy
+            # checkpoint loader without weakening the artifact boundary.
+            "TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD": "1",
         },
         capture_output=True,
         text=True,
@@ -53,6 +58,38 @@ def run(command: list[str], cwd: Path) -> str:
         suffix = f" Last message: {detail[-1][:240]}" if detail else ""
         raise RuntimeError(f"Pinned RT-DETR ONNX export failed.{suffix}")
     return result.stdout
+
+
+def materialize_single_file_onnx(raw_output: Path, output: Path) -> None:
+    """Load any exporter sidecar data and atomically write one closed ONNX file."""
+    try:
+        import onnx
+
+        model = onnx.load(str(raw_output), load_external_data=True)
+        onnx.checker.check_model(model)
+    except Exception as exception:
+        raise RuntimeError("The raw ONNX export is invalid.") from exception
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{output.stem}-",
+        suffix=".onnx",
+        dir=output.parent,
+    )
+    os.close(descriptor)
+    temporary = Path(temporary_name)
+    try:
+        onnx.save_model(model, str(temporary), save_as_external_data=False)
+        closed_model = onnx.load(str(temporary), load_external_data=False)
+        onnx.checker.check_model(closed_model)
+        if any(initializer.external_data for initializer in closed_model.graph.initializer):
+            raise RuntimeError("The consolidated ONNX artifact still uses external data.")
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, output)
+    except Exception as exception:
+        temporary.unlink(missing_ok=True)
+        if isinstance(exception, RuntimeError):
+            raise
+        raise RuntimeError("Single-file ONNX consolidation failed.") from exception
 
 
 def main() -> int:
@@ -81,6 +118,7 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory(prefix="rentfleet-rtdetr-export-") as directory:
         export_config = Path(directory) / "rentfleet_rtdetrv2_s_export.yml"
+        raw_output = Path(directory) / "raw_model.onnx"
         export_config.write_text(
             "\n".join(
                 [
@@ -106,13 +144,14 @@ def main() -> int:
                     "--resume",
                     str(checkpoint),
                     "--output_file",
-                    str(output),
+                    str(raw_output),
                     "--input_size",
                     "640",
                     "--check",
                 ],
                 pytorch_root,
             )
+            materialize_single_file_onnx(raw_output, output)
         except Exception:
             output.unlink(missing_ok=True)
             raise

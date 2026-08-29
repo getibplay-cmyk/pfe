@@ -100,6 +100,8 @@ Dans un environnement disposant de PyTorch, TorchVision et `onnx` :
 ```bash
 git clone https://github.com/lyuwenyu/RT-DETR.git /chemin/RT-DETR-pinned
 git -C /chemin/RT-DETR-pinned checkout 068dfde65f2667ad6555883c69d73de886518cad
+python -m pip install \
+  --requirement scripts/intelligence/requirements-vehicle-damage-colab.txt
 python scripts/intelligence/vehicle_damage/export_rtdetrv2_s_onnx.py \
   --upstream /chemin/RT-DETR-pinned \
   --checkpoint /chemin/prive/selected_checkpoint_soup_19_24_29_inference_only.pth \
@@ -111,10 +113,13 @@ python scripts/intelligence/vehicle_damage/build_rtdetrv2_s_bundle.py \
   --output /chemin/prive/rentfleet-rtdetrv2-s-bundle
 ```
 
-Le constructeur vérifie le checkpoint public exact (80 772 267 octets et
-SHA-256 `3544b693d9014392b5a9a0d87e6951646455ed268ca1825ee5aa4fe07cd7b92e`),
-la politique, la structure ONNX et les scellés avant d'écrire atomiquement le
-bundle.
+L'exporteur vérifie le checkpoint avant d'autoriser le chargeur historique de
+PyTorch et incorpore les éventuels poids ONNX externalisés dans un fichier
+autonome. Le constructeur vérifie le checkpoint public exact (80 772 267
+octets et SHA-256
+`3544b693d9014392b5a9a0d87e6951646455ed268ca1825ee5aa4fe07cd7b92e`), la
+politique, la structure ONNX, l'absence de données externes et les scellés avant
+d'écrire atomiquement le bundle.
 
 ## Installation CPU recommandée
 
