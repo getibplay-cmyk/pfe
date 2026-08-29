@@ -178,7 +178,7 @@ return [
         'runtime_timeout_seconds' => 120,
         'runtime_stale_after_seconds' => 900,
         'image_sanitizer_timeout_seconds' => 15,
-        'max_upload_kilobytes' => 2048,
+        'max_upload_kilobytes' => 8192,
         'max_image_dimension' => 8000,
         'max_stored_image_dimension' => 2048,
         'rate_limits' => [
@@ -193,6 +193,25 @@ return [
         'runtime_script' => base_path(
             'scripts/intelligence/vehicle_plate/hybrid_ocr_worker.py',
         ),
+        // Detection and OCR intentionally use separate Python environments.
+        // The private checkpoint path and digest are supplied only at runtime.
+        'detector' => [
+            'python_binary' => env('PLATE_DETECTOR_PYTHON_BINARY', 'python'),
+            'device' => env('PLATE_DETECTOR_DEVICE', 'cpu'),
+            'timeout_seconds' => (int) env('PLATE_DETECTOR_TIMEOUT_SECONDS', 180),
+            'threshold' => (float) env('PLATE_DETECTOR_THRESHOLD', 0.075),
+            'crop_padding_ratio' => (float) env('PLATE_DETECTOR_CROP_PADDING_RATIO', 0.04),
+            'runtime_script' => base_path(
+                'scripts/intelligence/vehicle_plate/plate_detector_worker.py',
+            ),
+            'model_path' => env(
+                'PLATE_DETECTOR_MODEL_PATH',
+                storage_path(
+                    'app/private/intelligence/models/vehicle-plate/detector_e32_selected.pt',
+                ),
+            ),
+            'model_sha256' => env('PLATE_DETECTOR_MODEL_SHA256'),
+        ],
         'image_sanitizer_script' => base_path(
             'scripts/intelligence/color_v8/sanitize_vehicle_image.py',
         ),

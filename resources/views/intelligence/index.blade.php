@@ -44,8 +44,8 @@
         </x-section-card>
 
         <x-section-card
-            title="Plaques marocaines · PP-OCRv5 hybride"
-            description="OCR local du crop complet, fallback par zones et correction humaine append-only, sans mise à jour automatique du véhicule."
+            title="Plaques marocaines · ANPR hybride"
+            description="Photo complète, détection privée, OCR local du crop, fallback par zones et correction humaine append-only, sans mise à jour automatique du véhicule."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">

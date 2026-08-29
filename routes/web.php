@@ -262,6 +262,8 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.vehicle-plates.store');
     Route::get('/intelligence/vehicle-plates/{platePrediction}/input', [VehiclePlatePredictionController::class, 'input'])
         ->name('intelligence.vehicle-plates.input');
+    Route::get('/intelligence/vehicle-plates/{platePrediction}/crop', [VehiclePlatePredictionController::class, 'crop'])
+        ->name('intelligence.vehicle-plates.crop');
     Route::post('/intelligence/vehicle-plates/{platePrediction}/reviews', [VehiclePlatePredictionController::class, 'review'])
         ->name('intelligence.vehicle-plates.reviews.store');
     Route::get('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'index'])

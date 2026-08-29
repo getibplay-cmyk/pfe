@@ -47,6 +47,12 @@ jobs:
           ).read_text(encoding="utf-8").splitlines()
           assert "paddleocr==3.7.0" in requirements
           assert "jedi==0.19.2" in requirements
+          detector_requirements = Path(
+              "scripts/intelligence/requirements-vehicle-plate-detector-runtime.txt"
+          ).read_text(encoding="utf-8")
+          assert "torch==2.11.0" in detector_requirements
+          assert "torchvision==0.26.0" in detector_requirements
+          assert "Pillow==12.3.0" in detector_requirements
           PY
           python -m py_compile \
             scripts/intelligence/vehicle_plate/protocol.py \
@@ -54,6 +60,7 @@ jobs:
             scripts/intelligence/vehicle_plate/paddle_ocr_worker.py \
             scripts/intelligence/vehicle_plate/hybrid_fallback.py \
             scripts/intelligence/vehicle_plate/hybrid_ocr_worker.py \
+            scripts/intelligence/vehicle_plate/plate_detector_worker.py \
             scripts/intelligence/vehicle_plate/build_hybrid_review_csv.py \
             scripts/intelligence/vehicle_plate/summarize_hybrid_review.py \
             scripts/intelligence/vehicle_plate/generate_synthetic_dataset.py \
@@ -176,6 +183,7 @@ jobs:
             tests/Python/test_vehicle_plate_character_detector.py \
             tests/Python/test_vehicle_plate_detection_sources.py \
             tests/Python/test_vehicle_plate_e32_detection_transfer.py \
+            tests/Python/test_vehicle_plate_detector_worker.py \
             tests/Python/test_vehicle_plate_hybrid_fallback.py \
             tests/Python/test_vehicle_plate_hybrid_worker.py \
             tests/Python/test_vehicle_plate_hybrid_review_csv.py \

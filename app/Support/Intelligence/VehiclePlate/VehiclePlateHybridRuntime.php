@@ -6,6 +6,7 @@ use App\Exceptions\VehiclePlateHybridExecutionException;
 use App\Models\VehiclePlatePredictionRun;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Storage;
 use JsonException;
 use Throwable;
 
@@ -34,6 +35,9 @@ class VehiclePlateHybridRuntime
             || ! is_file($inputPath)
             || is_link($inputPath)) {
             throw new VehiclePlateHybridExecutionException('RUNTIME_CONFIGURATION_INVALID');
+        }
+        if (! $this->inputPathAllowed($run, $inputPath)) {
+            throw new VehiclePlateHybridExecutionException('OCR_INPUT_BOUNDARY_INVALID');
         }
 
         $temporaryDirectory = sys_get_temp_dir()
@@ -93,6 +97,29 @@ class VehiclePlateHybridRuntime
         }
     }
 
+    private function inputPathAllowed(VehiclePlatePredictionRun $run, string $inputPath): bool
+    {
+        $storedPath = $run->usesDetector()
+            ? 'intelligence/plate-hybrid/crops/'.$run->tenant_id.'/'.$run->run_id.'.jpg'
+            : (string) $run->input_stored_path;
+        try {
+            $expected = Storage::disk(
+                (string) config('intelligence.vehicle_plate_hybrid_review.disk'),
+            )->path($storedPath);
+            $actualRealPath = realpath($inputPath);
+            $expectedRealPath = realpath($expected);
+
+            return is_string($actualRealPath)
+                && is_string($expectedRealPath)
+                && hash_equals(
+                    str_replace('\\', '/', $expectedRealPath),
+                    str_replace('\\', '/', $actualRealPath),
+                );
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     /** @throws JsonException */
     private function writeManifest(
         string $manifestPath,
@@ -138,6 +165,8 @@ class VehiclePlateHybridRuntime
             'PGPASSWORD' => false,
             'PLATE_RECOGNIZER_TOKEN' => false,
             'GOOGLE_APPLICATION_CREDENTIALS' => false,
+            'PLATE_DETECTOR_MODEL_PATH' => false,
+            'PLATE_DETECTOR_MODEL_SHA256' => false,
         ];
     }
 }

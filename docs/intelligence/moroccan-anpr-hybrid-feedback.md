@@ -2,8 +2,11 @@
 
 ## Décision
 
-Le recognizer principal reste l'officiel `arabic_PP-OCRv5_mobile_rec`. Lorsqu'une
-lecture du crop complet est vide ou rejetée par la grammaire marocaine, le même
+Le chemin SaaS accepte désormais soit une photo complète du véhicule, soit un
+crop manuel. Sur une photo complète, le détecteur Faster R-CNN E3.2 privé et
+vérifié par SHA-256 doit d'abord produire un unique crop non ambigu. Le
+recognizer principal reste l'officiel `arabic_PP-OCRv5_mobile_rec`. Lorsqu'une
+lecture du crop est vide ou rejetée par la grammaire marocaine, le même
 recognizer relit des zones bornées :
 
 1. numéro de série ;
@@ -11,7 +14,7 @@ recognizer relit des zones bornées :
 3. code territorial ;
 4. fusion déterministe par la grammaire marocaine.
 
-Il n'y a ni deuxième modèle OCR, ni appel cloud, ni caractère inventé. Une
+Il n'y a ni OCR plein cadre, ni deuxième modèle OCR, ni appel cloud, ni caractère inventé. Une
 composante manquante produit une suggestion partielle avec `?`. Une lecture
 complète ou partielle exige toujours une validation humaine et ne modifie jamais
 automatiquement l'immatriculation d'un véhicule.
@@ -21,6 +24,7 @@ automatiquement l'immatriculation d'un véhicule.
 | Composant | Usage | Licence | Décision |
 |---|---|---|---|
 | PaddleOCR et le recognizer arabe officiel | OCR complet et segmenté | Apache-2.0 | admis avec notices |
+| PyTorch / TorchVision | détection Faster R-CNN locale | BSD-3-Clause | admis avec notices |
 | OpenCV | contraste, morphologie et crops | Apache-2.0 | admis avec notices |
 | Noto Sans Arabic / Noto Sans | génération synthétique seulement | OFL-1.1 | admis avec preuves OFL |
 | `essanhaji/moroccan-lpr-ocr` | ancien pilote comparatif | aucune licence publiée | exclu du SaaS, des poids et du code distribué |
@@ -35,13 +39,19 @@ Sources officielles :
 
 - <https://github.com/PaddlePaddle/PaddleOCR/blob/main/LICENSE>
 - <https://www.paddleocr.ai/v3.6.0/en/version3.x/module_usage/text_recognition.html>
+- <https://docs.pytorch.org/vision/0.26/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn_v2.html>
+- <https://github.com/pytorch/vision/blob/main/LICENSE>
 - <https://github.com/opencv/opencv/blob/4.x/LICENSE>
 - <https://github.com/notofonts/arabic>
 
 ## Chemin d'inférence
 
 ```text
-crop privé
+photo complète privée
+  -> Faster R-CNN privé vérifié par empreinte
+  -> un crop borné, ou abstention si absent/ambigu
+  -> jamais d'OCR sur la photo complète
+crop privé détecté ou fourni manuellement
   -> PP-OCRv5 complet : original + CLAHE
   -> si lecture grammaticale complète : suggestion primaire
   -> sinon : 3 layouts fixes + séparateurs verticaux détectés si présents
@@ -105,7 +115,10 @@ L'option `--no-prefill-correction` garde toutes les nouvelles corrections vides.
 
 ## Tranche SaaS intégrée, activation fermée par défaut
 
-`VehiclePlateHybridResultValidator` ferme le contrat JSON côté Laravel. Il
+`VehiclePlateDetectorResultValidator` ferme d'abord le contrat de localisation :
+checkpoint attendu, seuil figé, boîte bornée, crop JPEG intègre, processus isolé,
+OCR plein cadre interdit et aucune mise à jour automatique. `VehiclePlateHybridResultValidator`
+ferme ensuite le contrat JSON OCR côté Laravel. Il
 refuse notamment :
 
 - un résultat sans validation humaine obligatoire ;
@@ -116,10 +129,18 @@ refuse notamment :
 - plus d'un résultat par exécution SaaS.
 
 La configuration `intelligence.vehicle_plate_hybrid_review` est désactivée par
-défaut. La tranche verticale ajoute stockage privé du crop réencodé sans
-métadonnées, run tenant/agence-scopé, queue, écran, policy, contrat fermé et
-revue humaine append-only. La correction validée devient un feedback disponible
-pour un futur export d'entraînement, mais n'écrit jamais dans la fiche véhicule.
+défaut. La tranche verticale ajoute stockage privé de la photo réencodée et du
+crop détecté, run tenant/agence-scopé, queue, écran, policy, deux contrats fermés
+et revue humaine append-only. Si aucune plaque n'est détectée ou si plusieurs
+candidates sont proches, le run s'abstient et l'interface demande un crop manuel.
+La correction validée devient un feedback disponible pour un futur export
+d'entraînement, mais n'écrit jamais dans la fiche véhicule.
+
+Détection et OCR utilisent deux environnements Python séparés. Le checkpoint,
+son chemin et son empreinte restent privés ; seuls le nom d'architecture, le
+seuil de développement `0.075` et les garde-fous sont publics. Cette intégration
+technique n'est pas une qualification : le jeu indépendant de remplacement
+reste requis avant toute activation production.
 
 Les contraintes et triggers PostgreSQL ferment les états, l'immuabilité et la
 portée des revues. Les audits enregistrent le statut et la décision, jamais le
@@ -158,7 +179,7 @@ présenté comme adaptation de domaine évaluée, pas comme garantie de producti
 2. corriger manuellement et figer une version vérifiée ;
 3. mesurer le gain du fallback sur les 36 lignes déjà corrigées, sans les
    utiliser pour régler le fallback après lecture des résultats ;
-4. compléter la vertical slice SaaS désactivée par défaut ;
+4. vérifier la vertical slice SaaS complète, déjà intégrée et désactivée par défaut ;
 5. si le délai le permet, entraîner un challenger ; sinon conserver le fallback
    et la boucle de correction comme livrable démontrable ;
 6. n'activer qu'après les tests d'intégration, le jeu indépendant et la porte de

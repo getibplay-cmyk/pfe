@@ -18,7 +18,7 @@ class RunVehiclePlatePrediction implements ShouldQueue
 
     public int $tries = 1;
 
-    public int $timeout = 310;
+    public int $timeout = 350;
 
     public bool $failOnTimeout = true;
 

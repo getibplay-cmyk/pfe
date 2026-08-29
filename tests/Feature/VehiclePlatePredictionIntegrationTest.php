@@ -17,6 +17,9 @@ use App\Models\VehicleCategory;
 use App\Models\VehiclePlatePredictionReview;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Intelligence\VehiclePlate\SanitizedVehiclePlateImage;
+use App\Support\Intelligence\VehiclePlate\ValidatedVehiclePlateDetection;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateImageSanitizer;
@@ -51,6 +54,18 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             'intelligence.vehicle_plate_hybrid_review.image_sanitizer_script' => base_path(
                 'scripts/intelligence/color_v8/sanitize_vehicle_image.py',
             ),
+            'intelligence.vehicle_plate_hybrid_review.detector.python_binary' => 'python',
+            'intelligence.vehicle_plate_hybrid_review.detector.device' => 'cpu',
+            'intelligence.vehicle_plate_hybrid_review.detector.timeout_seconds' => 180,
+            'intelligence.vehicle_plate_hybrid_review.detector.threshold' => 0.075,
+            'intelligence.vehicle_plate_hybrid_review.detector.crop_padding_ratio' => 0.04,
+            'intelligence.vehicle_plate_hybrid_review.detector.runtime_script' => base_path(
+                'scripts/intelligence/vehicle_plate/plate_detector_worker.py',
+            ),
+            'intelligence.vehicle_plate_hybrid_review.detector.model_path' => storage_path(
+                'app/private/intelligence/models/vehicle-plate/detector_e32_selected.pt',
+            ),
+            'intelligence.vehicle_plate_hybrid_review.detector.model_sha256' => str_repeat('a', 64),
         ]);
     }
 
@@ -62,6 +77,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.vehicle-plates.store'), [
                 'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::PLATE_CROP,
                 'image' => $this->upload(),
             ])
             ->assertForbidden();
@@ -86,12 +102,15 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.vehicle-plates.store'), [
                 'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::PLATE_CROP,
                 'image' => $this->upload(),
             ])
             ->assertRedirect(route('intelligence.vehicle-plates.index'));
 
         $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
         $this->assertSame(VehiclePlatePredictionStatus::Queued, $run->status);
+        $this->assertSame(VehiclePlateDetectorContract::PLATE_CROP, $run->input_kind);
+        $this->assertNull($run->detector_model_name);
         $this->assertSame('image/jpeg', $run->input_mime);
         $this->assertSame('jpg', $run->input_extension);
         $this->assertSame(VehiclePlateHybridContract::OPERATIONAL_EFFECT, $run->operational_effect);
@@ -153,6 +172,138 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $serialized = json_encode($audits->pluck('new_values')->all(), JSON_UNESCAPED_UNICODE);
         $this->assertIsString($serialized);
         $this->assertStringNotContainsString('12345|أ|7', $serialized);
+    }
+
+    public function test_full_vehicle_photo_is_detected_cropped_then_sent_to_ocr(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime(expectDetectedCrop: true);
+        Queue::fake();
+        $before = $fixture['vehicle']->registration_number;
+
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.vehicle-plates.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::FULL_IMAGE,
+                'image' => $this->upload(),
+            ])
+            ->assertRedirect(route('intelligence.vehicle-plates.index'));
+
+        $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(VehiclePlateDetectorContract::FULL_IMAGE, $run->input_kind);
+        $this->assertSame(VehiclePlateDetectorContract::MODEL_NAME, $run->detector_model_name);
+        $this->assertSame(str_repeat('a', 64), $run->detector_checkpoint_sha256);
+
+        (new RunVehiclePlatePrediction($run->run_id, $run->tenant_id, $run->requested_by))
+            ->handle(app(ExecuteVehiclePlatePrediction::class));
+
+        $completed = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(VehiclePlatePredictionStatus::Succeeded, $completed->status);
+        $this->assertSame('0.9100000', $completed->detector_confidence);
+        $this->assertSame(1, $completed->detector_candidate_count);
+        $this->assertEquals([0.0, 0.0, 4.0, 2.0], $completed->detector_bbox);
+        $this->assertSame([0, 0, 4, 2], $completed->crop_bbox);
+        $this->assertSame(4, $completed->crop_width);
+        $this->assertSame(2, $completed->crop_height);
+        $this->assertSame(
+            'intelligence/plate-hybrid/crops/'
+                .$completed->tenant_id.'/'.$completed->run_id.'.jpg',
+            $completed->crop_stored_path,
+        );
+        Storage::disk('local')->assertExists($completed->crop_stored_path);
+        $this->assertSame(
+            $before,
+            Vehicle::withoutGlobalScopes()->findOrFail($fixture['vehicle']->id)->registration_number,
+        );
+
+        $this->actingAs($fixture['user'])
+            ->get(route('intelligence.vehicle-plates.crop', $completed))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/jpeg');
+        $page = $this->actingAs($fixture['user'])
+            ->get(route('intelligence.vehicle-plates.index'))
+            ->assertOk()
+            ->assertSee('Photo complète + détection')
+            ->assertSee('Ouvrir le crop détecté')
+            ->assertDontSee($completed->crop_stored_path)
+            ->assertDontSee($completed->crop_sha256)
+            ->assertDontSee($completed->detector_checkpoint_sha256);
+        $this->assertStringNotContainsString('detector_bbox', $page->getContent());
+    }
+
+    public function test_detector_abstention_fails_closed_and_requests_manual_crop(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime(detectorStatus: 'no_detection');
+        Queue::fake();
+        $before = $fixture['vehicle']->registration_number;
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.vehicle-plates.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::FULL_IMAGE,
+                'image' => $this->upload(),
+            ])
+            ->assertRedirect();
+        $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
+        $job = new RunVehiclePlatePrediction($run->run_id, $run->tenant_id, $run->requested_by);
+
+        $failure = null;
+        try {
+            $job->handle(app(ExecuteVehiclePlatePrediction::class));
+        } catch (VehiclePlateHybridExecutionException $exception) {
+            $failure = $exception;
+        }
+        $this->assertInstanceOf(VehiclePlateHybridExecutionException::class, $failure);
+        $this->assertSame('PLATE_NOT_DETECTED', $failure->failureCode());
+        $job->failed($failure);
+
+        $this->assertDatabaseHas('vehicle_plate_prediction_runs', [
+            'id' => $run->id,
+            'status' => 'failed',
+            'failure_code' => 'PLATE_NOT_DETECTED',
+            'crop_stored_path' => null,
+        ]);
+        $this->assertSame(
+            $before,
+            Vehicle::withoutGlobalScopes()->findOrFail($fixture['vehicle']->id)->registration_number,
+        );
+        $this->actingAs($fixture['user'])
+            ->get(route('intelligence.vehicle-plates.index'))
+            ->assertOk()
+            ->assertSee('Recadrez manuellement la plaque');
+    }
+
+    public function test_ambiguous_detector_candidates_never_reach_ocr(): void
+    {
+        $fixture = $this->fixture();
+        $this->enableRuntime(detectorStatus: 'ambiguous');
+        Queue::fake();
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.vehicle-plates.store'), [
+                'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::FULL_IMAGE,
+                'image' => $this->upload(),
+            ])
+            ->assertRedirect();
+        $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
+        $job = new RunVehiclePlatePrediction($run->run_id, $run->tenant_id, $run->requested_by);
+
+        $failure = null;
+        try {
+            $job->handle(app(ExecuteVehiclePlatePrediction::class));
+        } catch (VehiclePlateHybridExecutionException $exception) {
+            $failure = $exception;
+        }
+        $this->assertInstanceOf(VehiclePlateHybridExecutionException::class, $failure);
+        $this->assertSame('PLATE_DETECTION_AMBIGUOUS', $failure->failureCode());
+        $job->failed($failure);
+        $this->assertDatabaseHas('vehicle_plate_prediction_runs', [
+            'id' => $run->id,
+            'status' => 'failed',
+            'failure_code' => 'PLATE_DETECTION_AMBIGUOUS',
+            'suggestion_status' => null,
+            'crop_stored_path' => null,
+        ]);
     }
 
     public function test_human_correction_is_append_only_training_feedback_without_operational_effect(): void
@@ -239,6 +390,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.vehicle-plates.store'), [
                 'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::PLATE_CROP,
                 'image' => $this->upload(),
             ])
             ->assertRedirect();
@@ -284,11 +436,15 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $this->actingAs($viewer)
             ->post(route('intelligence.vehicle-plates.store'), [
                 'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::PLATE_CROP,
                 'image' => $this->upload(),
             ])
             ->assertForbidden();
         $this->actingAs($otherManager)
             ->get(route('intelligence.vehicle-plates.input', $run))
+            ->assertForbidden();
+        $this->actingAs($otherManager)
+            ->get(route('intelligence.vehicle-plates.crop', $run))
             ->assertForbidden();
         $this->actingAs($otherManager)
             ->post(route('intelligence.vehicle-plates.reviews.store', $run), [
@@ -297,6 +453,9 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->assertForbidden();
         $this->actingAs($foreign['user'])
             ->get(route('intelligence.vehicle-plates.input', $run))
+            ->assertNotFound();
+        $this->actingAs($foreign['user'])
+            ->get(route('intelligence.vehicle-plates.crop', $run))
             ->assertNotFound();
 
         foreach (['tenant-owner', 'agency-manager', 'fleet-manager'] as $role) {
@@ -318,6 +477,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             'intelligence.vehicle-plates.index',
             'intelligence.vehicle-plates.store',
             'intelligence.vehicle-plates.input',
+            'intelligence.vehicle-plates.crop',
             'intelligence.vehicle-plates.reviews.store',
         ] as $route) {
             $this->assertTrue(app('router')->has($route), $route);
@@ -351,6 +511,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.vehicle-plates.store'), [
                 'vehicle_id' => $fixture['vehicle']->id,
+                'input_kind' => VehiclePlateDetectorContract::PLATE_CROP,
                 'image' => $this->upload(),
             ])
             ->assertRedirect();
@@ -361,16 +522,30 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         return VehiclePlatePredictionRun::withoutGlobalScopes()->findOrFail($run->id);
     }
 
-    private function enableRuntime(bool $automaticVehicleUpdate = false): void
-    {
+    private function enableRuntime(
+        bool $automaticVehicleUpdate = false,
+        string $detectorStatus = 'detected',
+        bool $expectDetectedCrop = false,
+    ): void {
         config(['intelligence.vehicle_plate_hybrid_review.enabled' => true]);
         $runtime = $this->mock(VehiclePlateHybridRuntime::class);
         $runtime->shouldReceive('configured')->andReturnTrue();
         $runtime->shouldReceive('execute')
-            ->andReturnUsing(fn (VehiclePlatePredictionRun $run): string => $this->resultJson(
-                $run->run_id,
-                $automaticVehicleUpdate,
-            ));
+            ->andReturnUsing(function (
+                VehiclePlatePredictionRun $run,
+                string $inputPath,
+            ) use ($automaticVehicleUpdate, $expectDetectedCrop): string {
+                if ($expectDetectedCrop) {
+                    $this->assertStringContainsString('plate-hybrid/crops', str_replace('\\', '/', $inputPath));
+                }
+
+                return $this->resultJson($run->run_id, $automaticVehicleUpdate);
+            });
+        $detector = $this->mock(VehiclePlateDetectorRuntime::class);
+        $detector->shouldReceive('ready')->zeroOrMoreTimes()->andReturnTrue();
+        $detector->shouldReceive('execute')->zeroOrMoreTimes()->andReturnUsing(
+            fn (): ValidatedVehiclePlateDetection => $this->detectionResult($detectorStatus),
+        );
         $contents = $this->jpegBytes();
         $sanitizer = $this->mock(VehiclePlateImageSanitizer::class);
         $sanitizer->shouldReceive('sanitize')->andReturn(new SanitizedVehiclePlateImage(
@@ -382,6 +557,53 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             width: 4,
             height: 2,
         ));
+    }
+
+    private function detectionResult(string $status): ValidatedVehiclePlateDetection
+    {
+        if ($status === 'no_detection') {
+            return new ValidatedVehiclePlateDetection(
+                status: 'no_detection',
+                score: null,
+                bbox: null,
+                eligibleCount: 0,
+                cropContents: null,
+                cropBytes: null,
+                cropSha256: null,
+                cropWidth: null,
+                cropHeight: null,
+                cropBbox: null,
+            );
+        }
+        if ($status === 'ambiguous') {
+            return new ValidatedVehiclePlateDetection(
+                status: 'ambiguous',
+                score: 0.91,
+                bbox: [0.0, 0.0, 4.0, 2.0],
+                eligibleCount: 2,
+                cropContents: null,
+                cropBytes: null,
+                cropSha256: null,
+                cropWidth: null,
+                cropHeight: null,
+                cropBbox: null,
+            );
+        }
+
+        $contents = $this->jpegBytes();
+
+        return new ValidatedVehiclePlateDetection(
+            status: 'detected',
+            score: 0.91,
+            bbox: [0.0, 0.0, 4.0, 2.0],
+            eligibleCount: 1,
+            cropContents: $contents,
+            cropBytes: strlen($contents),
+            cropSha256: hash('sha256', $contents),
+            cropWidth: 4,
+            cropHeight: 2,
+            cropBbox: [0, 0, 4, 2],
+        );
     }
 
     private function fixture(string $roleSlug = 'tenant-owner'): array

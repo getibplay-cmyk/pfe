@@ -188,6 +188,8 @@ class VehiclePlateImageSanitizer
             'PGPASSWORD' => false,
             'PLATE_RECOGNIZER_TOKEN' => false,
             'GOOGLE_APPLICATION_CREDENTIALS' => false,
+            'PLATE_DETECTOR_MODEL_PATH' => false,
+            'PLATE_DETECTOR_MODEL_SHA256' => false,
         ];
     }
 }

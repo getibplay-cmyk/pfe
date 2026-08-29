@@ -10,6 +10,7 @@ use App\Http\Requests\StoreVehiclePlatePredictionRequest;
 use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateInputArtifact;
@@ -17,6 +18,7 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -29,6 +31,7 @@ class VehiclePlatePredictionController extends Controller
         Request $request,
         TenantContext $context,
         VehiclePlateHybridRuntime $runtime,
+        VehiclePlateDetectorRuntime $detectorRuntime,
     ): View {
         $this->authorize('viewAny', VehiclePlatePredictionRun::class);
 
@@ -58,13 +61,14 @@ class VehiclePlatePredictionController extends Controller
         $sanitizer = (string) config(
             'intelligence.vehicle_plate_hybrid_review.image_sanitizer_script',
         );
-        $runtimeReady = (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
+        $ocrReady = (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
             && $runtime->configured()
             && is_file($sanitizer)
             && (int) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds') >= 1
             && (int) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds') <= 15
             && (int) config('intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension') >= 256
             && (int) config('intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension') <= 4_096;
+        $detectorReady = $ocrReady && $detectorRuntime->ready();
 
         return view('intelligence.vehicle-plates.index', [
             'vehicles' => $vehicles,
@@ -73,10 +77,16 @@ class VehiclePlatePredictionController extends Controller
             'runs' => $runs,
             'runtime' => [
                 'enabled' => (bool) config('intelligence.vehicle_plate_hybrid_review.enabled'),
-                'ready' => $runtimeReady,
-                'device' => (string) config('intelligence.vehicle_plate_hybrid_review.device'),
+                'ocr_ready' => $ocrReady,
+                'detector_ready' => $detectorReady,
+                'ocr_device' => (string) config('intelligence.vehicle_plate_hybrid_review.device'),
+                'detector_device' => (string) config(
+                    'intelligence.vehicle_plate_hybrid_review.detector.device',
+                ),
             ],
-            'canRun' => $runtimeReady && auth()->user()->hasPermission('prediction.plate.review'),
+            'canRun' => $ocrReady && auth()->user()->hasPermission('prediction.plate.review'),
+            'canRunFullImage' => $detectorReady
+                && auth()->user()->hasPermission('prediction.plate.review'),
             'canReview' => auth()->user()->hasPermission('prediction.plate.review'),
             'pilot' => [
                 'total' => 1819,
@@ -99,11 +109,16 @@ class VehiclePlatePredictionController extends Controller
         $image = $request->file('image');
         abort_unless($image instanceof UploadedFile, 422);
 
-        $run = $queue->handle($vehicle, $image, $request->user());
+        $run = $queue->handle(
+            $vehicle,
+            $image,
+            $request->user(),
+            (string) $request->validated('input_kind'),
+        );
 
         return redirect()->route('intelligence.vehicle-plates.index')->with(
             'status',
-            'Analyse OCR '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'Analyse ANPR '.$run->run_id.' ajoutée à la queue Intelligence.',
         );
     }
 
@@ -123,25 +138,37 @@ class VehiclePlatePredictionController extends Controller
         ]);
 
         $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
-        $input = $disk->readStream($platePrediction->input_stored_path);
-        abort_unless(is_resource($input), 404);
+        return $this->streamPrivateArtifact(
+            $disk,
+            (string) $platePrediction->input_stored_path,
+            (string) $platePrediction->input_mime,
+            (int) $platePrediction->input_bytes,
+        );
+    }
 
-        return response()->stream(static function () use ($input): void {
-            try {
-                while (! feof($input)) {
-                    echo fread($input, 8192);
-                }
-            } finally {
-                fclose($input);
-            }
-        }, 200, [
-            'Content-Type' => $platePrediction->input_mime,
-            'Content-Length' => (string) $platePrediction->input_bytes,
-            'Content-Disposition' => 'inline',
-            'Cache-Control' => 'private, no-store, max-age=0',
-            'Pragma' => 'no-cache',
-            'X-Content-Type-Options' => 'nosniff',
+    public function crop(
+        VehiclePlatePredictionRun $platePrediction,
+        VehiclePlateInputArtifact $artifact,
+        AuditRecorder $audit,
+    ): StreamedResponse {
+        $this->authorize('view', $platePrediction);
+        abort_unless($artifact->validReviewCrop($platePrediction), 404);
+
+        $audit->record('prediction.vehicle_plate.crop_viewed', $platePrediction, [], [
+            'run_id' => $platePrediction->run_id,
+            'vehicle_id' => $platePrediction->vehicle_id,
+            'detector_executed' => $platePrediction->usesDetector(),
+            'effect' => VehiclePlateHybridContract::OPERATIONAL_EFFECT,
         ]);
+
+        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
+
+        return $this->streamPrivateArtifact(
+            $disk,
+            $artifact->reviewCropStoredPath($platePrediction),
+            'image/jpeg',
+            $artifact->reviewCropBytes($platePrediction),
+        );
     }
 
     public function review(
@@ -169,5 +196,32 @@ class VehiclePlatePredictionController extends Controller
             'status',
             'Correction humaine enregistrée sans modifier la fiche véhicule.',
         );
+    }
+
+    private function streamPrivateArtifact(
+        FilesystemAdapter $disk,
+        string $storedPath,
+        string $mime,
+        int $bytes,
+    ): StreamedResponse {
+        $input = $disk->readStream($storedPath);
+        abort_unless(is_resource($input), 404);
+
+        return response()->stream(static function () use ($input): void {
+            try {
+                while (! feof($input)) {
+                    echo fread($input, 8192);
+                }
+            } finally {
+                fclose($input);
+            }
+        }, 200, [
+            'Content-Type' => $mime,
+            'Content-Length' => (string) $bytes,
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

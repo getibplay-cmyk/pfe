@@ -18,11 +18,29 @@ return new class extends Migration
             $table->unsignedBigInteger('requested_by');
             $table->string('status', 16);
             $table->string('failure_code', 64)->nullable();
+            $table->string('input_kind', 24);
             $table->string('input_mime', 64);
             $table->string('input_extension', 8);
             $table->unsignedBigInteger('input_bytes');
+            $table->unsignedSmallInteger('input_width');
+            $table->unsignedSmallInteger('input_height');
             $table->char('input_sha256', 64);
             $table->string('input_stored_path', 512);
+            $table->string('detector_model_name', 96)->nullable();
+            $table->char('detector_checkpoint_sha256', 64)->nullable();
+            $table->decimal('detector_threshold', 8, 7)->nullable();
+            $table->decimal('detector_padding_ratio', 5, 4)->nullable();
+            $table->decimal('detector_confidence', 8, 7)->nullable();
+            $table->unsignedSmallInteger('detector_candidate_count')->nullable();
+            $table->jsonb('detector_bbox')->nullable();
+            $table->string('crop_mime', 64)->nullable();
+            $table->string('crop_extension', 8)->nullable();
+            $table->unsignedBigInteger('crop_bytes')->nullable();
+            $table->unsignedSmallInteger('crop_width')->nullable();
+            $table->unsignedSmallInteger('crop_height')->nullable();
+            $table->char('crop_sha256', 64)->nullable();
+            $table->string('crop_stored_path', 512)->nullable();
+            $table->jsonb('crop_bbox')->nullable();
             $table->string('suggestion_status', 48)->nullable();
             $table->string('suggested_canonical', 16)->nullable();
             $table->string('display_text', 64)->nullable();
@@ -87,9 +105,12 @@ return new class extends Migration
                 ADD CONSTRAINT vehicle_plate_runs_contract_check
                     CHECK (
                         status IN ('queued', 'running', 'succeeded', 'failed')
+                        AND input_kind IN ('full_vehicle_image', 'plate_crop')
                         AND input_mime = 'image/jpeg'
                         AND input_extension = 'jpg'
-                        AND input_bytes BETWEEN 1 AND 2097152
+                        AND input_bytes BETWEEN 1 AND 8388608
+                        AND input_width BETWEEN 1 AND 4096
+                        AND input_height BETWEEN 1 AND 4096
                         AND input_sha256 ~ '^[a-f0-9]{64}$'
                         AND input_stored_path = (
                             'intelligence/plate-hybrid/inputs/'
@@ -103,6 +124,18 @@ return new class extends Migration
                         AND fallback_version = '1.0.0'
                         AND operational_effect = 'NO_OPERATIONAL_ACTION'
                         AND (failure_code IS NULL OR failure_code ~ '^[A-Z][A-Z0-9_]{2,63}$')
+                        AND (
+                            (input_kind = 'plate_crop'
+                                AND detector_model_name IS NULL
+                                AND detector_checkpoint_sha256 IS NULL
+                                AND detector_threshold IS NULL
+                                AND detector_padding_ratio IS NULL)
+                            OR (input_kind = 'full_vehicle_image'
+                                AND detector_model_name = 'fasterrcnn_resnet50_fpn_v2_e32_selected_private'
+                                AND detector_checkpoint_sha256 ~ '^[a-f0-9]{64}$'
+                                AND detector_threshold BETWEEN 0.001 AND 0.9999999
+                                AND detector_padding_ratio BETWEEN 0 AND 0.25)
+                        )
                     ),
                 ADD CONSTRAINT vehicle_plate_runs_state_check
                     CHECK (
@@ -115,7 +148,18 @@ return new class extends Migration
                             AND display_text IS NULL
                             AND confidence IS NULL
                             AND suggestion_source IS NULL
-                            AND fallback_executed IS NULL)
+                            AND fallback_executed IS NULL
+                            AND detector_confidence IS NULL
+                            AND detector_candidate_count IS NULL
+                            AND detector_bbox IS NULL
+                            AND crop_mime IS NULL
+                            AND crop_extension IS NULL
+                            AND crop_bytes IS NULL
+                            AND crop_width IS NULL
+                            AND crop_height IS NULL
+                            AND crop_sha256 IS NULL
+                            AND crop_stored_path IS NULL
+                            AND crop_bbox IS NULL)
                         OR (status = 'running'
                             AND started_at IS NOT NULL
                             AND finished_at IS NULL
@@ -125,7 +169,18 @@ return new class extends Migration
                             AND display_text IS NULL
                             AND confidence IS NULL
                             AND suggestion_source IS NULL
-                            AND fallback_executed IS NULL)
+                            AND fallback_executed IS NULL
+                            AND detector_confidence IS NULL
+                            AND detector_candidate_count IS NULL
+                            AND detector_bbox IS NULL
+                            AND crop_mime IS NULL
+                            AND crop_extension IS NULL
+                            AND crop_bytes IS NULL
+                            AND crop_width IS NULL
+                            AND crop_height IS NULL
+                            AND crop_sha256 IS NULL
+                            AND crop_stored_path IS NULL
+                            AND crop_bbox IS NULL)
                         OR (status = 'succeeded'
                             AND started_at IS NOT NULL
                             AND finished_at IS NOT NULL
@@ -168,6 +223,62 @@ return new class extends Migration
                                     AND fallback_executed = true)
                                 OR (suggestion_status = 'empty_suggestion'
                                     AND suggestion_source = 'segmented_ppocrv5_fusion')
+                            )
+                            AND (
+                                (input_kind = 'plate_crop'
+                                    AND detector_confidence IS NULL
+                                    AND detector_candidate_count IS NULL
+                                    AND detector_bbox IS NULL
+                                    AND crop_mime IS NULL
+                                    AND crop_extension IS NULL
+                                    AND crop_bytes IS NULL
+                                    AND crop_width IS NULL
+                                    AND crop_height IS NULL
+                                    AND crop_sha256 IS NULL
+                                    AND crop_stored_path IS NULL
+                                    AND crop_bbox IS NULL)
+                                OR (input_kind = 'full_vehicle_image'
+                                    AND detector_confidence BETWEEN detector_threshold AND 1
+                                    AND detector_candidate_count BETWEEN 1 AND 100
+                                    AND jsonb_typeof(detector_bbox) = 'array'
+                                    AND jsonb_array_length(detector_bbox) = 4
+                                    AND jsonb_typeof(detector_bbox -> 0) = 'number'
+                                    AND jsonb_typeof(detector_bbox -> 1) = 'number'
+                                    AND jsonb_typeof(detector_bbox -> 2) = 'number'
+                                    AND jsonb_typeof(detector_bbox -> 3) = 'number'
+                                    AND (detector_bbox ->> 0)::numeric >= 0
+                                    AND (detector_bbox ->> 1)::numeric >= 0
+                                    AND (detector_bbox ->> 2)::numeric <= input_width
+                                    AND (detector_bbox ->> 3)::numeric <= input_height
+                                    AND (detector_bbox ->> 2)::numeric > (detector_bbox ->> 0)::numeric
+                                    AND (detector_bbox ->> 3)::numeric > (detector_bbox ->> 1)::numeric
+                                    AND crop_mime = 'image/jpeg'
+                                    AND crop_extension = 'jpg'
+                                    AND crop_bytes BETWEEN 1 AND 2097152
+                                    AND crop_width BETWEEN 1 AND input_width
+                                    AND crop_height BETWEEN 1 AND input_height
+                                    AND crop_sha256 ~ '^[a-f0-9]{64}$'
+                                    AND crop_stored_path = (
+                                        'intelligence/plate-hybrid/crops/'
+                                        || tenant_id::text
+                                        || '/'
+                                        || run_id::text
+                                        || '.jpg'
+                                    )
+                                    AND jsonb_typeof(crop_bbox) = 'array'
+                                    AND jsonb_array_length(crop_bbox) = 4
+                                    AND jsonb_typeof(crop_bbox -> 0) = 'number'
+                                    AND jsonb_typeof(crop_bbox -> 1) = 'number'
+                                    AND jsonb_typeof(crop_bbox -> 2) = 'number'
+                                    AND jsonb_typeof(crop_bbox -> 3) = 'number'
+                                    AND (crop_bbox ->> 0)::numeric >= 0
+                                    AND (crop_bbox ->> 1)::numeric >= 0
+                                    AND (crop_bbox ->> 2)::numeric <= input_width
+                                    AND (crop_bbox ->> 3)::numeric <= input_height
+                                    AND (crop_bbox ->> 2)::numeric > (crop_bbox ->> 0)::numeric
+                                    AND (crop_bbox ->> 3)::numeric > (crop_bbox ->> 1)::numeric
+                                    AND crop_width = (crop_bbox ->> 2)::integer - (crop_bbox ->> 0)::integer
+                                    AND crop_height = (crop_bbox ->> 3)::integer - (crop_bbox ->> 1)::integer)
                             ))
                         OR (status = 'failed'
                             AND started_at IS NOT NULL
@@ -178,7 +289,18 @@ return new class extends Migration
                             AND display_text IS NULL
                             AND confidence IS NULL
                             AND suggestion_source IS NULL
-                            AND fallback_executed IS NULL)
+                            AND fallback_executed IS NULL
+                            AND detector_confidence IS NULL
+                            AND detector_candidate_count IS NULL
+                            AND detector_bbox IS NULL
+                            AND crop_mime IS NULL
+                            AND crop_extension IS NULL
+                            AND crop_bytes IS NULL
+                            AND crop_width IS NULL
+                            AND crop_height IS NULL
+                            AND crop_sha256 IS NULL
+                            AND crop_stored_path IS NULL
+                            AND crop_bbox IS NULL)
                     );
 
             CREATE UNIQUE INDEX vehicle_plate_runs_one_active_per_vehicle
@@ -197,11 +319,18 @@ return new class extends Migration
                     OR NEW.run_id <> OLD.run_id
                     OR NEW.vehicle_id <> OLD.vehicle_id
                     OR NEW.requested_by <> OLD.requested_by
+                    OR NEW.input_kind <> OLD.input_kind
                     OR NEW.input_mime <> OLD.input_mime
                     OR NEW.input_extension <> OLD.input_extension
                     OR NEW.input_bytes <> OLD.input_bytes
+                    OR NEW.input_width <> OLD.input_width
+                    OR NEW.input_height <> OLD.input_height
                     OR NEW.input_sha256 <> OLD.input_sha256
                     OR NEW.input_stored_path <> OLD.input_stored_path
+                    OR NEW.detector_model_name IS DISTINCT FROM OLD.detector_model_name
+                    OR NEW.detector_checkpoint_sha256 IS DISTINCT FROM OLD.detector_checkpoint_sha256
+                    OR NEW.detector_threshold IS DISTINCT FROM OLD.detector_threshold
+                    OR NEW.detector_padding_ratio IS DISTINCT FROM OLD.detector_padding_ratio
                     OR NEW.model_name <> OLD.model_name
                     OR NEW.result_schema_version <> OLD.result_schema_version
                     OR NEW.fallback_version <> OLD.fallback_version

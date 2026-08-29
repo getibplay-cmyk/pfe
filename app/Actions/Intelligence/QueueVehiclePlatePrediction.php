@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateImageSanitizer;
@@ -26,14 +28,21 @@ final class QueueVehiclePlatePrediction
     public function __construct(
         private readonly TenantContext $context,
         private readonly VehiclePlateHybridRuntime $runtime,
+        private readonly VehiclePlateDetectorRuntime $detectorRuntime,
         private readonly VehiclePlateImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
     ) {}
 
-    public function handle(Vehicle $vehicle, UploadedFile $image, User $actor): VehiclePlatePredictionRun
+    public function handle(
+        Vehicle $vehicle,
+        UploadedFile $image,
+        User $actor,
+        string $inputKind,
+    ): VehiclePlatePredictionRun
     {
         $this->assertAllowed($vehicle, $actor);
-        if (! $this->runtimeReady()) {
+        if (! VehiclePlateDetectorContract::isInputKind($inputKind)
+            || ! $this->runtimeReady($inputKind)) {
             throw new VehiclePlateRuntimeUnavailableException;
         }
 
@@ -42,7 +51,24 @@ final class QueueVehiclePlatePrediction
         $mime = $sanitized->mime;
         $extension = $sanitized->extension;
         $bytes = $sanitized->bytes;
+        $width = $sanitized->width;
+        $height = $sanitized->height;
         $sha256 = $sanitized->sha256;
+        $usesDetector = $inputKind === VehiclePlateDetectorContract::FULL_IMAGE;
+        $detectorModelName = $usesDetector ? VehiclePlateDetectorContract::MODEL_NAME : null;
+        $detectorSha256 = $usesDetector
+            ? mb_strtolower((string) config(
+                'intelligence.vehicle_plate_hybrid_review.detector.model_sha256',
+            ))
+            : null;
+        $detectorThreshold = $usesDetector
+            ? (float) config('intelligence.vehicle_plate_hybrid_review.detector.threshold')
+            : null;
+        $detectorPadding = $usesDetector
+            ? (float) config(
+                'intelligence.vehicle_plate_hybrid_review.detector.crop_padding_ratio',
+            )
+            : null;
 
         $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
         $directory = 'intelligence/plate-hybrid/inputs/'.$this->context->tenantId();
@@ -61,8 +87,15 @@ final class QueueVehiclePlatePrediction
                 $mime,
                 $extension,
                 $bytes,
+                $width,
+                $height,
                 $sha256,
                 $storedPath,
+                $inputKind,
+                $detectorModelName,
+                $detectorSha256,
+                $detectorThreshold,
+                $detectorPadding,
             ): VehiclePlatePredictionRun {
                 DB::selectOne(
                     'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
@@ -84,11 +117,18 @@ final class QueueVehiclePlatePrediction
                     'vehicle_id' => $vehicle->id,
                     'requested_by' => $actor->id,
                     'status' => VehiclePlatePredictionStatus::Queued,
+                    'input_kind' => $inputKind,
                     'input_mime' => $mime,
                     'input_extension' => $extension,
                     'input_bytes' => $bytes,
+                    'input_width' => $width,
+                    'input_height' => $height,
                     'input_sha256' => $sha256,
                     'input_stored_path' => $storedPath,
+                    'detector_model_name' => $detectorModelName,
+                    'detector_checkpoint_sha256' => $detectorSha256,
+                    'detector_threshold' => $detectorThreshold,
+                    'detector_padding_ratio' => $detectorPadding,
                     'model_name' => VehiclePlateHybridContract::MODEL_NAME,
                     'result_schema_version' => VehiclePlateHybridContract::RESULT_SCHEMA_VERSION,
                     'fallback_version' => VehiclePlateHybridContract::FALLBACK_VERSION,
@@ -100,8 +140,10 @@ final class QueueVehiclePlatePrediction
                     'run_id' => $run->run_id,
                     'vehicle_id' => $run->vehicle_id,
                     'status' => VehiclePlatePredictionStatus::Queued->value,
+                    'input_kind' => $run->input_kind,
                     'input_mime' => $run->input_mime,
                     'input_bytes' => $run->input_bytes,
+                    'detector_required' => $run->usesDetector(),
                     'effect' => VehiclePlateHybridContract::OPERATIONAL_EFFECT,
                 ]);
 
@@ -167,7 +209,7 @@ final class QueueVehiclePlatePrediction
         }
     }
 
-    private function runtimeReady(): bool
+    private function runtimeReady(string $inputKind): bool
     {
         $sanitizer = (string) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_script');
         $sanitizerTimeout = (int) config(
@@ -178,6 +220,8 @@ final class QueueVehiclePlatePrediction
         );
 
         return $this->runtime->configured()
+            && ($inputKind !== VehiclePlateDetectorContract::FULL_IMAGE
+                || $this->detectorRuntime->ready())
             && is_file($sanitizer)
             && $sanitizerTimeout >= 1
             && $sanitizerTimeout <= 15
