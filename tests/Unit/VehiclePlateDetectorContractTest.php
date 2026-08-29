@@ -38,7 +38,7 @@ class VehiclePlateDetectorContractTest extends TestCase
 
         $result = (new VehiclePlateDetectorResultValidator)->validate(
             json_encode($payload, JSON_THROW_ON_ERROR),
-            $this->run(),
+            $this->predictionRun(),
             $this->cropPath,
         );
 
@@ -59,7 +59,7 @@ class VehiclePlateDetectorContractTest extends TestCase
         try {
             (new VehiclePlateDetectorResultValidator)->validate(
                 json_encode($payload, JSON_THROW_ON_ERROR),
-                $this->run(),
+                $this->predictionRun(),
                 $this->cropPath,
             );
             $this->fail('The unsafe detector payload should have been rejected.');
@@ -81,7 +81,7 @@ class VehiclePlateDetectorContractTest extends TestCase
 
         $result = (new VehiclePlateDetectorResultValidator)->validate(
             json_encode($payload, JSON_THROW_ON_ERROR),
-            $this->run(),
+            $this->predictionRun(),
             $this->cropPath,
         );
 
@@ -90,7 +90,7 @@ class VehiclePlateDetectorContractTest extends TestCase
         $this->assertNull($result->cropContents);
     }
 
-    private function run(): VehiclePlatePredictionRun
+    private function predictionRun(): VehiclePlatePredictionRun
     {
         return (new VehiclePlatePredictionRun)->forceFill([
             'run_id' => '123e4567-e89b-12d3-a456-426614174000',
