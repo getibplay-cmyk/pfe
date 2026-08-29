@@ -359,7 +359,7 @@ class J14ResultBatchImportReviewTest extends TestCase
 
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(83, DB::table('migrations')->count());
+        $this->assertSame(84, DB::table('migrations')->count());
         foreach (['intelligence_result_batches', 'intelligence_result_rows', 'intelligence_result_batch_decisions'] as $table) {
             $this->assertTrue(DB::table('information_schema.tables')
                 ->where('table_schema', 'public')
