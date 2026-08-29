@@ -38,8 +38,7 @@ final class QueueVehiclePlatePrediction
         UploadedFile $image,
         User $actor,
         string $inputKind,
-    ): VehiclePlatePredictionRun
-    {
+    ): VehiclePlatePredictionRun {
         $this->assertAllowed($vehicle, $actor);
         if (! VehiclePlateDetectorContract::isInputKind($inputKind)
             || ! $this->runtimeReady($inputKind)) {
