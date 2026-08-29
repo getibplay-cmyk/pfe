@@ -223,10 +223,8 @@ ensemble dans le même environnement.
 - RT-DETR officiel : <https://github.com/lyuwenyu/RT-DETR>
 - Export ONNX officiel :
   <https://github.com/lyuwenyu/RT-DETR/blob/main/rtdetrv2_pytorch/tools/export_onnx.py>
-- Checkpoint sélectionné :
-  <https://drive.google.com/file/d/1FhUglF3PzS_2x4JIJfh6ct5KfWXeAGVE/view?usp=drivesdk>
-- Politique d'inférence :
-  <https://drive.google.com/file/d/18khLLc12cqj0y4nt7gUP-yXAipdU4Uxs/view?usp=drivesdk>
+- Checkpoint et politique d’inférence : artefacts transmis uniquement par
+  le canal privé d’exploitation ; aucun lien privé n’est versionné.
 - ONNX Runtime Python : <https://onnxruntime.ai/docs/get-started/with-python.html>
 - ONNX Runtime, optimisation et quantification :
   <https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html>
