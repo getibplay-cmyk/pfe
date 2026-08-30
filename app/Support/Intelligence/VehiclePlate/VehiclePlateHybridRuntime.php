@@ -4,9 +4,9 @@ namespace App\Support\Intelligence\VehiclePlate;
 
 use App\Exceptions\VehiclePlateHybridExecutionException;
 use App\Models\VehiclePlatePredictionRun;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
 use JsonException;
 use Throwable;
 
@@ -21,7 +21,10 @@ class VehiclePlateHybridRuntime
         $device = (string) config('intelligence.vehicle_plate_hybrid_review.device');
         $timeout = (int) config('intelligence.vehicle_plate_hybrid_review.runtime_timeout_seconds');
 
-        return $binary !== ''
+        return IntelligencePrivateStorage::configured(
+            'intelligence.vehicle_plate_hybrid_review.disk',
+        )
+            && $binary !== ''
             && $script !== ''
             && is_file($script)
             && in_array($device, ['cpu', 'gpu:0'], true)
@@ -52,6 +55,7 @@ class VehiclePlateHybridRuntime
 
         $manifestPath = $temporaryDirectory.DIRECTORY_SEPARATOR.'manifest.json';
         $outputPath = $temporaryDirectory.DIRECTORY_SEPARATOR.'result.json';
+        $completed = false;
         try {
             $this->writeManifest($manifestPath, $run, $inputPath);
             $result = Process::path($temporaryDirectory)
@@ -83,6 +87,8 @@ class VehiclePlateHybridRuntime
                 throw new VehiclePlateHybridExecutionException('PLATE_OUTPUT_INVALID');
             }
 
+            $completed = true;
+
             return $output;
         } catch (ProcessTimedOutException) {
             throw new VehiclePlateHybridExecutionException('PLATE_PROCESS_TIMEOUT');
@@ -91,9 +97,18 @@ class VehiclePlateHybridRuntime
         } catch (Throwable) {
             throw new VehiclePlateHybridExecutionException('PLATE_PROCESS_START_FAILED');
         } finally {
-            @unlink($outputPath);
-            @unlink($manifestPath);
-            @rmdir($temporaryDirectory);
+            try {
+                VehiclePlateTemporaryPathCleaner::removeFile($outputPath);
+                VehiclePlateTemporaryPathCleaner::removeFile($manifestPath);
+                VehiclePlateTemporaryPathCleaner::removeDirectory($temporaryDirectory);
+            } catch (Throwable $cleanupException) {
+                VehiclePlateTemporaryPathCleaner::reportFailure($cleanupException);
+                if ($completed) {
+                    throw new VehiclePlateHybridExecutionException(
+                        'PLATE_TEMPORARY_CLEANUP_FAILED',
+                    );
+                }
+            }
         }
     }
 
@@ -103,9 +118,10 @@ class VehiclePlateHybridRuntime
             ? 'intelligence/plate-hybrid/crops/'.$run->tenant_id.'/'.$run->run_id.'.jpg'
             : (string) $run->input_stored_path;
         try {
-            $expected = Storage::disk(
-                (string) config('intelligence.vehicle_plate_hybrid_review.disk'),
-            )->path($storedPath);
+            $expected = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+                $storedPath,
+            );
             $actualRealPath = realpath($inputPath);
             $expectedRealPath = realpath($expected);
 

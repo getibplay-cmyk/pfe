@@ -3,7 +3,7 @@
 namespace App\Support\Intelligence\VehiclePlate;
 
 use App\Models\VehiclePlatePredictionRun;
-use Illuminate\Support\Facades\Storage;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use Throwable;
 
 class VehiclePlateInputArtifact
@@ -25,14 +25,11 @@ class VehiclePlateInputArtifact
             return false;
         }
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
-
         try {
-            if (! $disk->exists($run->input_stored_path)) {
-                return false;
-            }
-
-            $path = $disk->path($run->input_stored_path);
+            $path = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+                (string) $run->input_stored_path,
+            );
             if (! is_file($path) || is_link($path)) {
                 return false;
             }
@@ -68,14 +65,12 @@ class VehiclePlateInputArtifact
             return false;
         }
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
         try {
-            if (! $disk->exists($run->crop_stored_path)) {
-                return false;
-            }
-
             return $this->matches(
-                $disk->path($run->crop_stored_path),
+                IntelligencePrivateStorage::path(
+                    'intelligence.vehicle_plate_hybrid_review.disk',
+                    (string) $run->crop_stored_path,
+                ),
                 (int) $run->crop_bytes,
                 (string) $run->crop_sha256,
                 (int) $run->crop_width,

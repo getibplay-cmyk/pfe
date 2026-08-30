@@ -16,6 +16,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Models\VehiclePlatePredictionReview;
 use App\Models\VehiclePlatePredictionRun;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehiclePlate\SanitizedVehiclePlateImage;
 use App\Support\Intelligence\VehiclePlate\ValidatedVehiclePlateDetection;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
@@ -40,11 +41,11 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('local');
+        Storage::fake(IntelligencePrivateStorage::DISK);
         $this->seed(RolesPermissionsSeeder::class);
         config([
             'intelligence.vehicle_plate_hybrid_review.enabled' => false,
-            'intelligence.vehicle_plate_hybrid_review.disk' => 'local',
+            'intelligence.vehicle_plate_hybrid_review.disk' => IntelligencePrivateStorage::DISK,
             'intelligence.vehicle_plate_hybrid_review.python_binary' => 'python',
             'intelligence.vehicle_plate_hybrid_review.device' => 'cpu',
             'intelligence.vehicle_plate_hybrid_review.runtime_timeout_seconds' => 120,
@@ -137,7 +138,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
                 .$run->tenant_id.'/'.$run->run_id.'.jpg',
             $run->input_stored_path,
         );
-        Storage::disk('local')->assertExists($run->input_stored_path);
+        Storage::disk(IntelligencePrivateStorage::DISK)->assertExists($run->input_stored_path);
         Queue::assertPushed(
             RunVehiclePlatePrediction::class,
             fn (RunVehiclePlatePrediction $job): bool => $job->runId === $run->run_id
@@ -228,7 +229,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
                 .$completed->tenant_id.'/'.$completed->run_id.'.jpg',
             $completed->crop_stored_path,
         );
-        Storage::disk('local')->assertExists($completed->crop_stored_path);
+        Storage::disk(IntelligencePrivateStorage::DISK)->assertExists($completed->crop_stored_path);
         $this->assertSame(
             $before,
             Vehicle::withoutGlobalScopes()->findOrFail($fixture['vehicle']->id)->registration_number,

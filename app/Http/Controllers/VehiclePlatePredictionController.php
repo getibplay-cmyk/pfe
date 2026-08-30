@@ -10,16 +10,15 @@ use App\Http\Requests\StoreVehiclePlatePredictionRequest;
 use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateInputArtifact;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -62,6 +61,9 @@ class VehiclePlatePredictionController extends Controller
             'intelligence.vehicle_plate_hybrid_review.image_sanitizer_script',
         );
         $ocrReady = (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
+            && IntelligencePrivateStorage::configured(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+            )
             && $runtime->configured()
             && is_file($sanitizer)
             && (int) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds') >= 1
@@ -137,10 +139,7 @@ class VehiclePlatePredictionController extends Controller
             'effect' => VehiclePlateHybridContract::OPERATIONAL_EFFECT,
         ]);
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
-
         return $this->streamPrivateArtifact(
-            $disk,
             (string) $platePrediction->input_stored_path,
             (string) $platePrediction->input_mime,
             (int) $platePrediction->input_bytes,
@@ -162,10 +161,7 @@ class VehiclePlatePredictionController extends Controller
             'effect' => VehiclePlateHybridContract::OPERATIONAL_EFFECT,
         ]);
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
-
         return $this->streamPrivateArtifact(
-            $disk,
             $artifact->reviewCropStoredPath($platePrediction),
             'image/jpeg',
             $artifact->reviewCropBytes($platePrediction),
@@ -200,12 +196,14 @@ class VehiclePlatePredictionController extends Controller
     }
 
     private function streamPrivateArtifact(
-        FilesystemAdapter $disk,
         string $storedPath,
         string $mime,
         int $bytes,
     ): StreamedResponse {
-        $input = $disk->readStream($storedPath);
+        $input = IntelligencePrivateStorage::readStream(
+            'intelligence.vehicle_plate_hybrid_review.disk',
+            $storedPath,
+        );
         abort_unless(is_resource($input), 404);
 
         return response()->stream(static function () use ($input): void {

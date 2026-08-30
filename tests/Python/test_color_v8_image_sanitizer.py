@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -48,7 +49,11 @@ class ColorV8ImageSanitizerTest(unittest.TestCase):
             self.assertTrue(manifest["metadata_removed"])
             self.assertEqual(output.stat().st_size, manifest["bytes"])
             self.assertEqual(64, len(manifest["sha256"]))
-            self.assertEqual(0o600, output.stat().st_mode & 0o777)
+            self.assertTrue(output.is_file())
+            self.assertFalse(output.is_symlink())
+            self.assertEqual(Path(temporary).resolve(), output.resolve().parent)
+            if os.name == "posix":
+                self.assertEqual(0o600, output.stat().st_mode & 0o777)
             self.assertNotIn(b"private-customer-location", output.read_bytes())
             with Image.open(output) as sanitized:
                 self.assertEqual("JPEG", sanitized.format)

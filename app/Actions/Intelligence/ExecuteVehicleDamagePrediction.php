@@ -9,6 +9,7 @@ use App\Exceptions\VehicleDamageExecutionException;
 use App\Models\User;
 use App\Models\VehicleDamagePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageInputArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
@@ -17,7 +18,6 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 final class ExecuteVehicleDamagePrediction
@@ -149,8 +149,10 @@ final class ExecuteVehicleDamagePrediction
         }
 
         try {
-            $image = Storage::disk((string) config('intelligence.vehicle_damage_v1.disk'))
-                ->path($run->input_stored_path);
+            $image = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_damage_v1.disk',
+                (string) $run->input_stored_path,
+            );
             $result = Process::path(sys_get_temp_dir())
                 ->timeout($timeout)
                 ->env($this->closedEnvironment())

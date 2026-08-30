@@ -12,6 +12,7 @@ use App\Http\Requests\StoreVehicleDamagePredictionRequest;
 use App\Models\VehicleDamagePredictionRun;
 use App\Models\VehicleInspection;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageInputArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
@@ -19,7 +20,6 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -69,6 +69,7 @@ class VehicleDamagePredictionController extends Controller
         $artifactReady = $modelArtifact->configuredIsValid();
         $runtimeReady = (bool) config('intelligence.vehicle_damage_v1.enabled')
             && $artifactReady
+            && IntelligencePrivateStorage::configured('intelligence.vehicle_damage_v1.disk')
             && (string) config('intelligence.vehicle_damage_v1.python_binary') !== ''
             && is_file((string) config('intelligence.vehicle_damage_v1.runtime_script'))
             && is_file((string) config('intelligence.vehicle_damage_v1.image_sanitizer_script'))
@@ -150,8 +151,10 @@ class VehicleDamagePredictionController extends Controller
             'effect' => VehicleDamageContract::OPERATIONAL_EFFECT,
         ]);
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_damage_v1.disk'));
-        $input = $disk->readStream($damagePrediction->input_stored_path);
+        $input = IntelligencePrivateStorage::readStream(
+            'intelligence.vehicle_damage_v1.disk',
+            (string) $damagePrediction->input_stored_path,
+        );
         abort_unless(is_resource($input), 404);
 
         return response()->stream(static function () use ($input): void {

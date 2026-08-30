@@ -76,6 +76,7 @@ class VehiclePlateDetectorRuntime
         }
         $outputPath = $temporaryDirectory.DIRECTORY_SEPARATOR.'result.json';
         $cropPath = $temporaryDirectory.DIRECTORY_SEPARATOR.'crop.jpg';
+        $completed = false;
 
         try {
             $result = Process::path($temporaryDirectory)
@@ -123,7 +124,10 @@ class VehiclePlateDetectorRuntime
                 throw new VehiclePlateHybridExecutionException('DETECTOR_OUTPUT_INVALID');
             }
 
-            return $this->validator->validate($output, $run, $cropPath);
+            $validated = $this->validator->validate($output, $run, $cropPath);
+            $completed = true;
+
+            return $validated;
         } catch (ProcessTimedOutException) {
             throw new VehiclePlateHybridExecutionException('DETECTOR_PROCESS_TIMEOUT');
         } catch (VehiclePlateHybridExecutionException $exception) {
@@ -131,9 +135,18 @@ class VehiclePlateDetectorRuntime
         } catch (Throwable) {
             throw new VehiclePlateHybridExecutionException('DETECTOR_PROCESS_START_FAILED');
         } finally {
-            @unlink($cropPath);
-            @unlink($outputPath);
-            @rmdir($temporaryDirectory);
+            try {
+                VehiclePlateTemporaryPathCleaner::removeFile($cropPath);
+                VehiclePlateTemporaryPathCleaner::removeFile($outputPath);
+                VehiclePlateTemporaryPathCleaner::removeDirectory($temporaryDirectory);
+            } catch (Throwable $cleanupException) {
+                VehiclePlateTemporaryPathCleaner::reportFailure($cleanupException);
+                if ($completed) {
+                    throw new VehiclePlateHybridExecutionException(
+                        'PLATE_TEMPORARY_CLEANUP_FAILED',
+                    );
+                }
+            }
         }
     }
 

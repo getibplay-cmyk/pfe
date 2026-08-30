@@ -7,6 +7,7 @@ use App\Exceptions\VehiclePlateHybridExecutionException;
 use App\Models\User;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehiclePlate\ValidatedVehiclePlateDetection;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
@@ -15,7 +16,6 @@ use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateInputArtifact;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 final class ExecuteVehiclePlatePrediction
 {
@@ -51,10 +51,17 @@ final class ExecuteVehiclePlatePrediction
                 throw new VehiclePlateHybridExecutionException('INPUT_ARTIFACT_INVALID');
             }
 
-            $disk = Storage::disk(
-                (string) config('intelligence.vehicle_plate_hybrid_review.disk'),
-            );
-            $inputPath = $disk->path($run->input_stored_path);
+            try {
+                $disk = IntelligencePrivateStorage::disk(
+                    'intelligence.vehicle_plate_hybrid_review.disk',
+                );
+                $inputPath = IntelligencePrivateStorage::path(
+                    'intelligence.vehicle_plate_hybrid_review.disk',
+                    (string) $run->input_stored_path,
+                );
+            } catch (\Throwable) {
+                throw new VehiclePlateHybridExecutionException('INPUT_ARTIFACT_INVALID');
+            }
             $detection = null;
             $cropStoredPath = null;
             try {
@@ -75,14 +82,24 @@ final class ExecuteVehiclePlatePrediction
                     }
                     $cropStoredPath = 'intelligence/plate-hybrid/crops/'
                         .$run->tenant_id.'/'.$run->run_id.'.jpg';
-                    if (! $disk->put(
-                        $cropStoredPath,
-                        $detection->cropContents,
-                        ['visibility' => 'private'],
-                    )) {
+                    try {
+                        $stored = $disk->put(
+                            $cropStoredPath,
+                            $detection->cropContents,
+                            ['visibility' => 'private'],
+                        );
+                    } catch (\Throwable) {
+                        throw new VehiclePlateHybridExecutionException(
+                            'DETECTOR_CROP_STORE_FAILED',
+                        );
+                    }
+                    if (! $stored) {
                         throw new VehiclePlateHybridExecutionException('DETECTOR_CROP_STORE_FAILED');
                     }
-                    $ocrPath = $disk->path($cropStoredPath);
+                    $ocrPath = IntelligencePrivateStorage::path(
+                        'intelligence.vehicle_plate_hybrid_review.disk',
+                        $cropStoredPath,
+                    );
                     if (! $this->storedCropMatches($ocrPath, $detection)) {
                         throw new VehiclePlateHybridExecutionException('DETECTOR_CROP_STORE_FAILED');
                     }
@@ -152,7 +169,10 @@ final class ExecuteVehiclePlatePrediction
                 }, 3);
             } catch (\Throwable $exception) {
                 if (is_string($cropStoredPath)) {
-                    $disk->delete($cropStoredPath);
+                    IntelligencePrivateStorage::deleteAfterFailure(
+                        'intelligence.vehicle_plate_hybrid_review.disk',
+                        $cropStoredPath,
+                    );
                 }
 
                 throw $exception;

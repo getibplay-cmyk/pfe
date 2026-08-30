@@ -7,6 +7,7 @@ use App\Exceptions\VehicleColorExecutionException;
 use App\Models\User;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
@@ -15,7 +16,6 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 final class ExecuteVehicleColorPrediction
@@ -127,8 +127,10 @@ final class ExecuteVehicleColorPrediction
         }
 
         try {
-            $image = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'))
-                ->path($run->input_stored_path);
+            $image = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_color_v8.disk',
+                (string) $run->input_stored_path,
+            );
             $result = Process::path(sys_get_temp_dir())
                 ->timeout($timeout)
                 ->env([

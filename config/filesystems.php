@@ -38,6 +38,26 @@ return [
             'report' => false,
         ],
 
+        'intelligence-private' => [
+            'driver' => 'local',
+            'root' => env('PRIVATE_DOCUMENT_ROOT', storage_path('app/private')),
+            'serve' => false,
+            'visibility' => 'private',
+            'directory_visibility' => 'private',
+            'permissions' => [
+                'file' => [
+                    'public' => 0600,
+                    'private' => 0600,
+                ],
+                'dir' => [
+                    'public' => 0700,
+                    'private' => 0700,
+                ],
+            ],
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

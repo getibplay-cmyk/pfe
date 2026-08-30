@@ -181,6 +181,7 @@ class VehiclePlatePredictionRun extends Model
             'QUEUE_DISPATCH_FAILED' => 'La queue Intelligence n’a pas accepté cette analyse.',
             'PLATE_PROCESS_TIMEOUT' => 'L’OCR local a dépassé le délai autorisé.',
             'PLATE_PROCESS_FAILED', 'PLATE_PROCESS_START_FAILED' => 'Le runtime PaddleOCR local n’a pas terminé l’analyse.',
+            'PLATE_TEMPORARY_CLEANUP_FAILED' => 'Le nettoyage du traitement local sécurisé n’a pas pu être confirmé.',
             'PLATE_OUTPUT_INVALID', 'PLATE_OUTPUT_JSON_INVALID', 'PLATE_OUTPUT_CONTRACT_INVALID',
             'PLATE_OUTPUT_ROW_INVALID', 'PLATE_OUTPUT_SUGGESTION_INVALID',
             'PLATE_OUTPUT_POLICY_MISMATCH', 'PLATE_OUTPUT_COMPONENTS_INVALID',

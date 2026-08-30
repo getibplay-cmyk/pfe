@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
@@ -17,7 +18,6 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -44,10 +44,18 @@ final class QueueVehicleColorPrediction
         $bytes = $sanitized->bytes;
         $sha256 = $sanitized->sha256;
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'));
         $directory = 'intelligence/color-v8/inputs/'.$this->context->tenantId();
         $storedPath = $directory.'/'.$runId.'.'.$extension;
-        $stored = $disk->put($storedPath, $sanitized->contents, ['visibility' => 'private']);
+        try {
+            $disk = IntelligencePrivateStorage::disk('intelligence.vehicle_color_v8.disk');
+            $stored = $disk->put(
+                $storedPath,
+                $sanitized->contents,
+                ['visibility' => 'private'],
+            );
+        } catch (Throwable) {
+            throw new VehicleColorRuntimeUnavailableException;
+        }
         unset($sanitized);
         if (! $stored) {
             throw new VehicleColorRuntimeUnavailableException;
@@ -110,7 +118,10 @@ final class QueueVehicleColorPrediction
                 return $run;
             }, 3);
         } catch (Throwable $exception) {
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_color_v8.disk',
+                $storedPath,
+            );
 
             throw $exception;
         }
@@ -134,7 +145,10 @@ final class QueueVehicleColorPrediction
             } catch (Throwable) {
                 // La requête HTTP reste fermée même si la base est devenue indisponible.
             }
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_color_v8.disk',
+                $storedPath,
+            );
             try {
                 if ($updated !== 1) {
                     throw new \RuntimeException('queue_failure_not_persisted');
@@ -177,7 +191,8 @@ final class QueueVehicleColorPrediction
         $sanitizerTimeout = (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds');
         $storedDimension = (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension');
 
-        return $this->modelArtifact->configuredIsValid()
+        return IntelligencePrivateStorage::configured('intelligence.vehicle_color_v8.disk')
+            && $this->modelArtifact->configuredIsValid()
             && (string) config('intelligence.vehicle_color_v8.python_binary') !== ''
             && is_file((string) config('intelligence.vehicle_color_v8.runtime_script'))
             && is_file($sanitizer)

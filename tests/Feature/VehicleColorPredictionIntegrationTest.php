@@ -20,6 +20,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Models\VehicleColorPredictionReview;
 use App\Models\VehicleColorPredictionRun;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleColor\SanitizedVehicleColorImage;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
@@ -47,11 +48,11 @@ class VehicleColorPredictionIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('local');
+        Storage::fake(IntelligencePrivateStorage::DISK);
         $this->seed(RolesPermissionsSeeder::class);
         config([
             'intelligence.vehicle_color_v8.enabled' => false,
-            'intelligence.vehicle_color_v8.disk' => 'local',
+            'intelligence.vehicle_color_v8.disk' => IntelligencePrivateStorage::DISK,
             'intelligence.vehicle_color_v8.python_binary' => 'python',
             'intelligence.vehicle_color_v8.execution_provider' => 'CPUExecutionProvider',
             'intelligence.vehicle_color_v8.runtime_script' => base_path(
@@ -109,7 +110,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $submitInvalidImage($secondUser)->assertStatus(429);
 
         $this->assertSame(0, VehicleColorPredictionRun::withoutGlobalScopes()->count());
-        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/color-v8'));
+        $this->assertSame([], Storage::disk(IntelligencePrivateStorage::DISK)->allFiles('intelligence/color-v8'));
         Queue::assertNothingPushed();
     }
 
@@ -140,7 +141,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
                 .$run->input_extension,
             $run->input_stored_path,
         );
-        Storage::disk('local')->assertExists($run->input_stored_path);
+        Storage::disk(IntelligencePrivateStorage::DISK)->assertExists($run->input_stored_path);
         Queue::assertPushed(
             RunVehicleColorPrediction::class,
             fn (RunVehicleColorPrediction $job): bool => $job->runId === $run->run_id
@@ -216,7 +217,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ->assertRedirect();
 
         $run = VehicleColorPredictionRun::withoutGlobalScopes()->firstOrFail();
-        $stored = Storage::disk('local')->get($run->input_stored_path);
+        $stored = Storage::disk(IntelligencePrivateStorage::DISK)->get($run->input_stored_path);
         $this->assertSame($sanitizedBytes, $stored);
         $this->assertStringNotContainsString('private-exif-gps-marker', $stored);
         $this->assertSame(strlen($sanitizedBytes), $run->input_bytes);
@@ -243,7 +244,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ->assertServiceUnavailable();
 
         $this->assertSame(0, VehicleColorPredictionRun::withoutGlobalScopes()->count());
-        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/color-v8'));
+        $this->assertSame([], Storage::disk(IntelligencePrivateStorage::DISK)->allFiles('intelligence/color-v8'));
         Queue::assertNothingPushed();
     }
 
@@ -433,7 +434,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             ])
             ->assertServiceUnavailable();
         $this->assertSame(0, VehicleColorPredictionRun::withoutGlobalScopes()->count());
-        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/color-v8'));
+        $this->assertSame([], Storage::disk(IntelligencePrivateStorage::DISK)->allFiles('intelligence/color-v8'));
         Queue::assertNothingPushed();
     }
 
@@ -691,7 +692,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
         $sameTenantOtherRunPath = 'intelligence/color-v8/inputs/'
             .$fixture['tenant']->id.'/'.Str::uuid().'.png';
         foreach ([$foreignTenantPath, $sameTenantOtherRunPath] as $forgedPath) {
-            Storage::disk('local')->put($forgedPath, $bytes);
+            Storage::disk(IntelligencePrivateStorage::DISK)->put($forgedPath, $bytes);
             $forgedRun = (new VehicleColorPredictionRun)->forceFill([
                 ...$row,
                 'input_stored_path' => $forgedPath,
@@ -751,7 +752,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
 
         $this->assertInstanceOf(AuthorizationException::class, $failure);
         $this->assertSame(0, VehicleColorPredictionRun::withoutGlobalScopes()->count());
-        $this->assertSame([], Storage::disk('local')->allFiles('intelligence/color-v8'));
+        $this->assertSame([], Storage::disk(IntelligencePrivateStorage::DISK)->allFiles('intelligence/color-v8'));
         Queue::assertNothingPushed();
     }
 
@@ -852,7 +853,7 @@ class VehicleColorPredictionIntegrationTest extends TestCase
             'group' => 'prediction',
         ]);
 
-        $invalidDirectory = Storage::disk('local')->path('invalid-color-bundle');
+        $invalidDirectory = Storage::disk(IntelligencePrivateStorage::DISK)->path('invalid-color-bundle');
         mkdir($invalidDirectory, 0700, true);
         $this->artisan('rentfleet:color-v8:install', ['source' => $invalidDirectory])
             ->assertFailed();

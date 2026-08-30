@@ -10,6 +10,7 @@ use App\Http\Requests\StoreVehicleColorPredictionRequest;
 use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
@@ -17,7 +18,6 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -61,6 +61,7 @@ class VehicleColorPredictionController extends Controller
         $sanitizer = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
         $runtimeReady = (bool) config('intelligence.vehicle_color_v8.enabled')
             && $artifactReady
+            && IntelligencePrivateStorage::configured('intelligence.vehicle_color_v8.disk')
             && (string) config('intelligence.vehicle_color_v8.python_binary') !== ''
             && is_file((string) config('intelligence.vehicle_color_v8.runtime_script'))
             && is_file($sanitizer)
@@ -134,9 +135,11 @@ class VehicleColorPredictionController extends Controller
             'effect' => VehicleColorContract::OPERATIONAL_EFFECT,
         ]);
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'));
         $path = $colorPrediction->input_stored_path;
-        $input = $disk->readStream($path);
+        $input = IntelligencePrivateStorage::readStream(
+            'intelligence.vehicle_color_v8.disk',
+            (string) $path,
+        );
         abort_unless(is_resource($input), 404);
 
         return response()->stream(static function () use ($input): void {

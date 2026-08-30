@@ -359,8 +359,8 @@ def _create_clean_eval_directory(
         raise ProtocolError(f"Variante propre absente pour {split}.")
     for row in clean_rows:
         source = dataset_dir / str(row["image_path"])
-        link = destination / source.name
-        link.symlink_to(source)
+        snapshot = destination / source.name
+        shutil.copy2(source, snapshot)
     return destination
 
 

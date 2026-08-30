@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
@@ -19,7 +20,6 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -69,10 +69,20 @@ final class QueueVehiclePlatePrediction
             )
             : null;
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
         $directory = 'intelligence/plate-hybrid/inputs/'.$this->context->tenantId();
         $storedPath = $directory.'/'.$runId.'.'.$extension;
-        $stored = $disk->put($storedPath, $sanitized->contents, ['visibility' => 'private']);
+        try {
+            $disk = IntelligencePrivateStorage::disk(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+            );
+            $stored = $disk->put(
+                $storedPath,
+                $sanitized->contents,
+                ['visibility' => 'private'],
+            );
+        } catch (Throwable) {
+            throw new VehiclePlateRuntimeUnavailableException;
+        }
         unset($sanitized);
         if (! $stored) {
             throw new VehiclePlateRuntimeUnavailableException;
@@ -149,7 +159,10 @@ final class QueueVehiclePlatePrediction
                 return $run;
             }, 3);
         } catch (Throwable $exception) {
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+                $storedPath,
+            );
 
             throw $exception;
         }
@@ -173,7 +186,10 @@ final class QueueVehiclePlatePrediction
             } catch (Throwable) {
                 // La requête HTTP reste fermée même si la base est devenue indisponible.
             }
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+                $storedPath,
+            );
             try {
                 if ($updated !== 1) {
                     throw new \RuntimeException('queue_failure_not_persisted');
@@ -218,7 +234,10 @@ final class QueueVehiclePlatePrediction
             'intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension',
         );
 
-        return $this->runtime->configured()
+        return IntelligencePrivateStorage::configured(
+            'intelligence.vehicle_plate_hybrid_review.disk',
+        )
+            && $this->runtime->configured()
             && ($inputKind !== VehiclePlateDetectorContract::FULL_IMAGE
                 || $this->detectorRuntime->ready())
             && is_file($sanitizer)

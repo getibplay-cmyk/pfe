@@ -3,7 +3,7 @@
 namespace App\Support\Intelligence\VehicleColor;
 
 use App\Models\VehicleColorPredictionRun;
-use Illuminate\Support\Facades\Storage;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use Throwable;
 
 class VehicleColorInputArtifact
@@ -25,14 +25,11 @@ class VehicleColorInputArtifact
             return false;
         }
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'));
-
         try {
-            if (! $disk->exists($run->input_stored_path)) {
-                return false;
-            }
-
-            $path = $disk->path($run->input_stored_path);
+            $path = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_color_v8.disk',
+                (string) $run->input_stored_path,
+            );
             if (! is_file($path) || is_link($path)) {
                 return false;
             }

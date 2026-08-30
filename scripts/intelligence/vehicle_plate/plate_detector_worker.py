@@ -57,9 +57,19 @@ def file_sha256(path: str | Path) -> str:
 def secure_child(root: str | Path, name: str, *, must_exist: bool) -> Path:
     """Resolve a basename below a bounded root without following a file link."""
 
-    if not name or Path(name).name != name or name in {".", ".."}:
+    if (
+        not name
+        or name in {".", ".."}
+        or "/" in name
+        or "\\" in name
+        or Path(name).is_absolute()
+        or Path(name).name != name
+    ):
         raise DetectorWorkerError("PATH_OUTSIDE_BOUNDARY")
-    root_path = Path(root).resolve(strict=True)
+    try:
+        root_path = Path(root).resolve(strict=True)
+    except OSError as exception:
+        raise DetectorWorkerError("ROOT_INVALID") from exception
     if not root_path.is_dir():
         raise DetectorWorkerError("ROOT_INVALID")
     candidate = root_path / name

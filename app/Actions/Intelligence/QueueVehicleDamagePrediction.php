@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\VehicleDamagePredictionRun;
 use App\Models\VehicleInspection;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageImageSanitizer;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
@@ -19,7 +20,6 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -44,10 +44,18 @@ final class QueueVehicleDamagePrediction
 
         $sanitized = $this->imageSanitizer->sanitize($image);
         $runId = (string) Str::uuid();
-        $disk = Storage::disk((string) config('intelligence.vehicle_damage_v1.disk'));
         $directory = 'intelligence/vehicle-damage/inputs/'.$this->context->tenantId();
         $storedPath = $directory.'/'.$runId.'.jpg';
-        $stored = $disk->put($storedPath, $sanitized->contents, ['visibility' => 'private']);
+        try {
+            $disk = IntelligencePrivateStorage::disk('intelligence.vehicle_damage_v1.disk');
+            $stored = $disk->put(
+                $storedPath,
+                $sanitized->contents,
+                ['visibility' => 'private'],
+            );
+        } catch (Throwable) {
+            throw new VehicleDamageRuntimeUnavailableException;
+        }
         if (! $stored) {
             throw new VehicleDamageRuntimeUnavailableException;
         }
@@ -115,7 +123,10 @@ final class QueueVehicleDamagePrediction
                 return $run;
             }, 3);
         } catch (Throwable $exception) {
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_damage_v1.disk',
+                $storedPath,
+            );
 
             throw $exception;
         }
@@ -140,7 +151,10 @@ final class QueueVehicleDamagePrediction
             } catch (Throwable) {
                 // La requête HTTP reste fermée même si la base est devenue indisponible.
             }
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_damage_v1.disk',
+                $storedPath,
+            );
             try {
                 if ($updated !== 1) {
                     throw new \RuntimeException('queue_failure_not_persisted');
@@ -195,7 +209,8 @@ final class QueueVehicleDamagePrediction
         $storedDimension = (int) config('intelligence.vehicle_damage_v1.max_stored_image_dimension');
         $maxPatches = (int) config('intelligence.vehicle_damage_v1.max_scan_patches');
 
-        return $this->modelArtifact->configuredIsValid()
+        return IntelligencePrivateStorage::configured('intelligence.vehicle_damage_v1.disk')
+            && $this->modelArtifact->configuredIsValid()
             && (string) config('intelligence.vehicle_damage_v1.python_binary') !== ''
             && is_file((string) config('intelligence.vehicle_damage_v1.runtime_script'))
             && is_file($sanitizer)
