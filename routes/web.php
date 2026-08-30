@@ -30,6 +30,7 @@ use App\Http\Controllers\RentalUsageAnomalyController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\ReservationDemandForecastController;
 use App\Http\Controllers\ReservationExportController;
 use App\Http\Controllers\ReturnDamageAssistantController;
 use App\Http\Controllers\RoleController;
@@ -121,6 +122,13 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::resource('pricing-rules', PricingRuleController::class)->except(['show', 'destroy']);
     Route::get('/availability', AvailabilityController::class)->name('availability.index');
     Route::get('/reservations/export', ReservationExportController::class)->name('reservations.export');
+    Route::post('/reservations/demand-forecast', [ReservationDemandForecastController::class, 'store'])
+        ->middleware('throttle:reservation-demand-forecast')
+        ->name('reservations.demand-forecast.store');
+    Route::get('/reservations/demand-forecast/{forecastExecution}', [ReservationDemandForecastController::class, 'show'])
+        ->whereUuid('forecastExecution')
+        ->middleware('throttle:120,1')
+        ->name('reservations.demand-forecast.show');
     Route::resource('reservations', ReservationController::class)->except('destroy');
     Route::post('/reservations/{reservation}/confirm', [ReservationController::class, 'confirm'])->name('reservations.confirm');
     Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');

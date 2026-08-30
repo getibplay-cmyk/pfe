@@ -14,6 +14,71 @@
                 <div class="flex items-end gap-2"><x-primary-button class="flex-1">Filtrer</x-primary-button>@if(request()->hasAny(['q','agency_id','status']))<a href="{{ route('reservations.index') }}" class="rf-button-secondary">Effacer</a>@endif</div>
             </form>
         </x-filter-panel>
+        @if ($demandForecastAssistant !== null)
+            <x-section-card>
+                <div
+                    x-data='reservationDemandForecast(@json($demandForecastAssistant))'
+                    class="space-y-5"
+                >
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-950">Prévision de la demande — 7 prochains jours</h2>
+                            <p class="mt-1 text-sm text-slate-600">
+                                Agence : <span class="font-medium text-slate-800" x-text="scope.agency || 'À sélectionner'"></span>
+                            </p>
+                            <p x-show="generatedAt" class="mt-1 text-sm text-slate-500">
+                                Générée le <span x-text="formatGeneratedAt(generatedAt)"></span>
+                            </p>
+                        </div>
+                        @if ($demandForecastAssistant['canRequest'])
+                            <button
+                                type="button"
+                                class="rf-button-secondary inline-flex items-center justify-center gap-2"
+                                x-on:click="refresh"
+                                x-bind:disabled="busy || !available || !agencyId"
+                                x-bind:aria-busy="busy.toString()"
+                            >
+                                <svg x-show="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                                </svg>
+                                Actualiser les prévisions
+                            </button>
+                        @endif
+                    </div>
+
+                    <p class="text-sm text-slate-700" role="status" aria-live="polite" x-text="message">{{ $demandForecastAssistant['initial']['message'] }}</p>
+
+                    <div x-show="forecasts.length === 7" class="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]">
+                        <div class="h-72 rounded-xl border border-slate-200 bg-white p-3">
+                            <canvas
+                                x-ref="forecastChart"
+                                role="img"
+                                aria-label="Courbe de la demande prévue pour les sept prochains jours"
+                            ></canvas>
+                        </div>
+                        <x-responsive-table label="Tableau des prévisions de demande">
+                            <table>
+                                <caption class="sr-only">Demande prévue, par date, pour les sept prochains jours</caption>
+                                <thead><tr><th>Date</th><th class="text-right">Demande prévue</th></tr></thead>
+                                <tbody>
+                                    <template x-for="forecast in forecasts" x-bind:key="forecast.date">
+                                        <tr>
+                                            <td x-text="formatDate(forecast.date)"></td>
+                                            <td class="text-right font-medium" x-text="formatDemand(forecast.predictedDemand)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </x-responsive-table>
+                    </div>
+
+                    <p class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950">
+                        Ces prévisions sont une aide à la planification. Elles ne modifient aucune réservation et restent soumises à votre décision.
+                    </p>
+                </div>
+            </x-section-card>
+        @endif
         @if (auth()->user()->hasPermission('reservation.export'))
             <x-filter-panel id="export" title="Exporter les réservations">
                 <form method="GET" action="{{ route('reservations.export') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

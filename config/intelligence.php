@@ -58,6 +58,10 @@ return [
         'runtime_queue' => 'intelligence',
         'runtime_timeout_seconds' => 60,
         'runtime_stale_after_seconds' => 600,
+        'rate_limits' => [
+            'user_per_minute' => 2,
+            'scope_per_hour' => 10,
+        ],
         'python_binary' => env(
             'DEMAND_FORECAST_PYTHON_BINARY',
             env('INTELLIGENCE_PYTHON_BINARY', 'python'),

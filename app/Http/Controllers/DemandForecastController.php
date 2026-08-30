@@ -16,6 +16,7 @@ use App\Models\DemandHistoryExportRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
+use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
 use App\Support\Intelligence\IntelligencePseudonymizer;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,7 @@ class DemandForecastController extends Controller
         Request $request,
         TenantContext $context,
         DemandForecastModelArtifact $modelArtifact,
+        DemandForecastRuntimeReadiness $runtimeReadiness,
     ): View {
         $this->authorize('viewAny', DemandForecastRun::class);
 
@@ -60,10 +62,7 @@ class DemandForecastController extends Controller
             ->paginate(10);
 
         $artifactReady = $modelArtifact->configuredIsValid();
-        $runtimeReady = (bool) config('intelligence.demand_forecasting.runtime_enabled')
-            && $artifactReady
-            && (string) config('intelligence.demand_forecasting.python_binary') !== ''
-            && is_file((string) config('intelligence.demand_forecasting.runtime_script'));
+        $runtimeReady = $runtimeReadiness->ready();
 
         return view('intelligence.demand-forecasts.index', [
             'agencies' => $agencies,

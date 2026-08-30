@@ -12,7 +12,7 @@ use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\DemandForecasting\DemandForecastArtifactVerifier;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
-use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
+use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +22,7 @@ final class QueueDemandForecastExecution
 {
     public function __construct(
         private readonly TenantContext $context,
-        private readonly DemandForecastModelArtifact $modelArtifact,
+        private readonly DemandForecastRuntimeReadiness $readiness,
         private readonly DemandForecastArtifactVerifier $historyArtifact,
         private readonly AuditRecorder $audit,
     ) {}
@@ -30,18 +30,18 @@ final class QueueDemandForecastExecution
     public function handle(DemandHistoryExportRun $history, User $actor): DemandForecastExecutionRun
     {
         $this->assertAllowed($history, $actor);
-        if (! $this->runtimeReady() || ! $this->historyArtifact->validHistory($history)) {
+        if (! $this->readiness->ready() || ! $this->historyArtifact->validHistory($history)) {
             throw new DemandForecastRuntimeUnavailableException;
         }
 
         return DB::transaction(function () use ($history, $actor): DemandForecastExecutionRun {
             DB::selectOne(
                 'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
-                ['demand-forecast-runtime|'.$history->tenant_id.'|'.$history->id],
+                ['reservation-demand-forecast|'.$history->tenant_id.'|'.$history->agency_id],
             );
             $this->recoverStaleRuns($history);
             if (DemandForecastExecutionRun::query()
-                ->where('demand_history_export_run_id', $history->id)
+                ->where('agency_id', $history->agency_id)
                 ->whereIn('status', [
                     DemandForecastExecutionStatus::Queued->value,
                     DemandForecastExecutionStatus::Running->value,
@@ -90,13 +90,6 @@ final class QueueDemandForecastExecution
         }
     }
 
-    private function runtimeReady(): bool
-    {
-        return $this->modelArtifact->configuredIsValid()
-            && (string) config('intelligence.demand_forecasting.python_binary') !== ''
-            && is_file((string) config('intelligence.demand_forecasting.runtime_script'));
-    }
-
     private function recoverStaleRuns(DemandHistoryExportRun $history): void
     {
         $staleAfterSeconds = (int) config(
@@ -108,7 +101,7 @@ final class QueueDemandForecastExecution
 
         $cutoff = now()->subSeconds($staleAfterSeconds);
         $runs = DemandForecastExecutionRun::query()
-            ->where('demand_history_export_run_id', $history->id)
+            ->where('agency_id', $history->agency_id)
             ->whereIn('status', [
                 DemandForecastExecutionStatus::Queued->value,
                 DemandForecastExecutionStatus::Running->value,

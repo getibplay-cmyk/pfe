@@ -4,6 +4,7 @@ import Alpine from 'alpinejs';
 import { createVehicleColorAssistant } from './vehicle-color-assistant';
 import { createVehicleRegistrationAssistant } from './vehicle-registration-assistant';
 import { createReturnDamageAssistant } from './return-damage-assistant';
+import { createReservationDemandForecast } from './reservation-demand-forecast';
 
 window.Alpine = Alpine;
 
@@ -11,6 +12,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('vehicleColorAssistant', (config) => createVehicleColorAssistant(config));
     Alpine.data('vehicleRegistrationAssistant', (config) => createVehicleRegistrationAssistant(config));
     Alpine.data('returnDamageAssistant', (config) => createReturnDamageAssistant(config));
+    Alpine.data('reservationDemandForecast', (config) => createReservationDemandForecast(config));
 
     Alpine.data('appShell', () => ({
         mobileMenu: false,

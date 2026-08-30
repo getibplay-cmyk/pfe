@@ -48,6 +48,31 @@ class AppServiceProvider extends ServiceProvider
     {
         Password::defaults(fn () => Password::min(12)->mixedCase()->numbers());
 
+        RateLimiter::for('reservation-demand-forecast', function (Request $request): array {
+            $user = $request->user();
+            $requestedAgency = $user?->agency_id ?? $request->integer('agency_id');
+            $scope = implode('|', [
+                'tenant:'.($user?->tenant_id ?? 'guest'),
+                'agency:'.($requestedAgency > 0 ? $requestedAgency : 'none'),
+            ]);
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(max(
+                    1,
+                    (int) config(
+                        'intelligence.demand_forecasting.rate_limits.user_per_minute',
+                    ),
+                ))->by('reservation-demand-forecast:user:'.$scope.'|actor:'.$actor),
+                Limit::perHour(max(
+                    1,
+                    (int) config(
+                        'intelligence.demand_forecasting.rate_limits.scope_per_hour',
+                    ),
+                ))->by('reservation-demand-forecast:scope:'.$scope),
+            ];
+        });
+
         RateLimiter::for('vehicle-color-v8', function (Request $request): array {
             $user = $request->user();
             $scope = implode('|', [

@@ -15,6 +15,10 @@ use App\Models\Customer;
 use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Models\VehicleCategory;
+use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
+use App\Support\Intelligence\DemandForecasting\DemandForecastPlanningPresenter;
+use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -23,9 +27,21 @@ use Illuminate\View\View;
 
 class ReservationController extends Controller
 {
-    public function index(Request $request): View
-    {
+    public function index(
+        Request $request,
+        DemandForecastPlanningPresenter $forecastPresenter,
+        DemandForecastRuntimeReadiness $forecastReadiness,
+    ): View {
         $this->authorize('viewAny', Reservation::class);
+        $agencies = $this->agencies($request);
+        $requestedAgencyId = $request->integer('agency_id');
+        $selectedAgency = $request->user()->agency_id !== null
+            ? $agencies->firstWhere('id', $request->user()->agency_id)
+            : ($requestedAgencyId > 0 ? $agencies->firstWhere('id', $requestedAgencyId) : null);
+        if ($requestedAgencyId > 0 && $selectedAgency === null) {
+            abort(403, 'Cette agence ne fait pas partie du contexte actif.');
+        }
+
         $reservations = Reservation::with(['agency', 'customer', 'vehicle'])
             ->when($request->user()->agency_id, fn ($query, $id) => $query->where('agency_id', $id))
             ->when($request->integer('agency_id'), fn ($query, $id) => $query->where('agency_id', $id))
@@ -36,12 +52,18 @@ class ReservationController extends Controller
         return view('reservations.index', [
             'reservations' => $reservations,
             'statuses' => ReservationStatus::cases(),
-            'agencies' => $this->agencies($request),
+            'agencies' => $agencies,
             'categories' => VehicleCategory::where('is_active', true)->orderBy('name')->get(),
             'vehicles' => Vehicle::query()
                 ->when($request->user()->agency_id, fn ($query, $id) => $query->where('agency_id', $id))
                 ->where('operational_status', 'active')
                 ->orderBy('registration_number')->get(),
+            'demandForecastAssistant' => $this->demandForecastAssistant(
+                $request,
+                $selectedAgency,
+                $forecastPresenter,
+                $forecastReadiness,
+            ),
         ]);
     }
 
@@ -161,5 +183,51 @@ class ReservationController extends Controller
     private function agencies(Request $request)
     {
         return Agency::query()->when($request->user()->agency_id, fn ($query, $id) => $query->whereKey($id))->orderBy('name')->get();
+    }
+
+    /** @return array<string, mixed>|null */
+    private function demandForecastAssistant(
+        Request $request,
+        ?Agency $agency,
+        DemandForecastPlanningPresenter $presenter,
+        DemandForecastRuntimeReadiness $readiness,
+    ): ?array {
+        $user = $request->user();
+        if (! $user->hasPermission('prediction.view')) {
+            return null;
+        }
+
+        $today = CarbonImmutable::now(DemandForecastContract::TIMEZONE)->startOfDay();
+        $available = $readiness->ready();
+        $latest = null;
+        if ($agency !== null) {
+            try {
+                $latest = $presenter->latestForAgency($agency->id);
+            } catch (\UnexpectedValueException) {
+                $latest = null;
+            }
+        }
+
+        return [
+            'agencyId' => $agency?->id,
+            'agencyName' => $agency?->name,
+            'canRequest' => $user->hasPermission('prediction.forecast.import'),
+            'available' => $available,
+            'storeUrl' => route('reservations.demand-forecast.store'),
+            'expectedDates' => collect(range(1, 7))
+                ->map(fn (int $day): string => $today->addDays($day)->toDateString())
+                ->all(),
+            'initial' => $latest ?? [
+                'status' => 'empty',
+                'generated_at' => null,
+                'scope' => ['agency' => (string) ($agency?->name ?? '')],
+                'forecasts' => [],
+                'message' => match (true) {
+                    $agency === null => 'Sélectionnez une agence pour consulter ses prévisions.',
+                    ! $available => 'Le service de prévision est momentanément indisponible. Le planning reste utilisable.',
+                    default => 'Aucune prévision récente n’est disponible pour cette agence.',
+                },
+            ],
+        ];
     }
 }
