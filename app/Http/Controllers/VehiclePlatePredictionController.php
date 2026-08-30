@@ -11,10 +11,10 @@ use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
-use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
-use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateInputArtifact;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,8 +29,7 @@ class VehiclePlatePredictionController extends Controller
     public function index(
         Request $request,
         TenantContext $context,
-        VehiclePlateHybridRuntime $runtime,
-        VehiclePlateDetectorRuntime $detectorRuntime,
+        VehiclePlateRuntimeReadiness $readiness,
     ): View {
         $this->authorize('viewAny', VehiclePlatePredictionRun::class);
 
@@ -57,20 +56,8 @@ class VehiclePlatePredictionController extends Controller
             ->latest('id')
             ->paginate(20);
 
-        $sanitizer = (string) config(
-            'intelligence.vehicle_plate_hybrid_review.image_sanitizer_script',
-        );
-        $ocrReady = (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
-            && IntelligencePrivateStorage::configured(
-                'intelligence.vehicle_plate_hybrid_review.disk',
-            )
-            && $runtime->configured()
-            && is_file($sanitizer)
-            && (int) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds') >= 1
-            && (int) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds') <= 15
-            && (int) config('intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension') >= 256
-            && (int) config('intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension') <= 4_096;
-        $detectorReady = $ocrReady && $detectorRuntime->ready();
+        $ocrReady = $readiness->ocrReady();
+        $detectorReady = $readiness->ready(VehiclePlateDetectorContract::FULL_IMAGE);
 
         return view('intelligence.vehicle-plates.index', [
             'vehicles' => $vehicles,

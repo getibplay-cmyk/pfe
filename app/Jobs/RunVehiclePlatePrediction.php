@@ -42,7 +42,18 @@ class RunVehiclePlatePrediction implements ShouldQueue
 
     public function handle(ExecuteVehiclePlatePrediction $execute): void
     {
-        $execute->handle($this->runId, $this->tenantId, $this->actorId);
+        try {
+            $execute->handle($this->runId, $this->tenantId, $this->actorId);
+        } catch (VehiclePlateHybridExecutionException $exception) {
+            if (! in_array($exception->failureCode(), [
+                'PLATE_NOT_DETECTED',
+                'PLATE_DETECTION_AMBIGUOUS',
+            ], true)) {
+                throw $exception;
+            }
+
+            $this->persistFailure($exception->failureCode());
+        }
     }
 
     public function failed(?Throwable $exception): void
@@ -54,6 +65,11 @@ class RunVehiclePlatePrediction implements ShouldQueue
             $failureCode = 'INTERNAL_FAILURE';
         }
 
+        $this->persistFailure($failureCode);
+    }
+
+    private function persistFailure(string $failureCode): void
+    {
         $updated = DB::table('vehicle_plate_prediction_runs')
             ->where('tenant_id', $this->tenantId)
             ->where('run_id', $this->runId)

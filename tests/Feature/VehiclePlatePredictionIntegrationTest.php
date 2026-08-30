@@ -266,15 +266,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
         $job = new RunVehiclePlatePrediction($run->run_id, $run->tenant_id, $run->requested_by);
 
-        $failure = null;
-        try {
-            $job->handle(app(ExecuteVehiclePlatePrediction::class));
-        } catch (VehiclePlateHybridExecutionException $exception) {
-            $failure = $exception;
-        }
-        $this->assertInstanceOf(VehiclePlateHybridExecutionException::class, $failure);
-        $this->assertSame('PLATE_NOT_DETECTED', $failure->failureCode());
-        $job->failed($failure);
+        $job->handle(app(ExecuteVehiclePlatePrediction::class));
 
         $this->assertDatabaseHas('vehicle_plate_prediction_runs', [
             'id' => $run->id,
@@ -307,15 +299,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
         $job = new RunVehiclePlatePrediction($run->run_id, $run->tenant_id, $run->requested_by);
 
-        $failure = null;
-        try {
-            $job->handle(app(ExecuteVehiclePlatePrediction::class));
-        } catch (VehiclePlateHybridExecutionException $exception) {
-            $failure = $exception;
-        }
-        $this->assertInstanceOf(VehiclePlateHybridExecutionException::class, $failure);
-        $this->assertSame('PLATE_DETECTION_AMBIGUOUS', $failure->failureCode());
-        $job->failed($failure);
+        $job->handle(app(ExecuteVehiclePlatePrediction::class));
         $this->assertDatabaseHas('vehicle_plate_prediction_runs', [
             'id' => $run->id,
             'status' => 'failed',

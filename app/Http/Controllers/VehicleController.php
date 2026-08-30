@@ -10,6 +10,8 @@ use App\Models\Agency;
 use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,6 +21,7 @@ class VehicleController extends Controller
 {
     public function __construct(
         private readonly VehicleColorRuntimeReadiness $colorReadiness,
+        private readonly VehiclePlateRuntimeReadiness $plateReadiness,
     ) {}
 
     public function index(Request $request): View
@@ -43,11 +46,15 @@ class VehicleController extends Controller
         $colorPredictionRunId = isset($data['color_prediction_run'])
             ? (string) $data['color_prediction_run']
             : null;
-        unset($data['color_prediction_run']);
+        $platePredictionRunId = isset($data['plate_prediction_run'])
+            ? (string) $data['plate_prediction_run']
+            : null;
+        unset($data['color_prediction_run'], $data['plate_prediction_run']);
         $vehicle = $action->handle(
             $data,
             $request->user()->id,
             $colorPredictionRunId,
+            $platePredictionRunId,
         );
 
         return redirect()->route('vehicles.show', $vehicle)->with('status', 'Véhicule créé.');
@@ -96,6 +103,9 @@ class VehicleController extends Controller
         $assistantEnabled = ! $vehicle->exists
             && $request->user()->can('create', Vehicle::class)
             && $this->colorReadiness->enabled();
+        $registrationAssistantEnabled = ! $vehicle->exists
+            && $request->user()->can('create', Vehicle::class)
+            && $this->plateReadiness->enabled();
 
         return [
             'vehicle' => $vehicle,
@@ -103,6 +113,11 @@ class VehicleController extends Controller
             'categories' => VehicleCategory::where('is_active', true)->orderBy('name')->get(),
             'colorAssistantEnabled' => $assistantEnabled,
             'colorAssistantReady' => $assistantEnabled && $this->colorReadiness->ready(),
+            'registrationAssistantEnabled' => $registrationAssistantEnabled,
+            'registrationAssistantFullReady' => $registrationAssistantEnabled
+                && $this->plateReadiness->ready(VehiclePlateDetectorContract::FULL_IMAGE),
+            'registrationAssistantCloseUpReady' => $registrationAssistantEnabled
+                && $this->plateReadiness->ready(VehiclePlateDetectorContract::PLATE_CROP),
         ];
     }
 
@@ -116,6 +131,6 @@ class VehicleController extends Controller
 
     private function validated(Request $request, ?Vehicle $vehicle = null): array
     {
-        return $request->validate(['tenant_id' => ['prohibited'], 'agency_id' => ['required', 'integer'], 'vehicle_category_id' => ['required', 'integer'], 'registration_number' => ['required', 'max:50', Rule::unique('vehicles')->where('tenant_id', $request->user()->tenant_id)->ignore($vehicle)], 'vin' => ['nullable', 'max:100', Rule::unique('vehicles')->where('tenant_id', $request->user()->tenant_id)->ignore($vehicle)], 'brand' => ['required', 'max:100'], 'model' => ['required', 'max:100'], 'production_year' => ['nullable', 'integer', 'between:1900,'.(now()->year + 1)], 'fuel_type' => ['required', Rule::in(['petrol', 'diesel', 'hybrid', 'electric', 'other'])], 'transmission' => ['required', Rule::in(['manual', 'automatic'])], 'color' => ['nullable', 'max:50'], 'color_prediction_run' => [$vehicle?->exists ? 'prohibited' : 'nullable', 'uuid'], 'current_mileage' => ['required', 'integer', 'min:0'], 'first_registration_date' => ['nullable', 'date']]);
+        return $request->validate(['tenant_id' => ['prohibited'], 'agency_id' => ['required', 'integer'], 'vehicle_category_id' => ['required', 'integer'], 'registration_number' => ['required', 'max:50', Rule::unique('vehicles')->where('tenant_id', $request->user()->tenant_id)->ignore($vehicle)], 'vin' => ['nullable', 'max:100', Rule::unique('vehicles')->where('tenant_id', $request->user()->tenant_id)->ignore($vehicle)], 'brand' => ['required', 'max:100'], 'model' => ['required', 'max:100'], 'production_year' => ['nullable', 'integer', 'between:1900,'.(now()->year + 1)], 'fuel_type' => ['required', Rule::in(['petrol', 'diesel', 'hybrid', 'electric', 'other'])], 'transmission' => ['required', Rule::in(['manual', 'automatic'])], 'color' => ['nullable', 'max:50'], 'color_prediction_run' => [$vehicle?->exists ? 'prohibited' : 'nullable', 'uuid'], 'plate_prediction_run' => [$vehicle?->exists ? 'prohibited' : 'nullable', 'uuid'], 'current_mileage' => ['required', 'integer', 'min:0'], 'first_registration_date' => ['nullable', 'date']]);
     }
 }

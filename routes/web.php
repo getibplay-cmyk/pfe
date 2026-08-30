@@ -42,6 +42,7 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleDamagePredictionController;
 use App\Http\Controllers\VehicleInspectionController;
 use App\Http\Controllers\VehiclePlatePredictionController;
+use App\Http\Controllers\VehicleRegistrationAssistantController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
@@ -98,6 +99,13 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->whereUuid('colorPrediction')
         ->middleware('throttle:120,1')
         ->name('vehicles.color-assistant.show');
+    Route::post('/vehicles/registration-assistant', [VehicleRegistrationAssistantController::class, 'store'])
+        ->middleware('throttle:vehicle-plate-hybrid')
+        ->name('vehicles.registration-assistant.store');
+    Route::get('/vehicles/registration-assistant/{platePrediction}', [VehicleRegistrationAssistantController::class, 'show'])
+        ->whereUuid('platePrediction')
+        ->middleware('throttle:120,1')
+        ->name('vehicles.registration-assistant.show');
     Route::resource('vehicles', VehicleController::class)->except('destroy');
     Route::post('/vehicles/{vehicle}/status', [VehicleController::class, 'changeStatus'])->name('vehicles.status');
     Route::get('/vehicle-blocks', [VehicleBlockController::class, 'index'])->name('vehicle-blocks.index');

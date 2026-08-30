@@ -4,7 +4,9 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test:vehicle-color-assistant": "node --test tests/JavaScript/vehicle-color-assistant.test.js"
+        "test:vehicle-color-assistant": "node --test tests/JavaScript/vehicle-color-assistant.test.js",
+        "test:vehicle-registration-assistant": "node --test tests/JavaScript/vehicle-registration-assistant.test.js",
+        "test:vehicle-assistants": "node --test tests/JavaScript/vehicle-color-assistant.test.js tests/JavaScript/vehicle-registration-assistant.test.js"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",

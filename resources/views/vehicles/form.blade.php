@@ -6,6 +6,13 @@
             'ready' => $colorAssistantReady,
             'storeUrl' => $colorAssistantEnabled ? route('vehicles.color-assistant.store') : '',
         ];
+        $initialRegistration = old('registration_number', $vehicle->registration_number) ?? '';
+        $registrationAssistantConfiguration = [
+            'initialRegistration' => $initialRegistration,
+            'readyFull' => $registrationAssistantFullReady,
+            'readyCloseUp' => $registrationAssistantCloseUpReady,
+            'storeUrl' => $registrationAssistantEnabled ? route('vehicles.registration-assistant.store') : '',
+        ];
     @endphp
     <form
         class="mx-auto max-w-4xl space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
@@ -36,7 +43,112 @@
                 </select>
                 <x-input-error :messages="$errors->get('vehicle_category_id')" />
             </label>
-            @foreach (['registration_number' => 'Immatriculation *', 'vin' => 'VIN', 'brand' => 'Marque *', 'model' => 'Modèle *', 'production_year' => 'Année', 'current_mileage' => 'Kilométrage *'] as $name => $label)
+            <div
+                class="sm:col-span-2 grid gap-4 sm:grid-cols-2"
+                x-data='vehicleRegistrationAssistant(@json($registrationAssistantConfiguration))'
+            >
+                <label class="text-sm">
+                    Immatriculation *
+                    <input
+                        class="mt-1 w-full"
+                        name="registration_number"
+                        value="{{ $initialRegistration }}"
+                        x-model="registrationValue"
+                        @input="markRegistrationEdited($event.target.value)"
+                        aria-describedby="vehicle-registration-help"
+                    >
+                    <span id="vehicle-registration-help" class="mt-1 block text-xs text-slate-500">Vérifiez toujours la valeur avant l’enregistrement.</span>
+                    <x-input-error :messages="$errors->get('registration_number')" />
+                </label>
+
+                @if ($registrationAssistantEnabled)
+                    <section class="sm:col-span-2 rounded-xl border border-orange-200 bg-orange-50/60 p-4" aria-labelledby="vehicle-registration-assistant-title">
+                        <h2 id="vehicle-registration-assistant-title" class="font-semibold text-slate-950">Photo pour lire l’immatriculation <span class="font-normal text-slate-600">(optionnelle)</span></h2>
+                        <p class="mt-1 text-sm text-slate-600">La proposition reste consultative et ne bloque jamais la saisie manuelle.</p>
+
+                        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+                            <label class="min-w-0 flex-1 text-sm font-medium text-slate-800">
+                                Photo complète du véhicule
+                                <input
+                                    id="vehicle-registration-full-photo"
+                                    x-ref="fullPhoto"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm"
+                                    @change="message = ''"
+                                >
+                            </label>
+                            <button
+                                type="button"
+                                class="inline-flex min-h-10 items-center justify-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                :disabled="busy || !readyFull"
+                                @click="analyze($refs.fullPhoto.files[0], $el.closest('form').elements.agency_id.value, 'full_vehicle_image')"
+                            >
+                                <span x-show="busy && activeMode === 'full_vehicle_image'" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
+                                <span x-text="busy && activeMode === 'full_vehicle_image' ? 'Lecture en cours…' : 'Lire l’immatriculation'">Lire l’immatriculation</span>
+                            </button>
+                        </div>
+
+                        @unless ($registrationAssistantFullReady || $registrationAssistantCloseUpReady)
+                            <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">La lecture de photo est momentanément indisponible. Saisissez l’immatriculation manuellement.</p>
+                        @endunless
+
+                        <div class="mt-3" aria-live="polite" role="status">
+                            <p x-cloak x-show="busy" class="text-sm font-medium text-orange-950">Lecture de la photo en cours…</p>
+                            <div x-cloak x-show="phase === 'succeeded' && suggestion" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
+                                <p><span class="font-semibold">Immatriculation détectée :</span> <span dir="auto" x-text="suggestion?.label"></span></p>
+                                <p><span class="font-semibold">Confiance indicative :</span> <span x-text="confidenceText()"></span></p>
+                                <p class="mt-1" x-text="message"></p>
+                                <button
+                                    x-cloak
+                                    x-show="showUseSuggestion"
+                                    type="button"
+                                    class="mt-3 rounded-lg border border-emerald-700 px-3 py-2 font-semibold text-emerald-900 hover:bg-emerald-100"
+                                    @click="useSuggestion()"
+                                >Utiliser cette suggestion</button>
+                            </div>
+                            <p x-cloak x-show="phase === 'failed' || phase === 'fallback'" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950" x-text="message"></p>
+                        </div>
+
+                        <button
+                            x-cloak
+                            x-show="!showCloseUp"
+                            type="button"
+                            class="mt-3 text-sm font-semibold text-orange-800 underline decoration-orange-300 underline-offset-4 hover:text-orange-950"
+                            @click="openCloseUp()"
+                        >Utiliser une photo rapprochée</button>
+
+                        <div x-cloak x-show="showCloseUp" class="mt-4 rounded-lg border border-orange-200 bg-white p-3">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                                <label class="min-w-0 flex-1 text-sm font-medium text-slate-800">
+                                    Photo rapprochée de la plaque
+                                    <input
+                                        id="vehicle-registration-close-up-photo"
+                                        x-ref="closeUpPhoto"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm"
+                                        @change="message = ''"
+                                    >
+                                </label>
+                                <button
+                                    type="button"
+                                    class="inline-flex min-h-10 items-center justify-center rounded-lg border border-orange-600 px-4 py-2 text-sm font-semibold text-orange-900 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    :disabled="busy || !readyCloseUp"
+                                    @click="analyze($refs.closeUpPhoto.files[0], $el.closest('form').elements.agency_id.value, 'plate_crop')"
+                                >
+                                    <span x-show="busy && activeMode === 'plate_crop'" class="me-2 size-4 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700" aria-hidden="true"></span>
+                                    <span x-text="busy && activeMode === 'plate_crop' ? 'Lecture en cours…' : 'Lire la photo rapprochée'">Lire la photo rapprochée</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    <input type="hidden" name="plate_prediction_run" value="{{ old('plate_prediction_run') }}" x-model="acceptedRunId">
+                    <x-input-error :messages="$errors->get('plate_prediction_run')" class="sm:col-span-2" />
+                @endif
+            </div>
+
+            @foreach (['vin' => 'VIN', 'brand' => 'Marque *', 'model' => 'Modèle *', 'production_year' => 'Année', 'current_mileage' => 'Kilométrage *'] as $name => $label)
                 <label class="text-sm">
                     {{ $label }}
                     <input class="mt-1 w-full" name="{{ $name }}" value="{{ old($name, $vehicle->$name) }}">

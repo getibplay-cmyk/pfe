@@ -122,9 +122,26 @@ class VehiclePlatePredictionRun extends Model
 
     public function hasCompleteSuggestion(): bool
     {
-        return $this->status === VehiclePlatePredictionStatus::Succeeded
-            && is_string($this->suggested_canonical)
-            && VehiclePlateHybridContract::isCanonical($this->suggested_canonical);
+        if ($this->status !== VehiclePlatePredictionStatus::Succeeded) {
+            return false;
+        }
+
+        if (! in_array($this->suggestion_status, [
+            'complete_primary_suggestion',
+            'complete_segmented_suggestion',
+            'ambiguous_segmented_suggestion',
+        ], true)
+            || ! is_string($this->suggested_canonical)
+            || ! VehiclePlateHybridContract::isCanonical($this->suggested_canonical)
+            || ! is_string($this->display_text)
+            || trim($this->display_text) === ''
+            || ! is_numeric($this->confidence)) {
+            return false;
+        }
+
+        $confidence = (float) $this->confidence;
+
+        return is_finite($confidence) && $confidence >= 0 && $confidence <= 1;
     }
 
     public function usesDetector(): bool

@@ -102,7 +102,11 @@
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
                                 <p class="font-mono text-xs text-slate-500">{{ $run->run_id }}</p>
-                                <h3 class="mt-1 text-lg font-semibold text-slate-950">{{ $run->vehicle->registration_number }} · {{ $run->vehicle->brand }} {{ $run->vehicle->model }}</h3>
+                                @if ($run->vehicle)
+                                    <h3 class="mt-1 text-lg font-semibold text-slate-950">{{ $run->vehicle->registration_number }} · {{ $run->vehicle->brand }} {{ $run->vehicle->model }}</h3>
+                                @else
+                                    <h3 class="mt-1 text-lg font-semibold text-slate-950">Préparation d’un nouveau véhicule</h3>
+                                @endif
                             </div>
                             <x-status-badge :value="$run->status" />
                         </div>
@@ -140,7 +144,7 @@
                                             @if ($run->review->note)<p class="mt-2 whitespace-pre-line text-slate-600">{{ $run->review->note }}</p>@endif
                                             <p class="mt-2 text-xs text-slate-500">Consignée le {{ App\Support\Ui\UiLabel::dateTime($run->review->reviewed_at) }} · disponible comme feedback, sans changement de la fiche véhicule.</p>
                                         </div>
-                                    @elseif ($canReview)
+                                    @elseif ($canReview && $run->vehicle_id !== null)
                                         <form method="POST" action="{{ route('intelligence.vehicle-plates.reviews.store', $run) }}" class="mt-4 grid gap-3 lg:grid-cols-[minmax(0,11rem)_minmax(0,14rem)_minmax(0,1fr)_auto] lg:items-end">
                                             @csrf
                                             <div>

@@ -37,14 +37,19 @@ final class ExecuteVehiclePlatePrediction
                 ->where('tenant_id', $tenantId)
                 ->where('is_active', true)
                 ->first();
+            $preparatory = $run->vehicle_id === null;
+            $actorCanExecute = $actor !== null && ($preparatory
+                ? $actor->hasPermission('vehicle.create')
+                : ($actor->hasPermission('prediction.view')
+                    && $actor->hasPermission('prediction.plate.review')));
             if (! (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
                 || $actor === null
-                || ! $actor->hasPermission('prediction.view')
-                || ! $actor->hasPermission('prediction.plate.review')
+                || ! $actorCanExecute
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
                 throw new VehiclePlateHybridExecutionException('RUN_ACTOR_NOT_AUTHORIZED');
             }
-            if ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id) {
+            if (! $preparatory
+                && ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id)) {
                 throw new VehiclePlateHybridExecutionException('VEHICLE_UNAVAILABLE');
             }
             if (! $this->inputArtifact->valid($run)) {
