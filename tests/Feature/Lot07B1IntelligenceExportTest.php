@@ -231,7 +231,7 @@ class Lot07B1IntelligenceExportTest extends TestCase
         $this->assertTrue(DB::table('pg_indexes')->where('indexname', 'rental_contracts_intelligence_export_idx')->exists());
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(87, DB::table('migrations')->count());
+        $this->assertSame(88, DB::table('migrations')->count());
     }
 
     public function test_j14_export_creates_a_private_reproducible_snapshot_and_closed_manifest(): void
@@ -392,7 +392,7 @@ class Lot07B1IntelligenceExportTest extends TestCase
     {
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(87, DB::table('migrations')->count());
+        $this->assertSame(88, DB::table('migrations')->count());
         $this->assertTrue(DB::table('information_schema.tables')
             ->where('table_schema', 'public')
             ->where('table_name', 'intelligence_dataset_export_runs')

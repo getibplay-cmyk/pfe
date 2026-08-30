@@ -6,6 +6,9 @@
             description="Lancez réellement le solveur OR-Tools sur un scénario synthétique qualifié, puis vérifiez et révisez son résultat sans déplacer aucun véhicule."
         >
             <x-slot:actions>
+                @can('viewAny', App\Models\AgencyDistance::class)
+                    <a href="{{ route('agency-distances.index') }}" class="rf-button-secondary">Distances inter-agences</a>
+                @endcan
                 <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary">Actualiser</a>
                 <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
             </x-slot:actions>

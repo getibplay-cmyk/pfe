@@ -10,7 +10,7 @@ class UiLabel
     private const LABELS = [
         'active' => 'Actif', 'inactive' => 'Inactif', 'archived' => 'Archivé', 'suspended' => 'Suspendu',
         'draft' => 'Brouillon', 'pending' => 'En attente', 'confirmed' => 'Confirmée', 'corrected' => 'Corrigée', 'converted' => 'Convertie',
-        'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'accepted' => 'Accepté', 'ignored' => 'Ignoré',
+        'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'incomplete' => 'À compléter', 'accepted' => 'Accepté', 'ignored' => 'Ignoré',
         'return_pending' => 'Retour à traiter', 'returned' => 'Retourné', 'closed' => 'Clôturé',
         'issued' => 'Émise', 'partially_paid' => 'Partiellement payée', 'paid' => 'Payée', 'void' => 'Annulée',
         'posted' => 'Comptabilisé', 'reversed' => 'Contrepassé', 'approved' => 'Approuvé', 'rejected' => 'Rejeté',
@@ -68,7 +68,7 @@ class UiLabel
     private const TONES = [
         'active' => 'success', 'confirmed' => 'success', 'corrected' => 'info', 'accepted' => 'success', 'accepted_for_demo_review' => 'success', 'paid' => 'success',
         'completed' => 'success', 'approved' => 'success', 'settled' => 'success', 'verified' => 'success', 'validated' => 'success',
-        'pending' => 'warning', 'ready' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
+        'pending' => 'warning', 'ready' => 'success', 'incomplete' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
         'planned' => 'warning', 'under_review' => 'warning', 'submitted' => 'warning', 'suspended' => 'warning',
         'queued' => 'warning', 'running' => 'info', 'succeeded' => 'success', 'failed' => 'danger',
         'vehicle_color_consultative_scientific_threshold_reached' => 'success',
@@ -83,6 +83,10 @@ class UiLabel
 
     private const ACTIONS = [
         'agency.created' => 'Agence créée', 'agency.updated' => 'Agence mise à jour',
+        'fleet.agency_distance.created' => 'Distance inter-agences créée',
+        'fleet.agency_distance.corrected' => 'Distance inter-agences corrigée',
+        'fleet.agency_distance.activated' => 'Distance inter-agences activée',
+        'fleet.agency_distance.deactivated' => 'Distance inter-agences désactivée',
         'user.created' => 'Utilisateur créé', 'user.updated' => 'Utilisateur mis à jour',
         'user.password_reset' => 'Mot de passe utilisateur réinitialisé',
         'user.initial_password_changed' => 'Mot de passe initial remplacé',
@@ -186,7 +190,7 @@ class UiLabel
         'pricing' => 'Tarification', 'reservation' => 'Réservations', 'contract' => 'Contrats', 'inspection' => 'Inspections',
         'damage' => 'Dommages', 'charge' => 'Frais', 'invoice' => 'Factures', 'payment' => 'Paiements',
         'deposit' => 'Cautions', 'expense' => 'Dépenses', 'maintenance' => 'Maintenance', 'insurance' => 'Assurance',
-        'claim' => 'Sinistres', 'prediction' => 'Intelligence', 'report' => 'Rapports', 'audit' => 'Audit',
+        'claim' => 'Sinistres', 'prediction' => 'Intelligence', 'fleet' => 'Flotte', 'report' => 'Rapports', 'audit' => 'Audit',
     ];
 
     private const PERMISSION_ENTITIES = [
@@ -214,6 +218,7 @@ class UiLabel
         'report' => 'les rapports',
         'audit' => 'le journal d’audit',
         'prediction' => 'les prédictions',
+        'fleet_distance' => 'les distances inter-agences',
         'platform' => 'les entreprises clientes de la plateforme',
     ];
 
@@ -263,10 +268,12 @@ class UiLabel
         'prediction.damage.review' => 'Analyser et revoir les zones de dommage d’un retour',
         'prediction.plate.review' => 'Analyser et corriger une plaque de véhicule',
         'prediction.anomaly.review' => 'Analyser et revoir les usages de location atypiques',
+        'fleet.distance.view' => 'Consulter les distances inter-agences',
+        'fleet.distance.manage' => 'Gérer les distances inter-agences vérifiées',
     ];
 
     private const ENTITIES = [
-        'Agency' => 'Agence', 'User' => 'Utilisateur', 'Role' => 'Rôle', 'Tenant' => 'Entreprise',
+        'Agency' => 'Agence', 'AgencyDistance' => 'Distance inter-agences', 'User' => 'Utilisateur', 'Role' => 'Rôle', 'Tenant' => 'Entreprise',
         'Reservation' => 'Réservation', 'RentalContract' => 'Contrat', 'Customer' => 'Client', 'Driver' => 'Conducteur',
         'Vehicle' => 'Véhicule', 'VehicleBlock' => 'Bloc véhicule', 'Document' => 'Document privé', 'Invoice' => 'Facture',
         'Payment' => 'Paiement', 'DepositTransaction' => 'Caution', 'Expense' => 'Dépense', 'MaintenanceOrder' => 'Maintenance',
@@ -400,7 +407,7 @@ class UiLabel
     {
         $group = explode('.', $permission)[0];
 
-        return in_array($group, ['tenant', 'role', 'report', 'audit'], true)
+        return in_array($group, ['tenant', 'role', 'fleet', 'report', 'audit'], true)
             ? 'Portée : entreprise cliente.'
             : 'Portée : agence autorisée ou ensemble des agences pour l’administrateur de l’entreprise.';
     }

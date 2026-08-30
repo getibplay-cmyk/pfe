@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgencyController;
+use App\Http\Controllers\AgencyDistanceController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\AvailabilityController;
@@ -82,6 +83,20 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
     Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
     Route::resource('agencies', AgencyController::class);
+    Route::get('/fleet/agency-distances', [AgencyDistanceController::class, 'index'])
+        ->name('agency-distances.index');
+    Route::post('/fleet/agency-distances', [AgencyDistanceController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('agency-distances.store');
+    Route::patch('/fleet/agency-distances/{agencyDistance}', [AgencyDistanceController::class, 'update'])
+        ->middleware('throttle:30,1')
+        ->name('agency-distances.update');
+    Route::patch('/fleet/agency-distances/{agencyDistance}/activate', [AgencyDistanceController::class, 'activate'])
+        ->middleware('throttle:30,1')
+        ->name('agency-distances.activate');
+    Route::patch('/fleet/agency-distances/{agencyDistance}/deactivate', [AgencyDistanceController::class, 'deactivate'])
+        ->middleware('throttle:30,1')
+        ->name('agency-distances.deactivate');
     Route::resource('users', TenantUserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
     Route::post('/users/{user}/reset-password', [TenantUserController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
