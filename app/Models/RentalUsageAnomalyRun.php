@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\RentalUsageAnomalyRunStatus;
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -82,6 +84,18 @@ class RentalUsageAnomalyRun extends Model
     public function results(): HasMany
     {
         return $this->hasMany(RentalUsageAnomalyResult::class);
+    }
+
+    /** @param  Builder<RentalUsageAnomalyRun>  $query */
+    public function scopeSucceededUsable(Builder $query): Builder
+    {
+        return $query
+            ->where('status', RentalUsageAnomalyRunStatus::Succeeded->value)
+            ->where('data_status', 'usable')
+            ->where('default_budget_basis_points', RentalUsageAnomalyContract::DEFAULT_BUDGET_BASIS_POINTS)
+            ->where('primary_model', RentalUsageAnomalyContract::PRIMARY_MODEL)
+            ->where('primary_version', RentalUsageAnomalyContract::PRIMARY_VERSION)
+            ->where('operational_effect', RentalUsageAnomalyContract::OPERATIONAL_EFFECT);
     }
 
     public function failureLabel(): ?string

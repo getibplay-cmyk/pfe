@@ -7,84 +7,114 @@ use App\Actions\Intelligence\RecordRentalUsageAnomalyReview;
 use App\Enums\RentalUsageAnomalyReviewDecision;
 use App\Exceptions\RentalUsageAnomalyAlreadyActiveException;
 use App\Exceptions\RentalUsageAnomalyExecutionException;
+use App\Http\Requests\RentalUsageAnomalyFilterRequest;
 use App\Http\Requests\ReviewRentalUsageAnomalyRequest;
+use App\Models\Agency;
 use App\Models\IntelligenceDatasetExportRun;
+use App\Models\RentalContract;
 use App\Models\RentalUsageAnomalyResult;
 use App\Models\RentalUsageAnomalyRun;
-use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract;
+use App\Support\Intelligence\RentalUsageAnomaly\FindCanonicalRentalUsageAnomaly;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RentalUsageAnomalyController extends Controller
 {
-    public function index(Request $request, TenantContext $context): View
+    public function index(RentalUsageAnomalyFilterRequest $request, TenantContext $context): View
     {
-        $this->authorize('viewAny', RentalUsageAnomalyRun::class);
-        $validated = $request->validate([
-            'run' => ['nullable', 'uuid'],
-            'budget' => ['nullable', Rule::in(['50', '100', '200', 50, 100, 200])],
-        ]);
-        $budget = (int) ($validated['budget'] ?? RentalUsageAnomalyContract::DEFAULT_BUDGET_BASIS_POINTS);
+        $agencyId = $request->agencyId();
+        $dateFrom = $request->dateFrom();
+        $dateTo = $request->dateTo();
+        $reviewState = $request->reviewState();
+
         $runsQuery = RentalUsageAnomalyRun::query()
-            ->with(['exportRun', 'requester'])
-            ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
+            ->with('agency')
+            ->succeededUsable()
+            ->whereHas('results', fn ($query) => $query
+                ->canonicalReviewCandidate()
+                ->where('event_at', '>=', $dateFrom->utc())
+                ->where('event_at', '<', $dateTo->addDay()->utc())
+                ->when($agencyId, fn ($resultQuery, $id) => $resultQuery->where('agency_id', $id)))
             ->latest('requested_at')
             ->latest('id');
-        $selectedRun = isset($validated['run'])
-            ? (clone $runsQuery)->where('run_id', $validated['run'])->firstOrFail()
-            : (clone $runsQuery)->first();
+
+        $selectedRun = (clone $runsQuery)->first();
         if ($selectedRun !== null) {
             $this->authorize('view', $selectedRun);
         }
 
-        $selectionColumn = match ($budget) {
-            50 => 'primary_selected_005',
-            200 => 'primary_selected_020',
-            default => 'primary_selected_010',
-        };
-        $results = $selectedRun?->status->value === 'succeeded' && $selectedRun->data_status === 'usable'
-            ? RentalUsageAnomalyResult::query()
-                ->with(['rentalContract.vehicle', 'agency', 'latestReview.reviewer'])
-                ->withCount('reviews')
+        $resultsQuery = RentalUsageAnomalyResult::query()->whereRaw('1 = 0');
+        if ($selectedRun !== null) {
+            $resultsQuery = RentalUsageAnomalyResult::query()
+                ->with(['rentalContract', 'agency', 'latestReview'])
+                ->canonicalReviewCandidate()
                 ->where('rental_usage_anomaly_run_id', $selectedRun->id)
-                ->where($selectionColumn, true)
-                ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
-                ->orderBy('primary_rank')
-                ->get()
-            : collect();
+                ->where('event_at', '>=', $dateFrom->utc())
+                ->where('event_at', '<', $dateTo->addDay()->utc())
+                ->when($agencyId, fn ($query, $id) => $query->where('agency_id', $id))
+                ->when($reviewState === 'pending', fn ($query) => $query->doesntHave('reviews'))
+                ->when(
+                    $reviewState !== null && $reviewState !== 'pending',
+                    fn ($query) => $query->whereHas(
+                        'latestReview',
+                        fn ($reviewQuery) => $reviewQuery->where('decision', $reviewState),
+                    ),
+                )
+                ->orderBy('primary_rank');
+        }
+        $results = $resultsQuery->paginate(15)->withQueryString();
 
         $canRun = (bool) config('intelligence.rental_usage_anomaly.enabled')
             && $request->user()->hasPermission('prediction.anomaly.review')
             && (string) config('intelligence.rental_usage_anomaly.python_binary') !== ''
             && is_file((string) config('intelligence.rental_usage_anomaly.runtime_script'));
-        $exports = $request->user()->hasPermission('prediction.anomaly.review')
-            ? IntelligenceDatasetExportRun::query()
-                ->when($context->agencyId(), fn ($query, $agencyId) => $query->where('agency_id', $agencyId))
-                ->latest('created_at')
-                ->latest('id')
-                ->limit(20)
-                ->get()
-            : collect();
+        $launchSourceAvailable = $canRun && IntelligenceDatasetExportRun::query()
+            ->when($context->agencyId(), fn ($query, $id) => $query->where('agency_id', $id))
+            ->exists();
+        $agencies = Agency::query()
+            ->where('is_active', true)
+            ->when($context->agencyId(), fn ($query, $id) => $query->whereKey($id))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return view('intelligence.rental-usage-anomalies.index', [
-            'runs' => $runsQuery->paginate(15)->withQueryString(),
             'selectedRun' => $selectedRun,
             'results' => $results,
-            'exports' => $exports,
-            'budget' => $budget,
+            'agencies' => $agencies,
+            'filters' => [
+                'agency' => $agencyId,
+                'date_from' => $dateFrom->toDateString(),
+                'date_to' => $dateTo->toDateString(),
+                'review_state' => $reviewState,
+            ],
             'canRun' => $canRun,
             'canReview' => $request->user()->hasPermission('prediction.anomaly.review'),
-            'runtime' => [
-                'enabled' => (bool) config('intelligence.rental_usage_anomaly.enabled'),
-                'ready' => $canRun,
-                'compute' => 'CPU',
-                'minimum_rows' => RentalUsageAnomalyContract::MINIMUM_ROWS,
-            ],
+            'canExport' => $request->user()->hasPermission('prediction.export'),
+            'launchSourceAvailable' => $launchSourceAvailable,
         ]);
+    }
+
+    public function storeLatest(
+        Request $request,
+        TenantContext $context,
+        QueueRentalUsageAnomalyRun $queue,
+    ): RedirectResponse {
+        $this->authorize('create', RentalUsageAnomalyRun::class);
+        $export = IntelligenceDatasetExportRun::query()
+            ->when($context->agencyId(), fn ($query, $id) => $query->where('agency_id', $id))
+            ->latest('created_at')
+            ->latest('id')
+            ->first();
+        if ($export === null) {
+            throw ValidationException::withMessages([
+                'analysis' => 'Aucune source de données préparée n’est disponible dans votre périmètre.',
+            ]);
+        }
+
+        return $this->queueExport($request, $export, $queue);
     }
 
     public function store(
@@ -93,28 +123,58 @@ class RentalUsageAnomalyController extends Controller
         QueueRentalUsageAnomalyRun $queue,
     ): RedirectResponse {
         $this->authorize('create', RentalUsageAnomalyRun::class);
-        try {
-            $run = $queue->handle($exportRun, $request->user());
-        } catch (RentalUsageAnomalyAlreadyActiveException) {
-            throw ValidationException::withMessages([
-                'export_run' => 'Une analyse de ce snapshot est déjà dans la queue Intelligence.',
-            ]);
-        } catch (RentalUsageAnomalyExecutionException $exception) {
-            $message = match ($exception->failureCode()) {
-                'SOURCE_SNAPSHOT_INVALID' => 'Le snapshot privé est absent ou son intégrité a changé. Régénérez un export RentFleet v1.1 avant de relancer l’analyse.',
-                'RUNTIME_CONFIGURATION_INVALID' => 'Le runtime CPU des usages atypiques est indisponible. Vérifiez la configuration avant de relancer l’analyse.',
-                'QUEUE_DISPATCH_FAILED' => 'La queue Intelligence est momentanément indisponible. Réessayez après vérification du worker.',
-                default => 'L’analyse consultative n’a pas pu être ajoutée à la queue Intelligence.',
-            };
 
-            throw ValidationException::withMessages(['export_run' => $message]);
-        }
+        return $this->queueExport($request, $exportRun, $queue);
+    }
 
-        return redirect()->route('intelligence.rental-usage-anomalies.index', ['run' => $run->run_id])
-            ->with('status', 'Classement CPU ajouté à la queue Intelligence, sans action métier automatique.');
+    public function reviewForContract(
+        ReviewRentalUsageAnomalyRequest $request,
+        RentalContract $contract,
+        FindCanonicalRentalUsageAnomaly $finder,
+        RecordRentalUsageAnomalyReview $record,
+    ): RedirectResponse {
+        $result = $finder->forContract($contract);
+        abort_if($result === null, 404);
+        $this->authorize('review', $result);
+
+        return $this->recordReview($request, $result, $record);
     }
 
     public function review(
+        ReviewRentalUsageAnomalyRequest $request,
+        RentalUsageAnomalyResult $anomalyResult,
+        RecordRentalUsageAnomalyReview $record,
+    ): RedirectResponse {
+        return $this->recordReview($request, $anomalyResult, $record);
+    }
+
+    private function queueExport(
+        Request $request,
+        IntelligenceDatasetExportRun $exportRun,
+        QueueRentalUsageAnomalyRun $queue,
+    ): RedirectResponse {
+        try {
+            $queue->handle($exportRun, $request->user());
+        } catch (RentalUsageAnomalyAlreadyActiveException) {
+            throw ValidationException::withMessages([
+                'analysis' => 'Une analyse est déjà en cours pour les données préparées.',
+            ]);
+        } catch (RentalUsageAnomalyExecutionException $exception) {
+            $message = match ($exception->failureCode()) {
+                'SOURCE_SNAPSHOT_INVALID' => 'Les données préparées ne sont plus disponibles. Préparez une nouvelle analyse depuis Intelligence.',
+                'RUNTIME_CONFIGURATION_INVALID' => 'L’analyse est temporairement indisponible.',
+                'QUEUE_DISPATCH_FAILED' => 'L’analyse n’a pas pu être planifiée. Réessayez dans quelques instants.',
+                default => 'L’analyse consultative n’a pas pu être planifiée.',
+            };
+
+            throw ValidationException::withMessages(['analysis' => $message]);
+        }
+
+        return redirect()->route('intelligence.rental-usage-anomalies.index')
+            ->with('status', 'Analyse ajoutée à la file de traitement. Les données métier restent inchangées.');
+    }
+
+    private function recordReview(
         ReviewRentalUsageAnomalyRequest $request,
         RentalUsageAnomalyResult $anomalyResult,
         RecordRentalUsageAnomalyReview $record,
@@ -129,10 +189,14 @@ class RentalUsageAnomalyController extends Controller
             RentalUsageAnomalyReviewDecision::from($data['decision']),
             $note,
         );
+        $returnDate = $anomalyResult->event_at
+            ->timezone((string) config('app.timezone'))
+            ->toDateString();
 
         return redirect()->route('intelligence.rental-usage-anomalies.index', [
-            'run' => $anomalyResult->run->run_id,
-            'budget' => $request->integer('budget', RentalUsageAnomalyContract::DEFAULT_BUDGET_BASIS_POINTS),
-        ])->with('status', 'Revue humaine ajoutée au registre append-only, sans sanction, frais ni modification de contrat.');
+            'agency' => $anomalyResult->agency_id,
+            'date_from' => $returnDate,
+            'date_to' => $returnDate,
+        ])->with('status', 'Vérification humaine enregistrée. Les données métier restent inchangées.');
     }
 }

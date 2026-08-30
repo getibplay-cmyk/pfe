@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\RentalUsageAnomalyReviewDecision;
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -86,6 +89,24 @@ class RentalUsageAnomalyResult extends Model
     public function latestReview(): HasOne
     {
         return $this->hasOne(RentalUsageAnomalyReview::class)->latestOfMany();
+    }
+
+    /** @param  Builder<RentalUsageAnomalyResult>  $query */
+    public function scopeCanonicalReviewCandidate(Builder $query): Builder
+    {
+        return $query
+            ->where('primary_selected_010', true)
+            ->where('operational_effect', RentalUsageAnomalyContract::OPERATIONAL_EFFECT);
+    }
+
+    public function reviewStatusLabel(): string
+    {
+        return match ($this->latestReview?->decision) {
+            RentalUsageAnomalyReviewDecision::FollowUp => 'Usage atypique à vérifier',
+            RentalUsageAnomalyReviewDecision::NeedsInformation => 'Vérification humaine nécessaire — informations complémentaires',
+            RentalUsageAnomalyReviewDecision::Dismissed => 'Vérifié et écarté',
+            default => 'Vérification humaine nécessaire',
+        };
     }
 
     public function selectedForBudget(int $basisPoints): bool

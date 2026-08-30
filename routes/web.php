@@ -282,10 +282,17 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->name('intelligence.demand-forecasts.index');
     Route::get('/intelligence/rental-usage-anomalies', [RentalUsageAnomalyController::class, 'index'])
         ->name('intelligence.rental-usage-anomalies.index');
+    Route::post('/intelligence/rental-usage-anomalies/runs', [RentalUsageAnomalyController::class, 'storeLatest'])
+        ->middleware('throttle:rental-usage-anomaly-v1')
+        ->name('intelligence.rental-usage-anomalies.runs.store');
     Route::post('/intelligence/exports/{exportRun}/rental-usage-anomalies', [RentalUsageAnomalyController::class, 'store'])
         ->middleware('throttle:rental-usage-anomaly-v1')
         ->name('intelligence.rental-usage-anomalies.store');
+    Route::post('/intelligence/rental-usage-anomalies/contracts/{contract}/reviews', [RentalUsageAnomalyController::class, 'reviewForContract'])
+        ->middleware('throttle:rental-usage-anomaly-review')
+        ->name('intelligence.rental-usage-anomalies.contract-reviews.store');
     Route::post('/intelligence/rental-usage-anomalies/results/{anomalyResult}/reviews', [RentalUsageAnomalyController::class, 'review'])
+        ->middleware('throttle:rental-usage-anomaly-review')
         ->name('intelligence.rental-usage-anomalies.reviews.store');
     Route::get('/intelligence/demand-history/export', [DemandForecastController::class, 'export'])
         ->name('intelligence.demand-history.export');

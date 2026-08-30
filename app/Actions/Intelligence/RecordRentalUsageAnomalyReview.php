@@ -35,9 +35,15 @@ final class RecordRentalUsageAnomalyReview
                 ->lockForUpdate()
                 ->findOrFail($result->id);
             if ($locked->run->status !== RentalUsageAnomalyRunStatus::Succeeded
-                || ! $locked->primary_selected_020) {
+                || $locked->run->data_status !== 'usable'
+                || $locked->run->default_budget_basis_points !== RentalUsageAnomalyContract::DEFAULT_BUDGET_BASIS_POINTS
+                || $locked->run->primary_model !== RentalUsageAnomalyContract::PRIMARY_MODEL
+                || $locked->run->primary_version !== RentalUsageAnomalyContract::PRIMARY_VERSION
+                || $locked->run->operational_effect !== RentalUsageAnomalyContract::OPERATIONAL_EFFECT
+                || ! $locked->primary_selected_010
+                || $locked->operational_effect !== RentalUsageAnomalyContract::OPERATIONAL_EFFECT) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Seul un résultat MAD principal terminé peut être revu.',
+                    'decision' => 'Seul un cas consultatif canonique terminé peut être revu.',
                 ]);
             }
             $review = RentalUsageAnomalyReview::create([

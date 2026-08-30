@@ -19,6 +19,7 @@ use App\Support\Tenancy\TenantContext;
 use App\Support\Testing\TestDatabaseGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -165,6 +166,31 @@ class AppServiceProvider extends ServiceProvider
                     1,
                     (int) config('intelligence.rental_usage_anomaly.rate_limits.scope_per_hour'),
                 ))->by('rental-usage-anomaly-v1:scope:'.$scope),
+            ];
+        });
+
+        RateLimiter::for('rental-usage-anomaly-review', function (Request $request): array {
+            $user = $request->user();
+            $resultRoute = $request->route('anomalyResult');
+            $contractRoute = $request->route('contract');
+            $resource = $resultRoute ?? $contractRoute;
+            $resourceType = $resultRoute !== null ? 'result' : 'contract';
+            $resourceKey = $resource instanceof Model
+                ? (string) $resource->getKey()
+                : (is_scalar($resource) && ctype_digit((string) $resource)
+                    ? (string) $resource
+                    : 'invalid');
+            $scope = 'tenant:'.($user?->tenant_id ?? 'guest');
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(10)->by(
+                    'rental-usage-anomaly-review:'.$scope.'|actor:'.$actor
+                    .'|'.$resourceType.':'.$resourceKey,
+                ),
+                Limit::perMinute(30)->by(
+                    'rental-usage-anomaly-review:'.$scope.'|actor:'.$actor,
+                ),
             ];
         });
 

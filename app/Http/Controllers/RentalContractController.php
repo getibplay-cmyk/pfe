@@ -20,6 +20,7 @@ use App\Models\Document;
 use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Support\Finance\DepositLedger;
+use App\Support\Intelligence\RentalUsageAnomaly\FindCanonicalRentalUsageAnomaly;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageRuntimeReadiness;
 use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\RedirectResponse;
@@ -43,11 +44,13 @@ class RentalContractController extends Controller
     }
 
     public function show(
+        Request $request,
         RentalContract $contract,
         CompareVehicleInspections $compare,
         EnsureRequiredContractDocuments $requiredDocuments,
         DepositLedger $depositLedger,
         VehicleDamageRuntimeReadiness $damageReadiness,
+        FindCanonicalRentalUsageAnomaly $findUsageAnomaly,
     ): View {
         $this->authorize('view', $contract);
         $contract->load([
@@ -86,6 +89,9 @@ class RentalContractController extends Controller
             && auth()->user()->hasPermission('inspection.manage')
             && auth()->user()->hasPermission('prediction.view')
             && auth()->user()->hasPermission('prediction.damage.review');
+        $usageAnomaly = $request->user()->hasPermission('prediction.view')
+            ? $findUsageAnomaly->forContract($contract)
+            : null;
 
         return view('contracts.show', [
             'contract' => $contract,
@@ -93,6 +99,7 @@ class RentalContractController extends Controller
             'comparison' => $comparison,
             'documentStatus' => $documentStatus,
             'depositTotals' => $depositTotals,
+            'usageAnomaly' => $usageAnomaly,
             'damageAssistant' => [
                 'visible' => $damageAssistantVisible,
                 'ready' => $damageAssistantVisible && $damageReadiness->ready(),

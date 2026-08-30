@@ -37,4 +37,14 @@ final class RentalUsageAnomalyContract
             default => 'Facteur non documenté',
         };
     }
+
+    public static function featureUnit(string $feature): string
+    {
+        return match ($feature) {
+            'late_hours' => 'h',
+            'km_per_day' => 'km/jour',
+            'fuel_drop_pct' => 'points',
+            default => '',
+        };
+    }
 }

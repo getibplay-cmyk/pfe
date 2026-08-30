@@ -95,34 +95,41 @@ class RentalUsageAnomalyIntegrationTest extends TestCase
             && $process->timeout === 60);
 
         $page = $this->actingAs($fixture['user'])
-            ->get(route('intelligence.rental-usage-anomalies.index', [
-                'run' => $completed->run_id,
-                'budget' => 100,
-            ]))
+            ->get(route('intelligence.rental-usage-anomalies.index'))
             ->assertOk()
-            ->assertSee('Usages de location atypiques')
-            ->assertSee('robust_mad_top2')
-            ->assertSee('Isolation Forest')
-            ->assertSee('À revoir')
-            ->assertSee('2')
-            ->assertSee('Un score élevé n’est ni une preuve de fraude')
+            ->assertSee('Usage atypique à vérifier')
+            ->assertSee('Cas à vérifier')
+            ->assertSee('2 cas dans la sélection actuelle')
+            ->assertSee('Indicateur statistique')
+            ->assertSee('Facteurs observés')
+            ->assertSee('Vérification humaine nécessaire')
+            ->assertDontSee('robust_mad_top2')
+            ->assertDontSee('isolation_forest')
+            ->assertDontSee($completed->run_id)
+            ->assertDontSee($export->run_id)
             ->assertDontSee($export->stored_path)
             ->assertDontSee($export->content_sha256);
+        $this->assertSame(2, substr_count($page->getContent(), 'data-anomaly-case'));
+        $this->assertSame(4, substr_count($page->getContent(), 'data-anomaly-factor'));
 
         $result = RentalUsageAnomalyResult::withoutGlobalScopes()
             ->where('primary_rank', 1)
             ->firstOrFail();
+        $resultContract = RentalContract::withoutGlobalScopes()->findOrFail($result->rental_contract_id);
         $this->actingAs($fixture['user'])
-            ->post(route('intelligence.rental-usage-anomalies.reviews.store', $result), [
+            ->post(route('intelligence.rental-usage-anomalies.contract-reviews.store', $resultContract), [
                 'decision' => 'follow_up',
                 'note' => 'Vérifier le justificatif de retour.',
-                'budget' => 100,
             ])->assertRedirect();
         $this->actingAs($fixture['user'])
-            ->post(route('intelligence.rental-usage-anomalies.reviews.store', $result), [
+            ->get(route('contracts.show', $resultContract))
+            ->assertOk()
+            ->assertSee('Usage atypique à vérifier')
+            ->assertDontSee((string) $result->primary_score);
+        $this->actingAs($fixture['user'])
+            ->post(route('intelligence.rental-usage-anomalies.contract-reviews.store', $resultContract), [
                 'decision' => 'dismissed',
                 'note' => 'Écart expliqué par le dossier.',
-                'budget' => 100,
             ])->assertRedirect();
         $this->assertSame(2, RentalUsageAnomalyReview::withoutGlobalScopes()->count());
         $this->assertSame($businessBefore, $this->businessFingerprint());
@@ -138,7 +145,7 @@ class RentalUsageAnomalyIntegrationTest extends TestCase
         $this->assertPostgreSqlConstraint(fn () => DB::table('rental_usage_anomaly_runs')
             ->where('id', $completed->id)->update(['candidate_count' => 3]));
         $this->assertSame($businessBefore, $this->businessFingerprint());
-        $this->assertStringNotContainsString('FRAUD', $page->getContent());
+        $this->assertStringNotContainsString('fraude', mb_strtolower($page->getContent()));
     }
 
     public function test_short_history_abstains_and_viewer_cannot_launch_or_review(): void
@@ -170,10 +177,10 @@ class RentalUsageAnomalyIntegrationTest extends TestCase
             'must_change_password' => false,
         ]);
         $this->actingAs($viewer)
-            ->get(route('intelligence.rental-usage-anomalies.index', ['run' => $completed->run_id]))
+            ->get(route('intelligence.rental-usage-anomalies.index'))
             ->assertOk()
-            ->assertSee('Abstention')
-            ->assertSee('minimum 200');
+            ->assertSee('Aucun cas à vérifier')
+            ->assertDontSee('Nouvelle analyse');
         $this->actingAs($viewer)
             ->post(route('intelligence.rental-usage-anomalies.store', $export))
             ->assertForbidden();
@@ -203,7 +210,7 @@ class RentalUsageAnomalyIntegrationTest extends TestCase
         $response
             ->assertRedirect(route('intelligence.rental-usage-anomalies.index'))
             ->assertSessionHasErrors([
-                'export_run' => 'Le snapshot privé est absent ou son intégrité a changé. Régénérez un export RentFleet v1.1 avant de relancer l’analyse.',
+                'analysis' => 'Les données préparées ne sont plus disponibles. Préparez une nouvelle analyse depuis Intelligence.',
             ]);
         $this->assertSame(0, RentalUsageAnomalyRun::withoutGlobalScopes()->count());
         Queue::assertNothingPushed();

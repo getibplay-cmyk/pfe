@@ -11,9 +11,9 @@ enum RentalUsageAnomalyReviewDecision: string
     public function label(): string
     {
         return match ($this) {
-            self::FollowUp => 'Conserver pour vérification',
-            self::Dismissed => 'Écarter après vérification',
-            self::NeedsInformation => 'Informations complémentaires requises',
+            self::FollowUp => 'À suivre',
+            self::Dismissed => 'Vérifié et écarté',
+            self::NeedsInformation => 'Informations complémentaires',
         };
     }
 }

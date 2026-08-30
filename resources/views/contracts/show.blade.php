@@ -13,6 +13,29 @@
         <x-page-header :title="$contract->contract_number" eyebrow="Contrat de location" description="Cycle contractuel, preuves documentaires et situation financière dans la devise du contrat."><x-slot:actions><x-status-badge :value="$contract->status" /><a href="{{ route('contracts.print', $contract) }}" class="rf-button-secondary">Version imprimable</a></x-slot:actions></x-page-header>
         <x-form-errors />
         @include('contracts.partials.workflow-status')
+        @if ($usageAnomaly)
+            <x-section-card title="Usage atypique à vérifier" description="Résumé consultatif du retour de location.">
+                <p class="text-sm font-semibold text-slate-950">{{ $usageAnomaly->reviewStatusLabel() }}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-600">Cet indicateur statistique oriente uniquement une vérification humaine et ne déclenche aucun changement automatique.</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach (array_slice($usageAnomaly->primary_factors, 0, 2) as $factor)
+                        <div class="rounded-xl border border-slate-200 p-3 text-sm">
+                            <p class="text-slate-500">{{ App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract::featureLabel($factor['feature']) }}</p>
+                            <p class="mt-1 font-semibold">
+                                {{ number_format((float) $factor['value'], 2, ',', ' ') }}
+                                {{ App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract::featureUnit($factor['feature']) }}
+                            </p>
+                        </div>
+                    @endforeach
+                </div>
+                @can('viewAny', App\Models\RentalUsageAnomalyRun::class)
+                    <a
+                        href="{{ route('intelligence.rental-usage-anomalies.index', ['agency' => $contract->agency_id, 'date_from' => $usageAnomaly->event_at->timezone((string) config('app.timezone'))->toDateString(), 'date_to' => $usageAnomaly->event_at->timezone((string) config('app.timezone'))->toDateString()]) }}"
+                        class="rf-button-link mt-4"
+                    >Ouvrir la file de vérification</a>
+                @endcan
+            </x-section-card>
+        @endif
         <div class="grid gap-6 lg:grid-cols-3">
             <x-section-card title="Synthèse" class="lg:col-span-2"><x-metadata-list><x-metadata-item label="Réservation"><a href="{{ route('reservations.show', $contract->reservation) }}">{{ $contract->reservation->reservation_number }}</a></x-metadata-item><x-metadata-item label="Client">{{ $contract->customer->displayName() }}</x-metadata-item><x-metadata-item label="Véhicule">{{ $contract->vehicle->registration_number }}</x-metadata-item><x-metadata-item label="Conducteur principal">{{ optional($contract->drivers->firstWhere('is_primary', true)?->driver)->first_name }} {{ optional($contract->drivers->firstWhere('is_primary', true)?->driver)->last_name }}</x-metadata-item><x-metadata-item label="Période">{{ App\Support\Ui\UiLabel::dateTime($contract->expected_start_at) }} — {{ App\Support\Ui\UiLabel::dateTime($contract->expected_return_at) }}</x-metadata-item><x-metadata-item label="Location">{{ App\Support\Ui\UiLabel::money($contract->rental_subtotal, $contract->currency) }}</x-metadata-item><x-metadata-item label="Frais approuvés">{{ App\Support\Ui\UiLabel::money($contract->additional_charges_total, $contract->currency) }}</x-metadata-item><x-metadata-item label="Total"><strong>{{ App\Support\Ui\UiLabel::money($contract->total_amount, $contract->currency) }}</strong></x-metadata-item></x-metadata-list></x-section-card>
             <x-section-card title="Version courante" description="Les empreintes techniques sont contrôlées sans être exposées dans l’interface."><p class="text-sm font-medium">Version {{ $contract->currentVersion?->version_number ?? '—' }}</p><p class="mt-2 text-xs">{{ $contract->currentVersion?->locked_at ? 'Verrouillée après acceptation' : 'Toute modification crée une nouvelle version' }}</p>@if($contract->currentVersion?->document)<p class="mt-2 text-xs text-emerald-700">Fichier privé vérifiable associé.</p>@can('view', $contract->currentVersion->document)<a href="{{ route('documents.show', $contract->currentVersion->document) }}" class="rf-button-link mt-2">Voir le document</a>@endcan @elseif(in_array($contract->status->value, ['draft','ready']))@can('version', $contract)<form method="POST" enctype="multipart/form-data" action="{{ route('contracts.version-document.store', $contract) }}" class="mt-4 space-y-2">@csrf<label class="rf-field-label" for="contract-version-file">PDF contractuel <span class="text-red-700">*</span></label><input id="contract-version-file" type="file" name="file" required class="block w-full text-sm"><x-field-error :messages="$errors->get('file')" /><x-primary-button>Associer le fichier</x-primary-button></form>@endcan @endif @can('version', $contract)<form method="POST" action="{{ route('contracts.versions.store', $contract) }}" class="mt-4 space-y-2">@csrf<label class="rf-field-label" for="change-reason">Motif de la nouvelle version <span class="text-red-700">*</span></label><input id="change-reason" name="change_reason" required value="{{ old('change_reason') }}" class="w-full"><x-field-error :messages="$errors->get('change_reason')" /><x-secondary-button type="submit">Créer une version</x-secondary-button></form>@endcan</x-section-card>
