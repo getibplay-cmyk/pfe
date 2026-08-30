@@ -17,6 +17,7 @@ class VehicleDamagePredictionRun extends Model
 
     protected $fillable = [
         'agency_id',
+        'rental_contract_id',
         'run_id',
         'vehicle_inspection_id',
         'vehicle_id',
@@ -89,6 +90,11 @@ class VehicleDamagePredictionRun extends Model
     public function inspection(): BelongsTo
     {
         return $this->belongsTo(VehicleInspection::class, 'vehicle_inspection_id');
+    }
+
+    public function rentalContract(): BelongsTo
+    {
+        return $this->belongsTo(RentalContract::class);
     }
 
     public function vehicle(): BelongsTo

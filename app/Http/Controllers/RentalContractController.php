@@ -20,6 +20,7 @@ use App\Models\Document;
 use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Support\Finance\DepositLedger;
+use App\Support\Intelligence\VehicleDamage\VehicleDamageRuntimeReadiness;
 use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ class RentalContractController extends Controller
         CompareVehicleInspections $compare,
         EnsureRequiredContractDocuments $requiredDocuments,
         DepositLedger $depositLedger,
+        VehicleDamageRuntimeReadiness $damageReadiness,
     ): View {
         $this->authorize('view', $contract);
         $contract->load([
@@ -78,6 +80,12 @@ class RentalContractController extends Controller
         $depositTotals = collect($depositLedger->totals($contract))
             ->map(fn (int $minor) => DecimalMoney::fromMinorUnits($minor))
             ->all();
+        $damageAssistantVisible = $contract->status === RentalContractStatus::Active
+            && (bool) config('intelligence.vehicle_damage_v1.enabled')
+            && auth()->user()->can('return', $contract)
+            && auth()->user()->hasPermission('inspection.manage')
+            && auth()->user()->hasPermission('prediction.view')
+            && auth()->user()->hasPermission('prediction.damage.review');
 
         return view('contracts.show', [
             'contract' => $contract,
@@ -85,6 +93,11 @@ class RentalContractController extends Controller
             'comparison' => $comparison,
             'documentStatus' => $documentStatus,
             'depositTotals' => $depositTotals,
+            'damageAssistant' => [
+                'visible' => $damageAssistantVisible,
+                'ready' => $damageAssistantVisible && $damageReadiness->ready(),
+                'store_url' => route('contracts.return-damage-assistant.store', $contract),
+            ],
         ]);
     }
 

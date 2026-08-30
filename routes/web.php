@@ -31,6 +31,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ReservationExportController;
+use App\Http\Controllers\ReturnDamageAssistantController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantUserController;
@@ -133,6 +134,17 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::post('/contracts/{contract}/departure-inspection', [VehicleInspectionController::class, 'departure'])->name('contracts.departure-inspection');
     Route::post('/contracts/{contract}/activate', [RentalContractController::class, 'activate'])->name('contracts.activate');
     Route::post('/contracts/{contract}/return-inspection', [VehicleInspectionController::class, 'return'])->name('contracts.return-inspection');
+    Route::post('/contracts/{contract}/return-damage-assistant', [ReturnDamageAssistantController::class, 'store'])
+        ->middleware('throttle:vehicle-damage-v1')
+        ->name('contracts.return-damage-assistant.store');
+    Route::get('/contracts/{contract}/return-damage-assistant/{damagePrediction}', [ReturnDamageAssistantController::class, 'show'])
+        ->whereUuid('damagePrediction')
+        ->middleware('throttle:120,1')
+        ->name('contracts.return-damage-assistant.show');
+    Route::get('/contracts/{contract}/return-damage-assistant/{damagePrediction}/preview', [ReturnDamageAssistantController::class, 'preview'])
+        ->whereUuid('damagePrediction')
+        ->middleware('throttle:120,1')
+        ->name('contracts.return-damage-assistant.preview');
     Route::post('/contracts/{contract}/charges', [RentalContractController::class, 'charges'])->name('contracts.charges');
     Route::post('/contracts/{contract}/damages', [DamageReportController::class, 'store'])->name('contracts.damages.store');
     Route::post('/damages/{damage}/review', [DamageReportController::class, 'review'])->name('damages.review');

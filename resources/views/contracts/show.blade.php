@@ -1,7 +1,14 @@
 
 <x-app-layout>
-    @php($departure = $contract->inspections->firstWhere('inspection_type.value', 'departure'))
-    @php($return = $contract->inspections->firstWhere('inspection_type.value', 'return'))
+    @php
+        $departure = $contract->inspections->firstWhere('inspection_type.value', 'departure');
+        $return = $contract->inspections->firstWhere('inspection_type.value', 'return');
+        $damageAssistantConfiguration = [
+            'ready' => $damageAssistant['ready'],
+            'storeUrl' => $damageAssistant['store_url'],
+            'initialNotes' => old('notes', ''),
+        ];
+    @endphp
     <div class="rf-page">
         <x-page-header :title="$contract->contract_number" eyebrow="Contrat de location" description="Cycle contractuel, preuves documentaires et situation financière dans la devise du contrat."><x-slot:actions><x-status-badge :value="$contract->status" /><a href="{{ route('contracts.print', $contract) }}" class="rf-button-secondary">Version imprimable</a></x-slot:actions></x-page-header>
         <x-form-errors />
@@ -27,8 +34,78 @@
         @endif
 
         @if($contract->status->value === 'active' && auth()->user()->hasPermission('inspection.manage'))
-        <section class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Inspection de retour</h2><form method="POST" action="{{ route('contracts.return-inspection', $contract) }}" class="mt-4 space-y-4">@csrf
-            <div class="grid gap-3 md:grid-cols-3"><div><x-input-label for="return-mileage" value="Kilométrage de retour" required /><input id="return-mileage" type="number" name="mileage" required min="{{ $contract->start_mileage }}" value="{{ old('mileage') }}" aria-describedby="return-mileage-error" class="mt-1 w-full rounded-lg border-slate-300"><x-field-error id="return-mileage-error" :messages="$errors->get('mileage')" /></div><div><x-input-label for="return-fuel" value="Niveau de carburant (%)" required /><input id="return-fuel" type="number" name="fuel_level" required min="0" max="100" step="0.01" value="{{ old('fuel_level') }}" aria-describedby="return-fuel-error" class="mt-1 w-full rounded-lg border-slate-300"><x-field-error id="return-fuel-error" :messages="$errors->get('fuel_level')" /></div><div><x-input-label for="return-notes" value="Notes" /><input id="return-notes" name="notes" value="{{ old('notes') }}" aria-describedby="return-notes-error" class="mt-1 w-full rounded-lg border-slate-300"><x-field-error id="return-notes-error" :messages="$errors->get('notes')" /></div></div>
+        <section
+            class="rounded-xl bg-white p-5 shadow-sm"
+            x-data='returnDamageAssistant(@json($damageAssistantConfiguration))'
+        >
+            <h2 class="font-semibold">Inspection de retour</h2>
+            <form method="POST" action="{{ route('contracts.return-inspection', $contract) }}" class="mt-4 space-y-4">@csrf
+            <div class="grid gap-3 md:grid-cols-3"><div><x-input-label for="return-mileage" value="Kilométrage de retour" required /><input id="return-mileage" type="number" name="mileage" required min="{{ $contract->start_mileage }}" value="{{ old('mileage') }}" aria-describedby="return-mileage-error" class="mt-1 w-full rounded-lg border-slate-300"><x-field-error id="return-mileage-error" :messages="$errors->get('mileage')" /></div><div><x-input-label for="return-fuel" value="Niveau de carburant (%)" required /><input id="return-fuel" type="number" name="fuel_level" required min="0" max="100" step="0.01" value="{{ old('fuel_level') }}" aria-describedby="return-fuel-error" class="mt-1 w-full rounded-lg border-slate-300"><x-field-error id="return-fuel-error" :messages="$errors->get('fuel_level')" /></div><div><x-input-label for="return-notes" value="Observations" /><textarea id="return-notes" name="notes" x-model="notes" rows="3" aria-describedby="return-notes-error" class="mt-1 w-full rounded-lg border-slate-300"></textarea><x-field-error id="return-notes-error" :messages="$errors->get('notes')" /></div></div>
+
+            @if($damageAssistant['visible'])
+                <div class="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 class="font-semibold text-slate-950">Aide à l’inspection visuelle</h3>
+                            <p class="mt-1 max-w-3xl text-sm text-slate-700">Ajoutez des photos puis lancez chaque analyse explicitement. Une suggestion n’est ajoutée aux observations qu’après votre confirmation.</p>
+                        </div>
+                        <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">Décision humaine</span>
+                    </div>
+                    <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Cette analyse est une aide visuelle. Vérifiez toujours l’ensemble du véhicule avant de valider le retour.</p>
+
+                    @if($damageAssistant['ready'])
+                        <div class="mt-4">
+                            <x-input-label for="return-damage-photos" value="Photos du véhicule" />
+                            <input
+                                id="return-damage-photos"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                multiple
+                                class="mt-1 block w-full text-sm"
+                                x-on:change="addSelectedFiles($event.target.files); $event.target.value = ''"
+                            >
+                            <p class="mt-1 text-xs text-slate-600">Chaque photo garde son propre résultat. L’inspection manuelle reste disponible à tout moment.</p>
+                        </div>
+
+                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <template x-for="photo in photos" :key="photo.id">
+                                <article class="rounded-xl border border-slate-200 bg-white p-3">
+                                    <div class="flex items-start gap-3">
+                                        <img x-show="photo.preview" :src="photo.preview" alt="Photo sélectionnée pour l’inspection de retour" class="h-24 w-32 rounded-lg object-cover">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="truncate text-sm font-semibold" x-text="photo.name"></p>
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                <button type="button" class="rf-button-secondary" x-on:click="analyze(photo)" :disabled="photo.phase === 'uploading' || photo.phase === 'processing'">Analyser cette photo</button>
+                                                <button type="button" class="rf-button-ghost" x-on:click="removePhoto(photo)">Retirer</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 text-sm" aria-live="polite">
+                                        <p x-show="photo.phase === 'uploading' || photo.phase === 'processing'" class="font-medium text-blue-800">Analyse en cours…</p>
+                                        <p x-show="photo.message" x-text="photo.message" class="text-slate-700"></p>
+                                        <ul x-show="photo.detections.length > 0" class="mt-2 space-y-1">
+                                            <template x-for="(detection, index) in photo.detections" :key="index">
+                                                <li class="rounded bg-amber-50 px-2 py-1 text-amber-950"><span x-text="detection.label"></span> — confiance indicative <span x-text="confidenceText(detection.confidence)"></span></li>
+                                            </template>
+                                        </ul>
+                                        <div x-show="photo.detections.length > 0" class="mt-3 flex flex-wrap gap-2">
+                                            <button x-show="! photo.suggestionApplied" type="button" class="rf-button-secondary" x-on:click="addSuggestion(photo)">Ajouter aux observations</button>
+                                            <button x-show="photo.suggestionApplied" type="button" class="rf-button-ghost" x-on:click="removeSuggestion(photo)">Supprimer la suggestion</button>
+                                        </div>
+                                    </div>
+                                </article>
+                            </template>
+                        </div>
+                    @else
+                        <p class="mt-4 rounded-lg bg-white p-3 text-sm text-slate-700">L’analyse des photos est temporairement indisponible. Vous pouvez terminer l’inspection manuellement.</p>
+                    @endif
+                </div>
+                <template x-for="runId in selectedRunIds" :key="runId">
+                    <input type="hidden" name="damage_prediction_runs[]" :value="runId">
+                </template>
+                <x-field-error :messages="$errors->get('damage_prediction_runs')" />
+            @endif
+
             <fieldset><legend class="mb-2 text-sm font-semibold">État des éléments contrôlés</legend><div class="grid gap-3 md:grid-cols-2">@foreach(['body'=>'Carrosserie','interior'=>'Habitacle','tyres'=>'Pneus','equipment'=>'Équipements'] as $code => $label)<div><input type="hidden" name="items[{{ $loop->index }}][item_code]" value="{{ $code }}"><input type="hidden" name="items[{{ $loop->index }}][label]" value="{{ $label }}"><x-input-label for="return-item-{{ $code }}" :value="$label" required /><select id="return-item-{{ $code }}" name="items[{{ $loop->index }}][condition]" class="mt-1 w-full rounded-lg border-slate-300"><option value="good">Bon</option><option value="damaged">Endommagé</option><option value="missing">Manquant</option><option value="not_checked">Non contrôlé</option></select></div>@endforeach</div></fieldset><button class="rounded-lg bg-slate-900 px-4 py-2 text-white">Terminer le retour</button>
         </form></section>
         @endif

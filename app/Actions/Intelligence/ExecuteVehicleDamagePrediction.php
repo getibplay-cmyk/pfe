@@ -4,6 +4,7 @@ namespace App\Actions\Intelligence;
 
 use App\Enums\InspectionStatus;
 use App\Enums\InspectionType;
+use App\Enums\RentalContractStatus;
 use App\Enums\VehicleDamagePredictionStatus;
 use App\Exceptions\VehicleDamageExecutionException;
 use App\Models\User;
@@ -47,11 +48,19 @@ final class ExecuteVehicleDamagePrediction
                 throw new VehicleDamageExecutionException('RUN_ACTOR_NOT_AUTHORIZED');
             }
             $inspection = $run->inspection;
-            if ($inspection === null
-                || $inspection->inspection_type !== InspectionType::Return
-                || $inspection->status !== InspectionStatus::Completed
-                || $inspection->vehicle_id !== $run->vehicle_id
-                || $inspection->agency_id !== $run->agency_id) {
+            $contract = $run->rentalContract;
+            if ($contract === null
+                || $contract->id !== $run->rental_contract_id
+                || $contract->vehicle_id !== $run->vehicle_id
+                || $contract->agency_id !== $run->agency_id
+                || ($inspection === null && $contract->status !== RentalContractStatus::Active)
+                || ($inspection !== null && (
+                    $inspection->inspection_type !== InspectionType::Return
+                    || $inspection->status !== InspectionStatus::Completed
+                    || $inspection->rental_contract_id !== $contract->id
+                    || $inspection->vehicle_id !== $run->vehicle_id
+                    || $inspection->agency_id !== $run->agency_id
+                ))) {
                 throw new VehicleDamageExecutionException('RETURN_INSPECTION_UNAVAILABLE');
             }
             if ($run->model_name !== VehicleDamageContract::modelName()
@@ -113,7 +122,7 @@ final class ExecuteVehicleDamagePrediction
     {
         return DB::transaction(function () use ($runId, $actorId): VehicleDamagePredictionRun {
             $run = VehicleDamagePredictionRun::query()
-                ->with('inspection')
+                ->with(['inspection', 'rentalContract.vehicle'])
                 ->where('run_id', $runId)
                 ->lockForUpdate()
                 ->firstOrFail();
