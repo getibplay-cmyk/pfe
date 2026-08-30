@@ -14,6 +14,7 @@ use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
+use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ class VehicleColorPredictionController extends Controller
         Request $request,
         TenantContext $context,
         VehicleColorModelArtifact $modelArtifact,
+        VehicleColorRuntimeReadiness $readiness,
     ): View {
         $this->authorize('viewAny', VehicleColorPredictionRun::class);
 
@@ -58,20 +60,7 @@ class VehicleColorPredictionController extends Controller
 
         $provider = (string) config('intelligence.vehicle_color_v8.execution_provider');
         $artifactReady = $modelArtifact->configuredIsValid();
-        $sanitizer = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
-        $runtimeReady = (bool) config('intelligence.vehicle_color_v8.enabled')
-            && $artifactReady
-            && IntelligencePrivateStorage::configured('intelligence.vehicle_color_v8.disk')
-            && (string) config('intelligence.vehicle_color_v8.python_binary') !== ''
-            && is_file((string) config('intelligence.vehicle_color_v8.runtime_script'))
-            && is_file($sanitizer)
-            && in_array($provider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true)
-            && (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds') >= 1
-            && (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds') <= 30
-            && (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds') >= 1
-            && (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds') <= 15
-            && (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension') >= 256
-            && (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension') <= 4_096;
+        $runtimeReady = $readiness->ready();
 
         return view('intelligence.vehicle-colors.index', [
             'vehicles' => $vehicles,

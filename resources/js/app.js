@@ -1,10 +1,13 @@
 import './bootstrap';
 
 import Alpine from 'alpinejs';
+import { createVehicleColorAssistant } from './vehicle-color-assistant';
 
 window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
+    Alpine.data('vehicleColorAssistant', (config) => createVehicleColorAssistant(config));
+
     Alpine.data('appShell', () => ({
         mobileMenu: false,
         menuTrigger: null,

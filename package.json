@@ -3,7 +3,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test:vehicle-color-assistant": "node --test tests/JavaScript/vehicle-color-assistant.test.js"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",

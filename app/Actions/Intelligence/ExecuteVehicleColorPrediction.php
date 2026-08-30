@@ -37,14 +37,19 @@ final class ExecuteVehicleColorPrediction
                 ->where('tenant_id', $tenantId)
                 ->where('is_active', true)
                 ->first();
+            $preparatory = $run->vehicle_id === null;
+            $actorCanExecute = $actor !== null && ($preparatory
+                ? $actor->hasPermission('vehicle.create')
+                : ($actor->hasPermission('prediction.view')
+                    && $actor->hasPermission('prediction.color.review')));
             if (! (bool) config('intelligence.vehicle_color_v8.enabled')
                 || $actor === null
-                || ! $actor->hasPermission('prediction.view')
-                || ! $actor->hasPermission('prediction.color.review')
+                || ! $actorCanExecute
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
                 throw new VehicleColorExecutionException('RUN_ACTOR_NOT_AUTHORIZED');
             }
-            if ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id) {
+            if (! $preparatory
+                && ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id)) {
                 throw new VehicleColorExecutionException('VEHICLE_UNAVAILABLE');
             }
             if (! $this->modelArtifact->configuredIsValid()) {

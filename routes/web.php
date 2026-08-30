@@ -36,6 +36,7 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleBlockController;
 use App\Http\Controllers\VehicleCategoryController;
+use App\Http\Controllers\VehicleColorAssistantController;
 use App\Http\Controllers\VehicleColorPredictionController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleDamagePredictionController;
@@ -90,6 +91,13 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
     Route::resource('vehicle-categories', VehicleCategoryController::class)->except('show');
+    Route::post('/vehicles/color-assistant', [VehicleColorAssistantController::class, 'store'])
+        ->middleware('throttle:vehicle-color-v8')
+        ->name('vehicles.color-assistant.store');
+    Route::get('/vehicles/color-assistant/{colorPrediction}', [VehicleColorAssistantController::class, 'show'])
+        ->whereUuid('colorPrediction')
+        ->middleware('throttle:120,1')
+        ->name('vehicles.color-assistant.show');
     Route::resource('vehicles', VehicleController::class)->except('destroy');
     Route::post('/vehicles/{vehicle}/status', [VehicleController::class, 'changeStatus'])->name('vehicles.status');
     Route::get('/vehicle-blocks', [VehicleBlockController::class, 'index'])->name('vehicle-blocks.index');

@@ -93,15 +93,20 @@
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
                                 <p class="font-mono text-xs text-slate-500">{{ $run->run_id }}</p>
-                                <h3 class="mt-1 text-lg font-semibold text-slate-950">{{ $run->vehicle->registration_number }} · {{ $run->vehicle->brand }} {{ $run->vehicle->model }}</h3>
-                                <p class="text-sm text-slate-600">Couleur actuellement enregistrée : <span class="font-medium">{{ $run->vehicle->color ?: 'non renseignée' }}</span></p>
+                                @if ($run->vehicle)
+                                    <h3 class="mt-1 text-lg font-semibold text-slate-950">{{ $run->vehicle->registration_number }} · {{ $run->vehicle->brand }} {{ $run->vehicle->model }}</h3>
+                                    <p class="text-sm text-slate-600">Couleur actuellement enregistrée : <span class="font-medium">{{ $run->vehicle->color ?: 'non renseignée' }}</span></p>
+                                @else
+                                    <h3 class="mt-1 text-lg font-semibold text-slate-950">Préparation d’un nouveau véhicule</h3>
+                                    <p class="text-sm text-slate-600">La fiche véhicule n’a pas encore été enregistrée.</p>
+                                @endif
                             </div>
                             <x-status-badge :value="$run->status" />
                         </div>
 
                         <div class="mt-4 grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
                             <a href="{{ route('intelligence.vehicle-colors.input', $run) }}" target="_blank" rel="noopener" class="block overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                                <img src="{{ route('intelligence.vehicle-colors.input', $run) }}" alt="Photo privée soumise pour {{ $run->vehicle->registration_number }}" class="h-40 w-full object-cover" loading="lazy">
+                                <img src="{{ route('intelligence.vehicle-colors.input', $run) }}" alt="Photo privée soumise pour l’analyse de couleur" class="h-40 w-full object-cover" loading="lazy">
                                 <span class="block px-3 py-2 text-center text-xs font-medium text-indigo-700">Ouvrir la photo privée</span>
                             </a>
                             <div>
