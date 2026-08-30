@@ -12,6 +12,7 @@ use App\Http\Controllers\DemandForecastController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\FleetReallocationPlanningController;
 use App\Http\Controllers\FleetReallocationProposalController;
 use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\IntelligenceController;
@@ -97,6 +98,14 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::patch('/fleet/agency-distances/{agencyDistance}/deactivate', [AgencyDistanceController::class, 'deactivate'])
         ->middleware('throttle:30,1')
         ->name('agency-distances.deactivate');
+    Route::get('/fleet/reallocation-planning', [FleetReallocationPlanningController::class, 'index'])
+        ->name('fleet.reallocation-planning.index');
+    Route::post('/fleet/reallocation-planning/runs', [FleetReallocationPlanningController::class, 'store'])
+        ->middleware('throttle:fleet-reallocation-planning')
+        ->name('fleet.reallocation-planning.runs.store');
+    Route::get('/fleet/reallocation-planning/runs/{run}/status', [FleetReallocationPlanningController::class, 'status'])
+        ->middleware('throttle:60,1')
+        ->name('fleet.reallocation-planning.runs.status');
     Route::resource('users', TenantUserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
     Route::post('/users/{user}/reset-password', [TenantUserController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');

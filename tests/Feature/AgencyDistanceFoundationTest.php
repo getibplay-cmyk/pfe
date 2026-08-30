@@ -430,7 +430,7 @@ class AgencyDistanceFoundationTest extends TestCase
         }
         $this->assertContains('throttle:30,1', app('router')->getRoutes()
             ->getByName('agency-distances.store')->gatherMiddleware());
-        $this->assertSame(88, DB::table('migrations')->count());
+        $this->assertSame(89, DB::table('migrations')->count());
     }
 
     /** @return array{tenant:Tenant,agency_a:Agency,agency_b:Agency,owner:User} */

@@ -8,6 +8,7 @@
         "test:vehicle-registration-assistant": "node --test tests/JavaScript/vehicle-registration-assistant.test.js",
         "test:return-damage-assistant": "node --test tests/JavaScript/return-damage-assistant.test.js",
         "test:reservation-demand-forecast": "node --test tests/JavaScript/reservation-demand-forecast.test.js",
+        "test:fleet-reallocation-planning": "node --test tests/JavaScript/fleet-reallocation-planning.test.js",
         "test:vehicle-assistants": "node --test tests/JavaScript/vehicle-color-assistant.test.js tests/JavaScript/vehicle-registration-assistant.test.js tests/JavaScript/return-damage-assistant.test.js"
     },
     "devDependencies": {

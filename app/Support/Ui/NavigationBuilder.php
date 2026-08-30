@@ -43,6 +43,7 @@ class NavigationBuilder
                 $this->when($user, 'vehicle.view', $this->item('vehicles', 'Véhicules', 'vehicles.index', 'vehicles.*')),
                 $this->when($user, 'vehicle.view', $this->item('vehicle-categories', 'Catégories', 'vehicle-categories.index', 'vehicle-categories.*')),
                 $this->when($user, 'fleet.distance.view', $this->item('agency-distances', 'Distances inter-agences', 'agency-distances.index', 'agency-distances.*')),
+                $this->whenOperationalPlanner($user, $this->item('fleet-reallocation-planning', 'Planification de réallocation', 'fleet.reallocation-planning.index', 'fleet.reallocation-planning.*')),
                 $this->when($user, 'vehicle_block.manage', $this->item('vehicle-blocks', 'Blocs véhicules', 'vehicle-blocks.index', 'vehicle-blocks.*')),
                 $this->when($user, 'maintenance.view', $this->item('maintenance', 'Maintenance', 'maintenance.index', 'maintenance.*')),
                 $this->when($user, 'insurance.view', $this->item('insurance', 'Assurance', 'insurance.index', 'insurance.*')),
@@ -84,5 +85,13 @@ class NavigationBuilder
     private function whenAny(User $user, array $permissions, array $item): ?array
     {
         return collect($permissions)->contains(fn (string $permission) => $user->hasPermission($permission)) ? $item : null;
+    }
+
+    private function whenOperationalPlanner(User $user, array $item): ?array
+    {
+        return in_array($user->role?->slug, ['tenant-owner', 'fleet-manager'], true)
+            && $user->hasPermission('prediction.demo.review')
+                ? $item
+                : null;
     }
 }

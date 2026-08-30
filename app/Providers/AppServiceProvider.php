@@ -73,6 +73,17 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('fleet-reallocation-planning', function (Request $request): array {
+            $user = $request->user();
+            $scope = 'tenant:'.($user?->tenant_id ?? 'guest');
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(3)->by('fleet-reallocation-planning:user:'.$scope.'|actor:'.$actor),
+                Limit::perHour(20)->by('fleet-reallocation-planning:scope:'.$scope),
+            ];
+        });
+
         RateLimiter::for('vehicle-color-v8', function (Request $request): array {
             $user = $request->user();
             $scope = implode('|', [
