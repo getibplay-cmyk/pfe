@@ -122,8 +122,8 @@ final class BuildPlatformStatistics
     private function paymentSummary(CarbonImmutable $startsAt, CarbonImmutable $endsAt): array
     {
         $rows = DB::table('saas_payments')
-            ->where('occurred_at', '>=', $startsAt->utc())
-            ->where('occurred_at', '<', $endsAt->utc())
+            ->where('occurred_at', '>=', $this->timestampBinding($startsAt))
+            ->where('occurred_at', '<', $this->timestampBinding($endsAt))
             ->select('currency')
             ->selectRaw("COUNT(*) FILTER (WHERE entry_type = 'payment')::int AS recorded_count")
             ->selectRaw("COUNT(*) FILTER (WHERE entry_type = 'reversal')::int AS reversal_count")
@@ -152,8 +152,8 @@ final class BuildPlatformStatistics
 
         foreach (self::CAPABILITIES as $capability => $definition) {
             $rows = DB::table($definition['table'])
-                ->where('requested_at', '>=', $startsAt->utc())
-                ->where('requested_at', '<', $endsAt->utc())
+                ->where('requested_at', '>=', $this->timestampBinding($startsAt))
+                ->where('requested_at', '<', $this->timestampBinding($endsAt))
                 ->select('status')
                 ->selectRaw("to_char(date_trunc('month', requested_at AT TIME ZONE ?), 'YYYY-MM') AS month", [config('app.timezone')])
                 ->selectRaw('COUNT(*)::int AS aggregate')
@@ -189,6 +189,11 @@ final class BuildPlatformStatistics
         }
 
         return [$states, $monthlyRows];
+    }
+
+    private function timestampBinding(CarbonImmutable $timestamp): string
+    {
+        return $timestamp->utc()->toIso8601String();
     }
 
     /** @return list<array{capability: string, label: string, tenant_count: int}> */
