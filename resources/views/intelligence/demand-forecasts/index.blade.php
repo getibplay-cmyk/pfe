@@ -148,10 +148,8 @@
                                     <p>{{ $run->forecast_runs_count }}</p>
                                     @if ($execution)
                                         <p class="mt-1"><x-status-badge :value="$execution->status->value" :label="$execution->status->label()" /></p>
-                                        <p class="mt-1 font-mono text-xs text-slate-500">{{ $execution->run_id }}</p>
                                         @if ($execution->failure_code)
                                             <p class="mt-1 text-xs text-rose-700">{{ $execution->failureLabel() }}</p>
-                                            <p class="mt-1 font-mono text-xs text-slate-500">{{ $execution->failure_code }}</p>
                                         @endif
                                     @endif
                                 </td>

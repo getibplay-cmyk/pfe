@@ -2,6 +2,7 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehicleColorPredictionStatus;
 use App\Exceptions\VehicleColorPredictionAlreadyActiveException;
 use App\Exceptions\VehicleColorRuntimeUnavailableException;
@@ -11,6 +12,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
@@ -27,6 +29,7 @@ final class QueueVehicleColorPrediction
     public function __construct(
         private readonly TenantContext $context,
         private readonly AgencyAccess $agencyAccess,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehicleColorRuntimeReadiness $readiness,
         private readonly VehicleColorImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
@@ -60,6 +63,7 @@ final class QueueVehicleColorPrediction
         UploadedFile $image,
         User $actor,
     ): VehicleColorPredictionRun {
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::VehicleColor);
         if (! $this->readiness->ready()) {
             throw new VehicleColorRuntimeUnavailableException;
         }
@@ -201,8 +205,7 @@ final class QueueVehicleColorPrediction
     private function assertAllowed(Vehicle $vehicle, User $actor): void
     {
         $contextAgency = $this->context->agencyId();
-        if (! (bool) config('intelligence.vehicle_color_v8.enabled')
-            || $actor->tenant_id !== $vehicle->tenant_id
+        if ($actor->tenant_id !== $vehicle->tenant_id
             || $this->context->tenantId() !== $vehicle->tenant_id
             || ! $actor->is_active
             || ! $actor->hasPermission('prediction.view')
@@ -215,8 +218,7 @@ final class QueueVehicleColorPrediction
 
     private function assertPreparationAllowed(User $actor): void
     {
-        if (! (bool) config('intelligence.vehicle_color_v8.enabled')
-            || $actor->tenant_id !== $this->context->tenantId()
+        if ($actor->tenant_id !== $this->context->tenantId()
             || ! $actor->is_active
             || ! $actor->hasPermission('vehicle.create')) {
             throw new AuthorizationException;

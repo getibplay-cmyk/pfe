@@ -6,6 +6,7 @@ import { createVehicleRegistrationAssistant } from './vehicle-registration-assis
 import { createReturnDamageAssistant } from './return-damage-assistant';
 import { createReservationDemandForecast } from './reservation-demand-forecast';
 import { createFleetReallocationPlanning } from './fleet-reallocation-planning';
+import { initializePlatformStatistics } from './platform-statistics';
 
 window.Alpine = Alpine;
 
@@ -49,6 +50,8 @@ document.addEventListener('alpine:init', () => {
 Alpine.start();
 
 document.addEventListener('DOMContentLoaded', () => {
+    initializePlatformStatistics();
+
     const invalidField = document.querySelector('[aria-invalid="true"]');
 
     if (invalidField instanceof HTMLElement) {

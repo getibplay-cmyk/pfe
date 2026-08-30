@@ -24,6 +24,11 @@ use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlatformDashboardController;
+use App\Http\Controllers\PlatformIntelligenceController;
+use App\Http\Controllers\PlatformPlanController;
+use App\Http\Controllers\PlatformSaasPaymentController;
+use App\Http\Controllers\PlatformStatisticsController;
+use App\Http\Controllers\PlatformSubscriptionController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\ProfileController;
@@ -37,6 +42,7 @@ use App\Http\Controllers\ReservationExportController;
 use App\Http\Controllers\ReturnDamageAssistantController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TenantController;
+use App\Http\Controllers\TenantSaasAccountController;
 use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleBlockController;
 use App\Http\Controllers\VehicleCategoryController;
@@ -83,6 +89,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
     Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
+    Route::get('/tenant/saas-account', TenantSaasAccountController::class)->name('tenant-saas-account.show');
     Route::resource('agencies', AgencyController::class);
     Route::get('/fleet/agency-distances', [AgencyDistanceController::class, 'index'])
         ->name('agency-distances.index');
@@ -101,7 +108,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/fleet/reallocation-planning', [FleetReallocationPlanningController::class, 'index'])
         ->name('fleet.reallocation-planning.index');
     Route::post('/fleet/reallocation-planning/runs', [FleetReallocationPlanningController::class, 'store'])
-        ->middleware('throttle:fleet-reallocation-planning')
+        ->middleware(['tenant.intelligence:fleet_reallocation', 'throttle:fleet-reallocation-planning'])
         ->name('fleet.reallocation-planning.runs.store');
     Route::get('/fleet/reallocation-planning/runs/{run}/status', [FleetReallocationPlanningController::class, 'status'])
         ->middleware('throttle:60,1')
@@ -119,14 +126,14 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
     Route::resource('vehicle-categories', VehicleCategoryController::class)->except('show');
     Route::post('/vehicles/color-assistant', [VehicleColorAssistantController::class, 'store'])
-        ->middleware('throttle:vehicle-color-v8')
+        ->middleware(['tenant.intelligence:vehicle_color', 'throttle:vehicle-color-v8'])
         ->name('vehicles.color-assistant.store');
     Route::get('/vehicles/color-assistant/{colorPrediction}', [VehicleColorAssistantController::class, 'show'])
         ->whereUuid('colorPrediction')
         ->middleware('throttle:120,1')
         ->name('vehicles.color-assistant.show');
     Route::post('/vehicles/registration-assistant', [VehicleRegistrationAssistantController::class, 'store'])
-        ->middleware('throttle:vehicle-plate-hybrid')
+        ->middleware(['tenant.intelligence:vehicle_plate', 'throttle:vehicle-plate-hybrid'])
         ->name('vehicles.registration-assistant.store');
     Route::get('/vehicles/registration-assistant/{platePrediction}', [VehicleRegistrationAssistantController::class, 'show'])
         ->whereUuid('platePrediction')
@@ -147,7 +154,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/availability', AvailabilityController::class)->name('availability.index');
     Route::get('/reservations/export', ReservationExportController::class)->name('reservations.export');
     Route::post('/reservations/demand-forecast', [ReservationDemandForecastController::class, 'store'])
-        ->middleware('throttle:reservation-demand-forecast')
+        ->middleware(['tenant.intelligence:demand_forecast', 'throttle:reservation-demand-forecast'])
         ->name('reservations.demand-forecast.store');
     Route::get('/reservations/demand-forecast/{forecastExecution}', [ReservationDemandForecastController::class, 'show'])
         ->whereUuid('forecastExecution')
@@ -167,7 +174,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::post('/contracts/{contract}/activate', [RentalContractController::class, 'activate'])->name('contracts.activate');
     Route::post('/contracts/{contract}/return-inspection', [VehicleInspectionController::class, 'return'])->name('contracts.return-inspection');
     Route::post('/contracts/{contract}/return-damage-assistant', [ReturnDamageAssistantController::class, 'store'])
-        ->middleware('throttle:vehicle-damage-v1')
+        ->middleware(['tenant.intelligence:vehicle_damage', 'throttle:vehicle-damage-v1'])
         ->name('contracts.return-damage-assistant.store');
     Route::get('/contracts/{contract}/return-damage-assistant/{damagePrediction}', [ReturnDamageAssistantController::class, 'show'])
         ->whereUuid('damagePrediction')
@@ -283,10 +290,10 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/intelligence/rental-usage-anomalies', [RentalUsageAnomalyController::class, 'index'])
         ->name('intelligence.rental-usage-anomalies.index');
     Route::post('/intelligence/rental-usage-anomalies/runs', [RentalUsageAnomalyController::class, 'storeLatest'])
-        ->middleware('throttle:rental-usage-anomaly-v1')
+        ->middleware(['tenant.intelligence:rental_usage_anomaly', 'throttle:rental-usage-anomaly-v1'])
         ->name('intelligence.rental-usage-anomalies.runs.store');
     Route::post('/intelligence/exports/{exportRun}/rental-usage-anomalies', [RentalUsageAnomalyController::class, 'store'])
-        ->middleware('throttle:rental-usage-anomaly-v1')
+        ->middleware(['tenant.intelligence:rental_usage_anomaly', 'throttle:rental-usage-anomaly-v1'])
         ->name('intelligence.rental-usage-anomalies.store');
     Route::post('/intelligence/rental-usage-anomalies/contracts/{contract}/reviews', [RentalUsageAnomalyController::class, 'reviewForContract'])
         ->middleware('throttle:rental-usage-anomaly-review')
@@ -295,19 +302,22 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
         ->middleware('throttle:rental-usage-anomaly-review')
         ->name('intelligence.rental-usage-anomalies.reviews.store');
     Route::get('/intelligence/demand-history/export', [DemandForecastController::class, 'export'])
+        ->middleware('tenant.intelligence:demand_forecast')
         ->name('intelligence.demand-history.export');
     Route::get('/intelligence/demand-history/{historyRun}/manifest', [DemandForecastController::class, 'manifest'])
         ->name('intelligence.demand-history.manifest');
     Route::get('/intelligence/demand-history/{historyRun}/download', [DemandForecastController::class, 'download'])
         ->name('intelligence.demand-history.download');
     Route::post('/intelligence/demand-history/{historyRun}/forecasts', [DemandForecastController::class, 'store'])
+        ->middleware('tenant.intelligence:demand_forecast')
         ->name('intelligence.demand-forecasts.store');
     Route::post('/intelligence/demand-history/{historyRun}/forecast-executions', [DemandForecastController::class, 'queueExecution'])
+        ->middleware('tenant.intelligence:demand_forecast')
         ->name('intelligence.demand-forecast-executions.store');
     Route::get('/intelligence/vehicle-colors', [VehicleColorPredictionController::class, 'index'])
         ->name('intelligence.vehicle-colors.index');
     Route::post('/intelligence/vehicle-colors', [VehicleColorPredictionController::class, 'store'])
-        ->middleware('throttle:vehicle-color-v8')
+        ->middleware(['tenant.intelligence:vehicle_color', 'throttle:vehicle-color-v8'])
         ->name('intelligence.vehicle-colors.store');
     Route::get('/intelligence/vehicle-colors/{colorPrediction}/input', [VehicleColorPredictionController::class, 'input'])
         ->name('intelligence.vehicle-colors.input');
@@ -316,7 +326,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/intelligence/vehicle-damages', [VehicleDamagePredictionController::class, 'index'])
         ->name('intelligence.vehicle-damages.index');
     Route::post('/intelligence/vehicle-damages', [VehicleDamagePredictionController::class, 'store'])
-        ->middleware('throttle:vehicle-damage-v1')
+        ->middleware(['tenant.intelligence:vehicle_damage', 'throttle:vehicle-damage-v1'])
         ->name('intelligence.vehicle-damages.store');
     Route::get('/intelligence/vehicle-damages/{damagePrediction}/input', [VehicleDamagePredictionController::class, 'input'])
         ->name('intelligence.vehicle-damages.input');
@@ -325,7 +335,7 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/intelligence/vehicle-plates', [VehiclePlatePredictionController::class, 'index'])
         ->name('intelligence.vehicle-plates.index');
     Route::post('/intelligence/vehicle-plates', [VehiclePlatePredictionController::class, 'store'])
-        ->middleware('throttle:vehicle-plate-hybrid')
+        ->middleware(['tenant.intelligence:vehicle_plate', 'throttle:vehicle-plate-hybrid'])
         ->name('intelligence.vehicle-plates.store');
     Route::get('/intelligence/vehicle-plates/{platePrediction}/input', [VehiclePlatePredictionController::class, 'input'])
         ->name('intelligence.vehicle-plates.input');
@@ -336,8 +346,10 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'index'])
         ->name('intelligence.fleet-reallocation.index');
     Route::post('/intelligence/fleet-reallocation/runs', [FleetReallocationProposalController::class, 'queueRun'])
+        ->middleware('tenant.intelligence:fleet_reallocation')
         ->name('intelligence.fleet-reallocation.runs.store');
     Route::post('/intelligence/fleet-reallocation', [FleetReallocationProposalController::class, 'store'])
+        ->middleware('tenant.intelligence:fleet_reallocation')
         ->name('intelligence.fleet-reallocation.store');
     Route::get('/intelligence/fleet-reallocation/{reallocationProposal}/download', [FleetReallocationProposalController::class, 'download'])
         ->name('intelligence.fleet-reallocation.download');
@@ -356,9 +368,28 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
 
 Route::prefix('platform')->name('platform.')->middleware(['auth', 'platform'])->group(function () {
     Route::get('/dashboard', PlatformDashboardController::class)->name('dashboard');
-    Route::resource('tenants', PlatformTenantController::class)->except('destroy');
-    Route::post('/tenants/{tenant}/suspend', [PlatformTenantController::class, 'suspend'])->name('tenants.suspend');
-    Route::post('/tenants/{tenant}/reactivate', [PlatformTenantController::class, 'reactivate'])->name('tenants.reactivate');
+    Route::get('/statistics', PlatformStatisticsController::class)->name('statistics.index');
+    Route::resource('tenants', PlatformTenantController::class)->only(['index', 'create', 'show', 'edit']);
+    Route::get('/plans', [PlatformPlanController::class, 'index'])->name('plans.index');
+    Route::get('/subscriptions', [PlatformSubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::get('/tenants/{tenant}/subscriptions/create', [PlatformSubscriptionController::class, 'create'])->name('tenants.subscriptions.create');
+    Route::get('/saas-payments', [PlatformSaasPaymentController::class, 'index'])->name('saas-payments.index');
+    Route::get('/tenants/{tenant}/saas-payments/create', [PlatformSaasPaymentController::class, 'create'])->name('tenants.saas-payments.create');
+    Route::get('/intelligence', [PlatformIntelligenceController::class, 'index'])->name('intelligence.index');
+
+    Route::middleware('throttle:30,1')->group(function () {
+        Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
+        Route::match(['put', 'patch'], '/tenants/{tenant}', [PlatformTenantController::class, 'update'])->name('tenants.update');
+        Route::post('/tenants/{tenant}/suspend', [PlatformTenantController::class, 'suspend'])->name('tenants.suspend');
+        Route::post('/tenants/{tenant}/reactivate', [PlatformTenantController::class, 'reactivate'])->name('tenants.reactivate');
+        Route::post('/plans', [PlatformPlanController::class, 'store'])->name('plans.store');
+        Route::patch('/plans/{plan}', [PlatformPlanController::class, 'update'])->name('plans.update');
+        Route::post('/tenants/{tenant}/subscriptions', [PlatformSubscriptionController::class, 'store'])->name('tenants.subscriptions.store');
+        Route::patch('/subscriptions/{subscription}/status', [PlatformSubscriptionController::class, 'transition'])->name('subscriptions.transition');
+        Route::post('/tenants/{tenant}/subscriptions/{subscription}/saas-payments', [PlatformSaasPaymentController::class, 'store'])->name('tenants.saas-payments.store');
+        Route::post('/saas-payments/{payment}/reverse', [PlatformSaasPaymentController::class, 'reverse'])->name('saas-payments.reverse');
+        Route::patch('/tenants/{tenant}/intelligence/{capability}', [PlatformIntelligenceController::class, 'update'])->name('intelligence.update');
+    });
 });
 
 require __DIR__.'/auth.php';

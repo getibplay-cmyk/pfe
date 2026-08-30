@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Actions\Vehicles\ChangeVehicleOperationalStatus;
 use App\Actions\Vehicles\CreateVehicle;
 use App\Actions\Vehicles\UpdateVehicle;
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehicleOperationalStatus;
 use App\Models\Agency;
 use App\Models\Vehicle;
 use App\Models\VehicleCategory;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
@@ -22,6 +24,7 @@ class VehicleController extends Controller
     public function __construct(
         private readonly VehicleColorRuntimeReadiness $colorReadiness,
         private readonly VehiclePlateRuntimeReadiness $plateReadiness,
+        private readonly TenantIntelligenceAccess $intelligenceAccess,
     ) {}
 
     public function index(Request $request): View
@@ -100,11 +103,15 @@ class VehicleController extends Controller
 
     private function formData(Request $request, Vehicle $vehicle): array
     {
+        $colorAuthorized = $this->intelligenceAccess->authorized(IntelligenceCapability::VehicleColor);
+        $plateAuthorized = $this->intelligenceAccess->authorized(IntelligenceCapability::VehiclePlate);
         $assistantEnabled = ! $vehicle->exists
             && $request->user()->can('create', Vehicle::class)
+            && $colorAuthorized
             && $this->colorReadiness->enabled();
         $registrationAssistantEnabled = ! $vehicle->exists
             && $request->user()->can('create', Vehicle::class)
+            && $plateAuthorized
             && $this->plateReadiness->enabled();
 
         return [

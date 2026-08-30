@@ -3,6 +3,7 @@
 namespace App\Actions\Intelligence;
 
 use App\Enums\DemandForecastExecutionStatus;
+use App\Enums\IntelligenceCapability;
 use App\Exceptions\DemandForecastRuntimeUnavailableException;
 use App\Models\DemandForecastExecutionRun;
 use App\Models\DemandHistoryExportRun;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\AgencyAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,6 +24,7 @@ final class QueueReservationDemandForecast
     public function __construct(
         private readonly TenantContext $context,
         private readonly AgencyAccess $agencyAccess,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly DemandForecastRuntimeReadiness $readiness,
         private readonly CreateDemandHistoryExport $history,
         private readonly QueueDemandForecastExecution $queue,
@@ -32,6 +35,7 @@ final class QueueReservationDemandForecast
     {
         $agencyId = $this->agencyAccess->required($requestedAgencyId);
         $this->assertAllowed($agencyId, $actor);
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::DemandForecast);
         if (! $this->readiness->ready()) {
             throw new DemandForecastRuntimeUnavailableException;
         }

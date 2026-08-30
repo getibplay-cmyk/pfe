@@ -16,6 +16,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationCanonicalPayload;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
+use App\Support\Intelligence\FleetReallocation\FleetReallocationRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
@@ -38,6 +39,9 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
         parent::setUp();
         CarbonImmutable::setTestNow('2026-08-15 12:00:00+00:00');
         Storage::fake('local');
+        $this->mock(FleetReallocationRuntimeReadiness::class, function ($mock): void {
+            $mock->shouldReceive('ready')->andReturnTrue();
+        });
         $this->seed(RolesPermissionsSeeder::class);
     }
 

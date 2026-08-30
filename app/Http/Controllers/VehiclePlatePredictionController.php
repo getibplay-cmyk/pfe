@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Intelligence\QueueVehiclePlatePrediction;
 use App\Actions\Intelligence\RecordVehiclePlatePredictionReview;
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehiclePlateReviewDecision;
 use App\Http\Requests\ReviewVehiclePlatePredictionRequest;
 use App\Http\Requests\StoreVehiclePlatePredictionRequest;
@@ -11,6 +12,7 @@ use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateInputArtifact;
@@ -30,6 +32,7 @@ class VehiclePlatePredictionController extends Controller
         Request $request,
         TenantContext $context,
         VehiclePlateRuntimeReadiness $readiness,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): View {
         $this->authorize('viewAny', VehiclePlatePredictionRun::class);
 
@@ -56,8 +59,9 @@ class VehiclePlatePredictionController extends Controller
             ->latest('id')
             ->paginate(20);
 
-        $ocrReady = $readiness->ocrReady();
-        $detectorReady = $readiness->ready(VehiclePlateDetectorContract::FULL_IMAGE);
+        $availability = $intelligenceAccess->status(IntelligenceCapability::VehiclePlate);
+        $ocrReady = $availability->usable();
+        $detectorReady = $ocrReady && $readiness->ready(VehiclePlateDetectorContract::FULL_IMAGE);
 
         return view('intelligence.vehicle-plates.index', [
             'vehicles' => $vehicles,
@@ -65,7 +69,7 @@ class VehiclePlatePredictionController extends Controller
             'vehicleSelectorLimit' => self::VEHICLE_SELECTOR_LIMIT,
             'runs' => $runs,
             'runtime' => [
-                'enabled' => (bool) config('intelligence.vehicle_plate_hybrid_review.enabled'),
+                'enabled' => $availability->globallyEnabled && $availability->tenantAuthorized,
                 'ocr_ready' => $ocrReady,
                 'detector_ready' => $detectorReady,
                 'ocr_device' => (string) config('intelligence.vehicle_plate_hybrid_review.device'),

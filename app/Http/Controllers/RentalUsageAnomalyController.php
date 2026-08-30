@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Intelligence\QueueRentalUsageAnomalyRun;
 use App\Actions\Intelligence\RecordRentalUsageAnomalyReview;
+use App\Enums\IntelligenceCapability;
 use App\Enums\RentalUsageAnomalyReviewDecision;
 use App\Exceptions\RentalUsageAnomalyAlreadyActiveException;
 use App\Exceptions\RentalUsageAnomalyExecutionException;
@@ -15,6 +16,8 @@ use App\Models\RentalContract;
 use App\Models\RentalUsageAnomalyResult;
 use App\Models\RentalUsageAnomalyRun;
 use App\Support\Intelligence\RentalUsageAnomaly\FindCanonicalRentalUsageAnomaly;
+use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyRuntimeReadiness;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,8 +26,12 @@ use Illuminate\View\View;
 
 class RentalUsageAnomalyController extends Controller
 {
-    public function index(RentalUsageAnomalyFilterRequest $request, TenantContext $context): View
-    {
+    public function index(
+        RentalUsageAnomalyFilterRequest $request,
+        TenantContext $context,
+        TenantIntelligenceAccess $intelligenceAccess,
+        RentalUsageAnomalyRuntimeReadiness $runtimeReadiness,
+    ): View {
         $agencyId = $request->agencyId();
         $dateFrom = $request->dateFrom();
         $dateTo = $request->dateTo();
@@ -67,10 +74,9 @@ class RentalUsageAnomalyController extends Controller
         }
         $results = $resultsQuery->paginate(15)->withQueryString();
 
-        $canRun = (bool) config('intelligence.rental_usage_anomaly.enabled')
-            && $request->user()->hasPermission('prediction.anomaly.review')
-            && (string) config('intelligence.rental_usage_anomaly.python_binary') !== ''
-            && is_file((string) config('intelligence.rental_usage_anomaly.runtime_script'));
+        $canRun = $intelligenceAccess->authorized(IntelligenceCapability::RentalUsageAnomaly)
+            && $runtimeReadiness->ready()
+            && $request->user()->hasPermission('prediction.anomaly.review');
         $launchSourceAvailable = $canRun && IntelligenceDatasetExportRun::query()
             ->when($context->agencyId(), fn ($query, $id) => $query->where('agency_id', $id))
             ->exists();

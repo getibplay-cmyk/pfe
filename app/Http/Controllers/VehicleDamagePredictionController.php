@@ -6,6 +6,7 @@ use App\Actions\Intelligence\QueueVehicleDamagePrediction;
 use App\Actions\Intelligence\RecordVehicleDamagePredictionReview;
 use App\Enums\InspectionStatus;
 use App\Enums\InspectionType;
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehicleDamageReviewDecision;
 use App\Http\Requests\ReviewVehicleDamagePredictionRequest;
 use App\Http\Requests\StoreVehicleDamagePredictionRequest;
@@ -13,6 +14,7 @@ use App\Models\VehicleDamagePredictionRun;
 use App\Models\VehicleInspection;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageInputArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
@@ -31,6 +33,7 @@ class VehicleDamagePredictionController extends Controller
         Request $request,
         TenantContext $context,
         VehicleDamageModelArtifact $modelArtifact,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): View {
         $this->authorize('viewAny', VehicleDamagePredictionRun::class);
 
@@ -67,17 +70,8 @@ class VehicleDamagePredictionController extends Controller
 
         $provider = (string) config('intelligence.vehicle_damage_v1.execution_provider');
         $artifactReady = $modelArtifact->configuredIsValid();
-        $runtimeReady = (bool) config('intelligence.vehicle_damage_v1.enabled')
-            && $artifactReady
-            && IntelligencePrivateStorage::configured('intelligence.vehicle_damage_v1.disk')
-            && (string) config('intelligence.vehicle_damage_v1.python_binary') !== ''
-            && is_file((string) config('intelligence.vehicle_damage_v1.runtime_script'))
-            && is_file((string) config('intelligence.vehicle_damage_v1.image_sanitizer_script'))
-            && in_array($provider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true)
-            && (int) config('intelligence.vehicle_damage_v1.runtime_timeout_seconds') >= 10
-            && (int) config('intelligence.vehicle_damage_v1.runtime_timeout_seconds') <= 120
-            && (int) config('intelligence.vehicle_damage_v1.max_scan_patches') >= 1
-            && (int) config('intelligence.vehicle_damage_v1.max_scan_patches') <= 64;
+        $availability = $intelligenceAccess->status(IntelligenceCapability::VehicleDamage);
+        $runtimeReady = $availability->usable();
 
         return view('intelligence.vehicle-damages.index', [
             'inspections' => $inspections,
@@ -85,7 +79,7 @@ class VehicleDamagePredictionController extends Controller
             'inspectionSelectorLimit' => self::INSPECTION_SELECTOR_LIMIT,
             'runs' => $runs,
             'runtime' => [
-                'enabled' => (bool) config('intelligence.vehicle_damage_v1.enabled'),
+                'enabled' => $availability->globallyEnabled && $availability->tenantAuthorized,
                 'artifact_ready' => $artifactReady,
                 'ready' => $runtimeReady,
                 'provider' => $provider,

@@ -6,6 +6,7 @@ use App\Actions\Intelligence\DownloadFleetReallocationProposal;
 use App\Actions\Intelligence\ImportFleetReallocationProposal;
 use App\Actions\Intelligence\QueueFleetReallocationRun;
 use App\Actions\Intelligence\RecordFleetReallocationDecision;
+use App\Enums\IntelligenceCapability;
 use App\Enums\IntelligenceResultBatchDecision;
 use App\Exceptions\FleetReallocationValidationException;
 use App\Http\Requests\ImportFleetReallocationProposalRequest;
@@ -13,6 +14,7 @@ use App\Http\Requests\QueueFleetReallocationRunRequest;
 use App\Http\Requests\RecordFleetReallocationDecisionRequest;
 use App\Models\FleetReallocationProposal;
 use App\Models\FleetReallocationRun;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
@@ -21,7 +23,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FleetReallocationProposalController extends Controller
 {
-    public function index(): View
+    public function index(TenantIntelligenceAccess $intelligenceAccess): View
     {
         $this->authorize('viewAny', FleetReallocationProposal::class);
 
@@ -37,9 +39,10 @@ class FleetReallocationProposalController extends Controller
                 ->latest('id')
                 ->limit(10)
                 ->get(),
-            'canImport' => auth()->user()->agency_id === null
+            'canImport' => $intelligenceAccess->usable(IntelligenceCapability::FleetReallocation)
+                && auth()->user()->agency_id === null
                 && auth()->user()->hasPermission('prediction.demo.review'),
-            'canExecute' => (bool) config('intelligence.fleet_reallocation.runtime_enabled')
+            'canExecute' => $intelligenceAccess->usable(IntelligenceCapability::FleetReallocation)
                 && auth()->user()->agency_id === null
                 && auth()->user()->hasPermission('prediction.demo.review'),
             'acceptReasonCodes' => RecordFleetReallocationDecisionRequest::ACCEPT_REASON_CODES,

@@ -9,6 +9,8 @@ class UiLabel
 {
     private const LABELS = [
         'active' => 'Actif', 'inactive' => 'Inactif', 'archived' => 'Archivé', 'suspended' => 'Suspendu',
+        'trialing' => 'Période d’essai', 'past_due' => 'Échéance dépassée',
+        'monthly' => 'Mensuelle', 'annual' => 'Annuelle', 'payment' => 'Paiement enregistré',
         'draft' => 'Brouillon', 'pending' => 'En attente', 'confirmed' => 'Confirmée', 'corrected' => 'Corrigée', 'converted' => 'Convertie',
         'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'incomplete' => 'À compléter', 'accepted' => 'Accepté', 'ignored' => 'Ignoré',
         'return_pending' => 'Retour à traiter', 'returned' => 'Retourné', 'closed' => 'Clôturé',
@@ -69,6 +71,7 @@ class UiLabel
         'active' => 'success', 'confirmed' => 'success', 'corrected' => 'info', 'accepted' => 'success', 'accepted_for_demo_review' => 'success', 'paid' => 'success',
         'completed' => 'success', 'approved' => 'success', 'settled' => 'success', 'verified' => 'success', 'validated' => 'success',
         'pending' => 'warning', 'ready' => 'success', 'incomplete' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
+        'trialing' => 'info', 'past_due' => 'warning', 'payment' => 'success',
         'planned' => 'warning', 'under_review' => 'warning', 'submitted' => 'warning', 'suspended' => 'warning',
         'queued' => 'warning', 'running' => 'info', 'succeeded' => 'success', 'failed' => 'danger',
         'vehicle_color_consultative_scientific_threshold_reached' => 'success',

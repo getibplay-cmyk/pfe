@@ -2,10 +2,12 @@
 
 namespace App\Actions\Platform;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\TenantStatus;
 use App\Models\Agency;
 use App\Models\Role;
 use App\Models\Tenant;
+use App\Models\TenantIntelligenceAccess;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Auth\TemporaryPassword;
@@ -41,6 +43,16 @@ class ProvisionTenant
                 ],
             ]);
 
+            foreach (IntelligenceCapability::cases() as $capability) {
+                TenantIntelligenceAccess::forceCreate([
+                    'tenant_id' => $tenant->getKey(),
+                    'capability' => $capability,
+                    'enabled' => false,
+                    'updated_by' => $actorId,
+                    'changed_at' => now(),
+                ]);
+            }
+
             $this->context->run($tenant, function () use ($tenant, $data, $ownerRole, $temporaryPassword): void {
                 Agency::create([
                     'code' => $data['agency_code'],
@@ -68,8 +80,6 @@ class ProvisionTenant
             $this->audit->record('platform.tenant.provisioned', $tenant, [], [
                 'status' => TenantStatus::Active->value,
                 'initial_agency_code' => $data['agency_code'],
-                'owner_email' => $data['owner_email'],
-                'actor_id' => $actorId,
             ]);
 
             return ['tenant' => $tenant, 'temporary_password' => $temporaryPassword];

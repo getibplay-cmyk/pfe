@@ -8,6 +8,7 @@ use App\Actions\Reservations\CancelReservation;
 use App\Actions\Reservations\ConfirmReservation;
 use App\Actions\Reservations\CreateReservation;
 use App\Actions\Reservations\UpdateDraftReservation;
+use App\Enums\IntelligenceCapability;
 use App\Enums\ReservationStatus;
 use App\Exceptions\VehicleUnavailableException;
 use App\Models\Agency;
@@ -18,6 +19,7 @@ use App\Models\VehicleCategory;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastPlanningPresenter;
 use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +33,7 @@ class ReservationController extends Controller
         Request $request,
         DemandForecastPlanningPresenter $forecastPresenter,
         DemandForecastRuntimeReadiness $forecastReadiness,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): View {
         $this->authorize('viewAny', Reservation::class);
         $agencies = $this->agencies($request);
@@ -63,6 +66,7 @@ class ReservationController extends Controller
                 $selectedAgency,
                 $forecastPresenter,
                 $forecastReadiness,
+                $intelligenceAccess,
             ),
         ]);
     }
@@ -191,6 +195,7 @@ class ReservationController extends Controller
         ?Agency $agency,
         DemandForecastPlanningPresenter $presenter,
         DemandForecastRuntimeReadiness $readiness,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): ?array {
         $user = $request->user();
         if (! $user->hasPermission('prediction.view')) {
@@ -198,7 +203,8 @@ class ReservationController extends Controller
         }
 
         $today = CarbonImmutable::now(DemandForecastContract::TIMEZONE)->startOfDay();
-        $available = $readiness->ready();
+        $authorized = $intelligenceAccess->authorized(IntelligenceCapability::DemandForecast);
+        $available = $authorized && $readiness->ready();
         $latest = null;
         if ($agency !== null) {
             try {
@@ -211,7 +217,7 @@ class ReservationController extends Controller
         return [
             'agencyId' => $agency?->id,
             'agencyName' => $agency?->name,
-            'canRequest' => $user->hasPermission('prediction.forecast.import'),
+            'canRequest' => $authorized && $user->hasPermission('prediction.forecast.import'),
             'available' => $available,
             'storeUrl' => route('reservations.demand-forecast.store'),
             'expectedDates' => collect(range(1, 7))

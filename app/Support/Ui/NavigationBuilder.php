@@ -14,12 +14,17 @@ class NavigationBuilder
                     'label' => 'Vue d’ensemble',
                     'items' => [
                         $this->item('platform-dashboard', 'Vue plateforme', 'platform.dashboard', 'platform.dashboard'),
+                        $this->item('platform-statistics', 'Statistiques', 'platform.statistics.index', 'platform.statistics.*'),
                     ],
                 ],
                 [
                     'label' => 'Administration',
                     'items' => [
                         $this->item('platform-tenants', 'Entreprises clientes', 'platform.tenants.index', 'platform.tenants.*'),
+                        $this->item('platform-plans', 'Plans SaaS', 'platform.plans.index', 'platform.plans.*'),
+                        $this->item('platform-subscriptions', 'Abonnements', 'platform.subscriptions.index', 'platform.subscriptions.*'),
+                        $this->item('platform-saas-payments', 'Paiements SaaS', 'platform.saas-payments.index', 'platform.saas-payments.*'),
+                        $this->item('platform-intelligence', 'Assistances intelligentes', 'platform.intelligence.index', 'platform.intelligence.*'),
                     ],
                 ],
             ];
@@ -57,6 +62,7 @@ class NavigationBuilder
             ]),
             $this->section('Administration', [
                 $this->when($user, 'tenant.manage', $this->item('tenant', 'Entreprise', 'tenant.show', 'tenant.*')),
+                $this->whenTenantOwner($user, $this->item('tenant-saas-account', 'Abonnement RentFleet', 'tenant-saas-account.show', 'tenant-saas-account.*')),
                 $this->whenAny($user, ['agency.view', 'agency.manage'], $this->item('agencies', 'Agences', 'agencies.index', 'agencies.*')),
                 $this->whenAny($user, ['user.view', 'user.manage'], $this->item('users', 'Utilisateurs', 'users.index', 'users.*')),
                 $this->when($user, 'role.view', $this->item('roles', 'Rôles et permissions', 'roles.index', 'roles.*')),
@@ -93,5 +99,10 @@ class NavigationBuilder
             && $user->hasPermission('prediction.demo.review')
                 ? $item
                 : null;
+    }
+
+    private function whenTenantOwner(User $user, array $item): ?array
+    {
+        return $user->isTenantOwner() ? $item : null;
     }
 }

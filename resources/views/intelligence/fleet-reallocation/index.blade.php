@@ -72,7 +72,7 @@
                                     <td>
                                         <span class="font-medium">{{ $run->status->label() }}</span>
                                         @if ($run->failure_code)
-                                            <p class="mt-1 text-xs text-red-700"><code>{{ $run->failure_code }}</code></p>
+                                            <p class="mt-1 text-xs text-red-700">Le calcul n’a pas pu aboutir. Vérifiez la disponibilité de l’assistance avant de réessayer.</p>
                                         @endif
                                     </td>
                                     <td>

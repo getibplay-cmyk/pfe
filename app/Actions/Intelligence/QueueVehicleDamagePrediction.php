@@ -4,6 +4,7 @@ namespace App\Actions\Intelligence;
 
 use App\Enums\InspectionStatus;
 use App\Enums\InspectionType;
+use App\Enums\IntelligenceCapability;
 use App\Enums\RentalContractStatus;
 use App\Enums\VehicleDamagePredictionStatus;
 use App\Exceptions\VehicleDamagePredictionAlreadyActiveException;
@@ -15,6 +16,7 @@ use App\Models\VehicleDamagePredictionRun;
 use App\Models\VehicleInspection;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageImageSanitizer;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
@@ -32,6 +34,7 @@ final class QueueVehicleDamagePrediction
         private readonly TenantContext $context,
         private readonly VehicleDamageModelArtifact $modelArtifact,
         private readonly VehicleDamageImageSanitizer $imageSanitizer,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehicleDamageRuntimeReadiness $readiness,
         private readonly AuditRecorder $audit,
     ) {}
@@ -67,6 +70,7 @@ final class QueueVehicleDamagePrediction
         UploadedFile $image,
         User $actor,
     ): VehicleDamagePredictionRun {
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::VehicleDamage);
         if (! $this->readiness->ready()) {
             throw new VehicleDamageRuntimeUnavailableException;
         }
@@ -222,8 +226,7 @@ final class QueueVehicleDamagePrediction
     private function assertAllowed(VehicleInspection $inspection, User $actor): void
     {
         $contextAgency = $this->context->agencyId();
-        if (! (bool) config('intelligence.vehicle_damage_v1.enabled')
-            || $actor->tenant_id !== $inspection->tenant_id
+        if ($actor->tenant_id !== $inspection->tenant_id
             || $this->context->tenantId() !== $inspection->tenant_id
             || ! $actor->is_active
             || ! $actor->hasPermission('prediction.view')
@@ -238,8 +241,7 @@ final class QueueVehicleDamagePrediction
     private function assertPreparationAllowed(RentalContract $contract, User $actor): void
     {
         $contextAgency = $this->context->agencyId();
-        if (! (bool) config('intelligence.vehicle_damage_v1.enabled')
-            || $contract->status !== RentalContractStatus::Active
+        if ($contract->status !== RentalContractStatus::Active
             || $contract->vehicle === null
             || $contract->vehicle->agency_id !== $contract->agency_id
             || $actor->tenant_id !== $contract->tenant_id

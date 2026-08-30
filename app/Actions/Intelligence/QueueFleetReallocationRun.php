@@ -3,12 +3,14 @@
 namespace App\Actions\Intelligence;
 
 use App\Enums\FleetReallocationRunStatus;
+use App\Enums\IntelligenceCapability;
 use App\Exceptions\FleetReallocationRunAlreadyActiveException;
 use App\Jobs\RunFleetReallocation;
 use App\Models\FleetReallocationRun;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -18,12 +20,14 @@ final class QueueFleetReallocationRun
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly AuditRecorder $audit,
     ) {}
 
     public function handle(User $actor, int $forecastHorizon): FleetReallocationRun
     {
         $this->assertAllowed($actor, $forecastHorizon);
+        $this->tenantAccess->ensureUsable(IntelligenceCapability::FleetReallocation);
 
         return DB::transaction(function () use ($actor, $forecastHorizon): FleetReallocationRun {
             DB::selectOne(
@@ -66,8 +70,7 @@ final class QueueFleetReallocationRun
 
     private function assertAllowed(User $actor, int $forecastHorizon): void
     {
-        if (! (bool) config('intelligence.fleet_reallocation.runtime_enabled')
-            || $forecastHorizon < 1
+        if ($forecastHorizon < 1
             || $forecastHorizon > 7
             || $actor->tenant_id !== $this->context->tenantId()
             || $actor->agency_id !== null

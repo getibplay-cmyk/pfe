@@ -2,12 +2,14 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehiclePlatePredictionStatus;
 use App\Exceptions\VehiclePlateHybridExecutionException;
 use App\Models\User;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehiclePlate\ValidatedVehiclePlateDetection;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
@@ -21,6 +23,7 @@ final class ExecuteVehiclePlatePrediction
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehiclePlateInputArtifact $inputArtifact,
         private readonly VehiclePlateDetectorRuntime $detectorRuntime,
         private readonly VehiclePlateHybridRuntime $runtime,
@@ -31,6 +34,9 @@ final class ExecuteVehiclePlatePrediction
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::VehiclePlate, $tenantId)) {
+                throw new VehiclePlateHybridExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $actor = User::query()
                 ->whereKey($actorId)
@@ -42,8 +48,7 @@ final class ExecuteVehiclePlatePrediction
                 ? $actor->hasPermission('vehicle.create')
                 : ($actor->hasPermission('prediction.view')
                     && $actor->hasPermission('prediction.plate.review')));
-            if (! (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
-                || $actor === null
+            if ($actor === null
                 || ! $actorCanExecute
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
                 throw new VehiclePlateHybridExecutionException('RUN_ACTOR_NOT_AUTHORIZED');

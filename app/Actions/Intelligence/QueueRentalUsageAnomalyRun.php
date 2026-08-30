@@ -2,6 +2,7 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\RentalUsageAnomalyRunStatus;
 use App\Exceptions\RentalUsageAnomalyAlreadyActiveException;
 use App\Exceptions\RentalUsageAnomalyExecutionException;
@@ -11,7 +12,9 @@ use App\Models\RentalUsageAnomalyRun;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract;
+use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyRuntimeReadiness;
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalySnapshotInspector;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +25,8 @@ final class QueueRentalUsageAnomalyRun
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
+        private readonly RentalUsageAnomalyRuntimeReadiness $runtimeReadiness,
         private readonly RentalUsageAnomalySnapshotInspector $snapshotInspector,
         private readonly AuditRecorder $audit,
     ) {}
@@ -29,7 +34,8 @@ final class QueueRentalUsageAnomalyRun
     public function handle(IntelligenceDatasetExportRun $export, User $actor): RentalUsageAnomalyRun
     {
         $this->assertAllowed($export, $actor);
-        if (! $this->runtimeReady()) {
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::RentalUsageAnomaly);
+        if (! $this->runtimeReadiness->ready()) {
             throw new RentalUsageAnomalyExecutionException('RUNTIME_CONFIGURATION_INVALID');
         }
         $this->snapshotInspector->inspect($export);
@@ -122,18 +128,6 @@ final class QueueRentalUsageAnomalyRun
             || ($contextAgency !== null && $contextAgency !== $export->agency_id)) {
             throw new AuthorizationException;
         }
-    }
-
-    private function runtimeReady(): bool
-    {
-        $timeout = (int) config('intelligence.rental_usage_anomaly.runtime_timeout_seconds');
-
-        return (bool) config('intelligence.rental_usage_anomaly.enabled')
-            && (string) config('intelligence.rental_usage_anomaly.python_binary') !== ''
-            && is_file((string) config('intelligence.rental_usage_anomaly.runtime_script'))
-            && (int) config('intelligence.rental_usage_anomaly.minimum_rows') === RentalUsageAnomalyContract::MINIMUM_ROWS
-            && $timeout >= 10
-            && $timeout <= 120;
     }
 
     private function recoverStaleRuns(IntelligenceDatasetExportRun $export): void

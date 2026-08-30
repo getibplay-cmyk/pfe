@@ -4,24 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Actions\Fleet\QueueOperationalFleetReallocationPlan;
 use App\Enums\FleetReallocationPlanningRunStatus;
+use App\Enums\IntelligenceCapability;
 use App\Exceptions\FleetReallocationPlanningException;
 use App\Models\Agency;
 use App\Models\DemandForecastExecutionRun;
 use App\Models\FleetReallocationPlanningRun;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationReadiness;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FleetReallocationPlanningController extends Controller
 {
-    public function index(FleetReallocationReadiness $readiness): View
-    {
+    public function index(
+        FleetReallocationReadiness $readiness,
+        TenantIntelligenceAccess $intelligenceAccess,
+    ): View {
         $this->authorize('viewAny', FleetReallocationPlanningRun::class);
         $agencies = Agency::query()->where('is_active', true)->orderBy('id')->get();
-        $result = $readiness->evaluate($agencies);
+        $availability = $intelligenceAccess->status(IntelligenceCapability::FleetReallocation);
+        $result = $availability->usable() ? $readiness->evaluate($agencies) : null;
+        $ready = $result?->ready() ?? false;
         $referenceDate = null;
-        if ($result->ready() && $agencies->isNotEmpty()) {
+        if ($ready && $agencies->isNotEmpty()) {
             $referenceDate = DemandForecastExecutionRun::query()
                 ->with('forecastRun')
                 ->where('agency_id', $agencies->first()->getKey())
@@ -33,10 +39,12 @@ class FleetReallocationPlanningController extends Controller
 
         return view('fleet.reallocation-planning.index', [
             'assistant' => [
-                'ready' => $result->ready(),
-                'readinessMessage' => $result->ready()
+                'ready' => $ready,
+                'readinessMessage' => $ready
                     ? 'Les prévisions, disponibilités, distances et le moteur de calcul sont prêts.'
-                    : 'Le plan ne peut pas être calculé tant que ses données nécessaires ne sont pas complètes.',
+                    : ($availability->tenantAuthorized
+                        ? 'Le plan ne peut pas être calculé tant que ses données nécessaires ne sont pas complètes.'
+                        : 'Cette assistance n’est pas disponible pour votre entreprise.'),
                 'referenceDate' => $referenceDate,
                 'storeUrl' => route('fleet.reallocation-planning.runs.store'),
                 'pollDelay' => 1500,

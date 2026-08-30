@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Intelligence\QueueVehicleColorPrediction;
 use App\Actions\Intelligence\RecordVehicleColorPredictionReview;
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehicleColorReviewDecision;
 use App\Http\Requests\ReviewVehicleColorPredictionRequest;
 use App\Http\Requests\StoreVehicleColorPredictionRequest;
@@ -11,6 +12,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
@@ -31,6 +33,7 @@ class VehicleColorPredictionController extends Controller
         TenantContext $context,
         VehicleColorModelArtifact $modelArtifact,
         VehicleColorRuntimeReadiness $readiness,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): View {
         $this->authorize('viewAny', VehicleColorPredictionRun::class);
 
@@ -60,7 +63,8 @@ class VehicleColorPredictionController extends Controller
 
         $provider = (string) config('intelligence.vehicle_color_v8.execution_provider');
         $artifactReady = $modelArtifact->configuredIsValid();
-        $runtimeReady = $readiness->ready();
+        $availability = $intelligenceAccess->status(IntelligenceCapability::VehicleColor);
+        $runtimeReady = $availability->usable();
 
         return view('intelligence.vehicle-colors.index', [
             'vehicles' => $vehicles,
@@ -68,7 +72,7 @@ class VehicleColorPredictionController extends Controller
             'vehicleSelectorLimit' => self::VEHICLE_SELECTOR_LIMIT,
             'runs' => $runs,
             'runtime' => [
-                'enabled' => (bool) config('intelligence.vehicle_color_v8.enabled'),
+                'enabled' => $availability->globallyEnabled && $availability->tenantAuthorized,
                 'artifact_ready' => $artifactReady,
                 'ready' => $runtimeReady,
                 'provider' => $provider,

@@ -3,6 +3,7 @@
 namespace App\Actions\Fleet;
 
 use App\Enums\FleetReallocationPlanningRunStatus;
+use App\Enums\IntelligenceCapability;
 use App\Exceptions\FleetReallocationPlanningException;
 use App\Jobs\RunOperationalFleetReallocationPlan;
 use App\Models\FleetReallocationPlanningRun;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Fleet\BuildOperationalFleetReallocationSnapshot;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,7 @@ class QueueOperationalFleetReallocationPlan
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly BuildOperationalFleetReallocationSnapshot $snapshotBuilder,
         private readonly AuditRecorder $audit,
     ) {}
@@ -26,6 +29,7 @@ class QueueOperationalFleetReallocationPlan
     public function handle(User $actor): FleetReallocationPlanningRun
     {
         $this->assertAllowed($actor);
+        $this->tenantAccess->ensureUsable(IntelligenceCapability::FleetReallocation);
 
         return DB::transaction(function () use ($actor): FleetReallocationPlanningRun {
             DB::selectOne(

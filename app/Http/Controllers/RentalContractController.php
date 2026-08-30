@@ -15,12 +15,14 @@ use App\Actions\Rentals\MarkContractReady;
 use App\Actions\Rentals\MarkRentalReturned;
 use App\Enums\AcceptanceMethod;
 use App\Enums\DocumentType;
+use App\Enums\IntelligenceCapability;
 use App\Enums\RentalContractStatus;
 use App\Models\Document;
 use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Support\Finance\DepositLedger;
 use App\Support\Intelligence\RentalUsageAnomaly\FindCanonicalRentalUsageAnomaly;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageRuntimeReadiness;
 use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\RedirectResponse;
@@ -50,6 +52,7 @@ class RentalContractController extends Controller
         EnsureRequiredContractDocuments $requiredDocuments,
         DepositLedger $depositLedger,
         VehicleDamageRuntimeReadiness $damageReadiness,
+        TenantIntelligenceAccess $intelligenceAccess,
         FindCanonicalRentalUsageAnomaly $findUsageAnomaly,
     ): View {
         $this->authorize('view', $contract);
@@ -83,7 +86,9 @@ class RentalContractController extends Controller
         $depositTotals = collect($depositLedger->totals($contract))
             ->map(fn (int $minor) => DecimalMoney::fromMinorUnits($minor))
             ->all();
+        $damageAuthorized = $intelligenceAccess->authorized(IntelligenceCapability::VehicleDamage);
         $damageAssistantVisible = $contract->status === RentalContractStatus::Active
+            && $damageAuthorized
             && (bool) config('intelligence.vehicle_damage_v1.enabled')
             && auth()->user()->can('return', $contract)
             && auth()->user()->hasPermission('inspection.manage')

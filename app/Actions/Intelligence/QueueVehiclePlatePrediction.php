@@ -2,6 +2,7 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehiclePlatePredictionStatus;
 use App\Exceptions\VehiclePlatePredictionAlreadyActiveException;
 use App\Exceptions\VehiclePlateRuntimeUnavailableException;
@@ -11,6 +12,7 @@ use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateImageSanitizer;
@@ -28,6 +30,7 @@ final class QueueVehiclePlatePrediction
     public function __construct(
         private readonly TenantContext $context,
         private readonly AgencyAccess $agencyAccess,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehiclePlateRuntimeReadiness $readiness,
         private readonly VehiclePlateImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
@@ -68,6 +71,7 @@ final class QueueVehiclePlatePrediction
         User $actor,
         string $inputKind,
     ): VehiclePlatePredictionRun {
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::VehiclePlate);
         if (! $this->readiness->ready($inputKind)) {
             throw new VehiclePlateRuntimeUnavailableException;
         }
@@ -243,8 +247,7 @@ final class QueueVehiclePlatePrediction
     private function assertAllowed(Vehicle $vehicle, User $actor): void
     {
         $contextAgency = $this->context->agencyId();
-        if (! (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
-            || $actor->tenant_id !== $vehicle->tenant_id
+        if ($actor->tenant_id !== $vehicle->tenant_id
             || $this->context->tenantId() !== $vehicle->tenant_id
             || ! $actor->is_active
             || ! $actor->hasPermission('prediction.view')
@@ -257,8 +260,7 @@ final class QueueVehiclePlatePrediction
 
     private function assertPreparationAllowed(User $actor): void
     {
-        if (! (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
-            || $actor->tenant_id !== $this->context->tenantId()
+        if ($actor->tenant_id !== $this->context->tenantId()
             || ! $actor->is_active
             || ! $actor->hasPermission('vehicle.create')) {
             throw new AuthorizationException;

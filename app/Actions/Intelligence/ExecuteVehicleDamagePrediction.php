@@ -4,6 +4,7 @@ namespace App\Actions\Intelligence;
 
 use App\Enums\InspectionStatus;
 use App\Enums\InspectionType;
+use App\Enums\IntelligenceCapability;
 use App\Enums\RentalContractStatus;
 use App\Enums\VehicleDamagePredictionStatus;
 use App\Exceptions\VehicleDamageExecutionException;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Models\VehicleDamagePredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageInputArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
@@ -25,6 +27,7 @@ final class ExecuteVehicleDamagePrediction
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehicleDamageModelArtifact $modelArtifact,
         private readonly VehicleDamageInputArtifact $inputArtifact,
         private readonly VehicleDamageResultValidator $resultValidator,
@@ -34,14 +37,16 @@ final class ExecuteVehicleDamagePrediction
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::VehicleDamage, $tenantId)) {
+                throw new VehicleDamageExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $actor = User::query()
                 ->whereKey($actorId)
                 ->where('tenant_id', $tenantId)
                 ->where('is_active', true)
                 ->first();
-            if (! (bool) config('intelligence.vehicle_damage_v1.enabled')
-                || $actor === null
+            if ($actor === null
                 || ! $actor->hasPermission('prediction.view')
                 || ! $actor->hasPermission('prediction.damage.review')
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
