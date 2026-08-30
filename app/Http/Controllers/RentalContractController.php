@@ -20,6 +20,7 @@ use App\Enums\RentalContractStatus;
 use App\Models\Document;
 use App\Models\RentalContract;
 use App\Models\Reservation;
+use App\Support\Contracts\BilingualRentalContractDocument;
 use App\Support\Finance\DepositLedger;
 use App\Support\Intelligence\RentalUsageAnomaly\FindCanonicalRentalUsageAnomaly;
 use App\Support\Intelligence\TenantIntelligenceAccess;
@@ -27,6 +28,7 @@ use App\Support\Intelligence\VehicleDamage\VehicleDamageRuntimeReadiness;
 use App\Support\Pricing\DecimalMoney;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -48,6 +50,7 @@ class RentalContractController extends Controller
     public function show(
         Request $request,
         RentalContract $contract,
+        BilingualRentalContractDocument $contractDocument,
         CompareVehicleInspections $compare,
         EnsureRequiredContractDocuments $requiredDocuments,
         DepositLedger $depositLedger,
@@ -110,6 +113,7 @@ class RentalContractController extends Controller
                 'ready' => $damageAssistantVisible && $damageReadiness->ready(),
                 'store_url' => route('contracts.return-damage-assistant.store', $contract),
             ],
+            'contractDocument' => $contractDocument->metadata($contract),
         ]);
     }
 
@@ -198,11 +202,29 @@ class RentalContractController extends Controller
         return back()->with('status', 'Contrat brouillon annulé.');
     }
 
-    public function print(RentalContract $contract): View
-    {
+    public function print(
+        Request $request,
+        RentalContract $contract,
+        BilingualRentalContractDocument $document,
+    ): Response {
         $this->authorize('view', $contract);
-        $contract->load(['customer', 'vehicle', 'drivers.driver', 'currentVersion', 'acceptances']);
+        $contract->load([
+            'currentVersion',
+            'acceptances',
+            'inspections.items',
+            'damages',
+            'charges',
+            'invoice.lines',
+        ]);
 
-        return view('contracts.print', compact('contract'));
+        return response()
+            ->view('contracts.print', [
+                'contract' => $contract,
+                'contractDocument' => $document->present($contract),
+                'autoPrint' => $request->boolean('print'),
+            ])
+            ->header('Cache-Control', 'private, no-store, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
 }
