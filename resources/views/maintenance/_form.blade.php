@@ -51,4 +51,4 @@
     <input name="supplier" value="{{ old('supplier', $maintenance->supplier) }}" class="mt-1 w-full rounded-lg border-slate-300">
     <x-input-error :messages="$errors->get('supplier')" class="mt-1" />
 </label>
-<div class="md:col-span-2"><button class="rounded-lg bg-slate-900 px-4 py-2 text-white">{{ $editing ? 'Enregistrer les modifications' : 'Créer l’ordre' }}</button></div>
+<div class="md:col-span-2"><button class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-white"><x-icon :name="$editing ? 'save' : 'add'" size="xs" />{{ $editing ? 'Enregistrer les modifications' : 'Créer l’ordre' }}</button></div>

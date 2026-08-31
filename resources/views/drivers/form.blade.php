@@ -14,6 +14,6 @@
             <label class="text-sm">Expiration *<input type="date" name="licence_expires_at" value="{{ old('licence_expires_at', $driver->licence_expires_at?->format('Y-m-d')) }}" required class="mt-1 w-full"><x-input-error :messages="$errors->get('licence_expires_at')" /></label>
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_primary" value="1" @checked(old('is_primary', $driver->is_primary))> Conducteur principal</label>
         </div>
-        <button class="rounded-lg bg-slate-950 px-4 py-2 text-white">Enregistrer</button>
+        <button class="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-white"><x-icon name="save" size="xs" />Enregistrer</button>
     </form>
 </x-app-layout>

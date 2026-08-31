@@ -12,10 +12,10 @@ enum DemandForecastExecutionStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Queued => 'En attente du worker',
-            self::Running => 'Inférence HGB en cours',
-            self::Succeeded => 'Inférence terminée',
-            self::Failed => 'Échec contrôlé',
+            self::Queued => 'En attente de traitement',
+            self::Running => 'Prévision en cours',
+            self::Succeeded => 'Prévision terminée',
+            self::Failed => 'Prévision non aboutie',
         };
     }
 }

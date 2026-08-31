@@ -2,6 +2,7 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\RentalUsageAnomalyRunStatus;
 use App\Exceptions\RentalUsageAnomalyExecutionException;
 use App\Models\RentalContract;
@@ -14,6 +15,7 @@ use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyOutputValidato
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalySnapshotInspector;
 use App\Support\Intelligence\RentalUsageAnomaly\ResolveRentalUsageAnomalyContracts;
 use App\Support\Intelligence\RentalUsageAnomaly\ValidatedRentalUsageAnomalyOutput;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,7 @@ final class ExecuteRentalUsageAnomalyRun
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly RentalUsageAnomalySnapshotInspector $snapshotInspector,
         private readonly RentalUsageAnomalyOutputValidator $outputValidator,
         private readonly ResolveRentalUsageAnomalyContracts $contractResolver,
@@ -34,14 +37,16 @@ final class ExecuteRentalUsageAnomalyRun
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::RentalUsageAnomaly, $tenantId)) {
+                throw new RentalUsageAnomalyExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $actor = User::query()
                 ->whereKey($actorId)
                 ->where('tenant_id', $tenantId)
                 ->where('is_active', true)
                 ->first();
-            if (! (bool) config('intelligence.rental_usage_anomaly.enabled')
-                || $actor === null
+            if ($actor === null
                 || ! $actor->hasPermission('prediction.view')
                 || ! $actor->hasPermission('prediction.anomaly.review')
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {

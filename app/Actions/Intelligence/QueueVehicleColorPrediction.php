@@ -2,6 +2,7 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehicleColorPredictionStatus;
 use App\Exceptions\VehicleColorPredictionAlreadyActiveException;
 use App\Exceptions\VehicleColorRuntimeUnavailableException;
@@ -10,14 +11,16 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
-use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
+use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
+use App\Support\Tenancy\AgencyAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -25,7 +28,9 @@ final class QueueVehicleColorPrediction
 {
     public function __construct(
         private readonly TenantContext $context,
-        private readonly VehicleColorModelArtifact $modelArtifact,
+        private readonly AgencyAccess $agencyAccess,
+        private readonly TenantIntelligenceAccess $tenantAccess,
+        private readonly VehicleColorRuntimeReadiness $readiness,
         private readonly VehicleColorImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
     ) {}
@@ -33,7 +38,33 @@ final class QueueVehicleColorPrediction
     public function handle(Vehicle $vehicle, UploadedFile $image, User $actor): VehicleColorPredictionRun
     {
         $this->assertAllowed($vehicle, $actor);
-        if (! $this->runtimeReady()) {
+
+        return $this->queue($vehicle, $vehicle->agency_id, $image, $actor);
+    }
+
+    public function handlePreparation(
+        int $agencyId,
+        UploadedFile $image,
+        User $actor,
+    ): VehicleColorPredictionRun {
+        $this->assertPreparationAllowed($actor);
+
+        return $this->queue(
+            null,
+            $this->agencyAccess->required($agencyId),
+            $image,
+            $actor,
+        );
+    }
+
+    private function queue(
+        ?Vehicle $vehicle,
+        int $agencyId,
+        UploadedFile $image,
+        User $actor,
+    ): VehicleColorPredictionRun {
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::VehicleColor);
+        if (! $this->readiness->ready()) {
             throw new VehicleColorRuntimeUnavailableException;
         }
 
@@ -44,10 +75,18 @@ final class QueueVehicleColorPrediction
         $bytes = $sanitized->bytes;
         $sha256 = $sanitized->sha256;
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'));
         $directory = 'intelligence/color-v8/inputs/'.$this->context->tenantId();
         $storedPath = $directory.'/'.$runId.'.'.$extension;
-        $stored = $disk->put($storedPath, $sanitized->contents, ['visibility' => 'private']);
+        try {
+            $disk = IntelligencePrivateStorage::disk('intelligence.vehicle_color_v8.disk');
+            $stored = $disk->put(
+                $storedPath,
+                $sanitized->contents,
+                ['visibility' => 'private'],
+            );
+        } catch (Throwable) {
+            throw new VehicleColorRuntimeUnavailableException;
+        }
         unset($sanitized);
         if (! $stored) {
             throw new VehicleColorRuntimeUnavailableException;
@@ -56,6 +95,7 @@ final class QueueVehicleColorPrediction
         try {
             $run = DB::transaction(function () use (
                 $vehicle,
+                $agencyId,
                 $actor,
                 $runId,
                 $mime,
@@ -64,24 +104,26 @@ final class QueueVehicleColorPrediction
                 $sha256,
                 $storedPath,
             ): VehicleColorPredictionRun {
-                DB::selectOne(
-                    'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
-                    ['vehicle-color-v8|'.$vehicle->tenant_id.'|'.$vehicle->id],
-                );
-                $this->recoverStaleRuns($vehicle);
-                if (VehicleColorPredictionRun::query()
-                    ->where('vehicle_id', $vehicle->id)
-                    ->whereIn('status', [
-                        VehicleColorPredictionStatus::Queued->value,
-                        VehicleColorPredictionStatus::Running->value,
-                    ])->exists()) {
-                    throw new VehicleColorPredictionAlreadyActiveException;
+                if ($vehicle !== null) {
+                    DB::selectOne(
+                        'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
+                        ['vehicle-color-v8|'.$vehicle->tenant_id.'|'.$vehicle->id],
+                    );
+                    $this->recoverStaleRuns($vehicle);
+                    if (VehicleColorPredictionRun::query()
+                        ->where('vehicle_id', $vehicle->id)
+                        ->whereIn('status', [
+                            VehicleColorPredictionStatus::Queued->value,
+                            VehicleColorPredictionStatus::Running->value,
+                        ])->exists()) {
+                        throw new VehicleColorPredictionAlreadyActiveException;
+                    }
                 }
 
                 $run = VehicleColorPredictionRun::create([
-                    'agency_id' => $vehicle->agency_id,
+                    'agency_id' => $agencyId,
                     'run_id' => $runId,
-                    'vehicle_id' => $vehicle->id,
+                    'vehicle_id' => $vehicle?->id,
                     'requested_by' => $actor->id,
                     'status' => VehicleColorPredictionStatus::Queued,
                     'input_mime' => $mime,
@@ -110,7 +152,10 @@ final class QueueVehicleColorPrediction
                 return $run;
             }, 3);
         } catch (Throwable $exception) {
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_color_v8.disk',
+                $storedPath,
+            );
 
             throw $exception;
         }
@@ -134,7 +179,10 @@ final class QueueVehicleColorPrediction
             } catch (Throwable) {
                 // La requête HTTP reste fermée même si la base est devenue indisponible.
             }
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_color_v8.disk',
+                $storedPath,
+            );
             try {
                 if ($updated !== 1) {
                     throw new \RuntimeException('queue_failure_not_persisted');
@@ -157,8 +205,7 @@ final class QueueVehicleColorPrediction
     private function assertAllowed(Vehicle $vehicle, User $actor): void
     {
         $contextAgency = $this->context->agencyId();
-        if (! (bool) config('intelligence.vehicle_color_v8.enabled')
-            || $actor->tenant_id !== $vehicle->tenant_id
+        if ($actor->tenant_id !== $vehicle->tenant_id
             || $this->context->tenantId() !== $vehicle->tenant_id
             || ! $actor->is_active
             || ! $actor->hasPermission('prediction.view')
@@ -169,25 +216,13 @@ final class QueueVehicleColorPrediction
         }
     }
 
-    private function runtimeReady(): bool
+    private function assertPreparationAllowed(User $actor): void
     {
-        $provider = (string) config('intelligence.vehicle_color_v8.execution_provider');
-        $timeout = (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds');
-        $sanitizer = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
-        $sanitizerTimeout = (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds');
-        $storedDimension = (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension');
-
-        return $this->modelArtifact->configuredIsValid()
-            && (string) config('intelligence.vehicle_color_v8.python_binary') !== ''
-            && is_file((string) config('intelligence.vehicle_color_v8.runtime_script'))
-            && is_file($sanitizer)
-            && in_array($provider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true)
-            && $timeout >= 1
-            && $timeout <= 30
-            && $sanitizerTimeout >= 1
-            && $sanitizerTimeout <= 15
-            && $storedDimension >= 256
-            && $storedDimension <= 4_096;
+        if ($actor->tenant_id !== $this->context->tenantId()
+            || ! $actor->is_active
+            || ! $actor->hasPermission('vehicle.create')) {
+            throw new AuthorizationException;
+        }
     }
 
     private function recoverStaleRuns(Vehicle $vehicle): void

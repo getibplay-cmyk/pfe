@@ -8,6 +8,6 @@ class VehiclePlatePredictionAlreadyReviewedException extends ConflictHttpExcepti
 {
     public function __construct()
     {
-        parent::__construct('Une correction humaine append-only existe déjà pour cette analyse de plaque.');
+        parent::__construct('Une correction a déjà été enregistrée pour cette lecture d’immatriculation.');
     }
 }

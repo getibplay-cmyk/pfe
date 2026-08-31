@@ -99,6 +99,47 @@ class VehiclePlateHybridContractTest extends TestCase
         $this->assertFalse(VehiclePlateHybridContract::isCanonical('12345 | أ | 7'));
     }
 
+    /** @throws JsonException */
+    public function test_refuses_non_finite_or_out_of_range_suggestion_confidence(): void
+    {
+        foreach ([-0.01, 1.01] as $confidence) {
+            $payload = $this->validPayload();
+            $payload['results'][0]['suggestion']['confidence'] = $confidence;
+            $this->assertInvalidOutput(
+                json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                'PLATE_OUTPUT_SUGGESTION_INVALID',
+            );
+        }
+
+        $json = json_encode(
+            $this->validPayload(),
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE,
+        );
+        foreach (['NaN', '1e999'] as $nonFinite) {
+            $invalidJson = str_replace(
+                '"confidence":0.96,"confidence_semantics"',
+                '"confidence":'.$nonFinite.',"confidence_semantics"',
+                $json,
+            );
+            $this->assertInvalidOutput($invalidJson, [
+                'PLATE_OUTPUT_JSON_INVALID',
+                'PLATE_OUTPUT_SUGGESTION_INVALID',
+            ]);
+        }
+    }
+
+    /** @throws JsonException */
+    public function test_refuses_a_complete_suggestion_outside_the_existing_canonical_grammar(): void
+    {
+        $payload = $this->validPayload();
+        $payload['results'][0]['suggestion']['canonical'] = '0123|ج|99';
+
+        $this->assertInvalidOutput(
+            json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+            'PLATE_OUTPUT_POLICY_MISMATCH',
+        );
+    }
+
     /** @return array<string, mixed> */
     private function validPayload(): array
     {
@@ -175,5 +216,16 @@ class VehiclePlateHybridContractTest extends TestCase
                 'second_ocr_model_used' => false,
             ],
         ];
+    }
+
+    /** @param string|list<string> $failureCode */
+    private function assertInvalidOutput(string $json, string|array $failureCode): void
+    {
+        try {
+            (new VehiclePlateHybridResultValidator)->validate($json, 'crop-1');
+            $this->fail('The invalid vehicle plate output should have been rejected.');
+        } catch (VehiclePlateHybridExecutionException $exception) {
+            $this->assertContains($exception->failureCode(), (array) $failureCode);
+        }
     }
 }

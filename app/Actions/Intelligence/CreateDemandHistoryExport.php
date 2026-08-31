@@ -30,7 +30,30 @@ final class CreateDemandHistoryExport
         string $dateTo,
         User $actor,
     ): DemandHistoryExportRun {
-        $this->assertAuthorized($agencyId, $actor);
+        $this->assertExportAuthorized($agencyId, $actor);
+
+        return $this->create($agencyId, $dateFrom, $dateTo, $actor);
+    }
+
+    public function handleForForecast(int $agencyId, User $actor): DemandHistoryExportRun
+    {
+        $this->assertForecastAuthorized($agencyId, $actor);
+        $to = CarbonImmutable::now(DemandForecastContract::TIMEZONE)->startOfDay();
+
+        return $this->create(
+            $agencyId,
+            $to->subDays(179)->toDateString(),
+            $to->toDateString(),
+            $actor,
+        );
+    }
+
+    private function create(
+        int $agencyId,
+        string $dateFrom,
+        string $dateTo,
+        User $actor,
+    ): DemandHistoryExportRun {
 
         $from = CarbonImmutable::createFromFormat('!Y-m-d', $dateFrom, DemandForecastContract::TIMEZONE);
         $to = CarbonImmutable::createFromFormat('!Y-m-d', $dateTo, DemandForecastContract::TIMEZONE);
@@ -237,10 +260,22 @@ final class CreateDemandHistoryExport
         return ['sha256' => hash_final($hash), 'bytes' => (int) $stats['size']];
     }
 
-    private function assertAuthorized(int $agencyId, User $actor): void
+    private function assertExportAuthorized(int $agencyId, User $actor): void
     {
         if ($actor->tenant_id !== $this->context->tenantId()
             || ! $actor->hasPermission('prediction.export')
+            || ! $this->pseudonymizer->configured()
+            || ($actor->agency_id !== null && $actor->agency_id !== $agencyId)) {
+            throw new AuthorizationException;
+        }
+    }
+
+    private function assertForecastAuthorized(int $agencyId, User $actor): void
+    {
+        if ($actor->tenant_id !== $this->context->tenantId()
+            || ! $actor->is_active
+            || ! $actor->hasPermission('prediction.view')
+            || ! $actor->hasPermission('prediction.forecast.import')
             || ! $this->pseudonymizer->configured()
             || ($actor->agency_id !== null && $actor->agency_id !== $agencyId)) {
             throw new AuthorizationException;

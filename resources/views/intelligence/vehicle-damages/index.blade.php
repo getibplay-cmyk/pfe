@@ -1,28 +1,28 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="Assistant dommages · {{ $contract['backend'] === 'rtdetrv2_s' ? 'RT-DETRv2-S' : 'EfficientNetV2-S' }}"
-            eyebrow="Intelligence consultative"
+            title="Analyse des dommages"
+            eyebrow="Aide à la décision"
             description="Analysez une photo privée liée à une inspection de retour, visualisez des zones candidates puis consignez une vérification humaine. Aucun dommage, frais ou responsabilité n’est créé automatiquement."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
-        <x-section-card title="État du runtime" description="Activation explicite, artefacts privés vérifiés et inférence asynchrone sur la queue Intelligence.">
+        <x-section-card title="Disponibilité du service" description="Les photos restent privées et chaque résultat doit être validé pendant l’inspection.">
             <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Feature flag</p>
-                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Activé' : 'Désactivé par défaut' }}</p>
+                    <p class="text-slate-500">Accès au service</p>
+                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Disponible' : 'Désactivé par défaut' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">ONNX / carte du modèle</p>
-                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'SHA-256 privés vérifiés' : 'Installation requise' }}</p>
+                    <p class="text-slate-500">Installation</p>
+                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'Prête' : 'À finaliser' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Calcul</p>
-                    <p class="mt-1 font-semibold text-slate-900">{{ $runtime['provider'] === 'CUDAExecutionProvider' ? 'GPU CUDA' : 'CPU ONNX Runtime' }}</p>
+                    <p class="text-slate-500">Confidentialité</p>
+                    <p class="mt-1 font-semibold text-slate-900">Traitement privé</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-slate-500">Effet métier</p>
@@ -31,32 +31,15 @@
             </div>
         </x-section-card>
 
-        @if ($contract['backend'] === 'rtdetrv2_s')
-            <x-section-card title="Pilote RT-DETRv2-S" description="Checkpoint soup 19/24/29 optimisé sur la validation de développement, sans calibration ni consultation du test final.">
-                <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">AP validation</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_ap'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">AP50 validation</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_ap50'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">AP75 validation</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_ap75'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Seuil précision 90</p><p class="mt-1 font-semibold">{{ number_format($contract['decision_threshold'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Précision IoU50 au seuil</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_precision_iou50'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Rappel IoU50 au seuil</p><p class="mt-1 font-semibold">{{ number_format($contract['validation_recall_iou50'] * 100, 2, ',', ' ') }} %</p></div>
-                </div>
-                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-                    Le profil retenu privilégie fortement la précision, au prix d’un rappel de 22,59 %. Le gate scientifique AP ≥ 40 % et AP50 ≥ 65 % n’est pas atteint. Ce backend est donc limité à un pilote consultatif avec revue humaine obligatoire ; ses boîtes ne constituent ni une segmentation précise ni une preuve de responsabilité.
-                </div>
-            </x-section-card>
-        @else
-            <x-section-card title="Qualification scientifique v1.1" description="Résultats du test final gelé sur la source publique HITL; la validation locale RentFleet reste à réaliser.">
-                <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Balanced accuracy</p><p class="mt-1 font-semibold">{{ number_format($contract['balanced_accuracy'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Macro-F1</p><p class="mt-1 font-semibold">{{ number_format($contract['macro_f1'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Rappel dommage</p><p class="mt-1 font-semibold">{{ number_format($contract['damage_recall'] * 100, 2, ',', ' ') }} %</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">ECE</p><p class="mt-1 font-semibold">{{ number_format($contract['ece'], 4, ',', ' ') }}</p></div>
-                    <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Seuil de patch calibré</p><p class="mt-1 font-semibold">{{ number_format($contract['decision_threshold'] * 100, 1, ',', ' ') }} %</p></div>
-                </div>
-                <p class="mt-4 text-xs leading-5 text-slate-500">Le plancher de qualification de 75 % concerne les métriques du modèle, pas le seuil d’inférence. Le seuil de patch 49,5 % a été choisi sur le split de calibration. Une région affichée reste une proposition à contrôler, jamais une segmentation précise ni une preuve de responsabilité.</p>
-            </x-section-card>
-        @endif
+        <x-section-card title="Règles d’utilisation" description="L’analyse assiste l’inspection de retour sans remplacer la vérification du véhicule.">
+            <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Zones proposées</p><p class="mt-1 font-semibold">À vérifier sur la photo</p></div>
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Validation humaine</p><p class="mt-1 font-semibold">Obligatoire</p></div>
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Frais et responsabilité</p><p class="mt-1 font-semibold">Décision humaine uniquement</p></div>
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Photos</p><p class="mt-1 font-semibold">Conservées en stockage privé</p></div>
+            </div>
+            <p class="mt-4 text-xs leading-5 text-slate-500">Une zone proposée n’est ni une preuve de responsabilité ni une décision de facturation. Elle doit être comparée à l’état réel du véhicule pendant l’inspection.</p>
+        </x-section-card>
 
         @if (auth()->user()->hasPermission('prediction.damage.review'))
             <x-section-card title="Nouvelle analyse de retour" description="Seules les inspections de retour terminées et autorisées sont proposées.">
@@ -69,12 +52,12 @@
                         <div class="flex gap-2">
                             <x-primary-button class="justify-center">Rechercher</x-primary-button>
                             @if ($inspectionSearch !== '')
-                                <a href="{{ route('intelligence.vehicle-damages.index') }}" class="rf-button-secondary">Effacer</a>
+                                <a href="{{ route('intelligence.vehicle-damages.index') }}" class="rf-button-secondary"><x-icon name="reset" size="xs" />Effacer</a>
                             @endif
                         </div>
                     </form>
                     <p class="mb-4 text-xs leading-5 text-slate-500">Le sélecteur affiche au maximum {{ $inspectionSelectorLimit }} inspections. Affinez la recherche si le retour attendu n’apparaît pas.</p>
-                    <form method="POST" action="{{ route('intelligence.vehicle-damages.store') }}" enctype="multipart/form-data" class="grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+                    <form method="POST" action="{{ route('intelligence.vehicle-damages.store') }}" enctype="multipart/form-data" data-loading-form class="grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
                         @csrf
                         <div>
                             <x-input-label for="damage-inspection" value="Inspection de retour" required />
@@ -88,26 +71,32 @@
                             </select>
                             <x-field-error :messages="$errors->get('vehicle_inspection_id')" class="mt-2" />
                         </div>
-                        <div>
-                            <x-input-label for="damage-image" value="Photo extérieure du retour" required />
-                            <input id="damage-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm" required>
-                            <x-field-error :messages="$errors->get('image')" class="mt-2" />
-                        </div>
-                        <x-primary-button class="justify-center">Lancer l’analyse</x-primary-button>
+                        <x-file-input
+                            id="damage-image"
+                            name="image"
+                            label="Photo extérieure du retour"
+                            accept="image/jpeg,image/png,image/webp"
+                            formats="JPEG, PNG, WebP"
+                            max-size="8 Mo"
+                            preview="image"
+                            fit="contain"
+                            :errors="$errors->get('image')"
+                            required
+                        />
+                        <x-submit-button label="Lancer l’analyse" loading-label="Envoi de la photo…" class="justify-center" />
                     </form>
                 @else
-                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Le lancement est fermé. Installez l’ONNX et sa carte depuis le Drive privé, vérifiez le runtime avec <code>rentfleet:doctor</code>, puis activez explicitement <code>RENTFLEET_DAMAGE_V1_ENABLED</code>.</div>
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Ce service n’est pas encore disponible. Contactez l’administrateur de la plateforme.</div>
                 @endif
             </x-section-card>
         @endif
 
-        <x-section-card title="Registre des analyses" description="Résultats tenant/agence-scopés, photos privées et revues humaines append-only.">
+        <x-section-card title="Historique des analyses" description="Consultez les photos, les zones proposées et les décisions enregistrées pour votre périmètre autorisé.">
             <div class="space-y-4">
                 @forelse ($runs as $run)
                     <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <p class="font-mono text-xs text-slate-500">{{ $run->run_id }}</p>
                                 <h3 class="mt-1 text-lg font-semibold text-slate-950">{{ $run->vehicle->registration_number }} · {{ $run->vehicle->brand }} {{ $run->vehicle->model }}</h3>
                                 <p class="text-sm text-slate-600">Inspection de retour · contrat {{ $run->inspection->rentalContract->contract_number }}</p>
                             </div>
@@ -120,29 +109,34 @@
                                     @php
                                         $overlayWidthRem = 32 * $run->input_width / $run->input_height;
                                     @endphp
-                                    <div class="flex justify-center bg-slate-950">
-                                        <div
-                                            class="relative"
+                                    <div class="flex justify-center bg-slate-950 p-2">
+                                        <x-photo-frame
+                                            :src="route('intelligence.vehicle-damages.input', $run)"
+                                            alt="Photo privée de l’inspection de retour"
+                                            kind="evidence"
+                                            fit="contain"
+                                            class="border-slate-700 bg-slate-950"
                                             data-damage-overlay-frame
                                             style="aspect-ratio: {{ $run->input_width }} / {{ $run->input_height }}; width: min(100%, {{ number_format($overlayWidthRem, 4, '.', '') }}rem);"
                                         >
-                                            <img src="{{ route('intelligence.vehicle-damages.input', $run) }}" alt="Photo privée du retour de {{ $run->vehicle->registration_number }}" class="block h-full w-full object-contain" loading="lazy">
-                                            @if ($run->status->value === 'succeeded' && $run->quality_status === 'usable')
-                                                @foreach ($run->candidate_regions ?? [] as $index => $region)
-                                                    @php
-                                                        $left = 100 * $region['x'] / $run->input_width;
-                                                        $top = 100 * $region['y'] / $run->input_height;
-                                                        $width = 100 * $region['width'] / $run->input_width;
-                                                        $height = 100 * $region['height'] / $run->input_height;
-                                                    @endphp
-                                                    <span
-                                                        class="absolute border-2 border-red-500 bg-red-500/10 text-[10px] font-bold text-white shadow"
-                                                        style="left: {{ number_format($left, 4, '.', '') }}%; top: {{ number_format($top, 4, '.', '') }}%; width: {{ number_format($width, 4, '.', '') }}%; height: {{ number_format($height, 4, '.', '') }}%;"
-                                                        aria-label="Zone candidate {{ $index + 1 }}, probabilité {{ number_format($region['probability'] * 100, 1, ',', ' ') }} %"
-                                                    ><span class="bg-red-600 px-1">{{ $index + 1 }}</span></span>
-                                                @endforeach
-                                            @endif
-                                        </div>
+                                            <x-slot:overlay>
+                                                @if ($run->status->value === 'succeeded' && $run->quality_status === 'usable')
+                                                    @foreach ($run->candidate_regions ?? [] as $index => $region)
+                                                        @php
+                                                            $left = 100 * $region['x'] / $run->input_width;
+                                                            $top = 100 * $region['y'] / $run->input_height;
+                                                            $width = 100 * $region['width'] / $run->input_width;
+                                                            $height = 100 * $region['height'] / $run->input_height;
+                                                        @endphp
+                                                        <span
+                                                            class="absolute border-2 border-red-500 bg-red-500/10 text-[10px] font-bold text-white shadow"
+                                                            style="left: {{ number_format($left, 4, '.', '') }}%; top: {{ number_format($top, 4, '.', '') }}%; width: {{ number_format($width, 4, '.', '') }}%; height: {{ number_format($height, 4, '.', '') }}%;"
+                                                            aria-label="Zone candidate {{ $index + 1 }}, probabilité {{ App\Support\Ui\BusinessNumber::confidence($region['probability']) }}"
+                                                        ><span class="bg-red-600 px-1">{{ $index + 1 }}</span></span>
+                                                    @endforeach
+                                                @endif
+                                            </x-slot:overlay>
+                                        </x-photo-frame>
                                     </div>
                                     <span class="block bg-white px-3 py-2 text-center text-xs font-medium text-indigo-700">Ouvrir la photo privée</span>
                                 </a>
@@ -151,8 +145,8 @@
                             <div>
                                 @if ($run->status->value === 'succeeded')
                                     <div class="grid gap-3 text-sm sm:grid-cols-3">
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Résultat consultatif</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Score maximal</p><p class="mt-1 font-semibold">{{ $run->max_probability_damage === null ? '—' : number_format((float) $run->max_probability_damage * 100, 2, ',', ' ').' %' }}</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Analyse proposée</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Niveau de confiance maximal</p><p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($run->max_probability_damage) }}</p></div>
                                         <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Zones affichées</p><p class="mt-1 font-semibold">{{ count($run->candidate_regions ?? []) }}</p></div>
                                     </div>
 
@@ -166,7 +160,7 @@
                                     @elseif ($run->suggested_damage)
                                         <p class="mt-4 text-sm leading-6 text-amber-900">Les cadres rouges indiquent des zones candidates. Ils ne délimitent pas précisément un dommage.</p>
                                     @else
-                                        <p class="mt-4 text-sm leading-6 text-slate-600">Aucune détection ne franchit le seuil sélectionné. Ce résultat n’exclut pas un dommage hors champ, minuscule ou différent du domaine d’entraînement.</p>
+                                        <p class="mt-4 text-sm leading-6 text-slate-600">Aucune zone de dommage suffisamment fiable n’a été proposée. Vérifiez néanmoins toute la photo et le véhicule.</p>
                                     @endif
 
                                     @if ($run->review)
@@ -196,13 +190,13 @@
                                 @elseif ($run->status->value === 'failed')
                                     <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">{{ $run->failureLabel() }}</p>
                                 @else
-                                    <p class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">La photo attend son traitement par le worker <code>intelligence</code>. Aucun effet métier n’est en attente.</p>
+                                    <p class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">Analyse en cours. Aucune décision ni aucun frais ne sont appliqués automatiquement.</p>
                                 @endif
                             </div>
                         </div>
                     </article>
                 @empty
-                    <x-empty-state title="Aucune analyse dommages" description="Le registre est vide pour votre périmètre autorisé." />
+                    <x-empty-state title="Aucune analyse de dommages" description="Le registre est vide pour votre périmètre autorisé." />
                 @endforelse
             </div>
             <div class="mt-5">{{ $runs->links() }}</div>

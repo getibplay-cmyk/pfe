@@ -16,6 +16,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Models\VehiclePlatePredictionReview;
 use App\Models\VehiclePlatePredictionRun;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehiclePlate\SanitizedVehiclePlateImage;
 use App\Support\Intelligence\VehiclePlate\ValidatedVehiclePlateDetection;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
@@ -40,11 +41,11 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('local');
+        Storage::fake(IntelligencePrivateStorage::DISK);
         $this->seed(RolesPermissionsSeeder::class);
         config([
             'intelligence.vehicle_plate_hybrid_review.enabled' => false,
-            'intelligence.vehicle_plate_hybrid_review.disk' => 'local',
+            'intelligence.vehicle_plate_hybrid_review.disk' => IntelligencePrivateStorage::DISK,
             'intelligence.vehicle_plate_hybrid_review.python_binary' => 'python',
             'intelligence.vehicle_plate_hybrid_review.device' => 'cpu',
             'intelligence.vehicle_plate_hybrid_review.runtime_timeout_seconds' => 120,
@@ -89,7 +90,8 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->assertOk()
             ->assertSee('Désactivé par défaut')
             ->assertSee('Aucune action automatique')
-            ->assertSee('1 783 lignes restantes');
+            ->assertSee('Conseils pour une lecture fiable')
+            ->assertDontSee('PaddleOCR');
     }
 
     public function test_job_timeout_covers_both_runtime_stages_and_process_overhead(): void
@@ -137,7 +139,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
                 .$run->tenant_id.'/'.$run->run_id.'.jpg',
             $run->input_stored_path,
         );
-        Storage::disk('local')->assertExists($run->input_stored_path);
+        Storage::disk(IntelligencePrivateStorage::DISK)->assertExists($run->input_stored_path);
         Queue::assertPushed(
             RunVehiclePlatePrediction::class,
             fn (RunVehiclePlatePrediction $job): bool => $job->runId === $run->run_id
@@ -165,7 +167,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-plates.index'))
             ->assertOk()
             ->assertSee('12345 | أ | 7')
-            ->assertSee('Confiance non calibrée')
+            ->assertSee('Niveau de confiance')
             ->assertDontSee($completed->input_stored_path)
             ->assertDontSee($completed->input_sha256);
         $this->assertStringNotContainsString('raw_text', $page->getContent());
@@ -228,7 +230,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
                 .$completed->tenant_id.'/'.$completed->run_id.'.jpg',
             $completed->crop_stored_path,
         );
-        Storage::disk('local')->assertExists($completed->crop_stored_path);
+        Storage::disk(IntelligencePrivateStorage::DISK)->assertExists($completed->crop_stored_path);
         $this->assertSame(
             $before,
             Vehicle::withoutGlobalScopes()->findOrFail($fixture['vehicle']->id)->registration_number,
@@ -242,7 +244,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-plates.index'))
             ->assertOk()
             ->assertSee('Photo complète + détection')
-            ->assertSee('Ouvrir le crop détecté')
+            ->assertSee('Ouvrir l’image recadrée')
             ->assertDontSee($completed->crop_stored_path)
             ->assertDontSee($completed->crop_sha256)
             ->assertDontSee($completed->detector_checkpoint_sha256);
@@ -265,15 +267,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
         $job = new RunVehiclePlatePrediction($run->run_id, $run->tenant_id, $run->requested_by);
 
-        $failure = null;
-        try {
-            $job->handle(app(ExecuteVehiclePlatePrediction::class));
-        } catch (VehiclePlateHybridExecutionException $exception) {
-            $failure = $exception;
-        }
-        $this->assertInstanceOf(VehiclePlateHybridExecutionException::class, $failure);
-        $this->assertSame('PLATE_NOT_DETECTED', $failure->failureCode());
-        $job->failed($failure);
+        $job->handle(app(ExecuteVehiclePlatePrediction::class));
 
         $this->assertDatabaseHas('vehicle_plate_prediction_runs', [
             'id' => $run->id,
@@ -288,7 +282,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $this->actingAs($fixture['user'])
             ->get(route('intelligence.vehicle-plates.index'))
             ->assertOk()
-            ->assertSee('Recadrez manuellement la plaque');
+            ->assertSee('Aucune plaque n’a été localisée. Essayez une photo rapprochée de la plaque.');
     }
 
     public function test_ambiguous_detector_candidates_never_reach_ocr(): void
@@ -306,15 +300,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $run = VehiclePlatePredictionRun::withoutGlobalScopes()->firstOrFail();
         $job = new RunVehiclePlatePrediction($run->run_id, $run->tenant_id, $run->requested_by);
 
-        $failure = null;
-        try {
-            $job->handle(app(ExecuteVehiclePlatePrediction::class));
-        } catch (VehiclePlateHybridExecutionException $exception) {
-            $failure = $exception;
-        }
-        $this->assertInstanceOf(VehiclePlateHybridExecutionException::class, $failure);
-        $this->assertSame('PLATE_DETECTION_AMBIGUOUS', $failure->failureCode());
-        $job->failed($failure);
+        $job->handle(app(ExecuteVehiclePlatePrediction::class));
         $this->assertDatabaseHas('vehicle_plate_prediction_runs', [
             'id' => $run->id,
             'status' => 'failed',

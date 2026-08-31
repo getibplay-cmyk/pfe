@@ -76,14 +76,13 @@ class DemandForecastExecutionRun extends Model
         return match ($this->failure_code) {
             'RUN_STALE_RECOVERED' => 'L’exécution précédente a expiré et a été fermée.',
             'RUN_ACTOR_NOT_AUTHORIZED' => 'L’utilisateur demandeur n’est plus autorisé.',
-            'MODEL_ARTIFACT_INVALID' => 'Le bundle J5 privé est absent ou ne correspond plus à son empreinte.',
-            'HISTORY_ARTIFACT_INVALID' => 'Le snapshot privé est absent ou altéré.',
-            'RUNTIME_CONFIGURATION_INVALID' => 'La configuration du runtime HGB est invalide.',
-            'HGB_PROCESS_TIMEOUT' => 'Le calcul HGB a dépassé le délai autorisé.',
-            'HGB_PROCESS_FAILED' => 'Python ou l’environnement HGB figé n’a pas pu terminer le calcul.',
-            'HGB_OUTPUT_INVALID', 'HGB_OUTPUT_CONTRACT_INVALID' => 'La sortie HGB ne respecte pas le contrat fermé.',
-            'HGB_OUTPUT_IMPORT_FAILED' => 'La sortie validée n’a pas pu être conservée.',
-            default => 'L’inférence HGB a échoué sans modifier les données opérationnelles.',
+            'MODEL_ARTIFACT_INVALID', 'HISTORY_ARTIFACT_INVALID' => 'Les éléments nécessaires à la prévision ne sont plus disponibles.',
+            'RUNTIME_CONFIGURATION_INVALID' => 'Le service de prévision n’est pas correctement configuré.',
+            'HGB_PROCESS_TIMEOUT' => 'La prévision a dépassé le délai autorisé.',
+            'HGB_PROCESS_FAILED' => 'Le service de prévision n’a pas terminé le calcul.',
+            'HGB_OUTPUT_INVALID', 'HGB_OUTPUT_CONTRACT_INVALID' => 'Le résultat reçu n’a pas pu être vérifié.',
+            'HGB_OUTPUT_IMPORT_FAILED' => 'Le résultat vérifié n’a pas pu être enregistré.',
+            default => 'La prévision n’a pas pu être générée. Aucune donnée métier n’a été modifiée.',
         };
     }
 }

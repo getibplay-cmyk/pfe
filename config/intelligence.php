@@ -58,6 +58,10 @@ return [
         'runtime_queue' => 'intelligence',
         'runtime_timeout_seconds' => 60,
         'runtime_stale_after_seconds' => 600,
+        'rate_limits' => [
+            'user_per_minute' => 2,
+            'scope_per_hour' => 10,
+        ],
         'python_binary' => env(
             'DEMAND_FORECAST_PYTHON_BINARY',
             env('INTELLIGENCE_PYTHON_BINARY', 'python'),
@@ -93,7 +97,7 @@ return [
 
     'vehicle_color_v8' => [
         'enabled' => env('RENTFLEET_COLOR_V8_ENABLED', false),
-        'disk' => 'local',
+        'disk' => 'intelligence-private',
         'runtime_queue' => 'intelligence',
         'runtime_timeout_seconds' => 30,
         'runtime_stale_after_seconds' => 600,
@@ -132,7 +136,7 @@ return [
     'vehicle_damage_v1' => [
         'enabled' => env('RENTFLEET_DAMAGE_V1_ENABLED', false),
         'backend' => $damageBackend,
-        'disk' => 'local',
+        'disk' => 'intelligence-private',
         'runtime_queue' => 'intelligence',
         'runtime_timeout_seconds' => 120,
         'runtime_stale_after_seconds' => 900,
@@ -183,7 +187,7 @@ return [
         // the preregistered release gate are complete. The contract can be
         // integrated and tested without activating a business action.
         'enabled' => env('RENTFLEET_PLATE_HYBRID_REVIEW_ENABLED', false),
-        'disk' => 'local',
+        'disk' => 'intelligence-private',
         'runtime_queue' => 'intelligence',
         'runtime_timeout_seconds' => 120,
         'runtime_stale_after_seconds' => 900,

@@ -16,6 +16,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationCanonicalPayload;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
+use App\Support\Intelligence\FleetReallocation\FleetReallocationRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
@@ -38,6 +39,9 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
         parent::setUp();
         CarbonImmutable::setTestNow('2026-08-15 12:00:00+00:00');
         Storage::fake('local');
+        $this->mock(FleetReallocationRuntimeReadiness::class, function ($mock): void {
+            $mock->shouldReceive('ready')->andReturnTrue();
+        });
         $this->seed(RolesPermissionsSeeder::class);
     }
 
@@ -69,7 +73,7 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
                 'proposal' => $this->jsonFile($payload),
             ])
             ->assertRedirect(route('intelligence.fleet-reallocation.index'))
-            ->assertSessionHas('status', 'Proposition OR-Tools synthétique importée sans effet opérationnel.');
+            ->assertSessionHas('status', 'Suggestion de démonstration importée sans action automatique.');
 
         $proposal = FleetReallocationProposal::withoutGlobalScopes()->firstOrFail();
         $this->assertSame($payload['proposal_id'], $proposal->proposal_id);
@@ -103,9 +107,9 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
         $this->actingAs($fixture['owner'])
             ->get(route('intelligence.fleet-reallocation.index'))
             ->assertOk()
-            ->assertSee('Propositions de réallocation OR-Tools')
+            ->assertSee('Suggestions de réallocation')
             ->assertSee('SYNTH-NODE-001')
-            ->assertSee('CatBoost s’abstient')
+            ->assertDontSeeText('CatBoost')
             ->assertDontSee($proposal->stored_path)
             ->assertDontSee($proposal->content_sha256);
 
@@ -273,8 +277,7 @@ class FleetReallocationConsultativeIntegrationTest extends TestCase
         $this->actingAs($fixture['owner'])
             ->get(route('intelligence.fleet-reallocation.index'))
             ->assertOk()
-            ->assertSee('Calcul réellement exécuté depuis le SaaS')
-            ->assertSee($run->run_id);
+            ->assertSee('Suggestion calculée depuis');
 
         foreach ($before as $table => $count) {
             $this->assertSame($count, DB::table($table)->count(), $table);

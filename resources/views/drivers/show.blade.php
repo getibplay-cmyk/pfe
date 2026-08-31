@@ -1,9 +1,10 @@
 <x-app-layout>
     <div class="mx-auto max-w-5xl space-y-6">
-        <x-page-header :title="$driver->first_name.' '.$driver->last_name" eyebrow="Conducteur" :description="'Client : '.$driver->customer->displayName()">
+        <x-page-header :title="$driver->first_name.' '.$driver->last_name" eyebrow="Conducteur" :description="'Client : '.$driver->customer->displayName()" :breadcrumbs="[['label' => 'Clients et conducteurs', 'url' => route('customers.index')], ['label' => $driver->customer->displayName(), 'url' => route('customers.show', $driver->customer)], ['label' => $driver->first_name.' '.$driver->last_name]]">
             <x-slot:actions>
-                @can('update', $driver)<a href="{{ route('drivers.edit', $driver) }}" class="rounded-lg border bg-white px-4 py-2 text-sm font-medium">Modifier</a>@endcan
-                @can('archive', $driver)<form method="POST" action="{{ route('drivers.destroy', $driver) }}" onsubmit="return confirm('Archiver ce conducteur ?')">@csrf @method('DELETE')<button class="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm text-red-700">Archiver</button></form>@endcan
+                <a href="{{ route('customers.show', $driver->customer) }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour au client</a>
+                @can('update', $driver)<a href="{{ route('drivers.edit', $driver) }}" class="rf-button-secondary">Modifier</a>@endcan
+                @can('archive', $driver)<form method="POST" action="{{ route('drivers.destroy', $driver) }}" x-belkhir-space-confirm data-confirm-title="Archiver ce conducteur" data-confirm-resource="Fiche conducteur sélectionnée" data-confirm-consequence="Le conducteur sera archivé et restera présent dans l’historique." data-confirm-label="Archiver">@csrf @method('DELETE')<button class="rf-button-danger">Archiver</button></form>@endcan
             </x-slot:actions>
         </x-page-header>
         <x-form-errors />
@@ -28,11 +29,11 @@
         <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="font-semibold">Documents privés du conducteur</h2>
             @can('upload', App\Models\Document::class)
-                <form class="my-4 grid gap-3 sm:grid-cols-2" method="POST" enctype="multipart/form-data" action="{{ route('drivers.documents.store', $driver) }}">@csrf
+                <form class="my-4 grid gap-3 sm:grid-cols-2" method="POST" enctype="multipart/form-data" action="{{ route('drivers.documents.store', $driver) }}" data-loading-form>@csrf
                     <input type="hidden" name="document_type" value="driving_licence"><input type="hidden" name="is_sensitive" value="1">
                     <label class="text-sm">Titre *<input name="title" value="{{ old('title', 'Permis de conduire') }}" required class="mt-1 w-full"></label>
-                    <label class="text-sm">Fichier *<input type="file" name="file" required class="mt-1 block w-full text-sm"><x-input-error :messages="$errors->get('file')" /></label>
-                    <button class="justify-self-start rounded-lg bg-slate-950 px-4 py-2 text-sm text-white">Ajouter le permis privé</button>
+                    <x-file-input id="driver-document-file" name="file" label="Fichier" required :errors="$errors->get('file')" />
+                    <x-submit-button class="justify-self-start" label="Ajouter le permis privé" loading-label="Ajout en cours…" />
                 </form>
             @endcan
             <div class="space-y-2">

@@ -12,10 +12,10 @@ enum FleetReallocationRunStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Queued => 'En attente du worker',
-            self::Running => 'Calcul OR-Tools en cours',
+            self::Queued => 'En attente de traitement',
+            self::Running => 'Calcul en cours',
             self::Succeeded => 'Calcul terminé',
-            self::Failed => 'Échec contrôlé',
+            self::Failed => 'Calcul non abouti',
         };
     }
 }

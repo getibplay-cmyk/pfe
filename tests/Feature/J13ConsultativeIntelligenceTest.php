@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\J11AdvisoryModule;
 use App\Models\Agency;
 use App\Models\Role;
 use App\Models\Tenant;
@@ -25,38 +24,38 @@ class J13ConsultativeIntelligenceTest extends TestCase
         $this->seed(RolesPermissionsSeeder::class);
     }
 
-    public function test_authorized_page_renders_exactly_four_read_only_consultative_cards(): void
+    public function test_authorized_page_uses_business_facing_copy_for_intelligent_features(): void
     {
         $response = $this->actingAs($this->user('tenant-owner'))->get(route('intelligence.index'));
 
         $response->assertOk()
-            ->assertSee('J13 · preuves consultatives désactivées')
-            ->assertSee('Mode consultatif fermé')
-            ->assertSee('décision humaine auditée')
-            ->assertSee('NO_OPERATIONAL_ACTION')
-            ->assertSee('Feature flag : désactivé · SaaS : non · Production : non');
+            ->assertSee('Prévision de demande D+1 à D+7')
+            ->assertSee('Couleur suggérée')
+            ->assertSee('Analyse des dommages')
+            ->assertSee('Immatriculation détectée')
+            ->assertSee('Usages atypiques')
+            ->assertSee('Principes d’utilisation')
+            ->assertSee('Fonctionnalités en préparation');
 
-        foreach (J11AdvisoryModule::cases() as $module) {
-            $response->assertSee($module->label())
-                ->assertSee($module->gateDecision())
-                ->assertSee('data-j13-module="'.$module->value.'"', false);
+        foreach (['HGB', 'ONNX', 'ANPR', 'Isolation Forest', 'benchmark', 'artefact', 'gate', 'feature flag', 'NO_OPERATIONAL_ACTION'] as $technicalTerm) {
+            $response->assertDontSeeText($technicalTerm);
         }
 
-        $this->assertSame(4, substr_count($response->getContent(), 'data-j13-module='));
+        $this->assertSame(0, substr_count($response->getContent(), 'data-j13-module='));
         $response->assertDontSee('Ouvrir la démonstration isolée');
     }
 
-    public function test_page_distinguishes_public_j9_legacy_iforest_and_non_computed_fixture(): void
+    public function test_page_keeps_internal_model_lineage_out_of_the_agency_interface(): void
     {
         $response = $this->actingAs($this->user('viewer-auditor'))->get(route('intelligence.index'));
 
         $response->assertOk()
-            ->assertSee('robust_mad_top2')
-            ->assertSee('rental_anomaly_iforest 0.1.0')
-            ->assertSee('not_run_synthetic_contract_fixture')
-            ->assertSee('Distinct de J9 et interdit dans J13')
-            ->assertSee('Aucun modèle ni solveur exécuté')
-            ->assertDontSee('Le modèle rental_anomaly_iforest 0.1.0 a été validé');
+            ->assertSee('Un signal atypique attire l’attention d’un responsable')
+            ->assertDontSee('robust_mad_top2')
+            ->assertDontSee('rental_anomaly_iforest 0.1.0')
+            ->assertDontSee('not_run_synthetic_contract_fixture')
+            ->assertDontSee('J13')
+            ->assertDontSee('solveur');
     }
 
     public function test_page_keeps_j12_closed_and_does_not_write_demo_or_operational_tables(): void
@@ -97,7 +96,7 @@ class J13ConsultativeIntelligenceTest extends TestCase
         $this->actingAs($this->user('fleet-manager'))
             ->get(route('intelligence.index'))
             ->assertOk()
-            ->assertSee('J13 · preuves consultatives désactivées');
+            ->assertSee('Fonctionnalités en préparation');
     }
 
     private function user(string $roleSlug): User

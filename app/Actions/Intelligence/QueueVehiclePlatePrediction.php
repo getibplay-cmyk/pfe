@@ -2,6 +2,7 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehiclePlatePredictionStatus;
 use App\Exceptions\VehiclePlatePredictionAlreadyActiveException;
 use App\Exceptions\VehiclePlateRuntimeUnavailableException;
@@ -10,16 +11,17 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
-use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
-use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateImageSanitizer;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
+use App\Support\Tenancy\AgencyAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -27,8 +29,9 @@ final class QueueVehiclePlatePrediction
 {
     public function __construct(
         private readonly TenantContext $context,
-        private readonly VehiclePlateHybridRuntime $runtime,
-        private readonly VehiclePlateDetectorRuntime $detectorRuntime,
+        private readonly AgencyAccess $agencyAccess,
+        private readonly TenantIntelligenceAccess $tenantAccess,
+        private readonly VehiclePlateRuntimeReadiness $readiness,
         private readonly VehiclePlateImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
     ) {}
@@ -40,8 +43,36 @@ final class QueueVehiclePlatePrediction
         string $inputKind,
     ): VehiclePlatePredictionRun {
         $this->assertAllowed($vehicle, $actor);
-        if (! VehiclePlateDetectorContract::isInputKind($inputKind)
-            || ! $this->runtimeReady($inputKind)) {
+
+        return $this->queue($vehicle, $vehicle->agency_id, $image, $actor, $inputKind);
+    }
+
+    public function handlePreparation(
+        int $agencyId,
+        UploadedFile $image,
+        User $actor,
+        string $inputKind,
+    ): VehiclePlatePredictionRun {
+        $this->assertPreparationAllowed($actor);
+
+        return $this->queue(
+            null,
+            $this->agencyAccess->required($agencyId),
+            $image,
+            $actor,
+            $inputKind,
+        );
+    }
+
+    private function queue(
+        ?Vehicle $vehicle,
+        int $agencyId,
+        UploadedFile $image,
+        User $actor,
+        string $inputKind,
+    ): VehiclePlatePredictionRun {
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::VehiclePlate);
+        if (! $this->readiness->ready($inputKind)) {
             throw new VehiclePlateRuntimeUnavailableException;
         }
 
@@ -69,10 +100,20 @@ final class QueueVehiclePlatePrediction
             )
             : null;
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
         $directory = 'intelligence/plate-hybrid/inputs/'.$this->context->tenantId();
         $storedPath = $directory.'/'.$runId.'.'.$extension;
-        $stored = $disk->put($storedPath, $sanitized->contents, ['visibility' => 'private']);
+        try {
+            $disk = IntelligencePrivateStorage::disk(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+            );
+            $stored = $disk->put(
+                $storedPath,
+                $sanitized->contents,
+                ['visibility' => 'private'],
+            );
+        } catch (Throwable) {
+            throw new VehiclePlateRuntimeUnavailableException;
+        }
         unset($sanitized);
         if (! $stored) {
             throw new VehiclePlateRuntimeUnavailableException;
@@ -81,6 +122,7 @@ final class QueueVehiclePlatePrediction
         try {
             $run = DB::transaction(function () use (
                 $vehicle,
+                $agencyId,
                 $actor,
                 $runId,
                 $mime,
@@ -96,24 +138,26 @@ final class QueueVehiclePlatePrediction
                 $detectorThreshold,
                 $detectorPadding,
             ): VehiclePlatePredictionRun {
-                DB::selectOne(
-                    'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
-                    ['vehicle-plate-hybrid|'.$vehicle->tenant_id.'|'.$vehicle->id],
-                );
-                $this->recoverStaleRuns($vehicle);
-                if (VehiclePlatePredictionRun::query()
-                    ->where('vehicle_id', $vehicle->id)
-                    ->whereIn('status', [
-                        VehiclePlatePredictionStatus::Queued->value,
-                        VehiclePlatePredictionStatus::Running->value,
-                    ])->exists()) {
-                    throw new VehiclePlatePredictionAlreadyActiveException;
+                if ($vehicle !== null) {
+                    DB::selectOne(
+                        'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
+                        ['vehicle-plate-hybrid|'.$vehicle->tenant_id.'|'.$vehicle->id],
+                    );
+                    $this->recoverStaleRuns($vehicle);
+                    if (VehiclePlatePredictionRun::query()
+                        ->where('vehicle_id', $vehicle->id)
+                        ->whereIn('status', [
+                            VehiclePlatePredictionStatus::Queued->value,
+                            VehiclePlatePredictionStatus::Running->value,
+                        ])->exists()) {
+                        throw new VehiclePlatePredictionAlreadyActiveException;
+                    }
                 }
 
                 $run = VehiclePlatePredictionRun::create([
-                    'agency_id' => $vehicle->agency_id,
+                    'agency_id' => $agencyId,
                     'run_id' => $runId,
-                    'vehicle_id' => $vehicle->id,
+                    'vehicle_id' => $vehicle?->id,
                     'requested_by' => $actor->id,
                     'status' => VehiclePlatePredictionStatus::Queued,
                     'input_kind' => $inputKind,
@@ -149,14 +193,18 @@ final class QueueVehiclePlatePrediction
                 return $run;
             }, 3);
         } catch (Throwable $exception) {
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+                $storedPath,
+            );
 
             throw $exception;
         }
 
         try {
             RunVehiclePlatePrediction::dispatch($run->run_id, $run->tenant_id, $actor->id)
-                ->onQueue((string) config('intelligence.vehicle_plate_hybrid_review.runtime_queue'));
+                ->onQueue((string) config('intelligence.vehicle_plate_hybrid_review.runtime_queue'))
+                ->afterCommit();
         } catch (Throwable) {
             $updated = 0;
             try {
@@ -173,7 +221,10 @@ final class QueueVehiclePlatePrediction
             } catch (Throwable) {
                 // La requête HTTP reste fermée même si la base est devenue indisponible.
             }
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_plate_hybrid_review.disk',
+                $storedPath,
+            );
             try {
                 if ($updated !== 1) {
                     throw new \RuntimeException('queue_failure_not_persisted');
@@ -196,8 +247,7 @@ final class QueueVehiclePlatePrediction
     private function assertAllowed(Vehicle $vehicle, User $actor): void
     {
         $contextAgency = $this->context->agencyId();
-        if (! (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
-            || $actor->tenant_id !== $vehicle->tenant_id
+        if ($actor->tenant_id !== $vehicle->tenant_id
             || $this->context->tenantId() !== $vehicle->tenant_id
             || ! $actor->is_active
             || ! $actor->hasPermission('prediction.view')
@@ -208,24 +258,13 @@ final class QueueVehiclePlatePrediction
         }
     }
 
-    private function runtimeReady(string $inputKind): bool
+    private function assertPreparationAllowed(User $actor): void
     {
-        $sanitizer = (string) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_script');
-        $sanitizerTimeout = (int) config(
-            'intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds',
-        );
-        $storedDimension = (int) config(
-            'intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension',
-        );
-
-        return $this->runtime->configured()
-            && ($inputKind !== VehiclePlateDetectorContract::FULL_IMAGE
-                || $this->detectorRuntime->ready())
-            && is_file($sanitizer)
-            && $sanitizerTimeout >= 1
-            && $sanitizerTimeout <= 15
-            && $storedDimension >= 256
-            && $storedDimension <= 4_096;
+        if ($actor->tenant_id !== $this->context->tenantId()
+            || ! $actor->is_active
+            || ! $actor->hasPermission('vehicle.create')) {
+            throw new AuthorizationException;
+        }
     }
 
     private function recoverStaleRuns(Vehicle $vehicle): void

@@ -4,22 +4,27 @@ namespace App\Actions\Intelligence;
 
 use App\Enums\InspectionStatus;
 use App\Enums\InspectionType;
+use App\Enums\IntelligenceCapability;
+use App\Enums\RentalContractStatus;
 use App\Enums\VehicleDamagePredictionStatus;
 use App\Exceptions\VehicleDamagePredictionAlreadyActiveException;
 use App\Exceptions\VehicleDamageRuntimeUnavailableException;
 use App\Jobs\RunVehicleDamagePrediction;
+use App\Models\RentalContract;
 use App\Models\User;
 use App\Models\VehicleDamagePredictionRun;
 use App\Models\VehicleInspection;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageImageSanitizer;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
+use App\Support\Intelligence\VehicleDamage\VehicleDamageRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -29,6 +34,8 @@ final class QueueVehicleDamagePrediction
         private readonly TenantContext $context,
         private readonly VehicleDamageModelArtifact $modelArtifact,
         private readonly VehicleDamageImageSanitizer $imageSanitizer,
+        private readonly TenantIntelligenceAccess $tenantAccess,
+        private readonly VehicleDamageRuntimeReadiness $readiness,
         private readonly AuditRecorder $audit,
     ) {}
 
@@ -38,52 +45,100 @@ final class QueueVehicleDamagePrediction
         User $actor,
     ): VehicleDamagePredictionRun {
         $this->assertAllowed($inspection, $actor);
-        if (! $this->runtimeReady()) {
+
+        return $this->queue(
+            $inspection->rentalContract()->firstOrFail(),
+            $inspection,
+            $image,
+            $actor,
+        );
+    }
+
+    public function handlePreparation(
+        RentalContract $contract,
+        UploadedFile $image,
+        User $actor,
+    ): VehicleDamagePredictionRun {
+        $this->assertPreparationAllowed($contract, $actor);
+
+        return $this->queue($contract, null, $image, $actor);
+    }
+
+    private function queue(
+        RentalContract $contract,
+        ?VehicleInspection $inspection,
+        UploadedFile $image,
+        User $actor,
+    ): VehicleDamagePredictionRun {
+        $this->tenantAccess->ensureAuthorized(IntelligenceCapability::VehicleDamage);
+        if (! $this->readiness->ready()) {
             throw new VehicleDamageRuntimeUnavailableException;
         }
 
         $sanitized = $this->imageSanitizer->sanitize($image);
         $runId = (string) Str::uuid();
-        $disk = Storage::disk((string) config('intelligence.vehicle_damage_v1.disk'));
         $directory = 'intelligence/vehicle-damage/inputs/'.$this->context->tenantId();
         $storedPath = $directory.'/'.$runId.'.jpg';
-        $stored = $disk->put($storedPath, $sanitized->contents, ['visibility' => 'private']);
+        try {
+            $disk = IntelligencePrivateStorage::disk('intelligence.vehicle_damage_v1.disk');
+            $stored = $disk->put(
+                $storedPath,
+                $sanitized->contents,
+                ['visibility' => 'private'],
+            );
+        } catch (Throwable) {
+            throw new VehicleDamageRuntimeUnavailableException;
+        }
         if (! $stored) {
             throw new VehicleDamageRuntimeUnavailableException;
         }
 
         try {
             $run = DB::transaction(function () use (
+                $contract,
                 $inspection,
                 $actor,
                 $runId,
                 $storedPath,
                 $sanitized,
             ): VehicleDamagePredictionRun {
-                DB::selectOne(
-                    'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
-                    ['vehicle-damage-v1|'.$inspection->tenant_id.'|'.$inspection->id],
-                );
-                $lockedInspection = VehicleInspection::query()
+                $lockedContract = RentalContract::query()
                     ->with('vehicle')
                     ->lockForUpdate()
-                    ->findOrFail($inspection->id);
-                $this->assertReturnInspection($lockedInspection);
-                $this->recoverStaleRuns($lockedInspection);
-                if (VehicleDamagePredictionRun::query()
-                    ->where('vehicle_inspection_id', $lockedInspection->id)
-                    ->whereIn('status', [
-                        VehicleDamagePredictionStatus::Queued->value,
-                        VehicleDamagePredictionStatus::Running->value,
-                    ])->exists()) {
-                    throw new VehicleDamagePredictionAlreadyActiveException;
+                    ->findOrFail($contract->id);
+                $lockedInspection = null;
+                if ($inspection === null) {
+                    $this->assertPreparationAllowed($lockedContract, $actor);
+                } else {
+                    DB::selectOne(
+                        'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
+                        ['vehicle-damage-v1|'.$inspection->tenant_id.'|'.$inspection->id],
+                    );
+                    $lockedInspection = VehicleInspection::query()
+                        ->with('vehicle')
+                        ->lockForUpdate()
+                        ->findOrFail($inspection->id);
+                    $this->assertReturnInspection($lockedInspection);
+                    if ($lockedInspection->rental_contract_id !== $lockedContract->id) {
+                        throw new AuthorizationException;
+                    }
+                    $this->recoverStaleRuns($lockedInspection);
+                    if (VehicleDamagePredictionRun::query()
+                        ->where('vehicle_inspection_id', $lockedInspection->id)
+                        ->whereIn('status', [
+                            VehicleDamagePredictionStatus::Queued->value,
+                            VehicleDamagePredictionStatus::Running->value,
+                        ])->exists()) {
+                        throw new VehicleDamagePredictionAlreadyActiveException;
+                    }
                 }
 
                 $run = VehicleDamagePredictionRun::create([
-                    'agency_id' => $lockedInspection->agency_id,
+                    'agency_id' => $lockedContract->agency_id,
+                    'rental_contract_id' => $lockedContract->id,
                     'run_id' => $runId,
-                    'vehicle_inspection_id' => $lockedInspection->id,
-                    'vehicle_id' => $lockedInspection->vehicle_id,
+                    'vehicle_inspection_id' => $lockedInspection?->id,
+                    'vehicle_id' => $lockedContract->vehicle_id,
                     'requested_by' => $actor->id,
                     'status' => VehicleDamagePredictionStatus::Queued,
                     'input_mime' => $sanitized->mime,
@@ -104,6 +159,7 @@ final class QueueVehicleDamagePrediction
 
                 $this->audit->record('prediction.vehicle_damage.run_queued', $run, [], [
                     'run_id' => $run->run_id,
+                    'rental_contract_id' => $run->rental_contract_id,
                     'vehicle_id' => $run->vehicle_id,
                     'vehicle_inspection_id' => $run->vehicle_inspection_id,
                     'status' => VehicleDamagePredictionStatus::Queued->value,
@@ -115,7 +171,10 @@ final class QueueVehicleDamagePrediction
                 return $run;
             }, 3);
         } catch (Throwable $exception) {
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_damage_v1.disk',
+                $storedPath,
+            );
 
             throw $exception;
         }
@@ -123,7 +182,8 @@ final class QueueVehicleDamagePrediction
 
         try {
             RunVehicleDamagePrediction::dispatch($run->run_id, $run->tenant_id, $actor->id)
-                ->onQueue((string) config('intelligence.vehicle_damage_v1.runtime_queue'));
+                ->onQueue((string) config('intelligence.vehicle_damage_v1.runtime_queue'))
+                ->afterCommit();
         } catch (Throwable) {
             $updated = 0;
             try {
@@ -140,7 +200,10 @@ final class QueueVehicleDamagePrediction
             } catch (Throwable) {
                 // La requête HTTP reste fermée même si la base est devenue indisponible.
             }
-            $disk->delete($storedPath);
+            IntelligencePrivateStorage::deleteAfterFailure(
+                'intelligence.vehicle_damage_v1.disk',
+                $storedPath,
+            );
             try {
                 if ($updated !== 1) {
                     throw new \RuntimeException('queue_failure_not_persisted');
@@ -163,8 +226,7 @@ final class QueueVehicleDamagePrediction
     private function assertAllowed(VehicleInspection $inspection, User $actor): void
     {
         $contextAgency = $this->context->agencyId();
-        if (! (bool) config('intelligence.vehicle_damage_v1.enabled')
-            || $actor->tenant_id !== $inspection->tenant_id
+        if ($actor->tenant_id !== $inspection->tenant_id
             || $this->context->tenantId() !== $inspection->tenant_id
             || ! $actor->is_active
             || ! $actor->hasPermission('prediction.view')
@@ -176,6 +238,25 @@ final class QueueVehicleDamagePrediction
         $this->assertReturnInspection($inspection);
     }
 
+    private function assertPreparationAllowed(RentalContract $contract, User $actor): void
+    {
+        $contextAgency = $this->context->agencyId();
+        if ($contract->status !== RentalContractStatus::Active
+            || $contract->vehicle === null
+            || $contract->vehicle->agency_id !== $contract->agency_id
+            || $actor->tenant_id !== $contract->tenant_id
+            || $this->context->tenantId() !== $contract->tenant_id
+            || ! $actor->is_active
+            || ! $actor->hasPermission('contract.return')
+            || ! $actor->hasPermission('inspection.manage')
+            || ! $actor->hasPermission('prediction.view')
+            || ! $actor->hasPermission('prediction.damage.review')
+            || ($actor->agency_id !== null && $actor->agency_id !== $contract->agency_id)
+            || ($contextAgency !== null && $contextAgency !== $contract->agency_id)) {
+            throw new AuthorizationException;
+        }
+    }
+
     private function assertReturnInspection(VehicleInspection $inspection): void
     {
         if ($inspection->inspection_type !== InspectionType::Return
@@ -184,30 +265,6 @@ final class QueueVehicleDamagePrediction
             || $inspection->vehicle->agency_id !== $inspection->agency_id) {
             throw new AuthorizationException;
         }
-    }
-
-    private function runtimeReady(): bool
-    {
-        $provider = (string) config('intelligence.vehicle_damage_v1.execution_provider');
-        $timeout = (int) config('intelligence.vehicle_damage_v1.runtime_timeout_seconds');
-        $sanitizer = (string) config('intelligence.vehicle_damage_v1.image_sanitizer_script');
-        $sanitizerTimeout = (int) config('intelligence.vehicle_damage_v1.image_sanitizer_timeout_seconds');
-        $storedDimension = (int) config('intelligence.vehicle_damage_v1.max_stored_image_dimension');
-        $maxPatches = (int) config('intelligence.vehicle_damage_v1.max_scan_patches');
-
-        return $this->modelArtifact->configuredIsValid()
-            && (string) config('intelligence.vehicle_damage_v1.python_binary') !== ''
-            && is_file((string) config('intelligence.vehicle_damage_v1.runtime_script'))
-            && is_file($sanitizer)
-            && in_array($provider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true)
-            && $timeout >= 10
-            && $timeout <= 120
-            && $sanitizerTimeout >= 1
-            && $sanitizerTimeout <= 15
-            && $storedDimension >= 384
-            && $storedDimension <= 4_096
-            && $maxPatches >= 1
-            && $maxPatches <= 64;
     }
 
     private function recoverStaleRuns(VehicleInspection $inspection): void

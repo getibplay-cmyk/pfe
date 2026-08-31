@@ -43,7 +43,7 @@ class RecordJ11DemoDecisionRequest extends FormRequest
         return [function (Validator $validator): void {
             $allowed = ['decision', 'reason_code', 'tenant_id', 'agency_id', 'effect', 'payload', 'note'];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé par le contrat J12.');
+                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour cette démonstration.');
             }
         }];
     }

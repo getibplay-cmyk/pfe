@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsureJ11ContractDemoEnabled;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePlatformAdmin;
+use App\Http\Middleware\EnsureTenantIntelligenceAccess;
 use App\Http\Middleware\RequestCorrelation;
 use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\SecurityHeaders;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform' => EnsurePlatformAdmin::class,
             'password.changed' => EnsurePasswordChanged::class,
             'intelligence.contract-demo' => EnsureJ11ContractDemoEnabled::class,
+            'tenant.intelligence' => EnsureTenantIntelligenceAccess::class,
         ]);
 
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenantContext::class);

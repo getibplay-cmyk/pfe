@@ -8,6 +8,6 @@ class DemandForecastExecutionAlreadyActiveException extends ConflictHttpExceptio
 {
     public function __construct()
     {
-        parent::__construct('Une inférence HGB est déjà en attente ou en cours pour ce snapshot.');
+        parent::__construct('Une prévision est déjà en attente ou en cours pour cet historique.');
     }
 }

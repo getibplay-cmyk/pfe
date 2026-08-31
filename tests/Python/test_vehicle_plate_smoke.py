@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import errno
 import json
 import sys
 import tempfile
@@ -24,6 +25,27 @@ from scripts.intelligence.vehicle_plate.colab_smoke import (
     verify_checkpoint,
 )
 from scripts.intelligence.vehicle_plate.protocol import ProtocolError, file_sha256
+
+
+def create_symlink_or_skip(
+    test_case: unittest.TestCase, link: Path, target: Path
+) -> None:
+    try:
+        link.symlink_to(target)
+    except NotImplementedError:
+        test_case.skipTest("Symbolic-link creation is unsupported by this platform.")
+    except OSError as exception:
+        unsupported = {
+            errno.EPERM,
+            errno.EACCES,
+            getattr(errno, "ENOTSUP", -1),
+            getattr(errno, "EOPNOTSUPP", -1),
+        }
+        if getattr(exception, "winerror", None) == 1314 or exception.errno in unsupported:
+            test_case.skipTest(
+                "The current process lacks symbolic-link creation capability."
+            )
+        raise
 
 
 class FakeOcrResult:
@@ -53,7 +75,7 @@ class VehiclePlateSmokeTest(unittest.TestCase):
             system_python = Path(sys.executable).absolute()
             ocr_python = Path(directory) / "venv" / "bin" / "python"
             ocr_python.parent.mkdir(parents=True)
-            ocr_python.symlink_to(system_python)
+            create_symlink_or_skip(self, ocr_python, system_python)
 
             self.assertEqual(ocr_python, _invocation_path(ocr_python))
             self.assertEqual(system_python.resolve(), ocr_python.resolve())

@@ -47,6 +47,6 @@
             </label>
         </div>
         <p class="text-xs text-slate-500">Le statut est géré uniquement par les actions Vérifier ou Rejeter. Les numéros d’identité restent chiffrés et masqués.</p>
-        <button type="submit" class="rounded-lg bg-slate-950 px-4 py-2 text-white">Enregistrer</button>
+        <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-white"><x-icon name="save" size="xs" />Enregistrer</button>
     </form>
 </x-app-layout>

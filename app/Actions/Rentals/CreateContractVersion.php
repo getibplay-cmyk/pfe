@@ -7,18 +7,31 @@ use App\Models\ContractStatusHistory;
 use App\Models\ContractVersion;
 use App\Models\RentalContract;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Contracts\BilingualRentalContractDocument;
 use App\Support\Contracts\CanonicalJson;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CreateContractVersion
 {
-    public function __construct(private CanonicalJson $canonical, private AuditRecorder $audit) {}
+    public function __construct(
+        private CanonicalJson $canonical,
+        private BilingualRentalContractDocument $document,
+        private AuditRecorder $audit,
+    ) {}
 
     public function handle(RentalContract $contract, int $actorId, ?string $reason = null, array $termsOverride = []): ContractVersion
     {
         return DB::transaction(function () use ($contract, $actorId, $reason, $termsOverride) {
-            $locked = RentalContract::with(['reservation.pricingRule', 'customer', 'vehicle', 'drivers.driver', 'currentVersion'])->whereKey($contract)->lockForUpdate()->firstOrFail();
+            $locked = RentalContract::with([
+                'reservation.pricingRule',
+                'agency',
+                'customer',
+                'vehicle.category',
+                'drivers.driver',
+                'inspections.items',
+                'currentVersion',
+            ])->whereKey($contract)->lockForUpdate()->firstOrFail();
             if (! in_array($locked->status, [RentalContractStatus::Draft, RentalContractStatus::Ready, RentalContractStatus::Accepted], true)) {
                 throw ValidationException::withMessages(['version' => 'Une nouvelle version est autorisée uniquement pendant la préparation ou comme avenant après acceptation.']);
             }
@@ -26,8 +39,9 @@ class CreateContractVersion
             $reservation = $locked->reservation;
             $rule = $reservation->pricingRule;
             $primary = $locked->drivers->firstWhere('is_primary', true)?->driver;
+            $document = $this->document->snapshot($locked);
             $terms = [...[
-                'schema_version' => 1,
+                'schema_version' => 2,
                 'contract_number' => $locked->contract_number,
                 'expected_start_at' => $locked->expected_start_at->toIso8601String(),
                 'expected_return_at' => $locked->expected_return_at->toIso8601String(),
@@ -38,10 +52,19 @@ class CreateContractVersion
                 'late_hour_rate' => $rule?->late_hour_rate,
                 'consent_text_version' => config('rentals.consent_text_version'),
                 'clauses' => $rule?->conditions ?? [],
+                'document' => $document,
             ], ...$termsOverride];
             $pricing = $reservation->pricing_snapshot;
-            $customer = ['id' => $locked->customer->id, 'display_name' => $locked->customer->displayName(), 'type' => $locked->customer->customer_type->value, 'identity' => 'masked'];
-            $vehicle = ['id' => $locked->vehicle->id, 'registration_number' => $locked->vehicle->registration_number, 'brand' => $locked->vehicle->brand, 'model' => $locked->vehicle->model, 'vin' => $locked->vehicle->vin ? 'masked' : null];
+            $customer = [
+                'id' => $locked->customer->id,
+                'type' => $locked->customer->customer_type->value,
+                ...$document['customer'],
+            ];
+            $vehicle = [
+                'id' => $locked->vehicle->id,
+                ...$document['vehicle'],
+                'vin' => $locked->vehicle->vin ? 'masked' : null,
+            ];
             $content = ['terms_snapshot' => $terms, 'pricing_snapshot' => $pricing, 'customer_snapshot' => $customer, 'vehicle_snapshot' => $vehicle];
             $version = ContractVersion::create([...$content, 'agency_id' => $locked->agency_id, 'rental_contract_id' => $locked->id, 'version_number' => $number, 'content_hash' => $this->canonical->hash($content), 'change_reason' => $reason, 'created_by' => $actorId]);
             $locked->forceFill(['current_version_id' => $version->id])->save();

@@ -103,11 +103,22 @@ class VehicleColorPredictionRun extends Model
 
     public function hasDisplayableCandidate(): bool
     {
-        return $this->status === VehicleColorPredictionStatus::Succeeded
-            && is_string($this->suggested_color)
-            && in_array($this->suggested_color, VehicleColorContract::SUPPORTED_COLORS, true)
-            && is_numeric($this->confidence)
-            && (float) $this->confidence >= VehicleColorContract::CONSULTATIVE_DISPLAY_THRESHOLD;
+        if ($this->status !== VehicleColorPredictionStatus::Succeeded
+            || ! is_string($this->suggested_color)
+            || ! in_array($this->suggested_color, VehicleColorContract::SUPPORTED_COLORS, true)
+            || ! is_numeric($this->confidence)) {
+            return false;
+        }
+
+        $confidence = (float) $this->confidence;
+
+        return is_finite($confidence) && $confidence >= 0 && $confidence <= 1;
+    }
+
+    public function hasLowConfidenceCandidate(): bool
+    {
+        return $this->hasDisplayableCandidate()
+            && (float) $this->confidence < VehicleColorContract::CONSULTATIVE_DISPLAY_THRESHOLD;
     }
 
     public function consultativeStatus(): string
@@ -135,16 +146,16 @@ class VehicleColorPredictionRun extends Model
             'RUN_STALE_RECOVERED' => 'L’analyse précédente a expiré et a été fermée.',
             'RUN_ACTOR_NOT_AUTHORIZED' => 'L’utilisateur demandeur n’est plus autorisé.',
             'VEHICLE_UNAVAILABLE' => 'Le véhicule n’est plus disponible dans le périmètre autorisé.',
-            'MODEL_ARTIFACT_INVALID' => 'Le modèle couleur privé est absent ou son empreinte est invalide.',
-            'INPUT_ARTIFACT_INVALID' => 'La photo privée est absente ou son intégrité a changé.',
-            'RUNTIME_CONFIGURATION_INVALID' => 'La configuration du runtime couleur est invalide.',
-            'QUEUE_DISPATCH_FAILED' => 'La queue Intelligence n’a pas accepté cette analyse.',
-            'COLOR_PROCESS_TIMEOUT' => 'L’inférence a dépassé le délai autorisé.',
-            'COLOR_PROCESS_FAILED' => 'Python ou ONNX Runtime n’a pas terminé l’inférence.',
+            'MODEL_ARTIFACT_INVALID' => 'Le service de suggestion de couleur n’est pas correctement installé.',
+            'INPUT_ARTIFACT_INVALID' => 'La photo privée n’est plus disponible ou a été modifiée.',
+            'RUNTIME_CONFIGURATION_INVALID' => 'Le service de suggestion de couleur n’est pas correctement configuré.',
+            'QUEUE_DISPATCH_FAILED' => 'La demande d’analyse n’a pas pu être prise en charge.',
+            'COLOR_PROCESS_TIMEOUT' => 'L’analyse de la couleur a dépassé le délai autorisé.',
+            'COLOR_PROCESS_FAILED' => 'Le service n’a pas terminé l’analyse de la couleur.',
             'COLOR_OUTPUT_INVALID', 'COLOR_OUTPUT_JSON_INVALID', 'COLOR_OUTPUT_CONTRACT_INVALID',
             'COLOR_OUTPUT_RESULT_INVALID', 'COLOR_OUTPUT_PROBABILITIES_INVALID',
-            'COLOR_OUTPUT_POLICY_MISMATCH' => 'La sortie ONNX ne respecte pas le contrat fermé.',
-            default => 'L’analyse de couleur a échoué sans modifier le véhicule.',
+            'COLOR_OUTPUT_POLICY_MISMATCH' => 'Le résultat reçu n’a pas pu être vérifié.',
+            default => 'L’analyse de la couleur n’a pas abouti. La fiche véhicule reste inchangée.',
         };
     }
 }

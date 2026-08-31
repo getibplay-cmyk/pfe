@@ -4,11 +4,15 @@ namespace App\Actions\Intelligence;
 
 use App\Enums\InspectionStatus;
 use App\Enums\InspectionType;
+use App\Enums\IntelligenceCapability;
+use App\Enums\RentalContractStatus;
 use App\Enums\VehicleDamagePredictionStatus;
 use App\Exceptions\VehicleDamageExecutionException;
 use App\Models\User;
 use App\Models\VehicleDamagePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageInputArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
@@ -17,13 +21,13 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 final class ExecuteVehicleDamagePrediction
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehicleDamageModelArtifact $modelArtifact,
         private readonly VehicleDamageInputArtifact $inputArtifact,
         private readonly VehicleDamageResultValidator $resultValidator,
@@ -33,25 +37,35 @@ final class ExecuteVehicleDamagePrediction
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::VehicleDamage, $tenantId)) {
+                throw new VehicleDamageExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $actor = User::query()
                 ->whereKey($actorId)
                 ->where('tenant_id', $tenantId)
                 ->where('is_active', true)
                 ->first();
-            if (! (bool) config('intelligence.vehicle_damage_v1.enabled')
-                || $actor === null
+            if ($actor === null
                 || ! $actor->hasPermission('prediction.view')
                 || ! $actor->hasPermission('prediction.damage.review')
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
                 throw new VehicleDamageExecutionException('RUN_ACTOR_NOT_AUTHORIZED');
             }
             $inspection = $run->inspection;
-            if ($inspection === null
-                || $inspection->inspection_type !== InspectionType::Return
-                || $inspection->status !== InspectionStatus::Completed
-                || $inspection->vehicle_id !== $run->vehicle_id
-                || $inspection->agency_id !== $run->agency_id) {
+            $contract = $run->rentalContract;
+            if ($contract === null
+                || $contract->id !== $run->rental_contract_id
+                || $contract->vehicle_id !== $run->vehicle_id
+                || $contract->agency_id !== $run->agency_id
+                || ($inspection === null && $contract->status !== RentalContractStatus::Active)
+                || ($inspection !== null && (
+                    $inspection->inspection_type !== InspectionType::Return
+                    || $inspection->status !== InspectionStatus::Completed
+                    || $inspection->rental_contract_id !== $contract->id
+                    || $inspection->vehicle_id !== $run->vehicle_id
+                    || $inspection->agency_id !== $run->agency_id
+                ))) {
                 throw new VehicleDamageExecutionException('RETURN_INSPECTION_UNAVAILABLE');
             }
             if ($run->model_name !== VehicleDamageContract::modelName()
@@ -113,7 +127,7 @@ final class ExecuteVehicleDamagePrediction
     {
         return DB::transaction(function () use ($runId, $actorId): VehicleDamagePredictionRun {
             $run = VehicleDamagePredictionRun::query()
-                ->with('inspection')
+                ->with(['inspection', 'rentalContract.vehicle'])
                 ->where('run_id', $runId)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -149,8 +163,10 @@ final class ExecuteVehicleDamagePrediction
         }
 
         try {
-            $image = Storage::disk((string) config('intelligence.vehicle_damage_v1.disk'))
-                ->path($run->input_stored_path);
+            $image = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_damage_v1.disk',
+                (string) $run->input_stored_path,
+            );
             $result = Process::path(sys_get_temp_dir())
                 ->timeout($timeout)
                 ->env($this->closedEnvironment())

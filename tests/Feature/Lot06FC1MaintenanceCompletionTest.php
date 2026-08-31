@@ -238,7 +238,7 @@ class Lot06FC1MaintenanceCompletionTest extends TestCase
         $this->post(route('maintenance.approve', $orderA))->assertRedirect();
         $this->post(route('maintenance.start', $orderA))->assertRedirect();
         $this->post(route('maintenance.complete', $orderA), ['actual_cost' => '250.00', 'mileage' => 1250, 'return_to_active' => '1', 'reason' => 'Parcours Blade'])->assertRedirect();
-        $this->get(route('maintenance.show', $orderA))->assertOk()->assertSee('Terminée')->assertSee('Dépense générée')->assertSee('Timeline immuable')->assertSee('Documents privés');
+        $this->get(route('maintenance.show', $orderA))->assertOk()->assertSee('Terminée')->assertSee('Dépense générée')->assertSee('Historique de la maintenance')->assertSee('Documents privés');
         $this->assertSame(1, $this->inTenant($f, fn () => AuditLog::where('action', 'maintenance.completed')->where('auditable_id', $orderA->id)->count()));
     }
 

@@ -4,22 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Actions\Intelligence\QueueVehiclePlatePrediction;
 use App\Actions\Intelligence\RecordVehiclePlatePredictionReview;
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehiclePlateReviewDecision;
 use App\Http\Requests\ReviewVehiclePlatePredictionRequest;
 use App\Http\Requests\StoreVehiclePlatePredictionRequest;
 use App\Models\Vehicle;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
-use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
-use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateInputArtifact;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -30,8 +31,8 @@ class VehiclePlatePredictionController extends Controller
     public function index(
         Request $request,
         TenantContext $context,
-        VehiclePlateHybridRuntime $runtime,
-        VehiclePlateDetectorRuntime $detectorRuntime,
+        VehiclePlateRuntimeReadiness $readiness,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): View {
         $this->authorize('viewAny', VehiclePlatePredictionRun::class);
 
@@ -58,17 +59,9 @@ class VehiclePlatePredictionController extends Controller
             ->latest('id')
             ->paginate(20);
 
-        $sanitizer = (string) config(
-            'intelligence.vehicle_plate_hybrid_review.image_sanitizer_script',
-        );
-        $ocrReady = (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
-            && $runtime->configured()
-            && is_file($sanitizer)
-            && (int) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds') >= 1
-            && (int) config('intelligence.vehicle_plate_hybrid_review.image_sanitizer_timeout_seconds') <= 15
-            && (int) config('intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension') >= 256
-            && (int) config('intelligence.vehicle_plate_hybrid_review.max_stored_image_dimension') <= 4_096;
-        $detectorReady = $ocrReady && $detectorRuntime->ready();
+        $availability = $intelligenceAccess->status(IntelligenceCapability::VehiclePlate);
+        $ocrReady = $availability->usable();
+        $detectorReady = $ocrReady && $readiness->ready(VehiclePlateDetectorContract::FULL_IMAGE);
 
         return view('intelligence.vehicle-plates.index', [
             'vehicles' => $vehicles,
@@ -76,7 +69,7 @@ class VehiclePlatePredictionController extends Controller
             'vehicleSelectorLimit' => self::VEHICLE_SELECTOR_LIMIT,
             'runs' => $runs,
             'runtime' => [
-                'enabled' => (bool) config('intelligence.vehicle_plate_hybrid_review.enabled'),
+                'enabled' => $availability->globallyEnabled && $availability->tenantAuthorized,
                 'ocr_ready' => $ocrReady,
                 'detector_ready' => $detectorReady,
                 'ocr_device' => (string) config('intelligence.vehicle_plate_hybrid_review.device'),
@@ -118,7 +111,7 @@ class VehiclePlatePredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-plates.index')->with(
             'status',
-            'Analyse ANPR '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'La lecture de l’immatriculation a été lancée.',
         );
     }
 
@@ -137,10 +130,7 @@ class VehiclePlatePredictionController extends Controller
             'effect' => VehiclePlateHybridContract::OPERATIONAL_EFFECT,
         ]);
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
-
         return $this->streamPrivateArtifact(
-            $disk,
             (string) $platePrediction->input_stored_path,
             (string) $platePrediction->input_mime,
             (int) $platePrediction->input_bytes,
@@ -162,10 +152,7 @@ class VehiclePlatePredictionController extends Controller
             'effect' => VehiclePlateHybridContract::OPERATIONAL_EFFECT,
         ]);
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_plate_hybrid_review.disk'));
-
         return $this->streamPrivateArtifact(
-            $disk,
             $artifact->reviewCropStoredPath($platePrediction),
             'image/jpeg',
             $artifact->reviewCropBytes($platePrediction),
@@ -200,12 +187,14 @@ class VehiclePlatePredictionController extends Controller
     }
 
     private function streamPrivateArtifact(
-        FilesystemAdapter $disk,
         string $storedPath,
         string $mime,
         int $bytes,
     ): StreamedResponse {
-        $input = $disk->readStream($storedPath);
+        $input = IntelligencePrivateStorage::readStream(
+            'intelligence.vehicle_plate_hybrid_review.disk',
+            $storedPath,
+        );
         abort_unless(is_resource($input), 404);
 
         return response()->stream(static function () use ($input): void {

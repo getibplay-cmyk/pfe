@@ -6,6 +6,7 @@ use App\Exceptions\VehiclePlateHybridExecutionException;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorResultValidator;
+use App\Support\Intelligence\VehiclePlate\VehiclePlateTemporaryPathCleaner;
 use JsonException;
 use PHPUnit\Framework\TestCase;
 
@@ -25,8 +26,11 @@ class VehiclePlateDetectorContractTest extends TestCase
 
     protected function tearDown(): void
     {
-        @unlink($this->cropPath);
-        parent::tearDown();
+        try {
+            $this->removeCropIfPresent();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /** @throws JsonException */
@@ -71,7 +75,7 @@ class VehiclePlateDetectorContractTest extends TestCase
     /** @throws JsonException */
     public function test_accepts_closed_no_detection_abstention_without_crop(): void
     {
-        @unlink($this->cropPath);
+        $this->removeCropIfPresent();
         $payload = $this->payload(null);
         $payload['status'] = 'no_detection';
         $payload['score'] = null;
@@ -88,6 +92,11 @@ class VehiclePlateDetectorContractTest extends TestCase
         $this->assertSame('no_detection', $result->status);
         $this->assertFalse($result->detected());
         $this->assertNull($result->cropContents);
+    }
+
+    private function removeCropIfPresent(): void
+    {
+        VehiclePlateTemporaryPathCleaner::removeFile($this->cropPath);
     }
 
     private function predictionRun(): VehiclePlatePredictionRun

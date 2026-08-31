@@ -1,0 +1,17 @@
+export const BELKHIR_SPACE_COLORS = Object.freeze({
+    ink: '#0B1220',
+    navy: '#111827',
+    blue: '#1D4ED8',
+    'blue-hover': '#1E40AF',
+    orange: '#C2410C',
+    'orange-soft': '#FFEDD5',
+    canvas: '#F8FAFC',
+    surface: '#FFFFFF',
+    text: '#111827',
+    muted: '#64748B',
+    border: '#D9E2EC',
+    success: '#15803D',
+    warning: '#B45309',
+    danger: '#B91C1C',
+    information: '#0369A1',
+});

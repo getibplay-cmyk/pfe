@@ -3,6 +3,7 @@
 namespace App\Actions\Intelligence;
 
 use App\Enums\DemandForecastExecutionStatus;
+use App\Enums\IntelligenceCapability;
 use App\Exceptions\DemandForecastExecutionException;
 use App\Exceptions\DemandForecastValidationException;
 use App\Models\DemandForecastExecutionRun;
@@ -11,6 +12,7 @@ use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\DemandForecasting\DemandForecastArtifactVerifier;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,7 @@ final class ExecuteDemandForecastExecution
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly DemandForecastModelArtifact $modelArtifact,
         private readonly DemandForecastArtifactVerifier $historyArtifact,
         private readonly ImportDemandForecastBatch $import,
@@ -33,6 +36,9 @@ final class ExecuteDemandForecastExecution
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::DemandForecast, $tenantId)) {
+                throw new DemandForecastExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $history = $run->historyExport;
             $actor = User::query()

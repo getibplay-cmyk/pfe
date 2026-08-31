@@ -2,11 +2,14 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehicleColorPredictionStatus;
 use App\Exceptions\VehicleColorExecutionException;
 use App\Models\User;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
@@ -15,13 +18,13 @@ use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 final class ExecuteVehicleColorPrediction
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehicleColorModelArtifact $modelArtifact,
         private readonly VehicleColorInputArtifact $inputArtifact,
         private readonly VehicleColorResultValidator $resultValidator,
@@ -31,20 +34,27 @@ final class ExecuteVehicleColorPrediction
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::VehicleColor, $tenantId)) {
+                throw new VehicleColorExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $actor = User::query()
                 ->whereKey($actorId)
                 ->where('tenant_id', $tenantId)
                 ->where('is_active', true)
                 ->first();
-            if (! (bool) config('intelligence.vehicle_color_v8.enabled')
-                || $actor === null
-                || ! $actor->hasPermission('prediction.view')
-                || ! $actor->hasPermission('prediction.color.review')
+            $preparatory = $run->vehicle_id === null;
+            $actorCanExecute = $actor !== null && ($preparatory
+                ? $actor->hasPermission('vehicle.create')
+                : ($actor->hasPermission('prediction.view')
+                    && $actor->hasPermission('prediction.color.review')));
+            if ($actor === null
+                || ! $actorCanExecute
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
                 throw new VehicleColorExecutionException('RUN_ACTOR_NOT_AUTHORIZED');
             }
-            if ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id) {
+            if (! $preparatory
+                && ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id)) {
                 throw new VehicleColorExecutionException('VEHICLE_UNAVAILABLE');
             }
             if (! $this->modelArtifact->configuredIsValid()) {
@@ -127,8 +137,10 @@ final class ExecuteVehicleColorPrediction
         }
 
         try {
-            $image = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'))
-                ->path($run->input_stored_path);
+            $image = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_color_v8.disk',
+                (string) $run->input_stored_path,
+            );
             $result = Process::path(sys_get_temp_dir())
                 ->timeout($timeout)
                 ->env([

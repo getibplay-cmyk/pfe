@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $pageTitle }} — RentFleet</title>
+    <title>{{ $pageTitle }} — {{ config('brand.name') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased">
+<x-belkhir-space-loading />
 @php
     $user = auth()->user();
     $home = $user->is_platform_admin ? route('platform.dashboard') : route('dashboard');
@@ -20,8 +21,8 @@
 @endphp
 <a href="#contenu" class="rf-skip-link">Aller au contenu principal</a>
 <div x-data="appShell" data-component="app-shell" class="min-h-screen lg:flex">
-    <aside class="hidden w-72 shrink-0 flex-col bg-slate-950 px-5 py-6 text-white lg:flex" aria-label="Barre latérale">
-        <a href="{{ $home }}" class="rounded-lg px-2" aria-label="RentFleet — accueil">
+    <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-belkhir-space-ink px-5 py-6 text-white lg:flex" aria-label="Barre latérale">
+        <a href="{{ $home }}" class="rounded-lg px-2" aria-label="{{ config('brand.name') }} — accueil">
             <x-brand-logo surface="dark" />
         </a>
         <nav aria-label="Navigation principale" class="mt-8 flex-1 space-y-6 overflow-y-auto pe-1">
@@ -42,10 +43,10 @@
     </aside>
 
     <div class="min-w-0 flex-1">
-        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6" aria-label="En-tête de l’application">
+        <header class="sticky top-0 z-30 border-b border-belkhir-space-border bg-white px-4 py-3 sm:px-6" aria-label="En-tête de l’application">
             <div class="flex items-center justify-between gap-4">
                 <div class="flex min-w-0 items-center gap-3">
-                    <button x-ref="menuButton" type="button" @click="openMenu($el)" class="rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50 lg:hidden" aria-label="Ouvrir le menu principal" :aria-expanded="mobileMenu.toString()" aria-controls="navigation-mobile">
+                    <button x-ref="menuButton" type="button" @click="openMenu($el)" class="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-belkhir-space-border p-2 text-belkhir-space-text hover:bg-brand-50 lg:hidden" aria-label="Ouvrir le menu principal" :aria-expanded="mobileMenu.toString()" aria-controls="navigation-mobile">
                         <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     <div class="min-w-0">
@@ -73,7 +74,7 @@
                                     <p class="px-4 py-6 text-center text-sm text-slate-500">Aucune notification pour le moment.</p>
                                 @endforelse
                             </div>
-                            <a href="{{ route('notifications.index') }}" class="block border-t border-slate-100 px-4 py-3 text-center text-sm font-semibold text-brand-700 hover:bg-slate-50">Voir toutes les notifications</a>
+                            <a href="{{ route('notifications.index') }}" class="flex items-center justify-center gap-2 border-t border-slate-100 px-4 py-3 text-center text-sm font-semibold text-brand-700 hover:bg-slate-50"><x-icon name="view" size="xs" />Voir toutes les notifications</a>
                         </section>
                     </div>
                 @endunless
@@ -84,8 +85,8 @@
                         <svg aria-hidden="true" class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
                     </button>
                     <div id="menu-utilisateur" x-cloak x-show="open" x-transition role="menu" aria-label="Menu utilisateur" class="absolute end-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-                        <a role="menuitem" href="{{ route('profile.edit') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Mon profil</a>
-                        <form method="POST" action="{{ route('logout') }}">@csrf<button role="menuitem" type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">Déconnexion</button></form>
+                        <a role="menuitem" href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="users" size="xs" />Mon profil</a>
+                        <form method="POST" action="{{ route('logout') }}">@csrf<button role="menuitem" type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="logout" size="xs" />Déconnexion</button></form>
                     </div>
                 </div>
                 </div>
@@ -104,5 +105,6 @@
         <main id="contenu" tabindex="-1" class="p-4 sm:p-6 lg:p-8">{{ $slot }}</main>
     </div>
 </div>
+<x-confirm-dialog />
 </body>
 </html>

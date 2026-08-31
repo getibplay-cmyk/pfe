@@ -1,10 +1,27 @@
 import './bootstrap';
 
 import Alpine from 'alpinejs';
+import { createVehicleColorAssistant } from './vehicle-color-assistant';
+import { createVehicleRegistrationAssistant } from './vehicle-registration-assistant';
+import { createReturnDamageAssistant } from './return-damage-assistant';
+import { createReservationDemandForecast } from './reservation-demand-forecast';
+import { createFleetReallocationPlanning } from './fleet-reallocation-planning';
+import { initializePlatformStatistics } from './platform-statistics';
+import { initializeTenantStatistics } from './tenant-statistics';
+import { initializeBelkhirSpaceLoading, initializeLoadingForms } from './form-enhancements';
+import { registerBelkhirSpaceUi } from './belkhir-space-ui';
 
 window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
+    registerBelkhirSpaceUi(Alpine);
+
+    Alpine.data('vehicleColorAssistant', (config) => createVehicleColorAssistant(config));
+    Alpine.data('vehicleRegistrationAssistant', (config) => createVehicleRegistrationAssistant(config));
+    Alpine.data('returnDamageAssistant', (config) => createReturnDamageAssistant(config));
+    Alpine.data('reservationDemandForecast', (config) => createReservationDemandForecast(config));
+    Alpine.data('fleetReallocationPlanning', (config) => createFleetReallocationPlanning(config));
+
     Alpine.data('appShell', () => ({
         mobileMenu: false,
         menuTrigger: null,
@@ -38,10 +55,16 @@ document.addEventListener('alpine:init', () => {
 Alpine.start();
 
 document.addEventListener('DOMContentLoaded', () => {
+    initializePlatformStatistics();
+    initializeTenantStatistics();
+    const belkhirSpaceLoading = initializeBelkhirSpaceLoading();
+    initializeLoadingForms(document, window, belkhirSpaceLoading);
+
     const invalidField = document.querySelector('[aria-invalid="true"]');
 
     if (invalidField instanceof HTMLElement) {
         invalidField.focus({ preventScroll: true });
-        invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        invalidField.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
     }
 });

@@ -1,3 +1,4 @@
+import errno
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,27 @@ from scripts.intelligence.vehicle_plate.plate_detector_worker import (
     secure_child,
     select_detection,
 )
+
+
+def create_symlink_or_skip(
+    test_case: unittest.TestCase, link: Path, target: Path
+) -> None:
+    try:
+        link.symlink_to(target)
+    except NotImplementedError:
+        test_case.skipTest("Symbolic-link creation is unsupported by this platform.")
+    except OSError as exception:
+        unsupported = {
+            errno.EPERM,
+            errno.EACCES,
+            getattr(errno, "ENOTSUP", -1),
+            getattr(errno, "EOPNOTSUPP", -1),
+        }
+        if getattr(exception, "winerror", None) == 1314 or exception.errno in unsupported:
+            test_case.skipTest(
+                "The current process lacks symbolic-link creation capability."
+            )
+        raise
 
 
 class VehiclePlateDetectorWorkerTest(unittest.TestCase):
@@ -60,23 +82,41 @@ class VehiclePlateDetectorWorkerTest(unittest.TestCase):
         self.assertEqual((0, 0, 105, 53), expand_box([0, 0, 100, 50], 200, 100, 0.05))
         self.assertAlmostEqual(1.0, box_iou([0, 0, 10, 10], [0, 0, 10, 10]))
 
-    def test_secure_child_refuses_traversal_and_symlinks(self) -> None:
+    def test_secure_child_refuses_traversal_on_every_platform(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             image = root / "vehicle.jpg"
             image.write_bytes(b"fixture")
             self.assertEqual(image, secure_child(root, "vehicle.jpg", must_exist=True))
+            self.assertEqual(
+                root / "future.jpg",
+                secure_child(root, "future.jpg", must_exist=False),
+            )
 
-            with self.assertRaisesRegex(DetectorWorkerError, "PATH_OUTSIDE_BOUNDARY"):
-                secure_child(root, "../vehicle.jpg", must_exist=True)
+            for unsafe in (
+                "",
+                ".",
+                "..",
+                "../vehicle.jpg",
+                "nested/vehicle.jpg",
+                "nested\\vehicle.jpg",
+                str(image.resolve()),
+            ):
+                with self.subTest(unsafe=unsafe), self.assertRaisesRegex(
+                    DetectorWorkerError, "PATH_OUTSIDE_BOUNDARY"
+                ):
+                    secure_child(root, unsafe, must_exist=False)
 
+            with self.assertRaisesRegex(DetectorWorkerError, "ROOT_INVALID"):
+                secure_child(root / "missing", "vehicle.jpg", must_exist=False)
+
+    def test_secure_child_refuses_symlink_when_capability_is_available(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
             target = root / "target.jpg"
             target.write_bytes(b"target")
             link = root / "link.jpg"
-            try:
-                link.symlink_to(target)
-            except (OSError, NotImplementedError):
-                self.skipTest("Symbolic links are unavailable on this platform.")
+            create_symlink_or_skip(self, link, target)
             with self.assertRaisesRegex(DetectorWorkerError, "SYMLINK_FORBIDDEN"):
                 secure_child(root, "link.jpg", must_exist=True)
 

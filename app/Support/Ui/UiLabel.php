@@ -9,8 +9,10 @@ class UiLabel
 {
     private const LABELS = [
         'active' => 'Actif', 'inactive' => 'Inactif', 'archived' => 'Archivé', 'suspended' => 'Suspendu',
+        'trialing' => 'Période d’essai', 'past_due' => 'Échéance dépassée',
+        'monthly' => 'Mensuelle', 'annual' => 'Annuelle', 'payment' => 'Paiement enregistré',
         'draft' => 'Brouillon', 'pending' => 'En attente', 'confirmed' => 'Confirmée', 'corrected' => 'Corrigée', 'converted' => 'Convertie',
-        'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'accepted' => 'Accepté', 'ignored' => 'Ignoré',
+        'cancelled' => 'Annulé', 'expired' => 'Expiré', 'ready' => 'Prêt', 'incomplete' => 'À compléter', 'accepted' => 'Accepté', 'ignored' => 'Ignoré',
         'return_pending' => 'Retour à traiter', 'returned' => 'Retourné', 'closed' => 'Clôturé',
         'issued' => 'Émise', 'partially_paid' => 'Partiellement payée', 'paid' => 'Payée', 'void' => 'Annulée',
         'posted' => 'Comptabilisé', 'reversed' => 'Contrepassé', 'approved' => 'Approuvé', 'rejected' => 'Rejeté',
@@ -18,11 +20,22 @@ class UiLabel
         'reported' => 'Déclaré', 'submitted' => 'Soumis', 'under_review' => 'En revue', 'settled' => 'Réglé',
         'resolved' => 'Résolu', 'dismissed' => 'Écarté', 'validated' => 'Validé',
         'queued' => 'En attente', 'running' => 'En cours', 'succeeded' => 'Terminé', 'failed' => 'Échec',
-        'vehicle_color_consultative_scientific_threshold_reached' => 'Seuil scientifique validé atteint',
+        'vehicle_color_consultative_scientific_threshold_reached' => 'Couleur suggérée prête à vérifier',
         'vehicle_color_consultative_candidate_to_review' => 'Couleur indicative à contrôler visuellement',
         'vehicle_color_consultative_not_exploitable' => 'Résultat non exploitable',
         'vehicle_color_consultative_unavailable' => 'Résultat indisponible',
         'accepted_for_demo_review' => 'Accepté pour revue de démonstration',
+        'SCHEMA_DEMO_ACCEPTED' => 'Format de démonstration accepté',
+        'SCIENTIFIC_GATE_NOT_PASSED' => 'Niveau de validation insuffisant',
+        'HUMAN_REVIEW_DEMO_ONLY' => 'Vérification limitée à la démonstration',
+        'DEMO_REJECTED' => 'Démonstration rejetée',
+        'CONSULTATIVE_PLAN_ACCEPTED_FOR_DEMO' => 'Suggestion retenue pour la démonstration',
+        'HUMAN_REVIEW_COMPLETED_DEMO_ONLY' => 'Vérification terminée pour la démonstration',
+        'PLAN_NOT_OPERATIONALLY_SUITABLE' => 'Suggestion inadaptée à l’exploitation',
+        'INTEGRITY_OR_LINEAGE_REJECTED' => 'Données ou provenance non conformes',
+        'SYNTHETIC_CONTRACT_REVIEW_ACCEPTED' => 'Résultats de démonstration acceptés',
+        'SCHEMA_OR_LINEAGE_REJECTED' => 'Format ou provenance non conforme',
+        'INTEGRITY_REVIEW_REJECTED' => 'Contrôle d’intégrité non concluant',
         'tenant-owner' => 'Administrateur de l’entreprise', 'tenant owner' => 'Administrateur de l’entreprise',
         'agency-manager' => 'Responsable d’agence', 'agency manager' => 'Responsable d’agence',
         'rental-agent' => 'Agent de location', 'rental agent' => 'Agent de location',
@@ -68,7 +81,8 @@ class UiLabel
     private const TONES = [
         'active' => 'success', 'confirmed' => 'success', 'corrected' => 'info', 'accepted' => 'success', 'accepted_for_demo_review' => 'success', 'paid' => 'success',
         'completed' => 'success', 'approved' => 'success', 'settled' => 'success', 'verified' => 'success', 'validated' => 'success',
-        'pending' => 'warning', 'ready' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
+        'pending' => 'warning', 'ready' => 'success', 'incomplete' => 'warning', 'return_pending' => 'warning', 'partially_paid' => 'warning',
+        'trialing' => 'info', 'past_due' => 'warning', 'payment' => 'success',
         'planned' => 'warning', 'under_review' => 'warning', 'submitted' => 'warning', 'suspended' => 'warning',
         'queued' => 'warning', 'running' => 'info', 'succeeded' => 'success', 'failed' => 'danger',
         'vehicle_color_consultative_scientific_threshold_reached' => 'success',
@@ -83,6 +97,10 @@ class UiLabel
 
     private const ACTIONS = [
         'agency.created' => 'Agence créée', 'agency.updated' => 'Agence mise à jour',
+        'fleet.agency_distance.created' => 'Distance inter-agences créée',
+        'fleet.agency_distance.corrected' => 'Distance inter-agences corrigée',
+        'fleet.agency_distance.activated' => 'Distance inter-agences activée',
+        'fleet.agency_distance.deactivated' => 'Distance inter-agences désactivée',
         'user.created' => 'Utilisateur créé', 'user.updated' => 'Utilisateur mis à jour',
         'user.password_reset' => 'Mot de passe utilisateur réinitialisé',
         'user.initial_password_changed' => 'Mot de passe initial remplacé',
@@ -110,46 +128,46 @@ class UiLabel
         'insurance.coverage.archived' => 'Garantie archivée',
         'reservation.exported' => 'Export des réservations téléchargé',
         'report.exported' => 'Export du rapport téléchargé',
-        'prediction.dataset.exported' => 'Dataset Intelligence anonymisé exporté',
-        'prediction.dataset.snapshot_downloaded' => 'Snapshot Intelligence téléchargé',
-        'prediction.dataset.manifest_downloaded' => 'Manifeste Intelligence téléchargé',
-        'prediction.demo.fixture_imported' => 'Fixture Intelligence synthétique ajoutée',
-        'prediction.demo.fixture_replayed' => 'Fixture Intelligence synthétique rejouée sans duplication',
+        'prediction.dataset.exported' => 'Données anonymisées préparées',
+        'prediction.dataset.snapshot_downloaded' => 'Données anonymisées téléchargées',
+        'prediction.dataset.manifest_downloaded' => 'Informations de contrôle téléchargées',
+        'prediction.demo.fixture_imported' => 'Démonstration ajoutée',
+        'prediction.demo.fixture_replayed' => 'Démonstration réutilisée sans duplication',
         'prediction.demo.human_decision_recorded' => 'Décision humaine de démonstration enregistrée',
-        'prediction.result_batch.imported' => 'Lot de résultats Intelligence synthétique importé',
-        'prediction.result_batch.replayed' => 'Lot de résultats Intelligence rejoué sans duplication',
-        'prediction.result_batch.downloaded' => 'Lot de résultats Intelligence téléchargé',
-        'prediction.result_batch.human_decision_recorded' => 'Décision humaine sur un lot Intelligence enregistrée',
+        'prediction.result_batch.imported' => 'Résultats de démonstration importés',
+        'prediction.result_batch.replayed' => 'Résultats de démonstration réutilisés sans duplication',
+        'prediction.result_batch.downloaded' => 'Résultats de démonstration téléchargés',
+        'prediction.result_batch.human_decision_recorded' => 'Décision humaine sur des résultats de démonstration enregistrée',
         'prediction.demand_history.exported' => 'Historique quotidien de demande exporté',
         'prediction.demand_history.downloaded' => 'Historique quotidien de demande téléchargé',
-        'prediction.demand_history.manifest_downloaded' => 'Manifeste de demande téléchargé',
+        'prediction.demand_history.manifest_downloaded' => 'Informations de contrôle de la demande téléchargées',
         'prediction.demand_forecast.imported' => 'Prévision de demande consultative importée',
         'prediction.demand_forecast.replayed' => 'Prévision de demande rejouée sans duplication',
-        'prediction.demand_forecast.execution_queued' => 'Inférence HGB ajoutée à la queue',
-        'prediction.demand_forecast.execution_succeeded' => 'Inférence HGB terminée',
-        'prediction.demand_forecast.execution_failed' => 'Échec contrôlé de l’inférence HGB',
-        'prediction.fleet_reallocation.imported' => 'Proposition de réallocation synthétique importée',
-        'prediction.fleet_reallocation.replayed' => 'Proposition de réallocation rejouée sans duplication',
-        'prediction.fleet_reallocation.run_queued' => 'Calcul OR-Tools ajouté à la queue',
-        'prediction.fleet_reallocation.run_succeeded' => 'Calcul OR-Tools terminé',
-        'prediction.fleet_reallocation.run_failed' => 'Échec contrôlé du calcul OR-Tools',
-        'prediction.fleet_reallocation.downloaded' => 'Proposition de réallocation téléchargée',
+        'prediction.demand_forecast.execution_queued' => 'Prévision de demande planifiée',
+        'prediction.demand_forecast.execution_succeeded' => 'Prévision de demande terminée',
+        'prediction.demand_forecast.execution_failed' => 'La prévision de demande a échoué',
+        'prediction.fleet_reallocation.imported' => 'Suggestion de démonstration importée',
+        'prediction.fleet_reallocation.replayed' => 'Suggestion de démonstration réutilisée sans duplication',
+        'prediction.fleet_reallocation.run_queued' => 'Suggestion de réallocation planifiée',
+        'prediction.fleet_reallocation.run_succeeded' => 'Suggestion de réallocation terminée',
+        'prediction.fleet_reallocation.run_failed' => 'Le calcul de réallocation a échoué',
+        'prediction.fleet_reallocation.downloaded' => 'Suggestion de réallocation téléchargée',
         'prediction.fleet_reallocation.human_decision_recorded' => 'Décision humaine sur une réallocation enregistrée',
-        'prediction.vehicle_color.run_queued' => 'Analyse couleur ajoutée à la queue',
-        'prediction.vehicle_color.run_succeeded' => 'Analyse couleur ONNX terminée',
-        'prediction.vehicle_color.run_failed' => 'Échec contrôlé de l’analyse couleur',
+        'prediction.vehicle_color.run_queued' => 'Analyse de la couleur planifiée',
+        'prediction.vehicle_color.run_succeeded' => 'Couleur suggérée disponible',
+        'prediction.vehicle_color.run_failed' => 'L’analyse de la couleur a échoué',
         'prediction.vehicle_color.input_viewed' => 'Photo privée de l’analyse couleur consultée',
         'prediction.vehicle_color.human_decision_recorded' => 'Décision humaine sur une couleur enregistrée',
-        'prediction.vehicle_damage.run_queued' => 'Analyse dommages ajoutée à la queue',
-        'prediction.vehicle_damage.run_succeeded' => 'Analyse dommages ONNX terminée',
-        'prediction.vehicle_damage.run_failed' => 'Échec contrôlé de l’analyse dommages',
-        'prediction.vehicle_damage.input_viewed' => 'Photo privée de l’analyse dommages consultée',
-        'prediction.vehicle_damage.human_decision_recorded' => 'Vérification humaine d’une zone candidate enregistrée',
-        'prediction.vehicle_plate.run_queued' => 'Analyse de plaque ajoutée à la queue',
-        'prediction.vehicle_plate.run_succeeded' => 'Analyse locale de plaque terminée',
-        'prediction.vehicle_plate.run_failed' => 'Échec contrôlé de l’analyse de plaque',
+        'prediction.vehicle_damage.run_queued' => 'Analyse des dommages planifiée',
+        'prediction.vehicle_damage.run_succeeded' => 'Analyse des dommages terminée',
+        'prediction.vehicle_damage.run_failed' => 'L’analyse des dommages a échoué',
+        'prediction.vehicle_damage.input_viewed' => 'Photo privée de l’analyse des dommages consultée',
+        'prediction.vehicle_damage.human_decision_recorded' => 'Vérification humaine d’une zone de dommage enregistrée',
+        'prediction.vehicle_plate.run_queued' => 'Lecture de l’immatriculation planifiée',
+        'prediction.vehicle_plate.run_succeeded' => 'Immatriculation détectée',
+        'prediction.vehicle_plate.run_failed' => 'La lecture de l’immatriculation a échoué',
         'prediction.vehicle_plate.input_viewed' => 'Image source privée de plaque consultée',
-        'prediction.vehicle_plate.crop_viewed' => 'Crop OCR privé de plaque consulté',
+        'prediction.vehicle_plate.crop_viewed' => 'Image recadrée de la plaque consultée',
         'prediction.vehicle_plate.human_correction_recorded' => 'Correction humaine de plaque enregistrée',
         'notification.generated' => 'Notification générée', 'notification.read' => 'Notification marquée comme lue',
         'notification.unread' => 'Notification marquée comme non lue', 'notification.all_read' => 'Notifications marquées comme lues',
@@ -186,7 +204,7 @@ class UiLabel
         'pricing' => 'Tarification', 'reservation' => 'Réservations', 'contract' => 'Contrats', 'inspection' => 'Inspections',
         'damage' => 'Dommages', 'charge' => 'Frais', 'invoice' => 'Factures', 'payment' => 'Paiements',
         'deposit' => 'Cautions', 'expense' => 'Dépenses', 'maintenance' => 'Maintenance', 'insurance' => 'Assurance',
-        'claim' => 'Sinistres', 'prediction' => 'Intelligence', 'report' => 'Rapports', 'audit' => 'Audit',
+        'claim' => 'Sinistres', 'prediction' => 'Intelligence', 'fleet' => 'Flotte', 'report' => 'Rapports', 'audit' => 'Audit',
     ];
 
     private const PERMISSION_ENTITIES = [
@@ -214,6 +232,7 @@ class UiLabel
         'report' => 'les rapports',
         'audit' => 'le journal d’audit',
         'prediction' => 'les prédictions',
+        'fleet_distance' => 'les distances inter-agences',
         'platform' => 'les entreprises clientes de la plateforme',
     ];
 
@@ -257,33 +276,35 @@ class UiLabel
         'charge.review' => 'Examiner les frais contractuels',
         'payment.allocate' => 'Allouer un paiement à une facture',
         'platform.tenants.manage' => 'Administrer les entreprises clientes de la plateforme',
-        'prediction.demo.review' => 'Générer, importer et revoir les preuves Intelligence synthétiques',
+        'prediction.demo.review' => 'Consulter et vérifier les démonstrations intelligentes',
         'prediction.forecast.import' => 'Importer les prévisions de demande consultatives',
         'prediction.color.review' => 'Analyser et revoir la couleur d’un véhicule',
         'prediction.damage.review' => 'Analyser et revoir les zones de dommage d’un retour',
         'prediction.plate.review' => 'Analyser et corriger une plaque de véhicule',
         'prediction.anomaly.review' => 'Analyser et revoir les usages de location atypiques',
+        'fleet.distance.view' => 'Consulter les distances inter-agences',
+        'fleet.distance.manage' => 'Gérer les distances inter-agences vérifiées',
     ];
 
     private const ENTITIES = [
-        'Agency' => 'Agence', 'User' => 'Utilisateur', 'Role' => 'Rôle', 'Tenant' => 'Entreprise',
+        'Agency' => 'Agence', 'AgencyDistance' => 'Distance inter-agences', 'User' => 'Utilisateur', 'Role' => 'Rôle', 'Tenant' => 'Entreprise',
         'Reservation' => 'Réservation', 'RentalContract' => 'Contrat', 'Customer' => 'Client', 'Driver' => 'Conducteur',
         'Vehicle' => 'Véhicule', 'VehicleBlock' => 'Bloc véhicule', 'Document' => 'Document privé', 'Invoice' => 'Facture',
         'Payment' => 'Paiement', 'DepositTransaction' => 'Caution', 'Expense' => 'Dépense', 'MaintenanceOrder' => 'Maintenance',
         'InsurancePolicy' => 'Police d’assurance', 'InsuranceClaim' => 'Sinistre', 'InternalNotification' => 'Notification',
-        'FleetReallocationProposal' => 'Proposition de réallocation', 'FleetReallocationRun' => 'Exécution OR-Tools',
-        'IntelligenceDatasetExportRun' => 'Snapshot Intelligence', 'IntelligenceResultBatch' => 'Lot de résultats Intelligence',
-        'DemandHistoryExportRun' => 'Snapshot d’historique de demande', 'DemandForecastRun' => 'Exécution de prévision de demande',
+        'FleetReallocationProposal' => 'Proposition de réallocation', 'FleetReallocationRun' => 'Calcul de réallocation',
+        'IntelligenceDatasetExportRun' => 'Export de données anonymisées', 'IntelligenceResultBatch' => 'Lot de résultats',
+        'DemandHistoryExportRun' => 'Historique de demande', 'DemandForecastRun' => 'Prévision de demande',
         'DemandForecast' => 'Prévision de demande',
         'VehicleColorPredictionRun' => 'Analyse de couleur véhicule',
-        'VehicleColorPredictionReview' => 'Revue humaine de couleur véhicule',
+        'VehicleColorPredictionReview' => 'Vérification de couleur véhicule',
         'VehicleDamagePredictionRun' => 'Analyse de dommages véhicule',
-        'VehicleDamagePredictionReview' => 'Revue humaine de zone candidate',
-        'VehiclePlatePredictionRun' => 'Analyse OCR de plaque',
-        'VehiclePlatePredictionReview' => 'Correction humaine de plaque',
-        'RentalUsageAnomalyRun' => 'Classement d’usages atypiques',
+        'VehicleDamagePredictionReview' => 'Vérification d’une zone de dommage',
+        'VehiclePlatePredictionRun' => 'Lecture d’immatriculation',
+        'VehiclePlatePredictionReview' => 'Correction d’immatriculation',
+        'RentalUsageAnomalyRun' => 'Analyse d’usages atypiques',
         'RentalUsageAnomalyResult' => 'Résultat d’usage atypique',
-        'RentalUsageAnomalyReview' => 'Revue humaine d’usage atypique',
+        'RentalUsageAnomalyReview' => 'Vérification d’un usage atypique',
     ];
 
     private const REPORT_LABELS = [
@@ -295,6 +316,7 @@ class UiLabel
         'contracts.expected_returns' => 'Retours attendus',
         'contracts.overdue_returns' => 'Retours en retard',
         'contracts.closed' => 'Contrats clôturés',
+        'fleet.total' => 'Véhicules dans le parc',
         'fleet.available' => 'Véhicules disponibles',
         'fleet.rented' => 'Véhicules loués',
         'fleet.blocked' => 'Véhicules bloqués',
@@ -385,10 +407,10 @@ class UiLabel
             return 'Effet : analyse consultative d’une photo de retour et revue humaine auditée, sans dommage, frais ni responsabilité automatiques.';
         }
         if ($permission === 'prediction.plate.review') {
-            return 'Effet : OCR local consultatif et correction humaine auditée, sans modification automatique de l’immatriculation.';
+            return 'Effet : immatriculation suggérée et correction humaine enregistrée, sans modification automatique de la fiche véhicule.';
         }
         if ($permission === 'prediction.anomaly.review') {
-            return 'Effet : classement consultatif et revue humaine append-only, sans sanction, frais, accusation ni modification de contrat.';
+            return 'Effet : aide à la vérification humaine, sans sanction, frais, accusation ni modification de contrat.';
         }
 
         return str_ends_with($permission, '.view')
@@ -400,7 +422,7 @@ class UiLabel
     {
         $group = explode('.', $permission)[0];
 
-        return in_array($group, ['tenant', 'role', 'report', 'audit'], true)
+        return in_array($group, ['tenant', 'role', 'fleet', 'report', 'audit'], true)
             ? 'Portée : entreprise cliente.'
             : 'Portée : agence autorisée ou ensemble des agences pour l’administrateur de l’entreprise.';
     }
@@ -439,13 +461,7 @@ class UiLabel
 
     public static function money(string|int|null $amount, string $currency): string
     {
-        if ($amount === null || preg_match('/^-?\d+(?:\.\d{1,4})?$/', (string) $amount) !== 1) {
-            return '—';
-        }
-
-        [$units, $decimals] = array_pad(explode('.', (string) $amount, 2), 2, '');
-
-        return $units.','.str_pad(substr($decimals, 0, 2), 2, '0').' '.strtoupper($currency);
+        return BusinessNumber::money($amount, $currency);
     }
 
     public static function blockType(mixed $value): string

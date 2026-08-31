@@ -8,6 +8,6 @@ class VehicleDamageRuntimeUnavailableException extends ServiceUnavailableHttpExc
 {
     public function __construct()
     {
-        parent::__construct(null, 'Le runtime dommages n’est pas disponible.');
+        parent::__construct(null, 'Le service d’analyse des dommages est temporairement indisponible.');
     }
 }

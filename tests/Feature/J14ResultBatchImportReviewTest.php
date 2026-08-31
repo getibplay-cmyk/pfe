@@ -55,7 +55,7 @@ class J14ResultBatchImportReviewTest extends TestCase
                 'result_batch' => $this->jsonFile($payload),
             ])
             ->assertRedirect(route('intelligence.result-batches.index'))
-            ->assertSessionHas('status', 'Lot J14-B validé et importé sans effet opérationnel.');
+            ->assertSessionHas('status', 'Résultats vérifiés et importés sans action automatique.');
 
         $batch = IntelligenceResultBatch::withoutGlobalScopes()->firstOrFail();
         $this->assertSame($payload['batch_id'], $batch->batch_id);
@@ -95,9 +95,8 @@ class J14ResultBatchImportReviewTest extends TestCase
         $this->actingAs($fixture['user'])
             ->get(route('intelligence.result-batches.index'))
             ->assertOk()
-            ->assertSee('J14-B · import et revue des lots de résultats')
-            ->assertSee($batch->batch_id)
-            ->assertSee('Aucune preuve acceptée et intègre disponible')
+            ->assertSee('Résultats de démonstration')
+            ->assertSee('Aucun résultat accepté disponible')
             ->assertDontSee($batch->stored_path)
             ->assertDontSee($batch->content_sha256);
 
@@ -130,7 +129,7 @@ class J14ResultBatchImportReviewTest extends TestCase
         $this->actingAs($fixture['user'])
             ->get(route('intelligence.result-batches.index'))
             ->assertOk()
-            ->assertSee('Dernière preuve acceptée disponible');
+            ->assertSee('Dernier résultat accepté disponible');
 
         $this->actingAs($fixture['user'])
             ->post(route('intelligence.result-batches.decisions.store', $batch), [
@@ -272,7 +271,7 @@ class J14ResultBatchImportReviewTest extends TestCase
         $this->actingAs($viewer)
             ->get(route('intelligence.result-batches.index'))
             ->assertOk()
-            ->assertSee($batch->batch_id);
+            ->assertSee('Historique des résultats');
         $this->actingAs($viewer)
             ->get(route('intelligence.result-batches.download', $batch))
             ->assertOk()
@@ -312,7 +311,7 @@ class J14ResultBatchImportReviewTest extends TestCase
         $this->actingAs($fixture['user'])
             ->get(route('intelligence.result-batches.index'))
             ->assertOk()
-            ->assertSee('Aucune preuve acceptée et intègre disponible');
+            ->assertSee('Aucun résultat accepté disponible');
         $this->assertSame($downloadsBefore, AuditLog::withoutGlobalScopes()
             ->where('action', 'prediction.result_batch.downloaded')
             ->count());
@@ -359,7 +358,7 @@ class J14ResultBatchImportReviewTest extends TestCase
 
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(84, DB::table('migrations')->count());
+        $this->assertSame(91, DB::table('migrations')->count());
         foreach (['intelligence_result_batches', 'intelligence_result_rows', 'intelligence_result_batch_decisions'] as $table) {
             $this->assertTrue(DB::table('information_schema.tables')
                 ->where('table_schema', 'public')

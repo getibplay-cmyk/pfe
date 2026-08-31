@@ -19,6 +19,7 @@ use App\Support\Tenancy\TenantContext;
 use App\Support\Testing\TestDatabaseGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -33,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        config(['app.name' => config('brand.name')]);
+
         $this->app->singleton(TenantContext::class);
         $this->app->bind(PredictionScoringService::class, RuleBasedScoringService::class);
 
@@ -47,6 +50,42 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Password::defaults(fn () => Password::min(12)->mixedCase()->numbers());
+
+        RateLimiter::for('reservation-demand-forecast', function (Request $request): array {
+            $user = $request->user();
+            $requestedAgency = $user?->agency_id ?? $request->integer('agency_id');
+            $scope = implode('|', [
+                'tenant:'.($user?->tenant_id ?? 'guest'),
+                'agency:'.($requestedAgency > 0 ? $requestedAgency : 'none'),
+            ]);
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(max(
+                    1,
+                    (int) config(
+                        'intelligence.demand_forecasting.rate_limits.user_per_minute',
+                    ),
+                ))->by('reservation-demand-forecast:user:'.$scope.'|actor:'.$actor),
+                Limit::perHour(max(
+                    1,
+                    (int) config(
+                        'intelligence.demand_forecasting.rate_limits.scope_per_hour',
+                    ),
+                ))->by('reservation-demand-forecast:scope:'.$scope),
+            ];
+        });
+
+        RateLimiter::for('fleet-reallocation-planning', function (Request $request): array {
+            $user = $request->user();
+            $scope = 'tenant:'.($user?->tenant_id ?? 'guest');
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(3)->by('fleet-reallocation-planning:user:'.$scope.'|actor:'.$actor),
+                Limit::perHour(20)->by('fleet-reallocation-planning:scope:'.$scope),
+            ];
+        });
 
         RateLimiter::for('vehicle-color-v8', function (Request $request): array {
             $user = $request->user();
@@ -129,6 +168,31 @@ class AppServiceProvider extends ServiceProvider
                     1,
                     (int) config('intelligence.rental_usage_anomaly.rate_limits.scope_per_hour'),
                 ))->by('rental-usage-anomaly-v1:scope:'.$scope),
+            ];
+        });
+
+        RateLimiter::for('rental-usage-anomaly-review', function (Request $request): array {
+            $user = $request->user();
+            $resultRoute = $request->route('anomalyResult');
+            $contractRoute = $request->route('contract');
+            $resource = $resultRoute ?? $contractRoute;
+            $resourceType = $resultRoute !== null ? 'result' : 'contract';
+            $resourceKey = $resource instanceof Model
+                ? (string) $resource->getKey()
+                : (is_scalar($resource) && ctype_digit((string) $resource)
+                    ? (string) $resource
+                    : 'invalid');
+            $scope = 'tenant:'.($user?->tenant_id ?? 'guest');
+            $actor = $user?->getAuthIdentifier() ?? $request->ip();
+
+            return [
+                Limit::perMinute(10)->by(
+                    'rental-usage-anomaly-review:'.$scope.'|actor:'.$actor
+                    .'|'.$resourceType.':'.$resourceKey,
+                ),
+                Limit::perMinute(30)->by(
+                    'rental-usage-anomaly-review:'.$scope.'|actor:'.$actor,
+                ),
             ];
         });
 

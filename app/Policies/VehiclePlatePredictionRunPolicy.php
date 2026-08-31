@@ -30,6 +30,13 @@ class VehiclePlatePredictionRunPolicy
             && $user->hasPermission('prediction.plate.review');
     }
 
+    public function viewForVehicleCreation(User $user, VehiclePlatePredictionRun $run): bool
+    {
+        return $this->sameScope($user, $run)
+            && $run->requested_by === $user->id
+            && $user->hasPermission('vehicle.create');
+    }
+
     private function sameScope(User $user, VehiclePlatePredictionRun $run): bool
     {
         return $user->tenant_id === $run->tenant_id

@@ -16,7 +16,7 @@ class VehicleInspectionController extends Controller
     {
         $this->authorize('view', $contract);
         abort_unless($request->user()->hasPermission('inspection.manage'), 403);
-        $action->handle($contract, $this->validated($request), $request->user()->id);
+        $action->handle($contract, $this->validated($request, false), $request->user()->id);
 
         return back()->with('status', 'Inspection de départ terminée.');
     }
@@ -25,16 +25,24 @@ class VehicleInspectionController extends Controller
     {
         $this->authorize('view', $contract);
         abort_unless($request->user()->hasPermission('inspection.manage'), 403);
-        $action->handle($contract, $this->validated($request), $request->user()->id);
+        $action->handle($contract, $this->validated($request, true), $request->user()->id);
 
         return back()->with('status', 'Inspection de retour terminée et comparaison calculée.');
     }
 
-    private function validated(Request $request): array
+    private function validated(Request $request, bool $allowsDamagePredictions): array
     {
-        return $request->validate([
+        $rules = [
             'tenant_id' => ['prohibited'], 'mileage' => ['required', 'integer', 'min:0'], 'fuel_level' => ['required', 'decimal:0,2', 'between:0,100'], 'notes' => ['nullable', 'string', 'max:5000'],
             'items' => ['required', 'array', 'min:1'], 'items.*.item_code' => ['required', 'alpha_dash', 'max:50'], 'items.*.label' => ['required', 'string', 'max:120'], 'items.*.condition' => ['required', Rule::enum(InspectionItemCondition::class)], 'items.*.notes' => ['nullable', 'string', 'max:1000'],
-        ]);
+        ];
+        $rules['damage_prediction_runs'] = $allowsDamagePredictions
+            ? ['sometimes', 'array', 'max:12']
+            : ['prohibited'];
+        if ($allowsDamagePredictions) {
+            $rules['damage_prediction_runs.*'] = ['required', 'uuid', 'distinct'];
+        }
+
+        return $request->validate($rules);
     }
 }

@@ -41,11 +41,11 @@ class VehicleDamageImageSanitizerTest(unittest.TestCase):
             self.assertEqual("jpg", manifest["extension"])
             self.assertEqual((480, 640), (manifest["width"], manifest["height"]))
             self.assertTrue(manifest["metadata_removed"])
-            # Windows exposes only a limited read-only mapping through
-            # ``st_mode`` and commonly reports 0o666 even after chmod(0o600).
-            # Keep the confidentiality assertion strict on POSIX, where these
-            # permission bits are authoritative; NTFS access is governed by
-            # the ACL of Laravel's private storage directory.
+            self.assertTrue(output.is_file())
+            self.assertFalse(output.is_symlink())
+            self.assertEqual(Path(temporary).resolve(), output.resolve().parent)
+            # ``st_mode`` is not an NTFS ACL check. Assert permission bits only
+            # where POSIX mode semantics are authoritative.
             if os.name == "posix":
                 self.assertEqual(0o600, output.stat().st_mode & 0o777)
             self.assertNotIn(b"private-return-location", output.read_bytes())

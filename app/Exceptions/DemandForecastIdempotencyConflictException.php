@@ -8,6 +8,6 @@ class DemandForecastIdempotencyConflictException extends ConflictHttpException
 {
     public function __construct()
     {
-        parent::__construct('La clé d’idempotence de la prévision existe avec un payload différent.');
+        parent::__construct('Cette demande de prévision existe déjà avec des données différentes. Rechargez la page avant de réessayer.');
     }
 }

@@ -2,11 +2,14 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehiclePlatePredictionStatus;
 use App\Exceptions\VehiclePlateHybridExecutionException;
 use App\Models\User;
 use App\Models\VehiclePlatePredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehiclePlate\ValidatedVehiclePlateDetection;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
@@ -15,12 +18,12 @@ use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridRuntime;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateInputArtifact;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 final class ExecuteVehiclePlatePrediction
 {
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehiclePlateInputArtifact $inputArtifact,
         private readonly VehiclePlateDetectorRuntime $detectorRuntime,
         private readonly VehiclePlateHybridRuntime $runtime,
@@ -31,30 +34,44 @@ final class ExecuteVehiclePlatePrediction
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::VehiclePlate, $tenantId)) {
+                throw new VehiclePlateHybridExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $actor = User::query()
                 ->whereKey($actorId)
                 ->where('tenant_id', $tenantId)
                 ->where('is_active', true)
                 ->first();
-            if (! (bool) config('intelligence.vehicle_plate_hybrid_review.enabled')
-                || $actor === null
-                || ! $actor->hasPermission('prediction.view')
-                || ! $actor->hasPermission('prediction.plate.review')
+            $preparatory = $run->vehicle_id === null;
+            $actorCanExecute = $actor !== null && ($preparatory
+                ? $actor->hasPermission('vehicle.create')
+                : ($actor->hasPermission('prediction.view')
+                    && $actor->hasPermission('prediction.plate.review')));
+            if ($actor === null
+                || ! $actorCanExecute
                 || ($actor->agency_id !== null && $actor->agency_id !== $run->agency_id)) {
                 throw new VehiclePlateHybridExecutionException('RUN_ACTOR_NOT_AUTHORIZED');
             }
-            if ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id) {
+            if (! $preparatory
+                && ($run->vehicle === null || $run->vehicle->agency_id !== $run->agency_id)) {
                 throw new VehiclePlateHybridExecutionException('VEHICLE_UNAVAILABLE');
             }
             if (! $this->inputArtifact->valid($run)) {
                 throw new VehiclePlateHybridExecutionException('INPUT_ARTIFACT_INVALID');
             }
 
-            $disk = Storage::disk(
-                (string) config('intelligence.vehicle_plate_hybrid_review.disk'),
-            );
-            $inputPath = $disk->path($run->input_stored_path);
+            try {
+                $disk = IntelligencePrivateStorage::disk(
+                    'intelligence.vehicle_plate_hybrid_review.disk',
+                );
+                $inputPath = IntelligencePrivateStorage::path(
+                    'intelligence.vehicle_plate_hybrid_review.disk',
+                    (string) $run->input_stored_path,
+                );
+            } catch (\Throwable) {
+                throw new VehiclePlateHybridExecutionException('INPUT_ARTIFACT_INVALID');
+            }
             $detection = null;
             $cropStoredPath = null;
             try {
@@ -75,14 +92,24 @@ final class ExecuteVehiclePlatePrediction
                     }
                     $cropStoredPath = 'intelligence/plate-hybrid/crops/'
                         .$run->tenant_id.'/'.$run->run_id.'.jpg';
-                    if (! $disk->put(
-                        $cropStoredPath,
-                        $detection->cropContents,
-                        ['visibility' => 'private'],
-                    )) {
+                    try {
+                        $stored = $disk->put(
+                            $cropStoredPath,
+                            $detection->cropContents,
+                            ['visibility' => 'private'],
+                        );
+                    } catch (\Throwable) {
+                        throw new VehiclePlateHybridExecutionException(
+                            'DETECTOR_CROP_STORE_FAILED',
+                        );
+                    }
+                    if (! $stored) {
                         throw new VehiclePlateHybridExecutionException('DETECTOR_CROP_STORE_FAILED');
                     }
-                    $ocrPath = $disk->path($cropStoredPath);
+                    $ocrPath = IntelligencePrivateStorage::path(
+                        'intelligence.vehicle_plate_hybrid_review.disk',
+                        $cropStoredPath,
+                    );
                     if (! $this->storedCropMatches($ocrPath, $detection)) {
                         throw new VehiclePlateHybridExecutionException('DETECTOR_CROP_STORE_FAILED');
                     }
@@ -152,7 +179,10 @@ final class ExecuteVehiclePlatePrediction
                 }, 3);
             } catch (\Throwable $exception) {
                 if (is_string($cropStoredPath)) {
-                    $disk->delete($cropStoredPath);
+                    IntelligencePrivateStorage::deleteAfterFailure(
+                        'intelligence.vehicle_plate_hybrid_review.disk',
+                        $cropStoredPath,
+                    );
                 }
 
                 throw $exception;

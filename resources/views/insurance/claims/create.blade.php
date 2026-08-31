@@ -11,7 +11,7 @@
             <label class="text-sm">Montant demandé (MAD)<input name="claimed_amount" inputmode="decimal" required value="{{ old('claimed_amount') }}" class="mt-1 w-full rounded border-slate-300"><x-input-error :messages="$errors->get('claimed_amount')" /></label>
             <label class="text-sm">Référence assureur sensible<input name="insurer_reference" autocomplete="off" value="{{ old('insurer_reference') }}" class="mt-1 w-full rounded border-slate-300"></label>
             <label class="text-sm md:col-span-2">Notes<textarea name="notes" rows="4" class="mt-1 w-full rounded border-slate-300">{{ old('notes') }}</textarea></label>
-            <div class="md:col-span-2"><button class="rounded-lg bg-slate-900 px-4 py-2 text-white">Créer à l’état déclaré</button></div>
+            <div class="md:col-span-2"><button class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-white"><x-icon name="add" size="xs" />Créer à l’état déclaré</button></div>
         </form>
     </div>
 </x-app-layout>

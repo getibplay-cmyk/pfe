@@ -139,6 +139,7 @@ class BuildMinimalReport
         $agencies = $this->placeholders($criteria->agencyIds);
         $sql = <<<SQL
             SELECT
+                COUNT(*) AS total,
                 COUNT(*) FILTER (WHERE status_at = 'active' AND block_type IS NULL) AS available,
                 COUNT(*) FILTER (WHERE block_type = 'contract') AS rented,
                 COUNT(*) FILTER (WHERE status_at = 'active' AND block_type IN ('reservation', 'manual')) AS blocked,
@@ -164,6 +165,7 @@ class BuildMinimalReport
         $row = DB::selectOne($sql, [$snapshot, $snapshot, $snapshot, $criteria->tenantId, ...$criteria->agencyIds, $snapshot]);
 
         return [
+            'total' => (int) $row->total,
             'available' => (int) $row->available,
             'rented' => (int) $row->rented,
             'blocked' => (int) $row->blocked,

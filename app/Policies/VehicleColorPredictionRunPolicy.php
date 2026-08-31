@@ -30,6 +30,13 @@ class VehicleColorPredictionRunPolicy
             && $user->hasPermission('prediction.color.review');
     }
 
+    public function viewForVehicleCreation(User $user, VehicleColorPredictionRun $run): bool
+    {
+        return $this->sameScope($user, $run)
+            && $run->requested_by === $user->id
+            && $user->hasPermission('vehicle.create');
+    }
+
     private function sameScope(User $user, VehicleColorPredictionRun $run): bool
     {
         return $user->tenant_id === $run->tenant_id

@@ -8,6 +8,6 @@ class J14ResultBatchAlreadyReviewedException extends ConflictHttpException
 {
     public function __construct()
     {
-        parent::__construct('Une décision humaine append-only existe déjà pour ce lot.');
+        parent::__construct('Une décision a déjà été enregistrée pour ces résultats.');
     }
 }

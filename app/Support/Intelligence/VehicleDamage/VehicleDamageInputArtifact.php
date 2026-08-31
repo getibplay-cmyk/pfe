@@ -3,7 +3,7 @@
 namespace App\Support\Intelligence\VehicleDamage;
 
 use App\Models\VehicleDamagePredictionRun;
-use Illuminate\Support\Facades\Storage;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use Throwable;
 
 class VehicleDamageInputArtifact
@@ -23,11 +23,10 @@ class VehicleDamageInputArtifact
         }
 
         try {
-            $disk = Storage::disk((string) config('intelligence.vehicle_damage_v1.disk'));
-            if (! $disk->exists($expected)) {
-                return false;
-            }
-            $path = $disk->path($expected);
+            $path = IntelligencePrivateStorage::path(
+                'intelligence.vehicle_damage_v1.disk',
+                $expected,
+            );
             $bytes = filesize($path);
             $sha256 = hash_file('sha256', $path);
             $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($path);

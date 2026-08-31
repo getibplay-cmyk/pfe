@@ -48,12 +48,17 @@ class VehiclePlateImageSanitizer
         $temporary = tempnam(sys_get_temp_dir(), 'rentfleet-plate-sanitize-');
         if (! is_string($temporary) || ! chmod($temporary, 0600)) {
             if (is_string($temporary)) {
-                @unlink($temporary);
+                try {
+                    VehiclePlateTemporaryPathCleaner::removeFile($temporary);
+                } catch (Throwable $cleanupException) {
+                    VehiclePlateTemporaryPathCleaner::reportFailure($cleanupException);
+                }
             }
 
             throw new VehiclePlateRuntimeUnavailableException;
         }
 
+        $completed = false;
         try {
             $result = Process::path(sys_get_temp_dir())
                 ->timeout($timeout)
@@ -92,7 +97,7 @@ class VehiclePlateImageSanitizer
                 throw new VehiclePlateRuntimeUnavailableException;
             }
 
-            return new SanitizedVehiclePlateImage(
+            $sanitized = new SanitizedVehiclePlateImage(
                 contents: $contents,
                 mime: $manifest['mime'],
                 extension: $manifest['extension'],
@@ -101,12 +106,22 @@ class VehiclePlateImageSanitizer
                 width: $manifest['width'],
                 height: $manifest['height'],
             );
+            $completed = true;
+
+            return $sanitized;
         } catch (VehiclePlateRuntimeUnavailableException $exception) {
             throw $exception;
         } catch (Throwable) {
             throw new VehiclePlateRuntimeUnavailableException;
         } finally {
-            @unlink($temporary);
+            try {
+                VehiclePlateTemporaryPathCleaner::removeFile($temporary);
+            } catch (Throwable $cleanupException) {
+                VehiclePlateTemporaryPathCleaner::reportFailure($cleanupException);
+                if ($completed) {
+                    throw new VehiclePlateRuntimeUnavailableException;
+                }
+            }
         }
     }
 

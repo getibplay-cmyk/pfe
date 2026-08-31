@@ -45,7 +45,7 @@ class ImportIntelligenceResultBatchRequest extends FormRequest
                 'operational_effect',
             ];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé par le contrat J14-B.');
+                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour ces résultats de démonstration.');
             }
         }];
     }

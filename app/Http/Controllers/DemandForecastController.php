@@ -6,6 +6,7 @@ use App\Actions\Intelligence\CreateDemandHistoryExport;
 use App\Actions\Intelligence\DownloadDemandHistorySnapshot;
 use App\Actions\Intelligence\ImportDemandForecastBatch;
 use App\Actions\Intelligence\QueueDemandForecastExecution;
+use App\Enums\IntelligenceCapability;
 use App\Exceptions\DemandForecastValidationException;
 use App\Http\Requests\DemandHistoryExportRequest;
 use App\Http\Requests\ImportDemandForecastRequest;
@@ -16,7 +17,9 @@ use App\Models\DemandHistoryExportRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
+use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
 use App\Support\Intelligence\IntelligencePseudonymizer;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +35,8 @@ class DemandForecastController extends Controller
         Request $request,
         TenantContext $context,
         DemandForecastModelArtifact $modelArtifact,
+        DemandForecastRuntimeReadiness $runtimeReadiness,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): View {
         $this->authorize('viewAny', DemandForecastRun::class);
 
@@ -60,18 +65,16 @@ class DemandForecastController extends Controller
             ->paginate(10);
 
         $artifactReady = $modelArtifact->configuredIsValid();
-        $runtimeReady = (bool) config('intelligence.demand_forecasting.runtime_enabled')
-            && $artifactReady
-            && (string) config('intelligence.demand_forecasting.python_binary') !== ''
-            && is_file((string) config('intelligence.demand_forecasting.runtime_script'));
+        $authorized = $intelligenceAccess->authorized(IntelligenceCapability::DemandForecast);
+        $runtimeReady = $authorized && $runtimeReadiness->ready();
 
         return view('intelligence.demand-forecasts.index', [
             'agencies' => $agencies,
             'historyRuns' => $historyRuns,
             'forecastRuns' => $forecastRuns,
-            'configured' => app(IntelligencePseudonymizer::class)->configured(),
+            'configured' => $runtimeReady && app(IntelligencePseudonymizer::class)->configured(),
             'runtime' => [
-                'enabled' => (bool) config('intelligence.demand_forecasting.runtime_enabled'),
+                'enabled' => $authorized && (bool) config('intelligence.demand_forecasting.runtime_enabled'),
                 'artifact_ready' => $artifactReady,
                 'ready' => $runtimeReady,
             ],
@@ -102,7 +105,7 @@ class DemandForecastController extends Controller
 
         return redirect()->route('intelligence.demand-forecasts.index')->with(
             'status',
-            'Inférence HGB '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'La prévision de demande a été lancée.',
         );
     }
 
@@ -185,7 +188,7 @@ class DemandForecastController extends Controller
             'status',
             $result->created
                 ? 'Prévisions D+1 à D+7 validées et importées en mode consultatif.'
-                : 'Prévisions déjà présentes : rejeu idempotent sans duplication.',
+                : 'Ces prévisions sont déjà présentes et n’ont pas été dupliquées.',
         );
     }
 }

@@ -1,10 +1,15 @@
 <x-app-layout>
+    @php
+        $invoiceFilterCount = collect(['q', 'invoice_status'])->filter(fn (string $key): bool => request()->filled($key))->count();
+        $expenseFilterCount = collect(['expense_q', 'expense_status'])->filter(fn (string $key): bool => request()->filled($key))->count();
+    @endphp
     <div class="space-y-8">
         <x-page-header title="Finance et clôture" eyebrow="Registres opérationnels" description="Chaque registre est affiché selon vos permissions. Aucune comptabilité générale ni passerelle bancaire." />
         <x-form-errors />
 
         @if($invoices !== null)
-            <form method="GET" class="grid gap-3 rounded-xl bg-white p-4 sm:grid-cols-3">
+            <x-filter-panel title="Filtrer les factures" :active-count="$invoiceFilterCount" :result-count="$invoices->total()">
+            <form method="GET" class="grid gap-3 sm:grid-cols-3" data-loading-form>
                 <input name="q" value="{{ request('q') }}" placeholder="Numéro de facture" aria-label="Numéro de facture">
                 <select name="invoice_status" aria-label="Statut de facture">
                     <option value="">Tous les statuts</option>
@@ -12,8 +17,9 @@
                         <option value="{{ $status }}" @selected(request('invoice_status') === $status)>{{ App\Support\Ui\UiLabel::get($status) }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-white">Filtrer les factures</button>
+                <div class="flex gap-2"><x-submit-button label="Appliquer" loading-label="Filtrage…" />@if($invoiceFilterCount > 0)<a href="{{ route('finance.index', request()->except(['q', 'invoice_status', 'invoices_page'])) }}" class="rf-button-secondary">Réinitialiser</a>@endif</div>
             </form>
+            </x-filter-panel>
 
             <section class="min-w-0 max-w-full overflow-hidden rounded-xl bg-white p-6 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="text-lg font-semibold">Factures</h2><x-result-count :paginator="$invoices" /></div>
@@ -60,17 +66,19 @@
                     <label class="text-sm">Montant (MAD) *<input name="amount" inputmode="decimal" required value="{{ old('amount') }}" class="mt-1 w-full"><x-input-error :messages="$errors->get('amount')" /></label>
                     <label class="text-sm">Taxe indicative (MAD)<input name="tax_amount" inputmode="decimal" value="{{ old('tax_amount', '0.00') }}" class="mt-1 w-full"></label>
                     <input type="hidden" name="currency" value="MAD">
-                    <div class="self-end"><button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-white">Enregistrer le brouillon</button></div>
+                    <div class="self-end"><button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-white"><x-icon name="save" size="xs" />Enregistrer le brouillon</button></div>
                 </form>
             </section>
         @endif
 
         @if($expenses !== null)
-            <form method="GET" class="grid gap-3 rounded-xl bg-white p-4 sm:grid-cols-3">
+            <x-filter-panel title="Filtrer les dépenses" :active-count="$expenseFilterCount" :result-count="$expenses->total()">
+            <form method="GET" class="grid gap-3 sm:grid-cols-3" data-loading-form>
                 <input name="expense_q" value="{{ request('expense_q') }}" placeholder="Numéro, description ou fournisseur" aria-label="Recherche de dépense">
                 <select name="expense_status" aria-label="Statut de dépense"><option value="">Tous les statuts</option>@foreach(['draft','approved','rejected'] as $status)<option value="{{ $status }}" @selected(request('expense_status') === $status)>{{ App\Support\Ui\UiLabel::get($status) }}</option>@endforeach</select>
-                <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-white">Filtrer les dépenses</button>
+                <div class="flex gap-2"><x-submit-button label="Appliquer" loading-label="Filtrage…" />@if($expenseFilterCount > 0)<a href="{{ route('finance.index', request()->except(['expense_q', 'expense_status', 'expenses_page'])) }}" class="rf-button-secondary">Réinitialiser</a>@endif</div>
             </form>
+            </x-filter-panel>
 
             <section class="min-w-0 max-w-full overflow-hidden rounded-xl bg-white p-6 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-semibold">Dépenses</h2><x-result-count :paginator="$expenses" /></div>
@@ -90,10 +98,10 @@
                                     <td class="p-3">
                                         <div class="space-y-3">
                                             @if($expense->status === 'draft' && auth()->user()->hasPermission('expense.approve'))
-                                                <form method="POST" action="{{ route('finance.expenses.approve', $expense) }}" onsubmit="return confirm('Approuver cette dépense ?')">@csrf<button type="submit" class="text-indigo-700 underline">Approuver</button></form>
+                                                <form method="POST" action="{{ route('finance.expenses.approve', $expense) }}" x-belkhir-space-confirm data-confirm-title="Approuver la dépense" data-confirm-resource="Dépense sélectionnée" data-confirm-consequence="La dépense sera approuvée selon le processus financier existant." data-confirm-label="Approuver">@csrf<button type="submit" class="text-indigo-700 underline">Approuver</button></form>
                                             @endif
                                             @if($expense->status === 'draft' && auth()->user()->hasPermission('expense.reject'))
-                                                <form method="POST" action="{{ route('finance.expenses.reject', $expense) }}" class="min-w-64 space-y-2" onsubmit="return confirm('Rejeter cette dépense ?')">
+                                                <form method="POST" action="{{ route('finance.expenses.reject', $expense) }}" class="min-w-64 space-y-2" x-belkhir-space-confirm data-confirm-title="Rejeter la dépense" data-confirm-resource="Dépense sélectionnée" data-confirm-consequence="La dépense sera rejetée et le motif saisi sera conservé." data-confirm-label="Rejeter">
                                                     @csrf
                                                     <label class="sr-only" for="reason-{{ $expense->id }}">Motif du rejet</label>
                                                     <textarea id="reason-{{ $expense->id }}" name="reason" required maxlength="2000" rows="2" placeholder="Motif obligatoire" class="w-full text-sm"></textarea>

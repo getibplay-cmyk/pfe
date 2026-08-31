@@ -82,6 +82,16 @@ class RentalContract extends Model
         return $this->hasMany(DamageReport::class);
     }
 
+    public function damagePredictionRuns(): HasMany
+    {
+        return $this->hasMany(VehicleDamagePredictionRun::class);
+    }
+
+    public function rentalUsageAnomalyResults(): HasMany
+    {
+        return $this->hasMany(RentalUsageAnomalyResult::class);
+    }
+
     public function vehicleBlock(): HasOne
     {
         return $this->hasOne(VehicleBlock::class);

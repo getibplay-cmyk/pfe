@@ -3,12 +3,14 @@
 namespace App\Actions\Intelligence;
 
 use App\Enums\FleetReallocationRunStatus;
+use App\Enums\IntelligenceCapability;
 use App\Exceptions\FleetReallocationExecutionException;
 use App\Exceptions\FleetReallocationValidationException;
 use App\Models\FleetReallocationRun;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +35,7 @@ final class ExecuteFleetReallocationRun
 
     public function __construct(
         private readonly TenantContext $context,
+        private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly ImportFleetReallocationProposal $import,
         private readonly AuditRecorder $audit,
     ) {}
@@ -40,6 +43,9 @@ final class ExecuteFleetReallocationRun
     public function handle(string $runId, int $tenantId, int $actorId): void
     {
         $this->context->run($tenantId, function () use ($runId, $tenantId, $actorId): void {
+            if (! $this->tenantAccess->usable(IntelligenceCapability::FleetReallocation, $tenantId)) {
+                throw new FleetReallocationExecutionException('TENANT_INTELLIGENCE_UNAVAILABLE');
+            }
             $run = $this->markRunning($runId, $actorId);
             $actor = User::query()
                 ->whereKey($actorId)

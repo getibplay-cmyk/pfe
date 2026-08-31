@@ -29,4 +29,14 @@ class Agency extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function outgoingDistances(): HasMany
+    {
+        return $this->hasMany(AgencyDistance::class, 'from_agency_id');
+    }
+
+    public function incomingDistances(): HasMany
+    {
+        return $this->hasMany(AgencyDistance::class, 'to_agency_id');
+    }
 }

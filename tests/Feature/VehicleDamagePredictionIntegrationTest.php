@@ -23,6 +23,7 @@ use App\Models\VehicleCategory;
 use App\Models\VehicleDamagePredictionReview;
 use App\Models\VehicleDamagePredictionRun;
 use App\Models\VehicleInspection;
+use App\Support\Intelligence\IntelligencePrivateStorage;
 use App\Support\Intelligence\VehicleDamage\SanitizedVehicleDamageImage;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageImageSanitizer;
@@ -47,12 +48,12 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('local');
+        Storage::fake(IntelligencePrivateStorage::DISK);
         $this->seed(RolesPermissionsSeeder::class);
         config([
             'intelligence.vehicle_damage_v1.backend' => VehicleDamageContract::BACKEND_RTDETRV2_S,
             'intelligence.vehicle_damage_v1.enabled' => false,
-            'intelligence.vehicle_damage_v1.disk' => 'local',
+            'intelligence.vehicle_damage_v1.disk' => IntelligencePrivateStorage::DISK,
             'intelligence.vehicle_damage_v1.python_binary' => 'python',
             'intelligence.vehicle_damage_v1.execution_provider' => 'CPUExecutionProvider',
             'intelligence.vehicle_damage_v1.runtime_script' => base_path(
@@ -87,8 +88,9 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-damages.index'))
             ->assertOk()
             ->assertSee('Désactivé par défaut')
-            ->assertSee('RT-DETRv2-S')
-            ->assertSee('Rappel IoU50 au seuil')
+            ->assertSee('Installation')
+            ->assertSee('À finaliser')
+            ->assertDontSee('RT-DETRv2-S')
             ->assertSee('Aucune action automatique');
     }
 
@@ -122,7 +124,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
             'intelligence/vehicle-damage/inputs/'.$run->tenant_id.'/'.$run->run_id.'.jpg',
             $run->input_stored_path,
         );
-        Storage::disk('local')->assertExists($run->input_stored_path);
+        Storage::disk(IntelligencePrivateStorage::DISK)->assertExists($run->input_stored_path);
         Queue::assertPushed(
             RunVehicleDamagePrediction::class,
             fn (RunVehicleDamagePrediction $job): bool => $job->runId === $run->run_id
@@ -431,7 +433,7 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
             'group' => 'prediction',
         ]);
 
-        $invalidDirectory = Storage::disk('local')->path('invalid-damage-run');
+        $invalidDirectory = Storage::disk(IntelligencePrivateStorage::DISK)->path('invalid-damage-run');
         mkdir($invalidDirectory, 0700, true);
         $this->artisan('rentfleet:damage-v1:install', ['source' => $invalidDirectory])
             ->assertFailed();

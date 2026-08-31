@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import errno
 import hashlib
 import tempfile
 import unittest
@@ -28,6 +29,27 @@ from scripts.intelligence.vehicle_plate.protocol import (
     ProtocolError,
     reverse_paddle_arabic_groups,
 )
+
+
+def create_symlink_or_skip(
+    test_case: unittest.TestCase, link: Path, target: Path
+) -> None:
+    try:
+        link.symlink_to(target)
+    except NotImplementedError:
+        test_case.skipTest("Symbolic-link creation is unsupported by this platform.")
+    except OSError as exception:
+        unsupported = {
+            errno.EPERM,
+            errno.EACCES,
+            getattr(errno, "ENOTSUP", -1),
+            getattr(errno, "EOPNOTSUPP", -1),
+        }
+        if getattr(exception, "winerror", None) == 1314 or exception.errno in unsupported:
+            test_case.skipTest(
+                "The current process lacks symbolic-link creation capability."
+            )
+        raise
 
 
 def _row(
@@ -94,7 +116,7 @@ class VehiclePlateE2SyntheticTest(unittest.TestCase):
             system_python.write_bytes(b"python")
             venv_python = root / "venv" / "bin" / "python"
             venv_python.parent.mkdir(parents=True)
-            venv_python.symlink_to(system_python)
+            create_symlink_or_skip(self, venv_python, system_python)
             arguments = SimpleNamespace(
                 python=venv_python,
                 paddleocr_dir=root / "PaddleOCR",
@@ -127,6 +149,36 @@ class VehiclePlateE2SyntheticTest(unittest.TestCase):
             invoked_python = run_e2.call_args.kwargs["python_executable"]
             self.assertEqual(venv_python, invoked_python)
             self.assertNotEqual(venv_python.resolve(), invoked_python)
+
+    def test_clean_eval_directory_uses_regular_portable_snapshots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            dataset = root / "dataset"
+            source = dataset / "images" / "sample.png"
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b"portable-evaluation-fixture")
+
+            destination = e2_module._create_clean_eval_directory(
+                root,
+                [
+                    {
+                        "split": "validation",
+                        "variant_id": "variant-00",
+                        "image_path": "images/sample.png",
+                    }
+                ],
+                dataset,
+                "validation",
+            )
+            snapshot = destination / source.name
+
+            self.assertTrue(snapshot.is_file())
+            self.assertFalse(snapshot.is_symlink())
+            self.assertEqual(source.read_bytes(), snapshot.read_bytes())
+            self.assertEqual(
+                hashlib.sha256(source.read_bytes()).hexdigest(),
+                hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+            )
 
     def test_parses_official_inference_result_shape(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -231,7 +231,7 @@ class Lot07B1IntelligenceExportTest extends TestCase
         $this->assertTrue(DB::table('pg_indexes')->where('indexname', 'rental_contracts_intelligence_export_idx')->exists());
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(84, DB::table('migrations')->count());
+        $this->assertSame(91, DB::table('migrations')->count());
     }
 
     public function test_j14_export_creates_a_private_reproducible_snapshot_and_closed_manifest(): void
@@ -297,10 +297,9 @@ class Lot07B1IntelligenceExportTest extends TestCase
         $page = $this->actingAs($fixture['user'])
             ->get(route('intelligence.index', $this->filters($fixture['agency'])))
             ->assertOk()
-            ->assertSee('J14-A · snapshots d’export reproductibles')
-            ->assertSee($firstRun->run_id)
-            ->assertSee('Manifeste JSON')
-            ->assertSee('Snapshot CSV');
+            ->assertSee('Exports anonymisés')
+            ->assertSee('Informations de contrôle')
+            ->assertSee('Télécharger le CSV');
         $page->assertDontSee($firstRun->content_sha256)
             ->assertDontSee($firstRun->stored_path);
     }
@@ -392,7 +391,7 @@ class Lot07B1IntelligenceExportTest extends TestCase
     {
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('rentfleet_test', DB::connection()->getDatabaseName());
-        $this->assertSame(84, DB::table('migrations')->count());
+        $this->assertSame(91, DB::table('migrations')->count());
         $this->assertTrue(DB::table('information_schema.tables')
             ->where('table_schema', 'public')
             ->where('table_name', 'intelligence_dataset_export_runs')

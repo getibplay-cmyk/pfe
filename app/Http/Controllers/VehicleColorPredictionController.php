@@ -4,20 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Actions\Intelligence\QueueVehicleColorPrediction;
 use App\Actions\Intelligence\RecordVehicleColorPredictionReview;
+use App\Enums\IntelligenceCapability;
 use App\Enums\VehicleColorReviewDecision;
 use App\Http\Requests\ReviewVehicleColorPredictionRequest;
 use App\Http\Requests\StoreVehicleColorPredictionRequest;
 use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
+use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -29,6 +32,8 @@ class VehicleColorPredictionController extends Controller
         Request $request,
         TenantContext $context,
         VehicleColorModelArtifact $modelArtifact,
+        VehicleColorRuntimeReadiness $readiness,
+        TenantIntelligenceAccess $intelligenceAccess,
     ): View {
         $this->authorize('viewAny', VehicleColorPredictionRun::class);
 
@@ -58,19 +63,8 @@ class VehicleColorPredictionController extends Controller
 
         $provider = (string) config('intelligence.vehicle_color_v8.execution_provider');
         $artifactReady = $modelArtifact->configuredIsValid();
-        $sanitizer = (string) config('intelligence.vehicle_color_v8.image_sanitizer_script');
-        $runtimeReady = (bool) config('intelligence.vehicle_color_v8.enabled')
-            && $artifactReady
-            && (string) config('intelligence.vehicle_color_v8.python_binary') !== ''
-            && is_file((string) config('intelligence.vehicle_color_v8.runtime_script'))
-            && is_file($sanitizer)
-            && in_array($provider, ['CPUExecutionProvider', 'CUDAExecutionProvider'], true)
-            && (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds') >= 1
-            && (int) config('intelligence.vehicle_color_v8.runtime_timeout_seconds') <= 30
-            && (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds') >= 1
-            && (int) config('intelligence.vehicle_color_v8.image_sanitizer_timeout_seconds') <= 15
-            && (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension') >= 256
-            && (int) config('intelligence.vehicle_color_v8.max_stored_image_dimension') <= 4_096;
+        $availability = $intelligenceAccess->status(IntelligenceCapability::VehicleColor);
+        $runtimeReady = $availability->usable();
 
         return view('intelligence.vehicle-colors.index', [
             'vehicles' => $vehicles,
@@ -78,7 +72,7 @@ class VehicleColorPredictionController extends Controller
             'vehicleSelectorLimit' => self::VEHICLE_SELECTOR_LIMIT,
             'runs' => $runs,
             'runtime' => [
-                'enabled' => (bool) config('intelligence.vehicle_color_v8.enabled'),
+                'enabled' => $availability->globallyEnabled && $availability->tenantAuthorized,
                 'artifact_ready' => $artifactReady,
                 'ready' => $runtimeReady,
                 'provider' => $provider,
@@ -115,7 +109,7 @@ class VehicleColorPredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-colors.index')->with(
             'status',
-            'Analyse couleur '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'L’analyse de la couleur a été lancée.',
         );
     }
 
@@ -134,9 +128,11 @@ class VehicleColorPredictionController extends Controller
             'effect' => VehicleColorContract::OPERATIONAL_EFFECT,
         ]);
 
-        $disk = Storage::disk((string) config('intelligence.vehicle_color_v8.disk'));
         $path = $colorPrediction->input_stored_path;
-        $input = $disk->readStream($path);
+        $input = IntelligencePrivateStorage::readStream(
+            'intelligence.vehicle_color_v8.disk',
+            (string) $path,
+        );
         abort_unless(is_resource($input), 404);
 
         return response()->stream(static function () use ($input): void {

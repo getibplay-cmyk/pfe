@@ -1,9 +1,15 @@
 <x-app-layout>
+    @php
+        $activeFilterCount = collect(['q', 'status'])
+            ->filter(fn (string $key): bool => request()->filled($key))
+            ->count();
+    @endphp
     <div class="mx-auto max-w-6xl space-y-6">
         <x-page-header title="Clients" eyebrow="Relations">
             <x-slot:actions>@can('create', App\Models\Customer::class)<a class="rounded-lg bg-slate-950 px-4 py-2 text-sm text-white" href="{{ route('customers.create') }}">Nouveau client</a>@endcan</x-slot:actions>
         </x-page-header>
-        <form method="GET" class="grid gap-3 rounded-xl bg-white p-4 sm:grid-cols-[1fr_auto_auto]">
+        <x-filter-panel title="Rechercher un client" :active-count="$activeFilterCount" :result-count="$customers->total()">
+        <form method="GET" class="grid gap-3 sm:grid-cols-[1fr_auto_auto]" data-loading-form>
             <label class="sr-only" for="customer-search">Rechercher</label>
             <input id="customer-search" name="q" value="{{ request('q') }}" placeholder="Nom ou société" class="min-w-0">
             <select name="status" class="min-w-40">
@@ -11,8 +17,9 @@
                 <option value="archived" @selected(request('status') === 'archived')>Archivés</option>
                 <option value="all" @selected(request('status') === 'all')>Tous</option>
             </select>
-            <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-white">Filtrer</button>
+            <div class="flex gap-2"><x-submit-button label="Appliquer" loading-label="Recherche…" />@if($activeFilterCount > 0)<a href="{{ route('customers.index') }}" class="rf-button-secondary"><x-icon name="reset" size="xs" />Réinitialiser</a>@endif</div>
         </form>
+        </x-filter-panel>
         <x-result-count :paginator="$customers" />
         <div class="overflow-x-auto rounded-xl bg-white">
             <table class="min-w-full text-left text-sm">

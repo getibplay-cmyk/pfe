@@ -10,7 +10,7 @@ class DemandForecastRuntimeUnavailableException extends ServiceUnavailableHttpEx
     {
         parent::__construct(
             null,
-            'Runtime HGB indisponible : installez le bundle J5 exact puis vérifiez rentfleet:doctor.',
+            'Le service de prévision est temporairement indisponible. Contactez l’administrateur de la plateforme.',
         );
     }
 }

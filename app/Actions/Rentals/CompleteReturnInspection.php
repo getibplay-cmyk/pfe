@@ -2,6 +2,7 @@
 
 namespace App\Actions\Rentals;
 
+use App\Actions\Intelligence\AttachPreparedVehicleDamagePredictions;
 use App\Enums\InspectionStatus;
 use App\Enums\InspectionType;
 use App\Enums\RentalContractStatus;
@@ -15,7 +16,11 @@ use Illuminate\Validation\ValidationException;
 
 class CompleteReturnInspection
 {
-    public function __construct(private CompareVehicleInspections $compare, private AuditRecorder $audit) {}
+    public function __construct(
+        private CompareVehicleInspections $compare,
+        private AttachPreparedVehicleDamagePredictions $attachDamagePredictions,
+        private AuditRecorder $audit,
+    ) {}
 
     public function handle(RentalContract $contract, array $data, int $actorId): VehicleInspection
     {
@@ -34,6 +39,11 @@ class CompleteReturnInspection
             }
             $inspection->forceFill(['status' => InspectionStatus::Completed, 'completed_by' => $actorId, 'completed_at' => now()])->save();
             $inspection->load('items');
+            $this->attachDamagePredictions->handle(
+                $inspection,
+                array_values($data['damage_prediction_runs'] ?? []),
+                $actorId,
+            );
             $comparison = $this->compare->handle($departure, $inspection);
             $futureConflicts = $this->compare->futureConflicts($locked, $inspection);
             $locked->forceFill(['status' => RentalContractStatus::ReturnPending, 'return_mileage' => $inspection->mileage, 'return_fuel_level' => $inspection->fuel_level])->save();

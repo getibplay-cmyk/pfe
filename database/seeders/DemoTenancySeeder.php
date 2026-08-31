@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Enums\IntelligenceCapability;
 use App\Enums\TenantStatus;
 use App\Models\Agency;
 use App\Models\Role;
 use App\Models\Tenant;
+use App\Models\TenantIntelligenceAccess;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Database\Seeders\Concerns\PreventsDemoSeedingInProduction;
@@ -36,6 +38,18 @@ class DemoTenancySeeder extends Seeder
             'email' => 'contact@rif-demo.test',
             'status' => TenantStatus::Active,
         ]);
+
+        foreach ([$primary, $secondary] as $tenant) {
+            foreach (IntelligenceCapability::cases() as $capability) {
+                TenantIntelligenceAccess::forceCreate([
+                    'tenant_id' => $tenant->getKey(),
+                    'capability' => $capability,
+                    'enabled' => false,
+                    'updated_by' => null,
+                    'changed_at' => now(),
+                ]);
+            }
+        }
 
         $context = app(TenantContext::class);
         $primaryAgencies = $context->run($primary, fn () => collect([
