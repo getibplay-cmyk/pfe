@@ -48,6 +48,15 @@ class ReverseSaasPayment
                     throw ValidationException::withMessages(['payment' => 'Seul un paiement SaaS original peut être contrepassé.']);
                 }
 
+                $occurredAt = isset($data['occurred_at'])
+                    ? CarbonImmutable::parse((string) $data['occurred_at'])
+                    : CarbonImmutable::now();
+                if ($occurredAt->lt($original->occurred_at)) {
+                    throw ValidationException::withMessages([
+                        'occurred_at' => 'La date de contrepassation ne peut pas précéder celle du paiement original.',
+                    ]);
+                }
+
                 $this->lockIdempotency($original->tenant_id, $idempotencyKey);
                 $existing = SaasPayment::query()
                     ->where('tenant_id', $original->tenant_id)
@@ -84,7 +93,7 @@ class ReverseSaasPayment
                     'currency' => $original->currency,
                     'reference' => $reference,
                     'idempotency_key' => $idempotencyKey,
-                    'occurred_at' => $data['occurred_at'] ?? now(),
+                    'occurred_at' => $occurredAt,
                     'reversal_of_id' => $original->getKey(),
                     'reason' => $reason,
                     'note' => $note,
