@@ -221,6 +221,21 @@ class ReservationDemandForecastAssistantTest extends TestCase
         );
     }
 
+    public function test_succeeded_run_remains_readable_when_status_is_polled_after_midnight(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-30 23:59:00+01:00');
+        $fixture = $this->fixtureWithDeparture();
+        $execution = $this->completeExecution($fixture);
+
+        CarbonImmutable::setTestNow('2026-08-31 00:01:00+01:00');
+
+        $this->actingAs($fixture['user'])
+            ->getJson(route('reservations.demand-forecast.show', $execution))
+            ->assertOk()
+            ->assertJsonPath('forecasts.0.date', '2026-08-31')
+            ->assertJsonPath('forecasts.6.date', '2026-09-06');
+    }
+
     public function test_disabled_or_unavailable_service_fails_safely_without_creating_anything(): void
     {
         $fixture = $this->fixtureWithDeparture();
