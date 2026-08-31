@@ -406,7 +406,7 @@ class AgencyDistanceFoundationTest extends TestCase
             ->get(route('intelligence.fleet-reallocation.index'))
             ->assertOk()
             ->assertSee('Distances inter-agences')
-            ->assertSee('scénario synthétique');
+            ->assertSee('Aucun véhicule n’est déplacé automatiquement');
         $this->assertTrue((bool) config('intelligence.fleet_reallocation.synthetic_demo_only'));
         $this->assertDatabaseCount('fleet_reallocation_runs', 0);
         $this->assertDatabaseCount('jobs', 0);
