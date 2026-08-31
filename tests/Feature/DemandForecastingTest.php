@@ -161,12 +161,14 @@ class DemandForecastingTest extends TestCase
             ->get(route('intelligence.demand-forecasts.index'))
             ->assertOk()
             ->assertSee('Prévision de demande D+1 à D+7')
-            ->assertSee('15,234 %')
+            ->assertSee('15,23 %')
             ->assertSee('84,77 %')
             ->assertSee('Validation locale en attente')
             ->assertSee('scénario central', false)
             ->assertSee('saisonnalité hebdomadaire')
             ->assertSee('+1,25 départ(s)')
+            ->assertDontSee('15,234 %')
+            ->assertDontSee('10,000000')
             ->assertSee('NO_OPERATIONAL_ACTION');
         $page->assertDontSee($run->stored_path)
             ->assertDontSee($run->model_artifact_sha256);

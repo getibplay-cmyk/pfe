@@ -1,3 +1,5 @@
+import { formatAverage, formatBusinessInteger, formatDistance } from './business-number.js';
+
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 
 export function createFleetReallocationPlanning(config = {}) {
@@ -112,6 +114,9 @@ export function createFleetReallocationPlanning(config = {}) {
 
         formatDate,
         formatGeneratedAt,
+        formatAverage,
+        formatBusinessInteger,
+        formatDistance,
     };
 }
 

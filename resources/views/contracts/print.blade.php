@@ -37,7 +37,7 @@
         $display = fn ($value) => filled($value) ? $value : 'Non renseigné';
     @endphp
 
-    <div class="toolbar" aria-label="Actions d’impression"><button type="button" onclick="window.print()">Imprimer le contrat</button></div>
+    <div class="toolbar" aria-label="Actions d’impression"><button type="button" onclick="window.print()"><x-icon name="print" size="xs" />Imprimer le contrat</button></div>
     <main>
         <section class="sheet" data-contract-page="1">
             <header class="masthead">

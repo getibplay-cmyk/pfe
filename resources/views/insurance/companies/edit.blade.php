@@ -4,7 +4,7 @@
             <label class="text-sm md:col-span-2">Nom *<input name="name" required value="{{ old('name', $company->name) }}" class="mt-1 w-full rounded border-slate-300"><x-input-error :messages="$errors->get('name')" /></label>
             <label class="text-sm">E-mail<input name="email" type="email" value="{{ old('email', $company->email) }}" class="mt-1 w-full rounded border-slate-300"><x-input-error :messages="$errors->get('email')" /></label>
             <label class="text-sm">Téléphone<input name="phone" value="{{ old('phone', $company->phone) }}" class="mt-1 w-full rounded border-slate-300"><x-input-error :messages="$errors->get('phone')" /></label>
-            <div class="md:col-span-2"><button class="rounded-lg bg-slate-900 px-4 py-2 text-white">Enregistrer</button></div>
+            <div class="md:col-span-2"><button class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-white"><x-icon name="save" size="xs" />Enregistrer</button></div>
         </form>
     </div>
 </x-app-layout>

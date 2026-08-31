@@ -9,6 +9,8 @@ use UnexpectedValueException;
 
 final class DemandForecastPlanningPresenter
 {
+    public function __construct(private readonly DemandForecastPlanningUnits $planningUnits) {}
+
     /** @return array<string, mixed>|null */
     public function latestForAgency(int $agencyId): ?array
     {
@@ -53,14 +55,14 @@ final class DemandForecastPlanningPresenter
         foreach ($rows as $position => $forecast) {
             $horizon = $position + 1;
             $value = (string) $forecast->conditional_mean;
-            $numeric = (float) $value;
             if ($forecast->horizon !== $horizon
                 || $forecast->target_date?->toDateString() !== $today->addDays($horizon)->toDateString()
                 || preg_match('/^(?:0|[1-9][0-9]{0,7})\.[0-9]{6}$/D', $value) !== 1
-                || ! is_finite($numeric)
-                || $numeric < 0) {
+                || str_starts_with($value, '-')) {
                 throw new UnexpectedValueException('Forecast result values are invalid.');
             }
+
+            $this->planningUnits->convert($value);
 
             $forecasts[] = [
                 'date' => $forecast->target_date->toDateString(),

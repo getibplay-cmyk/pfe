@@ -16,7 +16,7 @@
             <label>Valide jusqu’au<input type="date" name="valid_to" value="{{ old('valid_to', $pricingRule->valid_to?->format('Y-m-d')) }}" class="mt-1 w-full rounded-lg border-slate-300"></label>
             <label>Priorité<input type="number" name="priority" value="{{ old('priority', $pricingRule->priority ?? 0) }}" required class="mt-1 w-full rounded-lg border-slate-300"></label>
             <input type="hidden" name="currency" value="MAD"><input type="hidden" name="is_active" value="1">
-            <div class="md:col-span-2 flex justify-end gap-3"><a href="{{ route('pricing-rules.index') }}" class="rounded-lg border px-4 py-2">Annuler</a><button class="rounded-lg bg-slate-900 px-4 py-2 text-white">{{ $pricingRule->exists ? 'Créer la nouvelle version' : 'Créer' }}</button></div>
+            <div class="md:col-span-2 flex justify-end gap-3"><a href="{{ route('pricing-rules.index') }}" class="rounded-lg border px-4 py-2">Annuler</a><button class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-white"><x-icon name="add" size="xs" />{{ $pricingRule->exists ? 'Créer la nouvelle version' : 'Créer' }}</button></div>
         </form>
     </div>
 </x-app-layout>

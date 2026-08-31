@@ -12,7 +12,7 @@
             </form>
         </x-filter-panel>
         @if($vehicles !== null)
-            <x-section-card :title="$vehicles->count().' véhicule'.($vehicles->count() > 1 ? 's' : '').' disponible'.($vehicles->count() > 1 ? 's' : '')" description="Résultat calculé à partir des blocs de disponibilité actifs.">
+            <x-section-card :title="App\Support\Ui\BusinessNumber::count($vehicles->count(), 'véhicule').' disponible'.($vehicles->count() > 1 ? 's' : '')" description="Résultat calculé à partir des blocs de disponibilité actifs.">
                 <div class="grid gap-4 md:grid-cols-2">
                     @forelse($vehicles as $vehicle)
                         <article class="rounded-xl border border-slate-200 p-4">

@@ -1,3 +1,5 @@
+import { formatConfidence } from './business-number.js';
+
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 const PROCESSING_MESSAGE = 'Analyse de la photo en cours…';
 const MANUAL_MESSAGE = 'La photo n’a pas pu être analysée. Poursuivez l’inspection manuelle.';
@@ -10,6 +12,7 @@ export function createReturnDamageAssistantState(initialNotes = '') {
         photos: [],
         selectedRunIds: [],
         nextPhotoId: 1,
+        releasePreview: null,
 
         addFiles(files, createPreview = null) {
             for (const file of Array.from(files ?? []).slice(0, 12 - this.photos.length)) {
@@ -156,32 +159,44 @@ export function createReturnDamageAssistantState(initialNotes = '') {
         removePhoto(photo) {
             this.removeSuggestion(photo);
             photo.requestSequence += 1;
+            if (photo.preview && typeof this.releasePreview === 'function') {
+                this.releasePreview(photo.preview);
+                photo.preview = '';
+            }
             this.photos = this.photos.filter((candidate) => candidate.id !== photo.id);
+        },
+
+        destroy() {
+            for (const photo of this.photos) {
+                if (photo.preview && typeof this.releasePreview === 'function') {
+                    this.releasePreview(photo.preview);
+                    photo.preview = '';
+                }
+            }
         },
 
         confidenceText(value) {
             const confidence = Number(value);
             if (! Number.isFinite(confidence)) return '';
 
-            return `${new Intl.NumberFormat('fr-FR', {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-            }).format(confidence * 100)} %`;
+            return formatConfidence(confidence);
         },
     };
 }
 
 export function createReturnDamageAssistant(config = {}) {
     const state = createReturnDamageAssistantState(config.initialNotes ?? '');
+    const urlApi = config.urlApi ?? globalThis.window?.URL ?? globalThis.URL;
     state.ready = Boolean(config.ready);
     state.storeUrl = String(config.storeUrl ?? '');
     state.pollDelay = Number(config.pollDelay ?? 1500);
     state.maxPollAttempts = Number(config.maxPollAttempts ?? 120);
     state.fetchRequest = config.fetchRequest ?? window.fetch.bind(window);
     state.schedule = config.schedule ?? window.setTimeout.bind(window);
+    state.releasePreview = (url) => urlApi?.revokeObjectURL?.(url);
 
     state.addSelectedFiles = function (files) {
-        this.addFiles(files, (file) => window.URL.createObjectURL(file));
+        this.addFiles(files, (file) => urlApi?.createObjectURL?.(file) ?? '');
     };
 
     state.analyze = async function (photo) {

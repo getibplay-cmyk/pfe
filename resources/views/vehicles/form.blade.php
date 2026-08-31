@@ -15,10 +15,11 @@
         ];
     @endphp
     <form
-        class="mx-auto max-w-4xl space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        class="mx-auto max-w-4xl space-y-5 rounded-2xl border border-belkhir-space-border bg-white p-5 shadow-panel sm:p-6"
         method="POST"
         action="{{ $vehicle->exists ? route('vehicles.update', $vehicle) : route('vehicles.store') }}"
         x-data='vehicleColorAssistant(@json($assistantConfiguration))'
+        data-loading-form
     >
         @csrf
         @if ($vehicle->exists) @method('PUT') @endif
@@ -27,7 +28,7 @@
             eyebrow="Parc automobile"
             :breadcrumbs="[['label' => 'Véhicules', 'url' => route('vehicles.index')], ['label' => $vehicle->exists ? $vehicle->registration_number : 'Nouveau véhicule']]"
         >
-            <x-slot:actions><a href="{{ $vehicle->exists ? route('vehicles.show', $vehicle) : route('vehicles.index') }}" class="rf-button-secondary">Retour</a></x-slot:actions>
+            <x-slot:actions><a href="{{ $vehicle->exists ? route('vehicles.show', $vehicle) : route('vehicles.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour</a></x-slot:actions>
         </x-page-header>
         <x-form-errors />
         <div class="grid gap-4 sm:grid-cols-2">
@@ -80,8 +81,8 @@
                                     x-ref="fullPhoto"
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
-                                    class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm"
-                                    @change="message = ''"
+                                    class="mt-1 block w-full rounded-xl border border-belkhir-space-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-belkhir-space-blue hover:file:bg-brand-100"
+                                    @change="selectPhoto($event, 'full_vehicle_image')"
                                 >
                             </label>
                             <button
@@ -94,6 +95,10 @@
                                 <span x-cloak x-show="busy && activeMode === 'full_vehicle_image'" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
                                 <span x-text="busy && activeMode === 'full_vehicle_image' ? 'Lecture en cours…' : 'Lire l’immatriculation'">Lire l’immatriculation</span>
                             </button>
+                        </div>
+
+                        <div x-cloak x-show="fullPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
+                            <img :src="fullPreviewUrl" alt="Aperçu local de la photo complète du véhicule" class="h-full w-full object-contain">
                         </div>
 
                         @unless ($registrationAssistantFullReady || $registrationAssistantCloseUpReady)
@@ -134,8 +139,8 @@
                                         x-ref="closeUpPhoto"
                                         type="file"
                                         accept="image/jpeg,image/png,image/webp"
-                                        class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm"
-                                        @change="message = ''"
+                                        class="mt-1 block w-full rounded-xl border border-belkhir-space-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-belkhir-space-orange-soft file:px-3 file:py-2 file:font-semibold file:text-belkhir-space-orange hover:file:bg-orange-100"
+                                        @change="selectPhoto($event, 'plate_crop')"
                                     >
                                 </label>
                                 <button
@@ -148,6 +153,9 @@
                                     <span x-cloak x-show="busy && activeMode === 'plate_crop'" class="me-2 size-4 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700" aria-hidden="true"></span>
                                     <span x-text="busy && activeMode === 'plate_crop' ? 'Lecture en cours…' : 'Lire la photo rapprochée'">Lire la photo rapprochée</span>
                                 </button>
+                            </div>
+                            <div x-cloak x-show="closeUpPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
+                                <img :src="closeUpPreviewUrl" alt="Aperçu local de la photo rapprochée de la plaque" class="h-full w-full object-contain">
                             </div>
                         </div>
                     </section>
@@ -204,20 +212,25 @@
                                 x-ref="colorPhoto"
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp"
-                                class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm"
-                                @change="message = ''"
+                                class="mt-1 block w-full rounded-xl border border-belkhir-space-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-belkhir-space-blue hover:file:bg-brand-100"
+                                @change="selectPhoto($event)"
                             >
                         </label>
                         <button
                             type="button"
-                            class="inline-flex min-h-10 items-center justify-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+                            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="busy || !ready"
                             :aria-busy="busy.toString()"
                             @click="analyze($refs.colorPhoto.files[0], $refs.agencyField.value)"
                         >
-                            <span x-cloak x-show="busy" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
+                            <span x-cloak x-show="busy" class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
+                            <x-icon name="analysis" size="xs" x-show="!busy" />
                             <span x-text="busy ? 'Analyse en cours…' : 'Analyser la couleur'">Analyser la couleur</span>
                         </button>
+                    </div>
+
+                    <div x-cloak x-show="previewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
+                        <img :src="previewUrl" alt="Aperçu local de la photo utilisée pour suggérer la couleur" class="h-full w-full object-contain">
                     </div>
 
                     @unless ($colorAssistantReady)
@@ -246,6 +259,6 @@
                 <x-input-error :messages="$errors->get('color_prediction_run')" class="sm:col-span-2" />
             @endif
         </div>
-        <button type="submit" class="rounded-lg bg-slate-950 px-4 py-2 text-white">Enregistrer</button>
+        <x-submit-button label="Enregistrer" loading-label="Enregistrement…" />
     </form>
 </x-app-layout>

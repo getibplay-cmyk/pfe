@@ -1,4 +1,4 @@
-export const ATLAS_COLORS = Object.freeze({
+export const BELKHIR_SPACE_COLORS = Object.freeze({
     ink: '#0B1220',
     navy: '#111827',
     blue: '#1D4ED8',

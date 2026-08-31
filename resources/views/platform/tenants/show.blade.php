@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="rf-page">
         <x-page-header :title="$tenant->name" eyebrow="Entreprise cliente" description="Structure, abonnement, paiements et modèles IA autorisés." :breadcrumbs="[['label' => 'Entreprises clientes', 'url' => route('platform.tenants.index')], ['label' => $tenant->name]]">
-            <x-slot:actions><x-status-badge :value="$tenant->status" /><a href="{{ route('platform.tenants.index') }}" class="rf-button-secondary">Retour aux entreprises</a><a href="{{ route('platform.tenants.edit', $tenant) }}" class="rf-button-primary">Modifier</a></x-slot:actions>
+            <x-slot:actions><x-status-badge :value="$tenant->status" /><a href="{{ route('platform.tenants.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux entreprises</a><a href="{{ route('platform.tenants.edit', $tenant) }}" class="rf-button-primary"><x-icon name="edit" size="xs" />Modifier</a></x-slot:actions>
         </x-page-header>
 
         <x-form-errors />
@@ -26,7 +26,7 @@
             <x-section-card title="Abonnement courant">
                 <x-slot:actions>
                     @if(! $currentSubscription && $hasActivePlans)
-                        <a href="{{ route('platform.tenants.subscriptions.create', $tenant) }}" class="rf-button-primary">Attribuer un abonnement</a>
+                        <a href="{{ route('platform.tenants.subscriptions.create', $tenant) }}" class="rf-button-primary"><x-icon name="add" size="xs" />Attribuer un abonnement</a>
                     @elseif(! $currentSubscription)
                         <span class="text-sm text-slate-500">Aucun plan actif</span>
                     @endif
@@ -48,7 +48,7 @@
 
             <x-section-card title="Paiements SaaS manuels" description="Registre administratif distinct des paiements de location.">
                 <x-slot:actions>
-                    @if($currentSubscription)<a href="{{ route('platform.tenants.saas-payments.create', $tenant) }}" class="rf-button-primary">Enregistrer un paiement</a>
+                    @if($currentSubscription)<a href="{{ route('platform.tenants.saas-payments.create', $tenant) }}" class="rf-button-primary"><x-icon name="payment" size="xs" />Enregistrer un paiement</a>
                     @else<span class="text-sm text-slate-500">Abonnement requis</span>@endif
                 </x-slot:actions>
                 <div class="divide-y">@forelse($saasPayments as $payment)<div class="flex items-start justify-between gap-4 py-3 text-sm"><span><strong>{{ $payment->entry_type->value === 'reversal' ? 'Contrepassation' : 'Paiement enregistré' }}</strong><span class="block text-slate-500">{{ App\Support\Ui\UiLabel::get($payment->payment_method) }} · {{ App\Support\Ui\UiLabel::dateTime($payment->occurred_at) }}</span>@if($payment->reason)<span class="mt-1 block text-slate-600">Motif : {{ $payment->reason }}</span>@endif @if($payment->note)<span class="mt-1 block text-slate-600">{{ $payment->note }}</span>@endif</span><strong>{{ $payment->entry_type->value === 'reversal' ? '−' : '' }}{{ App\Support\Ui\UiLabel::money($payment->amount, $payment->currency) }}</strong></div>@empty<x-empty-state title="Aucun paiement SaaS" />@endforelse</div>
@@ -56,9 +56,23 @@
         </div>
 
         <x-section-card title="Assistances intelligentes" description="Une autorisation ne lance aucune analyse et ne modifie aucune donnée métier.">
+            @php
+                $capabilityTotal = collect($capabilities)->count();
+                $enabledCapabilityCount = collect($capabilities)->where('enabled', true)->count();
+            @endphp
+            @if($capabilityTotal > 0)
+                <x-progress-bar
+                    class="mb-5 max-w-2xl"
+                    label="Fonctionnalités autorisées pour cette entreprise"
+                    :value="$enabledCapabilityCount"
+                    :max="$capabilityTotal"
+                    :value-text="App\Support\Ui\BusinessNumber::integer($enabledCapabilityCount).' sur '.App\Support\Ui\BusinessNumber::integer($capabilityTotal)"
+                    tone="orange"
+                />
+            @endif
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 @foreach($capabilities as $capability)
-                    <article class="rounded-xl border border-slate-200 p-4">
+                    <article class="rf-interactive-card rounded-xl border border-slate-200 p-4">
                         <div class="flex items-start justify-between gap-3"><h3 class="font-semibold">{{ $capability['label'] }}</h3><x-status-badge :value="$capability['usable'] ? 'active' : 'inactive'" /></div>
                         <p class="mt-2 text-sm text-slate-600">{{ $capability['message'] }}</p>
                         <dl class="mt-3 space-y-1 text-xs text-slate-500"><div class="flex justify-between gap-2"><dt>Autorisation entreprise</dt><dd>{{ $capability['enabled'] ? 'Activée' : 'Désactivée' }}</dd></div><div class="flex justify-between gap-2"><dt>Service disponible</dt><dd>{{ $capability['available'] ? 'Oui' : 'Non' }}</dd></div></dl>
@@ -74,7 +88,7 @@
 
         <x-section-card title="État de service">
             @if($tenant->status->value === 'active')
-                <form method="POST" action="{{ route('platform.tenants.suspend', $tenant) }}" class="space-y-3" onsubmit="return confirm('Suspendre cette entreprise et révoquer ses sessions ?')">@csrf<div><x-input-label for="tenant-suspension-reason" value="Motif de suspension" required /><textarea id="tenant-suspension-reason" name="reason" required maxlength="2000" rows="3" aria-describedby="tenant-suspension-help tenant-suspension-error" class="mt-1 w-full">{{ old('reason') }}</textarea><p id="tenant-suspension-help" class="mt-1 text-xs text-slate-500">Ne saisissez aucune donnée personnelle sensible.</p><x-field-error id="tenant-suspension-error" :messages="$errors->get('reason')" /></div><x-confirmation-button message="Suspendre cette entreprise et révoquer ses sessions ?">Suspendre l’entreprise</x-confirmation-button></form>
+                <form method="POST" action="{{ route('platform.tenants.suspend', $tenant) }}" class="space-y-3">@csrf<div><x-input-label for="tenant-suspension-reason" value="Motif de suspension" required /><textarea id="tenant-suspension-reason" name="reason" required maxlength="2000" rows="3" aria-describedby="tenant-suspension-help tenant-suspension-error" class="mt-1 w-full">{{ old('reason') }}</textarea><p id="tenant-suspension-help" class="mt-1 text-xs text-slate-500">Ne saisissez aucune donnée personnelle sensible.</p><x-field-error id="tenant-suspension-error" :messages="$errors->get('reason')" /></div><x-confirmation-button title="Suspendre l’entreprise" resource="Entreprise cliente sélectionnée" message="Les sessions seront révoquées et l’accès de cette entreprise sera suspendu sans supprimer ses données." confirm-label="Suspendre l’entreprise">Suspendre l’entreprise</x-confirmation-button></form>
             @elseif($tenant->status->value === 'suspended')
                 <div class="rounded bg-amber-50 p-4 text-sm"><p><strong>Motif :</strong> {{ $tenant->suspension_reason }}</p><p class="mt-1 text-slate-600">Suspendue le {{ App\Support\Ui\UiLabel::dateTime($tenant->suspended_at) }}</p></div><form method="POST" action="{{ route('platform.tenants.reactivate', $tenant) }}" class="mt-4">@csrf<x-confirmation-button message="Réactiver cette entreprise ?">Réactiver l’entreprise</x-confirmation-button></form>
             @else<p class="text-sm text-slate-500">Cette entreprise archivée ne peut pas être modifiée depuis ce parcours.</p>@endif

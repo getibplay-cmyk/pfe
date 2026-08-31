@@ -6,7 +6,7 @@
             description="Soumettez une photo du véhicule : le détecteur privé recadre la plaque, l’OCR local propose une lecture, puis un humain confirme ou corrige. La fiche véhicule n’est jamais modifiée automatiquement."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
@@ -33,10 +33,10 @@
 
         <x-section-card title="Pilote privé du 28 août 2026" description="Preuve de fonctionnement et de couverture, pas encore preuve d’exactitude locale.">
             <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Crops traités</dt><dd class="mt-1 font-semibold">{{ number_format($pilot['total'], 0, ',', ' ') }}</dd></div>
-                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Suggestions complètes</dt><dd class="mt-1 font-semibold">{{ number_format($pilot['complete'], 0, ',', ' ') }} · {{ number_format($pilot['complete'] / $pilot['total'] * 100, 2, ',', ' ') }} %</dd></div>
-                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Fallback exécuté</dt><dd class="mt-1 font-semibold">{{ number_format($pilot['fallback'], 0, ',', ' ') }} · {{ number_format($pilot['fallback'] / $pilot['total'] * 100, 2, ',', ' ') }} %</dd></div>
-                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Corrections historiques</dt><dd class="mt-1 font-semibold">{{ $pilot['reviewed'] }} / {{ number_format($pilot['total'], 0, ',', ' ') }}</dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Crops traités</dt><dd class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($pilot['total']) }}</dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Suggestions complètes</dt><dd class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($pilot['complete']) }} · {{ App\Support\Ui\BusinessNumber::ratioPercentage($pilot['complete'], $pilot['total']) }}</dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Fallback exécuté</dt><dd class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($pilot['fallback']) }} · {{ App\Support\Ui\BusinessNumber::ratioPercentage($pilot['fallback'], $pilot['total']) }}</dd></div>
+                <div class="rounded-xl bg-slate-50 p-3"><dt class="text-slate-500">Corrections historiques</dt><dd class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($pilot['reviewed']) }} / {{ App\Support\Ui\BusinessNumber::integer($pilot['total']) }}</dd></div>
             </dl>
             <p class="mt-4 text-xs leading-5 text-amber-800">Les 1 783 lignes restantes doivent encore être vérifiées. Aucune accuracy, exact-match ou aptitude production n’est revendiquée avant cette revue et un jeu de test indépendant.</p>
         </x-section-card>
@@ -52,7 +52,7 @@
                         <div class="flex gap-2">
                             <x-primary-button class="justify-center">Rechercher</x-primary-button>
                             @if ($vehicleSearch !== '')
-                                <a href="{{ route('intelligence.vehicle-plates.index') }}" class="rf-button-secondary">Effacer</a>
+                                <a href="{{ route('intelligence.vehicle-plates.index') }}" class="rf-button-secondary"><x-icon name="reset" size="xs" />Effacer</a>
                             @endif
                         </div>
                     </form>
@@ -60,7 +60,7 @@
                     @unless ($canRunFullImage)
                         <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Le checkpoint privé du détecteur n’est pas encore vérifié sur cette machine. Le mode « crop manuel » reste testable.</div>
                     @endunless
-                    <form method="POST" action="{{ route('intelligence.vehicle-plates.store') }}" enctype="multipart/form-data" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
+                    <form method="POST" action="{{ route('intelligence.vehicle-plates.store') }}" enctype="multipart/form-data" data-loading-form class="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
                         @csrf
                         <div>
                             <x-input-label for="plate-vehicle" value="Véhicule" required />
@@ -80,12 +80,19 @@
                             </select>
                             <x-field-error :messages="$errors->get('input_kind')" class="mt-2" />
                         </div>
-                        <div>
-                            <x-input-label for="plate-image" value="Photo ou crop" required />
-                            <input id="plate-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm" required>
-                            <x-field-error :messages="$errors->get('image')" class="mt-2" />
-                        </div>
-                        <x-primary-button class="justify-center">Lire l’immatriculation</x-primary-button>
+                        <x-file-input
+                            id="plate-image"
+                            name="image"
+                            label="Photo ou crop"
+                            accept="image/jpeg,image/png,image/webp"
+                            formats="JPEG, PNG, WebP"
+                            max-size="8 Mo"
+                            preview="image"
+                            fit="contain"
+                            :errors="$errors->get('image')"
+                            required
+                        />
+                        <x-submit-button label="Lire l’immatriculation" loading-label="Lecture en préparation…" class="justify-center" />
                     </form>
                 @else
                     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Le lancement est fermé. Préchargez les runtimes locaux, testez leurs workers, puis activez explicitement <code>RENTFLEET_PLATE_HYBRID_REVIEW_ENABLED</code>.</div>
@@ -111,15 +118,21 @@
 
                         <div class="mt-4 grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
                             <div class="space-y-3">
-                                <a href="{{ route('intelligence.vehicle-plates.input', $run) }}" target="_blank" rel="noopener" class="block overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                                    <img src="{{ route('intelligence.vehicle-plates.input', $run) }}" alt="Image source privée" class="h-32 w-full object-contain" loading="lazy">
-                                    <span class="block px-3 py-2 text-center text-xs font-medium text-indigo-700">{{ $run->usesDetector() ? 'Ouvrir la photo source' : 'Ouvrir le crop manuel' }}</span>
-                                </a>
+                                @php
+                                    $plateImages = [[
+                                        'src' => route('intelligence.vehicle-plates.input', $run),
+                                        'alt' => $run->usesDetector() ? 'Photo source privée' : 'Crop manuel privé',
+                                    ]];
+                                    if ($run->hasDetectedCrop()) {
+                                        $plateImages[] = [
+                                            'src' => route('intelligence.vehicle-plates.crop', $run),
+                                            'alt' => 'Crop privé détecté à vérifier',
+                                        ];
+                                    }
+                                @endphp
+                                <x-photo-gallery :id="'plate-gallery-'.$run->id" :images="$plateImages" label="Photos privées de l’analyse d’immatriculation" fit="contain" />
                                 @if ($run->hasDetectedCrop())
-                                    <a href="{{ route('intelligence.vehicle-plates.crop', $run) }}" target="_blank" rel="noopener" class="block overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50">
-                                        <img src="{{ route('intelligence.vehicle-plates.crop', $run) }}" alt="Crop privé détecté à vérifier" class="h-28 w-full object-contain" loading="lazy">
-                                        <span class="block px-3 py-2 text-center text-xs font-medium text-emerald-800">Ouvrir le crop détecté</span>
-                                    </a>
+                                    <p class="text-center text-xs text-belkhir-space-muted">Ouvrir le crop détecté : sélectionnez la seconde vignette.</p>
                                 @endif
                                 <p class="text-center text-xs text-slate-500">{{ $run->inputKindLabel() }}</p>
                             </div>
@@ -127,11 +140,11 @@
                                 @if ($run->status->value === 'succeeded')
                                     <div class="grid gap-3 text-sm sm:grid-cols-3">
                                         <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Suggestion</p><p dir="ltr" class="mt-1 font-mono text-base font-semibold">{{ $run->display_text }}</p></div>
-                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance non calibrée</p><p class="mt-1 font-semibold">{{ number_format((float) $run->confidence * 100, 2, ',', ' ') }} %</p></div>
+                                        <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance non calibrée</p><p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($run->confidence) }}</p></div>
                                         <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Chemin</p><p class="mt-1 font-semibold">{{ $run->suggestionLabel() }}</p></div>
                                     </div>
                                     @if ($run->usesDetector())
-                                        <p class="mt-3 text-xs leading-5 text-slate-500">Détection : {{ number_format((float) $run->detector_confidence * 100, 2, ',', ' ') }} % de score non calibré · {{ $run->detector_candidate_count }} candidat(s). Le crop affiché est la seule image transmise à l’OCR.</p>
+                                        <p class="mt-3 text-xs leading-5 text-slate-500">Détection : {{ App\Support\Ui\BusinessNumber::confidence($run->detector_confidence) }} de score non calibré · {{ App\Support\Ui\BusinessNumber::count($run->detector_candidate_count, 'candidat') }}. Le crop affiché est la seule image transmise à l’OCR.</p>
                                     @endif
                                     <p class="mt-3 text-xs leading-5 text-slate-500">Fallback segmenté : {{ $run->fallback_executed ? 'oui' : 'non' }}. La confiance aide à prioriser la revue ; elle n’est ni une probabilité calibrée ni une autorisation de mise à jour.</p>
 

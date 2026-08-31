@@ -3,7 +3,7 @@
         <x-page-header :title="$reservation->reservation_number" eyebrow="Réservation" description="Période affichée dans le fuseau {{ config('reservations.display_timezone') }}." :breadcrumbs="[['label' => 'Réservations', 'url' => route('reservations.index')], ['label' => $reservation->reservation_number]]">
             <x-slot:actions>
                 <x-status-badge :value="$reservation->status" />
-                <a href="{{ route('reservations.index') }}" class="rf-button-secondary">Retour aux réservations</a>
+                <a href="{{ route('reservations.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux réservations</a>
                 @can('update', $reservation)<a href="{{ route('reservations.edit', $reservation) }}" class="rf-button-secondary">Modifier</a>@endcan
                 @can('confirm', $reservation)<form method="POST" action="{{ route('reservations.confirm', $reservation) }}">@csrf<x-confirmation-button variant="secondary" message="Confirmer cette réservation et bloquer le véhicule sur la période ?">Confirmer et bloquer</x-confirmation-button></form>@endcan
             </x-slot:actions>

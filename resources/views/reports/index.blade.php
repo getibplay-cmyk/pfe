@@ -1,4 +1,9 @@
 <x-app-layout>
+    @php
+        $activeFilterCount = collect(['date_from', 'date_to', 'agency_id', 'currency'])
+            ->filter(fn (string $key): bool => request()->filled($key))
+            ->count();
+    @endphp
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
             title="Rapports opérationnels et financiers"
@@ -6,13 +11,21 @@
             description="Indicateurs explicables de votre périmètre autorisé. Les montants restent séparés par devise."
         >
             <x-slot:actions>
-                <a href="{{ route('reports.export', request()->query()) }}" class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-                    Exporter le résumé CSV
+                <a href="{{ route('reports.export', request()->query()) }}" class="rf-button-primary" data-no-global-loading="true">
+                    <x-icon name="download" size="xs" />Exporter le résumé CSV
                 </a>
             </x-slot:actions>
         </x-page-header>
 
-        <form method="GET" action="{{ route('reports.index') }}" class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2 xl:grid-cols-5">
+        <x-filter-panel title="Périmètre du rapport" :active-count="$activeFilterCount">
+        @if($activeFilterCount > 0)
+            <x-slot:tags>
+                @foreach(['date_from' => 'Début', 'date_to' => 'Fin', 'agency_id' => 'Agence', 'currency' => 'Devise'] as $key => $label)
+                    @if(request()->filled($key))<a class="rf-filter-tag" href="{{ route('reports.index', request()->except([$key, 'page'])) }}">{{ $label }} <span aria-hidden="true">×</span><span class="sr-only">Retirer le filtre {{ strtolower($label) }}</span></a>@endif
+                @endforeach
+            </x-slot:tags>
+        @endif
+        <form method="GET" action="{{ route('reports.index') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5" data-loading-form>
             <label class="text-sm font-medium text-slate-700">Du
                 <input type="date" name="date_from" value="{{ $filters['date_from'] }}" required class="mt-1 w-full rounded-lg border-slate-300">
             </label>
@@ -35,8 +48,9 @@
                     @endforeach
                 </select>
             </label>
-            <div class="flex items-end"><button class="w-full rounded-lg bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-600">Actualiser</button></div>
+            <div class="flex items-end gap-2"><x-submit-button class="w-full" label="Actualiser" loading-label="Mise à jour…" />@if($activeFilterCount > 0)<a href="{{ route('reports.index') }}" class="rf-button-secondary"><x-icon name="reset" size="xs" />Réinitialiser</a>@endif</div>
         </form>
+        </x-filter-panel>
 
         @if ($errors->any())<x-form-errors />@endif
 
@@ -50,11 +64,57 @@
             </p>
         </section>
 
+        <section class="space-y-5" data-tenant-statistics>
+            <script type="application/json" data-tenant-statistics-payload>@json($reportStatistics, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)</script>
+            <div class="rf-panel p-5">
+                @if ($reportStatistics['availability']['total'] > 0)
+                    <x-progress-bar
+                        label="Véhicules disponibles"
+                        :value="$reportStatistics['availability']['available']"
+                        :max="$reportStatistics['availability']['total']"
+                        :value-text="App\Support\Ui\BusinessNumber::integer($reportStatistics['availability']['available']).' sur '.App\Support\Ui\BusinessNumber::integer($reportStatistics['availability']['total'])"
+                        tone="success"
+                    />
+                @else
+                    <x-empty-state title="Aucun véhicule dans ce périmètre" description="La disponibilité apparaîtra lorsque le parc autorisé contiendra un véhicule." />
+                @endif
+            </div>
+            <div class="grid gap-6 xl:grid-cols-3">
+                <x-tenant-chart-card
+                    id="report-reservations"
+                    title="États des réservations"
+                    description="Réservations créées et transitions observées pendant la période filtrée."
+                    chart="reservations"
+                    :series="$reportStatistics['charts']['reservations']"
+                    :period="$reportStatistics['period']"
+                    unit="Réservations"
+                />
+                <x-tenant-chart-card
+                    id="report-contracts"
+                    title="Activité des contrats"
+                    description="Contrats actifs, retours attendus, retards et clôtures sur la période."
+                    chart="contracts"
+                    :series="$reportStatistics['charts']['contracts']"
+                    :period="$reportStatistics['period']"
+                    unit="Contrats"
+                />
+                <x-tenant-chart-card
+                    id="report-fleet"
+                    title="Répartition du parc"
+                    description="Disponibilité et immobilisation à la date de référence du rapport."
+                    chart="fleet"
+                    :series="$reportStatistics['charts']['fleet']"
+                    :period="$reportStatistics['period']"
+                    unit="Véhicules"
+                />
+            </div>
+        </section>
+
         <section class="space-y-4">
             <h2 class="text-xl font-semibold text-slate-900">Exploitation</h2>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach ($report['operational']['reservations'] as $key => $value)
-                    <x-stat-card :label="\App\Support\Ui\UiLabel::report('reservations.'.$key)" :value="$value" />
+                    <x-stat-card :label="\App\Support\Ui\UiLabel::report('reservations.'.$key)" :value="App\Support\Ui\BusinessNumber::integer($value)" />
                 @endforeach
             </div>
             <div class="grid gap-6 lg:grid-cols-2">
@@ -62,7 +122,7 @@
                     <div class="border-b border-slate-100 px-5 py-4"><h3 class="font-semibold">Contrats et retours</h3></div>
                     <dl class="divide-y divide-slate-100">
                         @foreach ($report['operational']['contracts'] as $key => $value)
-                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('contracts.'.$key) }}</dt><dd class="font-semibold">{{ $value }}</dd></div>
+                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('contracts.'.$key) }}</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($value) }}</dd></div>
                         @endforeach
                     </dl>
                 </article>
@@ -70,11 +130,11 @@
                     <div class="border-b border-slate-100 px-5 py-4"><h3 class="font-semibold">Maintenance, assurance et échéances</h3></div>
                     <dl class="divide-y divide-slate-100">
                         @foreach ($report['operational']['maintenance'] as $key => $value)
-                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('maintenance.'.$key) }}</dt><dd class="font-semibold">{{ $value }}</dd></div>
+                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('maintenance.'.$key) }}</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($value) }}</dd></div>
                         @endforeach
-                        <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('insurance.open_claims') }}</dt><dd class="font-semibold">{{ $report['operational']['insurance']['open_claims'] }}</dd></div>
-                        <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('expirations.documents') }}</dt><dd class="font-semibold">{{ $report['operational']['expirations']['documents'] }}</dd></div>
-                        <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('expirations.driving_licences') }}</dt><dd class="font-semibold">{{ $report['operational']['expirations']['driving_licences'] }}</dd></div>
+                        <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('insurance.open_claims') }}</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($report['operational']['insurance']['open_claims']) }}</dd></div>
+                        <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('expirations.documents') }}</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($report['operational']['expirations']['documents']) }}</dd></div>
+                        <div class="flex items-center justify-between px-5 py-3 text-sm"><dt class="text-slate-600">{{ \App\Support\Ui\UiLabel::report('expirations.driving_licences') }}</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($report['operational']['expirations']['driving_licences']) }}</dd></div>
                     </dl>
                 </article>
             </div>
@@ -84,21 +144,29 @@
             <h2 class="text-xl font-semibold text-slate-900">Flotte</h2>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach (array_diff_key($report['operational']['fleet'], ['snapshot_at' => true]) as $key => $value)
-                    <x-stat-card :label="\App\Support\Ui\UiLabel::report('fleet.'.$key)" :value="$value" />
+                    <x-stat-card :label="\App\Support\Ui\UiLabel::report('fleet.'.$key)" :value="App\Support\Ui\BusinessNumber::integer($value)" />
                 @endforeach
             </div>
             <div class="grid gap-6 lg:grid-cols-2">
                 <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <p class="text-sm text-slate-500">{{ \App\Support\Ui\UiLabel::report('utilization.rate') }}</p>
-                    <p class="mt-2 text-3xl font-bold">{{ $report['operational']['utilization']['rate'] }} %</p>
-                    <p class="mt-2 text-sm text-slate-600">{{ $report['operational']['utilization']['occupied_duration'] }} bloquées sur {{ number_format(intdiv($report['operational']['utilization']['capacity_seconds'], 3600), 0, ',', ' ') }} heures de capacité.</p>
+                    <p class="mt-2 text-3xl font-bold">{{ App\Support\Ui\BusinessNumber::percentage($report['operational']['utilization']['rate']) }}</p>
+                    <x-progress-bar
+                        class="mt-4"
+                        :label="\App\Support\Ui\UiLabel::report('utilization.rate')"
+                        :value="$report['operational']['utilization']['rate']"
+                        :max="100"
+                        :value-text="App\Support\Ui\BusinessNumber::average($report['operational']['utilization']['rate'], 1).' sur 100'"
+                        tone="orange"
+                    />
+                    <p class="mt-2 text-sm text-slate-600">{{ $report['operational']['utilization']['occupied_duration'] }} bloquées sur {{ App\Support\Ui\BusinessNumber::integer(intdiv($report['operational']['utilization']['capacity_seconds'], 3600)) }} heures de capacité.</p>
                     <p class="mt-3 text-xs text-slate-500">Les blocs actifs réservation, contrat, manuel et maintenance sont bornés à leur intersection réelle avec la période. Les blocs libérés ou annulés sont exclus.</p>
                 </article>
                 <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div class="border-b border-slate-100 px-5 py-4"><h3 class="font-semibold">Durée par type de bloc</h3></div>
                     <dl class="divide-y divide-slate-100">
                         @foreach ($report['operational']['utilization']['block_types'] as $type => $seconds)
-                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt>{{ \App\Support\Ui\UiLabel::blockType($type) }}</dt><dd class="font-medium">{{ intdiv($seconds, 3600) }} h {{ str_pad((string) intdiv($seconds % 3600, 60), 2, '0', STR_PAD_LEFT) }} min</dd></div>
+                            <div class="flex items-center justify-between px-5 py-3 text-sm"><dt>{{ \App\Support\Ui\UiLabel::blockType($type) }}</dt><dd class="font-medium">{{ App\Support\Ui\BusinessNumber::integer(intdiv($seconds, 3600)) }} h {{ str_pad((string) intdiv($seconds % 3600, 60), 2, '0', STR_PAD_LEFT) }} min</dd></div>
                         @endforeach
                     </dl>
                 </article>
@@ -109,7 +177,7 @@
             <div><h2 class="text-xl font-semibold text-slate-900">Finance par devise</h2><p class="text-sm text-slate-600">Aucune conversion ni addition entre devises. Les paiements en attente sont exclus.</p></div>
             @forelse ($report['financial']['currencies'] as $currency => $values)
                 <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4"><h3 class="font-semibold">Devise {{ $currency }}</h3><span class="text-sm text-slate-500">{{ $values['issued_invoices'] }} facture(s) émise(s)</span></div>
+                    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4"><h3 class="font-semibold">Devise {{ $currency }}</h3><span class="text-sm text-slate-500">{{ App\Support\Ui\BusinessNumber::count($values['issued_invoices'], 'facture') }} émise{{ $values['issued_invoices'] > 1 ? 's' : '' }}</span></div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200 text-sm">
                             <thead class="bg-slate-50 text-left text-slate-600"><tr><th class="px-5 py-3">Indicateur</th><th class="px-5 py-3 text-right">Valeur</th></tr></thead>
@@ -118,7 +186,7 @@
                                     <tr><td class="px-5 py-3">{{ \App\Support\Ui\UiLabel::report('finance.'.$key) }}</td><td class="px-5 py-3 text-right font-medium">{{ \App\Support\Ui\UiLabel::money($values[$key], $currency) }}</td></tr>
                                 @endforeach
                                 @foreach ($values['expenses'] as $status => $count)
-                                    <tr><td class="px-5 py-3">{{ \App\Support\Ui\UiLabel::report('expenses.'.$status) }}</td><td class="px-5 py-3 text-right font-medium">{{ $count }}</td></tr>
+                                    <tr><td class="px-5 py-3">{{ \App\Support\Ui\UiLabel::report('expenses.'.$status) }}</td><td class="px-5 py-3 text-right font-medium">{{ App\Support\Ui\BusinessNumber::integer($count) }}</td></tr>
                                 @endforeach
                             </tbody>
                         </table>

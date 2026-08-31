@@ -1,5 +1,5 @@
 @props(['paginator'])
 <p {{ $attributes->class('text-sm text-slate-500') }} aria-live="polite">
-    {{ $paginator->total() }} résultat(s)
-    @if ($paginator->total() > 0) — affichage de {{ $paginator->firstItem() }} à {{ $paginator->lastItem() }} @endif
+    {{ App\Support\Ui\BusinessNumber::count($paginator->total(), 'résultat') }}
+    @if ($paginator->total() > 0) — affichage de {{ App\Support\Ui\BusinessNumber::integer($paginator->firstItem()) }} à {{ App\Support\Ui\BusinessNumber::integer($paginator->lastItem()) }} @endif
 </p>

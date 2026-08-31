@@ -13,9 +13,9 @@
         <x-page-header :title="$contract->contract_number" eyebrow="Contrat de location" description="Cycle contractuel, documents et situation financière dans la devise du contrat." :breadcrumbs="[['label' => 'Contrats', 'url' => route('contracts.index')], ['label' => $contract->contract_number]]">
             <x-slot:actions>
                 <x-status-badge :value="$contract->status" />
-                <a href="{{ route('contracts.index') }}" class="rf-button-secondary">Retour aux contrats</a>
-                <a href="{{ route('contracts.print', $contract) }}" class="rf-button-secondary" target="_blank" rel="noopener">Aperçu du contrat</a>
-                <a href="{{ route('contracts.print', ['contract' => $contract, 'print' => 1]) }}" class="rf-button-primary" target="_blank" rel="noopener">Imprimer le contrat</a>
+                <a href="{{ route('contracts.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux contrats</a>
+                <x-icon-button icon="view" label="Ouvrir l’aperçu du contrat" :href="route('contracts.print', $contract)" target="_blank" rel="noopener" />
+                <x-icon-button icon="print" label="Imprimer le contrat" :href="route('contracts.print', ['contract' => $contract, 'print' => 1])" variant="primary" target="_blank" rel="noopener" />
             </x-slot:actions>
         </x-page-header>
         @if ($contractDocument['historical'])
@@ -38,7 +38,7 @@
                         <div class="rounded-xl border border-slate-200 p-3 text-sm">
                             <p class="text-slate-500">{{ App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract::featureLabel($factor['feature']) }}</p>
                             <p class="mt-1 font-semibold">
-                                {{ number_format((float) $factor['value'], 2, ',', ' ') }}
+                                {{ App\Support\Ui\BusinessNumber::average($factor['value'], 2, 2) }}
                                 {{ App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract::featureUnit($factor['feature']) }}
                             </p>
                         </div>
@@ -67,12 +67,10 @@
                     @endcan
                 @elseif(in_array($contract->status->value, ['draft','ready']))
                     @can('version', $contract)
-                        <form method="POST" enctype="multipart/form-data" action="{{ route('contracts.version-document.store', $contract) }}" class="mt-4 space-y-2">
+                        <form method="POST" enctype="multipart/form-data" action="{{ route('contracts.version-document.store', $contract) }}" class="mt-4 space-y-3" data-loading-form>
                             @csrf
-                            <label class="rf-field-label" for="contract-version-file">PDF contractuel <span class="text-red-700">*</span></label>
-                            <input id="contract-version-file" type="file" name="file" required class="block w-full text-sm">
-                            <x-field-error :messages="$errors->get('file')" />
-                            <x-primary-button>Associer le fichier</x-primary-button>
+                            <x-file-input id="contract-version-file" name="file" label="PDF contractuel" required :errors="$errors->get('file')" />
+                            <x-submit-button label="Associer le fichier" loading-label="Association en cours…" />
                         </form>
                     @endcan
                 @endif
@@ -126,26 +124,39 @@
                     @if($damageAssistant['ready'])
                         <div class="mt-4">
                             <x-input-label for="return-damage-photos" value="Photos du véhicule" />
-                            <input
-                                id="return-damage-photos"
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                multiple
-                                class="mt-1 block w-full text-sm"
-                                x-on:change="addSelectedFiles($event.target.files); $event.target.value = ''"
-                            >
-                            <p class="mt-1 text-xs text-slate-600">Chaque photo garde son propre résultat. L’inspection manuelle reste disponible à tout moment.</p>
+                            <div class="mt-2 rounded-2xl border-2 border-dashed border-belkhir-space-border bg-belkhir-space-canvas transition hover:border-slate-400">
+                                <input
+                                    id="return-damage-photos"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    class="peer sr-only"
+                                    x-on:change="addSelectedFiles($event.target.files); $event.target.value = ''"
+                                >
+                                <label for="return-damage-photos" class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl px-5 py-5 text-center peer-focus-visible:ring-2 peer-focus-visible:ring-belkhir-space-blue peer-focus-visible:ring-offset-2">
+                                    <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-belkhir-space-orange-soft text-belkhir-space-orange"><x-icon name="image" size="lg" /></span>
+                                    <span class="mt-3 text-sm font-semibold text-belkhir-space-blue">Choisir des photos</span>
+                                    <span class="mt-1 text-xs text-belkhir-space-muted">JPEG, PNG ou WebP · sélection multiple possible</span>
+                                </label>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-600"><span x-text="photos.length"></span> photo(s) sélectionnée(s). Chaque photo garde son propre résultat ; l’inspection manuelle reste disponible.</p>
                         </div>
 
                         <div class="mt-4 grid gap-4 lg:grid-cols-2">
                             <template x-for="photo in photos" :key="photo.id">
                                 <article class="rounded-xl border border-slate-200 bg-white p-3">
                                     <div class="flex items-start gap-3">
-                                        <img x-cloak x-show="photo.preview" :src="photo.preview" alt="Photo sélectionnée pour l’inspection de retour" class="h-24 w-32 rounded-lg object-cover">
+                                        <div class="aspect-[4/3] w-32 shrink-0 overflow-hidden rounded-xl border border-belkhir-space-border bg-slate-100">
+                                            <img x-cloak x-show="photo.preview" :src="photo.preview" alt="Photo sélectionnée pour l’inspection de retour" class="h-full w-full object-contain">
+                                        </div>
                                         <div class="min-w-0 flex-1">
                                             <p class="truncate text-sm font-semibold" x-text="photo.name"></p>
                                             <div class="mt-2 flex flex-wrap gap-2">
-                                                <button type="button" class="rf-button-secondary" x-on:click="analyze(photo)" :disabled="photo.phase === 'uploading' || photo.phase === 'processing'">Analyser cette photo</button>
+                                                <button type="button" class="rf-button-secondary" x-on:click="analyze(photo)" :disabled="photo.phase === 'uploading' || photo.phase === 'processing'" :aria-busy="(photo.phase === 'uploading' || photo.phase === 'processing').toString()">
+                                                    <x-spinner x-cloak x-show="photo.phase === 'uploading' || photo.phase === 'processing'" />
+                                                    <x-icon name="analysis" size="xs" x-show="photo.phase !== 'uploading' && photo.phase !== 'processing'" />
+                                                    <span x-text="photo.phase === 'uploading' || photo.phase === 'processing' ? 'Analyse en cours…' : 'Analyser cette photo'">Analyser cette photo</span>
+                                                </button>
                                                 <x-quiet-button x-on:click="removePhoto(photo)">Retirer</x-quiet-button>
                                             </div>
                                         </div>
@@ -158,7 +169,7 @@
                                             </template>
                                         </ul>
                                         <div x-cloak x-show="photo.detections.length > 0" class="mt-3 flex flex-wrap gap-2">
-                                            <button x-cloak x-show="! photo.suggestionApplied" type="button" class="rf-button-secondary" x-on:click="addSuggestion(photo)">Ajouter aux observations</button>
+                                            <button x-cloak x-show="! photo.suggestionApplied" type="button" class="rf-button-secondary" x-on:click="addSuggestion(photo)"><x-icon name="add" size="xs" />Ajouter aux observations</button>
                                             <x-quiet-button x-cloak x-show="photo.suggestionApplied" x-on:click="removeSuggestion(photo)">Supprimer la suggestion</x-quiet-button>
                                         </div>
                                     </div>
@@ -231,7 +242,36 @@
         @endif
 
         @if($comparison)<section class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Comparaison départ / retour</h2><div class="mt-3 grid gap-3 text-sm md:grid-cols-3"><p>Kilométrage : <strong>+{{ $comparison['mileage_delta'] }} km</strong></p><p>Carburant : <strong>{{ $comparison['fuel_delta'] }} point(s)</strong></p><p>Anomalies à revoir : <strong>{{ count($comparison['damage_candidates']) }}</strong></p></div><ul class="mt-3 text-sm">@foreach($comparison['items'] as $item)<li>{{ $item['label'] }} : {{ App\Support\Ui\UiLabel::get($item['before']) }} → {{ App\Support\Ui\UiLabel::get($item['after']) }}</li>@endforeach</ul></section>@endif
-        @if($contract->inspections->isNotEmpty() || $contract->damages->isNotEmpty())<section class="rounded-xl bg-white p-5 shadow-sm"><h2 class="font-semibold">Photos privées</h2><p class="mt-2 text-sm text-slate-500">Les fichiers passent par le stockage privé existant ; aucune URL publique n’est créée.</p><div class="mt-4 grid gap-4 lg:grid-cols-2">@foreach($contract->inspections as $inspection)@can('manage', $inspection)<form method="POST" enctype="multipart/form-data" action="{{ route('inspections.documents.store', $inspection) }}" class="rounded border p-3 text-sm">@csrf<input type="hidden" name="document_type" value="inspection_photo"><input type="hidden" name="title" value="Photo inspection {{ App\Support\Ui\UiLabel::get($inspection->inspection_type) }}"><input type="hidden" name="is_sensitive" value="1"><label>Photo inspection {{ App\Support\Ui\UiLabel::get($inspection->inspection_type) }} <input type="file" name="file" required class="mt-2 block w-full"></label><button class="mt-2 rounded border px-3 py-2">Ajouter en privé</button></form>@endcan @endforeach @foreach($contract->damages as $damage)@can('report', $damage)<form method="POST" enctype="multipart/form-data" action="{{ route('damages.documents.store', $damage) }}" class="rounded border p-3 text-sm">@csrf<input type="hidden" name="document_type" value="damage_photo"><input type="hidden" name="title" value="Photo dommage {{ $damage->damage_number }}"><input type="hidden" name="is_sensitive" value="1"><label>Photo {{ $damage->damage_number }} <input type="file" name="file" required class="mt-2 block w-full"></label><button class="mt-2 rounded border px-3 py-2">Ajouter en privé</button></form>@endcan @endforeach</div></section>@endif
+        @if($contract->inspections->isNotEmpty() || $contract->damages->isNotEmpty())
+            <x-section-card title="Photos privées" description="Les fichiers passent par le stockage privé existant ; aucune URL publique n’est créée.">
+                <div class="grid gap-4 lg:grid-cols-2">
+                    @foreach($contract->inspections as $inspection)
+                        @can('manage', $inspection)
+                            <form method="POST" enctype="multipart/form-data" action="{{ route('inspections.documents.store', $inspection) }}" class="rounded-2xl border border-belkhir-space-border p-4" data-loading-form>
+                                @csrf
+                                <input type="hidden" name="document_type" value="inspection_photo">
+                                <input type="hidden" name="title" value="Photo inspection {{ App\Support\Ui\UiLabel::get($inspection->inspection_type) }}">
+                                <input type="hidden" name="is_sensitive" value="1">
+                                <x-file-input :id="'inspection-photo-'.$inspection->id" name="file" :label="'Photo inspection '.App\Support\Ui\UiLabel::get($inspection->inspection_type)" preview="image" fit="contain" required :errors="$errors->get('file')" />
+                                <x-submit-button class="mt-3" label="Ajouter en privé" loading-label="Ajout en cours…" />
+                            </form>
+                        @endcan
+                    @endforeach
+                    @foreach($contract->damages as $damage)
+                        @can('report', $damage)
+                            <form method="POST" enctype="multipart/form-data" action="{{ route('damages.documents.store', $damage) }}" class="rounded-2xl border border-belkhir-space-border p-4" data-loading-form>
+                                @csrf
+                                <input type="hidden" name="document_type" value="damage_photo">
+                                <input type="hidden" name="title" value="Photo dommage {{ $damage->damage_number }}">
+                                <input type="hidden" name="is_sensitive" value="1">
+                                <x-file-input :id="'damage-photo-'.$damage->id" name="file" :label="'Photo '.$damage->damage_number" preview="image" fit="contain" required :errors="$errors->get('file')" />
+                                <x-submit-button class="mt-3" label="Ajouter en privé" loading-label="Ajout en cours…" />
+                            </form>
+                        @endcan
+                    @endforeach
+                </div>
+            </x-section-card>
+        @endif
         @include('contracts.partials.finance')
         <x-section-card title="Historique du contrat"><x-timeline label="Cycle du contrat">@foreach($contract->statusHistories->sortByDesc('created_at') as $history)<x-timeline-item :title="($history->from_status?->label() ?? 'Création').' → '.$history->to_status->label()" :meta="App\Support\Ui\UiLabel::dateTime($history->created_at)" :active="$loop->first"></x-timeline-item>@endforeach</x-timeline></x-section-card>
     </div>

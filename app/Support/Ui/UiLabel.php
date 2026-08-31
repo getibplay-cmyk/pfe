@@ -305,6 +305,7 @@ class UiLabel
         'contracts.expected_returns' => 'Retours attendus',
         'contracts.overdue_returns' => 'Retours en retard',
         'contracts.closed' => 'Contrats clôturés',
+        'fleet.total' => 'Véhicules dans le parc',
         'fleet.available' => 'Véhicules disponibles',
         'fleet.rented' => 'Véhicules loués',
         'fleet.blocked' => 'Véhicules bloqués',
@@ -449,13 +450,7 @@ class UiLabel
 
     public static function money(string|int|null $amount, string $currency): string
     {
-        if ($amount === null || preg_match('/^-?\d+(?:\.\d{1,4})?$/', (string) $amount) !== 1) {
-            return '—';
-        }
-
-        [$units, $decimals] = array_pad(explode('.', (string) $amount, 2), 2, '');
-
-        return $units.','.str_pad(substr($decimals, 0, 2), 2, '0').' '.strtoupper($currency);
+        return BusinessNumber::money($amount, $currency);
     }
 
     public static function blockType(mixed $value): string

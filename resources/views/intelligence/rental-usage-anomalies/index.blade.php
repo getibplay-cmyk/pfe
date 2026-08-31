@@ -1,4 +1,5 @@
 <x-app-layout>
+    @php($activeFilterCount = collect(['agency', 'date_from', 'date_to', 'review_state'])->filter(fn (string $key): bool => request()->filled($key))->count())
     <div class="rf-page">
         <x-page-header
             title="Usage atypique à vérifier"
@@ -6,7 +7,7 @@
             description="Une file consultative pour vérifier certains retours de location, sans modifier les contrats ni la facturation."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
@@ -16,8 +17,16 @@
             Cette indication statistique sert uniquement à orienter une vérification humaine. Elle ne déclenche aucun changement automatique sur la location, le véhicule ou les éléments financiers.
         </div>
 
-        <x-filter-panel title="Filtrer la file">
-            <form method="GET" action="{{ route('intelligence.rental-usage-anomalies.index') }}" class="grid gap-4 md:grid-cols-5 md:items-end">
+        <x-filter-panel title="Filtrer la file" :active-count="$activeFilterCount" :result-count="$results->total()">
+            @if($activeFilterCount > 0)
+                <x-slot:tags>
+                    @if(request()->filled('agency'))<a class="rf-filter-tag" href="{{ route('intelligence.rental-usage-anomalies.index', request()->except(['agency', 'page'])) }}">Agence <span aria-hidden="true">×</span><span class="sr-only">Retirer le filtre agence</span></a>@endif
+                    @if(request()->filled('date_from'))<a class="rf-filter-tag" href="{{ route('intelligence.rental-usage-anomalies.index', request()->except(['date_from', 'page'])) }}">Depuis le {{ request('date_from') }} <span aria-hidden="true">×</span><span class="sr-only">Retirer la date de début</span></a>@endif
+                    @if(request()->filled('date_to'))<a class="rf-filter-tag" href="{{ route('intelligence.rental-usage-anomalies.index', request()->except(['date_to', 'page'])) }}">Jusqu’au {{ request('date_to') }} <span aria-hidden="true">×</span><span class="sr-only">Retirer la date de fin</span></a>@endif
+                    @if(request()->filled('review_state'))<a class="rf-filter-tag" href="{{ route('intelligence.rental-usage-anomalies.index', request()->except(['review_state', 'page'])) }}">État de revue <span aria-hidden="true">×</span><span class="sr-only">Retirer l’état de revue</span></a>@endif
+                </x-slot:tags>
+            @endif
+            <form method="GET" action="{{ route('intelligence.rental-usage-anomalies.index') }}" class="grid gap-4 md:grid-cols-5 md:items-end" data-loading-form>
                 <div>
                     <x-input-label for="anomaly-agency" value="Agence" />
                     <select id="anomaly-agency" name="agency" class="mt-1 block w-full rounded-lg border-slate-300">
@@ -52,8 +61,8 @@
                     <x-field-error :messages="$errors->get('review_state')" />
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <x-primary-button>Filtrer</x-primary-button>
-                    <a href="{{ route('intelligence.rental-usage-anomalies.index') }}" class="rf-button-secondary">Réinitialiser</a>
+                    <x-submit-button label="Filtrer" loading-label="Filtrage…" />
+                    @if($activeFilterCount > 0)<a href="{{ route('intelligence.rental-usage-anomalies.index') }}" class="rf-button-secondary"><x-icon name="reset" /> Réinitialiser</a>@endif
                 </div>
             </form>
         </x-filter-panel>
@@ -61,9 +70,9 @@
         @if ($canRun)
             <x-section-card title="Nouvelle analyse" description="Le lancement utilise la source préparée la plus récente de votre périmètre.">
                 @if ($launchSourceAvailable)
-                    <form method="POST" action="{{ route('intelligence.rental-usage-anomalies.runs.store') }}">
+                    <form method="POST" action="{{ route('intelligence.rental-usage-anomalies.runs.store') }}" data-loading-form>
                         @csrf
-                        <x-primary-button>Lancer l’analyse</x-primary-button>
+                        <x-submit-button label="Lancer l’analyse" loading-label="Lancement…" />
                     </form>
                 @else
                     <p class="text-sm text-slate-600">Aucune source préparée n’est actuellement disponible.</p>
@@ -76,7 +85,7 @@
 
         <x-section-card
             title="Cas à vérifier"
-            description="{{ number_format($results->total(), 0, ',', ' ') }} cas dans la sélection actuelle."
+            description="{{ App\Support\Ui\BusinessNumber::integer($results->total()) }} cas dans la sélection actuelle."
         >
             @if ($selectedRun)
                 <p class="mb-5 text-sm text-slate-600">
@@ -95,7 +104,7 @@
                             </div>
                             <div class="rounded-xl bg-slate-50 px-4 py-3 text-right">
                                 <p class="text-xs text-slate-500">Indicateur statistique</p>
-                                <p class="mt-1 font-semibold">Rang {{ number_format($result->primary_rank, 0, ',', ' ') }} sur {{ number_format($selectedRun->source_row_count, 0, ',', ' ') }}</p>
+                                <p class="mt-1 font-semibold">Rang {{ App\Support\Ui\BusinessNumber::integer($result->primary_rank) }} sur {{ App\Support\Ui\BusinessNumber::integer($selectedRun->source_row_count) }}</p>
                             </div>
                         </div>
 
@@ -106,7 +115,7 @@
                                     <div data-anomaly-factor class="rounded-xl border border-slate-200 p-3 text-sm">
                                         <p class="text-slate-500">{{ App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract::featureLabel($factor['feature']) }}</p>
                                         <p class="mt-1 font-semibold">
-                                            {{ number_format((float) $factor['value'], 2, ',', ' ') }}
+                                            {{ App\Support\Ui\BusinessNumber::average($factor['value'], 2, 2) }}
                                             {{ App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract::featureUnit($factor['feature']) }}
                                         </p>
                                     </div>

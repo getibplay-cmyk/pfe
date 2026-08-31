@@ -5,7 +5,7 @@
             :eyebrow="$reservation->exists ? $reservation->reservation_number : 'Activité locative'"
             :breadcrumbs="[['label' => 'Réservations', 'url' => route('reservations.index')], ['label' => $reservation->exists ? $reservation->reservation_number : 'Nouvelle réservation']]"
         >
-            <x-slot:actions><a href="{{ $reservation->exists ? route('reservations.show', $reservation) : route('reservations.index') }}" class="rf-button-secondary">Retour</a></x-slot:actions>
+            <x-slot:actions><a href="{{ $reservation->exists ? route('reservations.show', $reservation) : route('reservations.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour</a></x-slot:actions>
         </x-page-header>
 
         @if ($agencies->count() > 1)
@@ -17,7 +17,7 @@
                         @endforeach
                     </select>
                 </label>
-                <noscript><button class="ml-2 rounded-lg border px-3 py-2">Actualiser les ressources</button></noscript>
+                <noscript><button class="ml-2 inline-flex items-center gap-2 rounded-lg border px-3 py-2"><x-icon name="refresh" size="xs" />Actualiser les ressources</button></noscript>
             </form>
         @endif
 
@@ -95,7 +95,7 @@
             <p class="md:col-span-2 text-sm text-slate-500">Le tarif est résolu et affiché avant confirmation. Seule la confirmation crée un bloc ferme.</p>
             <div class="md:col-span-2 flex justify-end gap-3">
                 <a href="{{ route('reservations.index') }}" class="rounded-lg border px-4 py-2">Annuler</a>
-                <button class="rounded-lg bg-slate-900 px-4 py-2 text-white">Enregistrer</button>
+                <button class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-white"><x-icon name="save" size="xs" />Enregistrer</button>
             </div>
         </form>
     </div>

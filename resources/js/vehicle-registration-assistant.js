@@ -1,3 +1,5 @@
+import { formatConfidence } from './business-number.js';
+
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 const INPUT_KINDS = new Set(['full_vehicle_image', 'plate_crop']);
 const MANUAL_MESSAGE = 'L’immatriculation n’a pas pu être lue. Saisissez-la manuellement.';
@@ -173,16 +175,14 @@ export function createVehicleRegistrationAssistantState(initialRegistration = ''
                 return '';
             }
 
-            return `${new Intl.NumberFormat('fr-FR', {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-            }).format(this.confidence * 100)} %`;
+            return formatConfidence(this.confidence);
         },
     };
 }
 
 export function createVehicleRegistrationAssistant(config = {}) {
     const state = createVehicleRegistrationAssistantState(config.initialRegistration ?? '');
+    const urlApi = config.urlApi ?? globalThis.window?.URL ?? globalThis.URL;
     state.readyFull = Boolean(config.readyFull);
     state.readyCloseUp = Boolean(config.readyCloseUp);
     state.storeUrl = String(config.storeUrl ?? '');
@@ -190,6 +190,31 @@ export function createVehicleRegistrationAssistant(config = {}) {
     state.maxPollAttempts = Number(config.maxPollAttempts ?? 240);
     state.fetchRequest = config.fetchRequest ?? window.fetch.bind(window);
     state.schedule = config.schedule ?? window.setTimeout.bind(window);
+    state.fullPreviewUrl = '';
+    state.closeUpPreviewUrl = '';
+
+    state.selectPhoto = function (event, inputKind) {
+        const property = inputKind === 'plate_crop' ? 'closeUpPreviewUrl' : 'fullPreviewUrl';
+        if (this[property]) {
+            urlApi?.revokeObjectURL?.(this[property]);
+            this[property] = '';
+        }
+
+        const file = event?.target?.files?.[0];
+        if (file?.type?.startsWith('image/')) {
+            this[property] = urlApi?.createObjectURL?.(file) ?? '';
+        }
+        this.message = '';
+    };
+
+    state.destroy = function () {
+        for (const property of ['fullPreviewUrl', 'closeUpPreviewUrl']) {
+            if (this[property]) {
+                urlApi?.revokeObjectURL?.(this[property]);
+                this[property] = '';
+            }
+        }
+    };
 
     state.analyze = async function (file, agencyId, inputKind) {
         const sequence = this.beginAnalysis(inputKind);

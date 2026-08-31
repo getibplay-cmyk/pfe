@@ -34,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        config(['app.name' => config('brand.name')]);
+
         $this->app->singleton(TenantContext::class);
         $this->app->bind(PredictionScoringService::class, RuleBasedScoringService::class);
 

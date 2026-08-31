@@ -1,9 +1,9 @@
 @if ($paginator->hasPages())
     <nav role="navigation" aria-label="Pagination" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-slate-600" aria-live="polite">
-            Affichage de <span class="font-semibold">{{ $paginator->firstItem() }}</span>
-            à <span class="font-semibold">{{ $paginator->lastItem() }}</span>
-            sur <span class="font-semibold">{{ $paginator->total() }}</span> résultat(s)
+            Affichage de <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($paginator->firstItem()) }}</span>
+            à <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($paginator->lastItem()) }}</span>
+            sur <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::count($paginator->total(), 'résultat') }}</span>
         </p>
 
         <div class="flex flex-wrap items-center gap-1">

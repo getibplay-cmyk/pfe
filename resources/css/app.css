@@ -4,51 +4,51 @@
 
 @layer base {
     :root {
-        --atlas-ink: theme('colors.atlas.ink');
-        --atlas-navy: theme('colors.atlas.navy');
-        --atlas-blue: theme('colors.atlas.blue');
-        --atlas-blue-hover: theme('colors.atlas.blue-hover');
-        --atlas-orange: theme('colors.atlas.orange');
-        --atlas-orange-soft: theme('colors.atlas.orange-soft');
-        --atlas-canvas: theme('colors.atlas.canvas');
-        --atlas-surface: theme('colors.atlas.surface');
-        --atlas-text: theme('colors.atlas.text');
-        --atlas-muted: theme('colors.atlas.muted');
-        --atlas-border: theme('colors.atlas.border');
-        --atlas-success: theme('colors.atlas.success');
-        --atlas-warning: theme('colors.atlas.warning');
-        --atlas-danger: theme('colors.atlas.danger');
-        --atlas-information: theme('colors.atlas.information');
+        --belkhir-space-ink: theme('colors.belkhir.space.ink');
+        --belkhir-space-navy: theme('colors.belkhir.space.navy');
+        --belkhir-space-blue: theme('colors.belkhir.space.blue');
+        --belkhir-space-blue-hover: theme('colors.belkhir.space.blue-hover');
+        --belkhir-space-orange: theme('colors.belkhir.space.orange');
+        --belkhir-space-orange-soft: theme('colors.belkhir.space.orange-soft');
+        --belkhir-space-canvas: theme('colors.belkhir.space.canvas');
+        --belkhir-space-surface: theme('colors.belkhir.space.surface');
+        --belkhir-space-text: theme('colors.belkhir.space.text');
+        --belkhir-space-muted: theme('colors.belkhir.space.muted');
+        --belkhir-space-border: theme('colors.belkhir.space.border');
+        --belkhir-space-success: theme('colors.belkhir.space.success');
+        --belkhir-space-warning: theme('colors.belkhir.space.warning');
+        --belkhir-space-danger: theme('colors.belkhir.space.danger');
+        --belkhir-space-information: theme('colors.belkhir.space.information');
     }
 
     [x-cloak] { display: none !important; }
 
     html {
-        @apply scroll-smooth bg-atlas-canvas;
+        @apply scroll-smooth bg-belkhir-space-canvas;
         overflow-x: clip;
     }
 
     body {
-        @apply min-w-0 bg-atlas-canvas text-atlas-text;
+        @apply min-w-0 bg-belkhir-space-canvas text-belkhir-space-text;
         overflow-x: clip;
     }
 
     :focus-visible {
-        @apply outline-none ring-2 ring-atlas-blue ring-offset-2;
+        @apply outline-none ring-2 ring-belkhir-space-blue ring-offset-2;
     }
 
     input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
     select,
     textarea {
-        @apply min-h-11 rounded-lg border-atlas-border bg-atlas-surface text-atlas-text shadow-sm placeholder:text-atlas-muted focus:border-atlas-blue focus:ring-atlas-blue;
+        @apply min-h-11 rounded-lg border-belkhir-space-border bg-belkhir-space-surface text-belkhir-space-text shadow-sm placeholder:text-belkhir-space-muted focus:border-belkhir-space-blue focus:ring-belkhir-space-blue;
     }
 
     input[type='checkbox'], input[type='radio'] {
-        @apply border-atlas-border text-atlas-blue focus:ring-atlas-blue;
+        @apply border-belkhir-space-border text-belkhir-space-blue focus:ring-belkhir-space-blue;
     }
 
     label {
-        @apply text-atlas-text;
+        @apply text-belkhir-space-text;
     }
 
     button, [role='button'] {
@@ -69,38 +69,65 @@
 
 @layer components {
     .rf-skip-link {
-        @apply fixed left-4 top-3 z-[100] -translate-y-20 rounded-lg bg-atlas-surface px-4 py-2 text-sm font-semibold text-atlas-blue shadow-lg transition focus:translate-y-0;
+        @apply fixed left-4 top-3 z-[100] -translate-y-20 rounded-lg bg-belkhir-space-surface px-4 py-2 text-sm font-semibold text-belkhir-space-blue shadow-lg transition focus:translate-y-0;
     }
 
     .rf-page { @apply mx-auto w-full max-w-7xl space-y-6; }
-    .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-atlas-border bg-atlas-surface shadow-panel; }
+    .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-belkhir-space-border bg-belkhir-space-surface shadow-panel; }
     .rf-panel-body { @apply p-4 sm:p-6; }
-    .rf-panel-heading { @apply border-b border-atlas-border px-4 py-4 sm:px-6; }
+    .rf-panel-heading { @apply border-b border-belkhir-space-border px-4 py-4 sm:px-6; }
 
     .rf-button {
         @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:transform-none;
     }
-    .rf-button-primary { @apply rf-button border-atlas-blue bg-atlas-blue text-white hover:border-atlas-blue-hover hover:bg-atlas-blue-hover; }
-    .rf-button-secondary { @apply rf-button border-atlas-border bg-atlas-surface text-atlas-text shadow-sm hover:border-slate-400 hover:bg-slate-50; }
-    .rf-button-quiet { @apply rf-button border-transparent bg-transparent text-atlas-blue hover:bg-brand-50 hover:text-atlas-blue-hover; }
-    .rf-button-danger { @apply rf-button border-atlas-danger bg-atlas-danger text-white hover:brightness-90; }
-    .rf-button-link { @apply inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-semibold text-atlas-blue hover:bg-brand-50 hover:text-atlas-blue-hover; }
+    .rf-button-primary { @apply rf-button border-belkhir-space-blue bg-belkhir-space-blue text-white hover:border-belkhir-space-blue-hover hover:bg-belkhir-space-blue-hover; }
+    .rf-button-secondary { @apply rf-button border-belkhir-space-border bg-belkhir-space-surface text-belkhir-space-text shadow-sm hover:border-slate-400 hover:bg-slate-50; }
+    .rf-button-quiet { @apply rf-button border-transparent bg-transparent text-belkhir-space-blue hover:bg-brand-50 hover:text-belkhir-space-blue-hover; }
+    .rf-button-danger { @apply rf-button border-belkhir-space-danger bg-belkhir-space-danger text-white hover:brightness-90; }
+    .rf-button-link { @apply inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-semibold text-belkhir-space-blue hover:bg-brand-50 hover:text-belkhir-space-blue-hover; }
 
-    .rf-field-label { @apply block text-sm font-semibold text-atlas-text; }
-    .rf-field-help { @apply mt-1 text-xs leading-5 text-atlas-muted; }
+    .rf-field-label { @apply block text-sm font-semibold text-belkhir-space-text; }
+    .rf-field-help { @apply mt-1 text-xs leading-5 text-belkhir-space-muted; }
     .rf-filter-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4; }
+    .rf-filter-panel { @apply rounded-2xl border border-belkhir-space-border bg-white p-4 shadow-sm sm:p-5; }
+    .rf-filter-tag { @apply inline-flex min-h-8 items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-belkhir-space-blue transition hover:border-brand-300 hover:bg-brand-100; }
+    .rf-spinner { @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none; }
+    .rf-interactive-card { @apply transition duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transform-none motion-reduce:transition-none; }
+
+    .rf-page-progress {
+        @apply pointer-events-none fixed inset-x-0 top-0 z-[110] h-0.5 overflow-hidden bg-brand-100;
+    }
+    .rf-page-progress-bar {
+        @apply relative block h-full w-2/5 bg-belkhir-space-blue;
+        animation: belkhir-space-page-progress 1.05s ease-in-out infinite;
+        transform-origin: left center;
+    }
+    .rf-page-progress-bar::after {
+        content: '';
+        @apply absolute inset-y-0 end-0 w-1/4 bg-belkhir-space-orange;
+    }
+    .rf-page-progress[data-reduced-motion='true'] .rf-page-progress-bar {
+        animation: none;
+        width: 100%;
+    }
+    .rf-loading-overlay { @apply fixed inset-0 z-[105] grid place-items-center bg-belkhir-space-ink/45 p-5 backdrop-blur-sm; }
+    .rf-loading-overlay-card { @apply flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-belkhir-space-border bg-white px-6 py-8 text-center shadow-2xl; }
+    .rf-page-progress[hidden], .rf-loading-overlay[hidden] { display: none !important; }
+
+    [data-loading-form][aria-busy='true'] { @apply cursor-wait; }
+    [data-loading-form][aria-busy='true'] [data-loading-submit] { @apply pointer-events-none; }
 
     .rf-table-scroll {
         @apply max-w-full overflow-x-auto overscroll-x-contain;
         scrollbar-gutter: stable;
     }
-    .rf-table-scroll > table { @apply min-w-full divide-y divide-atlas-border text-sm; }
-    .rf-table-scroll thead { @apply bg-atlas-canvas text-left text-xs font-semibold uppercase tracking-wide text-atlas-muted; }
+    .rf-table-scroll > table { @apply min-w-full divide-y divide-belkhir-space-border text-sm; }
+    .rf-table-scroll thead { @apply bg-belkhir-space-canvas text-left text-xs font-semibold uppercase tracking-wide text-belkhir-space-muted; }
     .rf-table-scroll th { @apply whitespace-nowrap px-4 py-3; }
-    .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-atlas-surface; }
+    .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-belkhir-space-surface; }
     .rf-table-scroll tbody tr { @apply transition-colors hover:bg-brand-50/40; }
     .rf-table-scroll td { @apply px-4 py-3 align-top text-slate-700; }
-    .rf-mobile-scroll-hint { @apply border-b border-atlas-border bg-atlas-canvas px-4 py-2 text-xs text-atlas-muted sm:hidden; }
+    .rf-mobile-scroll-hint { @apply border-b border-belkhir-space-border bg-belkhir-space-canvas px-4 py-2 text-xs text-belkhir-space-muted sm:hidden; }
     .rf-kbd { @apply rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-[0.7rem] text-slate-600; }
 
     main section[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
@@ -109,15 +136,21 @@
     main section[class~='rounded-xl'][class~='bg-white'][class~='shadow'],
     main article[class~='rounded-xl'][class~='bg-white'][class~='shadow'],
     main div[class~='rounded-xl'][class~='bg-white'][class~='shadow'] {
-        @apply border border-atlas-border shadow-panel;
+        @apply border border-belkhir-space-border shadow-panel;
     }
 
-    .rf-chart-surface { @apply relative min-h-72 rounded-xl border border-atlas-border bg-atlas-surface p-3; }
+    .rf-chart-surface { @apply relative min-h-72 rounded-xl border border-belkhir-space-border bg-belkhir-space-surface p-3; }
 
-    main a[class*='text-blue-'], main a[class*='text-indigo-'] { @apply text-atlas-blue hover:text-atlas-blue-hover; }
+    main a[class*='text-blue-'], main a[class*='text-indigo-'] { @apply text-belkhir-space-blue hover:text-belkhir-space-blue-hover; }
 
     main button[class*='bg-slate-8'], main button[class*='bg-slate-9'],
     main a[class*='bg-slate-8'], main a[class*='bg-slate-9'] {
-        @apply border-atlas-blue bg-atlas-blue text-white hover:bg-atlas-blue-hover;
+        @apply border-belkhir-space-blue bg-belkhir-space-blue text-white hover:bg-belkhir-space-blue-hover;
     }
+}
+
+@keyframes belkhir-space-page-progress {
+    0% { transform: translateX(-115%) scaleX(0.55); }
+    50% { transform: translateX(115%) scaleX(1); }
+    100% { transform: translateX(300%) scaleX(0.55); }
 }

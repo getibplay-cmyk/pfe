@@ -50,8 +50,8 @@
                 <input type="datetime-local" name="ends_at" value="{{ request('ends_at') }}" class="mt-1 w-full">
             </label>
             <div class="flex gap-2 sm:col-span-2 xl:col-span-6">
-                <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">Filtrer</button>
-                <a href="{{ route('vehicle-blocks.index') }}" class="rounded-lg border px-4 py-2 text-sm">Réinitialiser</a>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm text-white"><x-icon name="filter" size="xs" />Filtrer</button>
+                <a href="{{ route('vehicle-blocks.index') }}" class="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm"><x-icon name="reset" size="xs" />Réinitialiser</a>
             </div>
         </form>
 
@@ -75,12 +75,12 @@
                                 <td class="p-3">
                                     @can('update', $block)
                                         @if($block->starts_at->isFuture())
-                                            <form method="POST" action="{{ route('vehicle-blocks.cancel', $block) }}" onsubmit="return confirm('Annuler ce bloc manuel futur ?')">
+                                            <form method="POST" action="{{ route('vehicle-blocks.cancel', $block) }}" x-belkhir-space-confirm data-confirm-title="Annuler le bloc manuel" data-confirm-resource="Bloc véhicule sélectionné" data-confirm-consequence="Ce bloc manuel futur sera annulé et la disponibilité sera recalculée selon les règles existantes." data-confirm-label="Annuler le bloc">
                                                 @csrf
                                                 <button type="submit" class="text-rose-700 underline">Annuler</button>
                                             </form>
                                         @else
-                                            <form method="POST" action="{{ route('vehicle-blocks.release', $block) }}" onsubmit="return confirm('Libérer ce bloc manuel ?')">
+                                            <form method="POST" action="{{ route('vehicle-blocks.release', $block) }}" x-belkhir-space-confirm data-confirm-title="Libérer le bloc manuel" data-confirm-resource="Bloc véhicule sélectionné" data-confirm-consequence="Ce bloc manuel sera libéré selon les règles de disponibilité existantes." data-confirm-label="Libérer le bloc">
                                                 @csrf
                                                 <button type="submit" class="text-indigo-700 underline">Libérer</button>
                                             </form>

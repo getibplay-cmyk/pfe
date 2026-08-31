@@ -178,7 +178,7 @@ class Lot06EUxNavigationAuthorizationTest extends TestCase
         }
 
         $this->actingAs($fixture['user'])->get(route('users.index', ['q' => 'Utilisateur filtré']))
-            ->assertOk()->assertSee('22 résultat(s)')->assertSee('q=Utilisateur%20filtr%C3%A9', false);
+            ->assertOk()->assertSee('22 résultats')->assertSee('q=Utilisateur%20filtr%C3%A9', false);
     }
 
     private function fixture(string $roleSlug): array

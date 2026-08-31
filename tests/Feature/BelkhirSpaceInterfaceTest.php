@@ -5,11 +5,11 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\Blade;
 use Tests\TestCase;
 
-class AtlasProInterfaceTest extends TestCase
+class BelkhirSpaceInterfaceTest extends TestCase
 {
-    public function test_atlas_tokens_and_shared_interface_primitives_are_centralized(): void
+    public function test_belkhir_space_tokens_and_shared_interface_primitives_are_centralized(): void
     {
-        $tokens = file_get_contents(resource_path('js/atlas-tokens.js'));
+        $tokens = file_get_contents(resource_path('js/belkhir-space-tokens.js'));
         $css = file_get_contents(resource_path('css/app.css'));
 
         foreach (['#0B1220', '#111827', '#1D4ED8', '#1E40AF', '#C2410C', '#FFEDD5', '#F8FAFC', '#FFFFFF', '#64748B', '#D9E2EC', '#15803D', '#B45309', '#B91C1C', '#0369A1'] as $color) {
@@ -19,8 +19,8 @@ class AtlasProInterfaceTest extends TestCase
         $this->assertStringContainsString('prefers-reduced-motion: reduce', $css);
         $this->assertStringContainsString('.rf-button-quiet', $css);
         $this->assertStringContainsString('.rf-chart-surface', $css);
-        $this->assertStringContainsString('atlas: ATLAS_COLORS', file_get_contents(base_path('tailwind.config.js')));
-        $this->assertStringContainsString("theme('colors.atlas.blue')", $css);
+        $this->assertStringContainsString('space: BELKHIR_SPACE_COLORS', file_get_contents(base_path('tailwind.config.js')));
+        $this->assertStringContainsString("theme('colors.belkhir.space.blue')", $css);
         $this->assertFileExists(resource_path('views/components/loading-state.blade.php'));
         $this->assertFileExists(resource_path('views/components/quiet-button.blade.php'));
         $this->assertStringNotContainsString('@import url(', $css);
@@ -80,8 +80,11 @@ class AtlasProInterfaceTest extends TestCase
         $navigation = file_get_contents(app_path('Support/Ui/NavigationBuilder.php'));
         $intelligence = file_get_contents(resource_path('views/intelligence/index.blade.php'));
 
-        $this->assertSame(2, substr_count($statistics, '<canvas role="img"'));
-        $this->assertGreaterThanOrEqual(3, substr_count($statistics, '<table'));
+        $this->assertSame(4, substr_count($statistics, '<canvas class="opacity-0 transition-opacity duration-500 motion-reduce:transition-none" role="img"'));
+        $this->assertGreaterThanOrEqual(5, substr_count($statistics, '<table'));
+        $this->assertStringContainsString('<x-progress-bar', $statistics);
+        $this->assertStringContainsString('data-chart-skeleton', $statistics);
+        $this->assertStringContainsString('motion-reduce:transition-none', $statistics);
         $this->assertStringContainsString('Opérations en attente', $statistics);
         $this->assertStringContainsString('Analyses et prévisions', $navigation);
         $this->assertStringContainsString('Modèles IA et accès', $navigation);

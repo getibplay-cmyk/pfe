@@ -8,7 +8,11 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
-import { atlasChartColors, atlasCartesianScales } from './atlas-chart-theme.js';
+import { belkhirSpaceChartColors, belkhirSpaceCartesianScales } from './belkhir-space-chart-theme.js';
+import {
+    forecastPlanningUnits,
+    formatVehicleUnits,
+} from './business-number.js';
 
 Chart.register(
     CategoryScale,
@@ -219,23 +223,24 @@ export function createReservationDemandForecast(config = {}) {
     };
 
     state.formatDate = formatDate;
-    state.formatDemand = formatDemand;
+    state.formatDemand = formatVehicleUnits;
     state.formatGeneratedAt = formatGeneratedAt;
 
     return state;
 }
 
 export function chartConfiguration(forecasts) {
-    const colors = atlasChartColors();
-    const scales = atlasCartesianScales();
+    const colors = belkhirSpaceChartColors();
+    const scales = belkhirSpaceCartesianScales();
+    const maximum = Math.max(0, ...forecasts.map((forecast) => forecast.planningVehicleUnits));
 
     return {
         type: 'line',
         data: {
             labels: forecasts.map((forecast) => formatDate(forecast.date)),
             datasets: [{
-                label: 'Demande prévue',
-                data: forecasts.map((forecast) => forecast.predictedDemand),
+                label: 'Véhicules à prévoir',
+                data: forecasts.map((forecast) => forecast.planningVehicleUnits),
                 borderColor: colors.blue,
                 backgroundColor: colors.blue,
                 pointBackgroundColor: colors.orange,
@@ -253,7 +258,13 @@ export function chartConfiguration(forecasts) {
             scales: {
                 y: {
                     ...scales.y,
-                    title: { display: true, text: 'Départs prévus' },
+                    beginAtZero: true,
+                    title: { display: true, text: 'Véhicules à prévoir' },
+                    ticks: {
+                        ...scales.y?.ticks,
+                        precision: 0,
+                        ...(maximum <= 50 ? { stepSize: 1 } : {}),
+                    },
                 },
                 x: {
                     ...scales.x,
@@ -262,6 +273,11 @@ export function chartConfiguration(forecasts) {
             },
             plugins: {
                 legend: { display: true, labels: { color: colors.muted } },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => `Véhicules à prévoir : ${formatVehicleUnits(context.parsed.y)}`,
+                    },
+                },
             },
         },
     };
@@ -273,7 +289,8 @@ function applySucceeded(state, payload) {
     state.scope = { agency: safeText(payload.scope.agency, state.agencyName) };
     state.forecasts = payload.forecasts.map((forecast) => ({
         date: forecast.date,
-        predictedDemand: Number(forecast.predicted_demand),
+        conditionalMean: forecast.predicted_demand,
+        planningVehicleUnits: forecastPlanningUnits(forecast.predicted_demand),
     }));
     state.message = safeText(payload.message, 'Les prévisions sont disponibles pour préparer le planning.');
 }
@@ -378,16 +395,6 @@ function formatDate(value) {
         year: 'numeric',
         timeZone: 'UTC',
     }).format(new Date(`${value}T12:00:00Z`));
-}
-
-function formatDemand(value) {
-    const numeric = Number(value);
-    if (! Number.isFinite(numeric) || numeric < 0) return '';
-
-    return new Intl.NumberFormat('fr-FR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(numeric);
 }
 
 function formatGeneratedAt(value) {

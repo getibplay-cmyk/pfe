@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="rf-page max-w-4xl">
-        <x-page-header :title="'Enregistrer un paiement SaaS · '.$tenant->name" eyebrow="Administration de la plateforme" description="Saisie administrative manuelle, sans carte ni appel externe."><x-slot:actions><a href="{{ route('platform.tenants.show', $tenant) }}" class="rf-button-secondary">Retour à l’entreprise</a></x-slot:actions></x-page-header>
+        <x-page-header :title="'Enregistrer un paiement SaaS · '.$tenant->name" eyebrow="Administration de la plateforme" description="Saisie administrative manuelle, sans carte ni appel externe."><x-slot:actions><a href="{{ route('platform.tenants.show', $tenant) }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour à l’entreprise</a></x-slot:actions></x-page-header>
         <x-form-errors />
         @if($subscription === null)
             <x-empty-state title="Aucun abonnement courant" description="Créez d’abord un abonnement pour rattacher cette écriture au bon plan et à sa devise." />

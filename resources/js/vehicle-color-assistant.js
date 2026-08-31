@@ -1,3 +1,5 @@
+import { formatConfidence } from './business-number.js';
+
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 const SUPPORTED_COLORS = new Set([
     'black',
@@ -129,22 +131,41 @@ export function createVehicleColorAssistantState(initialColor = '') {
                 return '';
             }
 
-            return `${new Intl.NumberFormat('fr-FR', {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1,
-            }).format(this.confidence * 100)} %`;
+            return formatConfidence(this.confidence);
         },
     };
 }
 
 export function createVehicleColorAssistant(config = {}) {
     const state = createVehicleColorAssistantState(config.initialColor ?? '');
+    const urlApi = config.urlApi ?? globalThis.window?.URL ?? globalThis.URL;
     state.ready = Boolean(config.ready);
     state.storeUrl = String(config.storeUrl ?? '');
     state.pollDelay = Number(config.pollDelay ?? 1000);
     state.maxPollAttempts = Number(config.maxPollAttempts ?? 120);
     state.fetchRequest = config.fetchRequest ?? window.fetch.bind(window);
     state.schedule = config.schedule ?? window.setTimeout.bind(window);
+    state.previewUrl = '';
+
+    state.selectPhoto = function (event) {
+        if (this.previewUrl) {
+            urlApi?.revokeObjectURL?.(this.previewUrl);
+            this.previewUrl = '';
+        }
+
+        const file = event?.target?.files?.[0];
+        if (file?.type?.startsWith('image/')) {
+            this.previewUrl = urlApi?.createObjectURL?.(file) ?? '';
+        }
+        this.message = '';
+    };
+
+    state.destroy = function () {
+        if (this.previewUrl) {
+            urlApi?.revokeObjectURL?.(this.previewUrl);
+            this.previewUrl = '';
+        }
+    };
 
     state.analyze = async function (file, agencyId) {
         const sequence = this.beginAnalysis();

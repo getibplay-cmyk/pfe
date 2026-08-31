@@ -7,10 +7,15 @@ import { createReturnDamageAssistant } from './return-damage-assistant';
 import { createReservationDemandForecast } from './reservation-demand-forecast';
 import { createFleetReallocationPlanning } from './fleet-reallocation-planning';
 import { initializePlatformStatistics } from './platform-statistics';
+import { initializeTenantStatistics } from './tenant-statistics';
+import { initializeBelkhirSpaceLoading, initializeLoadingForms } from './form-enhancements';
+import { registerBelkhirSpaceUi } from './belkhir-space-ui';
 
 window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
+    registerBelkhirSpaceUi(Alpine);
+
     Alpine.data('vehicleColorAssistant', (config) => createVehicleColorAssistant(config));
     Alpine.data('vehicleRegistrationAssistant', (config) => createVehicleRegistrationAssistant(config));
     Alpine.data('returnDamageAssistant', (config) => createReturnDamageAssistant(config));
@@ -51,6 +56,9 @@ Alpine.start();
 
 document.addEventListener('DOMContentLoaded', () => {
     initializePlatformStatistics();
+    initializeTenantStatistics();
+    const belkhirSpaceLoading = initializeBelkhirSpaceLoading();
+    initializeLoadingForms(document, window, belkhirSpaceLoading);
 
     const invalidField = document.querySelector('[aria-invalid="true"]');
 

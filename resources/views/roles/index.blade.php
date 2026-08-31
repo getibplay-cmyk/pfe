@@ -3,7 +3,7 @@
         <x-page-header title="Rôles et permissions" eyebrow="Gouvernance des accès" description="Les rôles système sont protégés. Les rôles personnalisés restent propres à votre entreprise.">
             <x-slot:actions>
                 @can('delegate', App\Models\Role::class)<a href="{{ route('roles.delegations') }}" class="rf-button-secondary">Délégations par agence</a>@endcan
-                @can('create', App\Models\Role::class)<a href="{{ route('roles.create') }}" class="rf-button-primary">Créer un rôle</a>@endcan
+                @can('create', App\Models\Role::class)<a href="{{ route('roles.create') }}" class="rf-button-primary"><x-icon name="add" size="xs" />Créer un rôle</a>@endcan
             </x-slot:actions>
         </x-page-header>
 
@@ -12,13 +12,13 @@
                 @forelse ($roles as $role)
                     <article class="rounded-xl border border-slate-200 p-4">
                         <div class="flex items-start justify-between gap-3">
-                            <div><h2 class="font-semibold text-slate-950">{{ $role->displayName() }}</h2><p class="mt-1 text-xs text-slate-500">{{ $role->is_system ? 'Rôle système protégé' : 'Rôle personnalisé' }} · {{ $role->users_count }} utilisateur(s)</p></div>
+                            <div><h2 class="font-semibold text-slate-950">{{ $role->displayName() }}</h2><p class="mt-1 text-xs text-slate-500">{{ $role->is_system ? 'Rôle système protégé' : 'Rôle personnalisé' }} · {{ App\Support\Ui\BusinessNumber::count($role->users_count, 'utilisateur') }}</p></div>
                             <x-status-badge :value="$role->is_active ? 'active' : 'inactive'" />
                         </div>
                         <ul class="mt-4 flex flex-wrap gap-2" aria-label="Permissions du rôle">
                             @forelse ($role->permissions as $permission)<li class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{{ App\Support\Ui\UiLabel::permission($permission->slug) }}</li>@empty<li class="text-sm text-slate-500">Aucune permission.</li>@endforelse
                         </ul>
-                        @can('update', $role)<a href="{{ route('roles.edit', $role) }}" class="mt-4 inline-flex text-sm font-semibold text-brand-700">Modifier ce rôle</a>@endcan
+                        @can('update', $role)<div class="mt-4"><x-icon-button icon="edit" :label="'Modifier le rôle '.$role->displayName()" :href="route('roles.edit', $role)" /></div>@endcan
                     </article>
                 @empty
                     <x-empty-state title="Aucun rôle" description="Aucun rôle n’est disponible dans votre entreprise." />

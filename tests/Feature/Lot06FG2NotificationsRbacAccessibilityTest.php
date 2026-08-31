@@ -180,7 +180,7 @@ class Lot06FG2NotificationsRbacAccessibilityTest extends TestCase
         ]);
 
         $page = $this->actingAs($fixture['owner'])->get(route('roles.edit', $source));
-        $page->assertOk()->assertSee($safe->name)->assertSee('2 utilisateur(s) seront réaffectés.')
+        $page->assertOk()->assertSee($safe->name)->assertSee('2 utilisateurs seront réaffectés.')
             ->assertDontSee($escalating->name)->assertDontSee($notDelegated->name)
             ->assertDontSee($foreign->name)->assertDontSee($inactive->name)
             ->assertDontSee('value="'.Role::query()->where('slug', 'tenant-owner')->value('id').'"', false);

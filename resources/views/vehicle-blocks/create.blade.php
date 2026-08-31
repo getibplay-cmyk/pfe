@@ -36,7 +36,7 @@
                 <x-input-error :messages="$errors->get('reason')" />
             </label>
             <div class="flex gap-3 sm:col-span-2">
-                <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-white">Créer le bloc</button>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-white"><x-icon name="add" size="xs" />Créer le bloc</button>
                 <a href="{{ route('vehicle-blocks.index') }}" class="rounded-lg border px-4 py-2">Annuler</a>
             </div>
         </form>

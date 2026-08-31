@@ -63,10 +63,14 @@ test('seven server values drive the accessible table state and chart series iden
     assert.equal(state.forecasts.length, 7);
     assert.deepEqual(
         chart.data.datasets[0].data,
-        state.forecasts.map((forecast) => forecast.predictedDemand),
+        state.forecasts.map((forecast) => forecast.planningVehicleUnits),
     );
     assert.deepEqual(state.forecasts.map((forecast) => forecast.date), expectedDates);
-    assert.deepEqual(state.forecasts.map((forecast) => forecast.predictedDemand), [1, 2, 3, 4, 5, 6, 7]);
+    assert.deepEqual(state.forecasts.map((forecast) => forecast.planningVehicleUnits), [1, 2, 3, 4, 5, 6, 7]);
+    assert.deepEqual(
+        state.forecasts.map((forecast) => forecast.conditionalMean),
+        ['1.000000', '2.000000', '3.000000', '4.000000', '5.000000', '6.000000', '7.000000'],
+    );
 });
 
 test('chart is responsive, starts at zero and uses the seven daily labels', () => {
@@ -77,6 +81,10 @@ test('chart is responsive, starts at zero and uses the seven daily labels', () =
     assert.equal(chart.options.responsive, true);
     assert.equal(chart.options.maintainAspectRatio, false);
     assert.equal(chart.options.scales.y.beginAtZero, true);
+    assert.equal(chart.options.scales.y.ticks.precision, 0);
+    assert.equal(chart.options.scales.y.ticks.stepSize, 1);
+    assert.equal(chart.options.plugins.tooltip.callbacks.label({ parsed: { y: 1 } }), 'Véhicules à prévoir : 1 véhicule');
+    assert.equal(chart.options.plugins.tooltip.callbacks.label({ parsed: { y: 7 } }), 'Véhicules à prévoir : 7 véhicules');
     assert.equal(chart.data.labels.length, 7);
 });
 
@@ -154,7 +162,10 @@ test('polling stops on success and applies exactly seven values', async () => {
 
     assert.equal(state.status, 'succeeded');
     assert.equal(state.busy, false);
-    assert.deepEqual(state.forecasts.map((row) => row.predictedDemand), [2, 4, 6, 8, 10, 12, 14]);
+    assert.deepEqual(state.forecasts.map((row) => row.planningVehicleUnits), [2, 4, 6, 8, 10, 12, 14]);
+    assert.deepEqual(state.forecasts.map((row) => row.conditionalMean), [
+        '2.000000', '4.000000', '6.000000', '8.000000', '10.000000', '12.000000', '14.000000',
+    ]);
     assert.equal(requests.length, 2);
 });
 
@@ -259,7 +270,8 @@ test('Blade keeps an aria-labelled canvas and the accessible fallback table', ()
 
     assert.match(blade, /<canvas[\s\S]*role="img"[\s\S]*aria-label=/u);
     assert.match(blade, /<caption class="sr-only">/u);
-    assert.match(blade, /Demande prévue/u);
+    assert.match(blade, /Véhicules à prévoir/u);
     assert.match(blade, /Actualiser les prévisions/u);
+    assert.doesNotMatch(blade, /(?:7[,.]2|19,263290) véhicules/u);
     assert.doesNotMatch(blade, /\b(?:HistGradientBoosting|joblib|bundle|SHA-256|runtime|worker|feature vector|traceback)\b/iu);
 });

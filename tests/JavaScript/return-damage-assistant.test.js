@@ -173,3 +173,18 @@ test('retirer une photo annule logiquement son polling et son rattachement', () 
     assert.deepEqual(state.selectedRunIds, []);
     assert.equal(state.acceptStatus(photo, sequence, 'run-1', succeeded()), false);
 });
+
+test('retirer ou détruire les aperçus révoque chaque Object URL', () => {
+    const state = createReturnDamageAssistantState('');
+    const revoked = [];
+    state.releasePreview = (url) => revoked.push(url);
+    state.addFiles(
+        [{ name: 'avant.jpg' }, { name: 'arriere.jpg' }],
+        (file) => `blob:${file.name}`,
+    );
+
+    state.removePhoto(state.photos[0]);
+    state.destroy();
+
+    assert.deepEqual(revoked, ['blob:avant.jpg', 'blob:arriere.jpg']);
+});

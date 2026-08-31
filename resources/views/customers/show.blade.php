@@ -2,9 +2,9 @@
     <div class="mx-auto max-w-6xl space-y-6">
         <x-page-header :title="$customer->displayName()" eyebrow="Client" :breadcrumbs="[['label' => 'Clients et conducteurs', 'url' => route('customers.index')], ['label' => $customer->displayName()]]">
             <x-slot:actions>
-                <a href="{{ route('customers.index') }}" class="rf-button-secondary">Retour aux clients</a>
+                <a href="{{ route('customers.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux clients</a>
                 @can('update', $customer)<a href="{{ route('customers.edit', $customer) }}" class="rf-button-secondary">Modifier</a>@endcan
-                @can('archive', $customer)<form method="POST" action="{{ route('customers.destroy', $customer) }}" onsubmit="return confirm('Archiver ce client sans supprimer son historique ?')">@csrf @method('DELETE')<button class="rf-button-danger">Archiver</button></form>@endcan
+                @can('archive', $customer)<form method="POST" action="{{ route('customers.destroy', $customer) }}" x-belkhir-space-confirm data-confirm-title="Archiver ce client" data-confirm-resource="Fiche client sélectionnée" data-confirm-consequence="Le client sera archivé sans suppression de son historique." data-confirm-label="Archiver">@csrf @method('DELETE')<button class="rf-button-danger">Archiver</button></form>@endcan
             </x-slot:actions>
         </x-page-header>
         <x-form-errors />
@@ -45,10 +45,11 @@
                                     @empty <p class="text-slate-500">Aucun permis privé.</p> @endforelse
                                 </div>
                                 @can('upload', App\Models\Document::class)
-                                    <form class="mt-3 grid gap-2" method="POST" enctype="multipart/form-data" action="{{ route('drivers.documents.store', $driver) }}">@csrf
+                                    <form class="mt-3 grid gap-2" method="POST" enctype="multipart/form-data" action="{{ route('drivers.documents.store', $driver) }}" data-loading-form>@csrf
                                         <input type="hidden" name="document_type" value="driving_licence"><input type="hidden" name="is_sensitive" value="1">
-                                        <label class="rf-field-label" for="driver-document-title-{{ $driver->id }}">Titre du document</label><input id="driver-document-title-{{ $driver->id }}" name="title" value="Permis de conduire" required class="w-full"><label class="rf-field-label" for="driver-document-file-{{ $driver->id }}">Fichier privé</label><input id="driver-document-file-{{ $driver->id }}" type="file" name="file" required class="max-w-full text-sm">
-                                        <button class="justify-self-start rounded-lg border px-3 py-1.5 text-xs">Ajouter un permis privé</button>
+                                        <label class="rf-field-label" for="driver-document-title-{{ $driver->id }}">Titre du document</label><input id="driver-document-title-{{ $driver->id }}" name="title" value="Permis de conduire" required class="w-full">
+                                        <x-file-input :id="'driver-document-file-'.$driver->id" name="file" label="Fichier privé" required :errors="$errors->get('file')" />
+                                        <x-submit-button class="justify-self-start" label="Ajouter un permis privé" loading-label="Ajout en cours…" />
                                     </form>
                                 @endcan
                             @endunless
@@ -67,7 +68,7 @@
                         <label class="text-sm">Délivré le<input type="date" name="licence_issued_at" value="{{ old('licence_issued_at') }}" class="mt-1 w-full"><x-input-error :messages="$errors->get('licence_issued_at')" /></label>
                         <label class="text-sm">Expiration *<input type="date" name="licence_expires_at" value="{{ old('licence_expires_at') }}" required class="mt-1 w-full"><x-input-error :messages="$errors->get('licence_expires_at')" /></label>
                         <label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="is_primary" value="1" @checked(old('is_primary'))> Conducteur principal</label>
-                        <div class="sm:col-span-2"><button type="submit" class="rounded-lg bg-slate-950 px-4 py-2 text-sm text-white">Ajouter le conducteur</button></div>
+                        <div class="sm:col-span-2"><button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-2 text-sm text-white"><x-icon name="add" size="xs" />Ajouter le conducteur</button></div>
                     </form>
                 @endcan
             </section>
@@ -75,11 +76,12 @@
             <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 class="font-semibold">Documents privés du client</h2>
                 @can('upload', App\Models\Document::class)
-                    <form class="my-4 grid gap-3" method="POST" enctype="multipart/form-data" action="{{ route('customers.documents.store', $customer) }}">@csrf
+                    <form class="my-4 grid gap-3" method="POST" enctype="multipart/form-data" action="{{ route('customers.documents.store', $customer) }}" data-loading-form>@csrf
                         <label class="text-sm">Titre *<input name="title" value="{{ old('title') }}" required class="mt-1 w-full"><x-input-error :messages="$errors->get('title')" /></label>
                         <label class="text-sm">Type<select name="document_type" class="mt-1 w-full"><option value="customer_identity">Pièce d’identité</option><option value="other">Autre</option></select></label>
-                        <input type="hidden" name="is_sensitive" value="1"><label class="rf-field-label" for="customer-document-file">Fichier privé *</label><input id="customer-document-file" type="file" name="file" required class="max-w-full text-sm"><x-input-error :messages="$errors->get('file')" />
-                        <button type="submit" class="rounded-lg bg-slate-950 px-4 py-2 text-sm text-white">Ajouter le document</button>
+                        <input type="hidden" name="is_sensitive" value="1">
+                        <x-file-input id="customer-document-file" name="file" label="Fichier privé" required :errors="$errors->get('file')" />
+                        <x-submit-button label="Ajouter le document" loading-label="Ajout en cours…" />
                     </form>
                 @endcan
                 <div class="space-y-2">@forelse($customer->documents as $document)@can('view', $document)<a class="block rounded-lg border p-3 text-sm text-indigo-700" href="{{ route('documents.show', $document) }}">{{ $document->title }}</a>@endcan @empty <x-empty-state title="Aucun document" /> @endforelse</div>

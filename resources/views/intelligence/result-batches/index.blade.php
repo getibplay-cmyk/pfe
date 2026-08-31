@@ -6,7 +6,7 @@
             description="Validez un résultat synthétique lié à un snapshot J14-A, puis consignez une décision humaine append-only. Aucun modèle ni aucune action métier ne sont exécutés."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
@@ -38,18 +38,15 @@
                                     <div>
                                         <p class="font-mono text-xs text-slate-700">{{ $run->run_id }}</p>
                                         <p class="mt-1 text-sm text-slate-600">
-                                            {{ number_format($run->row_count, 0, ',', ' ') }} ligne(s) · exporté le {{ App\Support\Ui\UiLabel::dateTime($run->created_at) }}
+                                            {{ App\Support\Ui\BusinessNumber::count($run->row_count, 'ligne') }} · exporté le {{ App\Support\Ui\UiLabel::dateTime($run->created_at) }}
                                         </p>
                                     </div>
                                     <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $run->scope_kind === 'agency' ? 'Agence' : 'Entreprise' }}</span>
                                 </div>
-                                <form method="POST" enctype="multipart/form-data" action="{{ route('intelligence.result-batches.store', $run) }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+                                <form method="POST" enctype="multipart/form-data" action="{{ route('intelligence.result-batches.store', $run) }}" class="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end" data-loading-form>
                                     @csrf
-                                    <div class="min-w-0 flex-1">
-                                        <x-input-label :for="'result-batch-'.$run->id" value="Lot de résultats JSON" />
-                                        <input id="result-batch-{{ $run->id }}" type="file" name="result_batch" accept=".json,application/json" required class="mt-1 block w-full text-sm text-slate-700">
-                                    </div>
-                                    <x-confirmation-button type="submit" variant="secondary" message="Importer ce lot synthétique après validation complète du contrat J14-B ?">Valider et importer</x-confirmation-button>
+                                    <x-file-input :id="'result-batch-'.$run->id" name="result_batch" label="Lot de résultats JSON" accept=".json,application/json" formats="JSON" max-size="1 Mio" required :errors="$errors->get('result_batch')" />
+                                    <x-confirmation-button type="submit" variant="secondary" message="Importer ce lot synthétique après validation complète du contrat J14-B ?" loading-label="Validation…">Valider et importer</x-confirmation-button>
                                 </form>
                             </article>
                         @endcan
@@ -72,7 +69,7 @@
                             <div>
                                 <p class="font-mono text-xs text-slate-700">{{ $batch->batch_id }}</p>
                                 <p class="mt-1 text-sm text-slate-600">
-                                    {{ number_format($batch->rows_count, 0, ',', ' ') }} résultat(s) qualitatif(s) · importé le {{ App\Support\Ui\UiLabel::dateTime($batch->imported_at) }}
+                                    {{ App\Support\Ui\BusinessNumber::count($batch->rows_count, 'résultat') }} qualitatif{{ $batch->rows_count > 1 ? 's' : '' }} · importé le {{ App\Support\Ui\UiLabel::dateTime($batch->imported_at) }}
                                 </p>
                             </div>
                             <x-status-badge :value="$batch->reviewStatus()" />
@@ -85,7 +82,7 @@
                         </dl>
 
                         <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-                            <a href="{{ route('intelligence.result-batches.download', $batch) }}" class="rf-button-secondary">Télécharger la preuve JSON</a>
+                            <a href="{{ route('intelligence.result-batches.download', $batch) }}" class="rf-button-secondary" data-no-global-loading="true"><x-icon name="download" size="xs" />Télécharger la preuve JSON</a>
                             @if ($batch->decision)
                                 <p class="text-sm text-slate-600">
                                     Décision par {{ $batch->decision->actor->name }} · motif <code>{{ $batch->decision->reason_code }}</code>

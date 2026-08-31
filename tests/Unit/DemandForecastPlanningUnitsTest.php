@@ -35,9 +35,10 @@ class DemandForecastPlanningUnitsTest extends TestCase
     {
         return [
             'zero' => ['0.000000', 0],
-            'integer' => ['12.000000', 12],
-            'fraction' => ['12.000001', 13],
-            'small fraction' => ['0.000001', 1],
+            'small hundredth' => ['0.010000', 1],
+            'integer' => ['7.000000', 7],
+            'fraction' => ['7.200000', 8],
+            'six-decimal fraction' => ['19.263290', 20],
             'negative clamped' => ['-2.500000', 0],
         ];
     }

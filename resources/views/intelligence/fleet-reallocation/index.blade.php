@@ -9,8 +9,8 @@
                 @can('viewAny', App\Models\AgencyDistance::class)
                     <a href="{{ route('agency-distances.index') }}" class="rf-button-secondary">Distances inter-agences</a>
                 @endcan
-                <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary">Actualiser</a>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
+                <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary"><x-icon name="refresh" size="xs" />Actualiser</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
@@ -92,14 +92,10 @@
 
         @if ($canImport)
             <x-section-card title="Importer une proposition privée" description="Le tenant provient uniquement de la session ; aucun identifiant de périmètre n’est accepté dans le formulaire.">
-                <form method="POST" action="{{ route('intelligence.fleet-reallocation.store') }}" enctype="multipart/form-data" class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                <form method="POST" action="{{ route('intelligence.fleet-reallocation.store') }}" enctype="multipart/form-data" class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end" data-loading-form>
                     @csrf
-                    <div>
-                        <x-input-label for="reallocation-proposal" value="Fichier JSON contractuel" required />
-                        <input id="reallocation-proposal" name="proposal" type="file" accept="application/json,.json" class="mt-1 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm" required>
-                        <x-field-error :messages="$errors->get('proposal')" class="mt-2" />
-                    </div>
-                    <x-primary-button>Vérifier et importer</x-primary-button>
+                    <x-file-input id="reallocation-proposal" name="proposal" label="Fichier JSON contractuel" accept="application/json,.json" formats="JSON" required :errors="$errors->get('proposal')" />
+                    <x-submit-button label="Vérifier et importer" loading-label="Vérification…" />
                 </form>
             </x-section-card>
         @endif
@@ -131,7 +127,7 @@
                     </div>
                     <div class="rounded-xl bg-slate-50 p-3">
                         <p class="text-slate-500">Véhicules proposés</p>
-                        <p class="mt-1 font-semibold">{{ $proposal->relocated_vehicle_count }}</p>
+                        <p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($proposal->relocated_vehicle_count) }}</p>
                     </div>
                     <div class="rounded-xl bg-slate-50 p-3">
                         <p class="text-slate-500">Temps solveur</p>
@@ -161,7 +157,7 @@
                                         <td class="font-mono text-xs">{{ $move->from_node_ref }}</td>
                                         <td class="font-mono text-xs">{{ $move->to_node_ref }}</td>
                                         <td>{{ $move->vehicles }}</td>
-                                        <td>{{ $move->distance_km }} km</td>
+                                        <td>{{ App\Support\Ui\BusinessNumber::distance($move->distance_km) }}</td>
                                         <td>Aucune action automatique</td>
                                     </tr>
                                 @endforeach
@@ -176,7 +172,7 @@
                         <p>HGB consultatif · CatBoost refusé · validation locale absente</p>
                     </div>
                     <div class="flex flex-wrap items-end gap-3">
-                        <a href="{{ route('intelligence.fleet-reallocation.download', $proposal) }}" class="rf-button-secondary">Télécharger la preuve</a>
+                        <a href="{{ route('intelligence.fleet-reallocation.download', $proposal) }}" class="rf-button-secondary" data-no-global-loading="true"><x-icon name="download" size="xs" />Télécharger la preuve</a>
                         @can('review', $proposal)
                             @if ($proposal->decision === null)
                                 <form method="POST" action="{{ route('intelligence.fleet-reallocation.decisions.store', $proposal) }}" class="flex flex-wrap items-end gap-2">

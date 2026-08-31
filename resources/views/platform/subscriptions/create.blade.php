@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="rf-page max-w-4xl">
-        <x-page-header :title="'Nouvel abonnement · '.$tenant->name" eyebrow="Administration de la plateforme" description="Le tarif du plan sera figé dans cet abonnement ; aucun paiement ne sera généré automatiquement."><x-slot:actions><a href="{{ route('platform.tenants.show', $tenant) }}" class="rf-button-secondary">Retour à l’entreprise</a></x-slot:actions></x-page-header>
+        <x-page-header :title="'Nouvel abonnement · '.$tenant->name" eyebrow="Administration de la plateforme" description="Le tarif du plan sera figé dans cet abonnement ; aucun paiement ne sera généré automatiquement."><x-slot:actions><a href="{{ route('platform.tenants.show', $tenant) }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour à l’entreprise</a></x-slot:actions></x-page-header>
         <x-form-errors />
         @if($currentSubscription)
             <x-section-card title="Abonnement courant"><p class="text-sm">{{ $currentSubscription->plan->name }} · <x-status-badge :value="$currentSubscription->status" /></p><p class="mt-2 text-sm text-slate-600">Terminez d’abord cet abonnement depuis l’historique avant d’en créer un autre.</p></x-section-card>

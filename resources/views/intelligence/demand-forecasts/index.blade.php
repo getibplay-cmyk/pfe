@@ -15,7 +15,7 @@
         <div class="rounded-xl border p-4 text-sm leading-6 {{ $runtime['ready'] ? 'border-emerald-200 bg-emerald-50 text-emerald-950' : 'border-amber-200 bg-amber-50 text-amber-950' }}">
             @if ($runtime['ready'])
                 <span class="font-semibold">Service de prévision disponible.</span>
-                Les fichiers nécessaires sont vérifiés et le traitement peut être demandé depuis RentFleet.
+                Les fichiers nécessaires sont vérifiés et le traitement peut être demandé depuis {{ config('brand.name') }}.
             @elseif (! $runtime['enabled'])
                 <span class="font-semibold">Service de prévision non disponible.</span>
                 L’import manuel reste disponible, mais aucune nouvelle prévision ne peut être lancée.
@@ -25,7 +25,7 @@
             @endif
         </div>
 
-        <x-section-card title="Niveau de preuve du modèle" description="Les performances ci-dessous viennent du benchmark public Munich ; elles ne mesurent pas encore RentFleet.">
+        <x-section-card title="Niveau de preuve du modèle" :description="'Les performances ci-dessous viennent du benchmark public Munich ; elles ne mesurent pas encore '.config('brand.name').'.'">
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Modèle gelé</p>
@@ -34,22 +34,22 @@
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">WAPE public</p>
-                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ number_format((float) $contract['public_wape'] * 100, 3, ',', ' ') }} %</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ App\Support\Ui\BusinessNumber::confidence($contract['public_wape']) }}</p>
                     <p class="mt-1 text-xs text-slate-500">Plus faible = meilleur</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Complément du WAPE</p>
-                    <p class="mt-2 text-2xl font-semibold text-indigo-800">{{ number_format((1 - (float) $contract['public_wape']) * 100, 2, ',', ' ') }} %</p>
+                    <p class="mt-2 text-2xl font-semibold text-indigo-800">{{ App\Support\Ui\BusinessNumber::complementConfidence($contract['public_wape']) }}</p>
                     <p class="mt-1 text-xs text-slate-500">Indicateur lisible, pas une accuracy de classification</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">MASE public</p>
-                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ number_format((float) $contract['public_mase'], 4, ',', ' ') }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ App\Support\Ui\BusinessNumber::scientificDecimal($contract['public_mase'], 4, 4) }}</p>
                     <p class="mt-1 text-xs text-slate-500">Meilleur que la référence naïve si &lt; 1</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Couverture P05–P95</p>
-                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ number_format((float) $contract['public_interval_coverage'] * 100, 2, ',', ' ') }} %</p>
+                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ App\Support\Ui\BusinessNumber::confidence($contract['public_interval_coverage']) }}</p>
                     <p class="mt-1 text-xs text-slate-500">Benchmark public, nominal 90 %</p>
                 </div>
             </div>
@@ -59,7 +59,7 @@
             </div>
         </x-section-card>
 
-        <x-section-card title="Prétraitement compatible RentFleet" description="Une série agrégée par agence, sans identité client ni coordonnées.">
+        <x-section-card :title="'Prétraitement compatible '.config('brand.name')" description="Une série agrégée par agence, sans identité client ni coordonnées.">
             <div class="grid gap-3 text-sm md:grid-cols-4">
                 <div class="rounded-xl bg-slate-50 p-4">
                     <p class="font-medium text-slate-500">Cible</p>
@@ -86,7 +86,7 @@
 
         @if (auth()->user()->hasPermission('prediction.export'))
             <x-filter-panel title="Créer un snapshot d’historique">
-                <form method="GET" action="{{ route('intelligence.demand-history.export') }}" class="grid gap-4 md:grid-cols-4">
+                <form method="GET" action="{{ route('intelligence.demand-history.export') }}" class="grid gap-4 md:grid-cols-4" data-loading-form data-no-global-loading="true">
                     <div>
                         <x-input-label for="demand-date-from" value="Du" />
                         <x-text-input id="demand-date-from" name="date_from" type="date" class="mt-1 block w-full" :value="$filters['date_from']" required />
@@ -108,7 +108,7 @@
                         <x-field-error :messages="$errors->get('agency_id')" class="mt-2" />
                     </div>
                     <div class="flex items-end">
-                        <x-primary-button class="w-full justify-center" :disabled="! $configured">Générer et télécharger</x-primary-button>
+                        <x-submit-button class="w-full justify-center" label="Générer et télécharger" loading-label="Génération…" :disabled="! $configured" />
                     </div>
                 </form>
                 @unless ($configured)
@@ -141,10 +141,10 @@
                                     <p class="mt-1 font-mono text-xs text-slate-500">{{ $run->run_id }}</p>
                                     <p class="mt-1 text-xs text-slate-500">{{ $run->date_from->format('d/m/Y') }} → {{ $run->date_to->format('d/m/Y') }}</p>
                                 </td>
-                                <td>{{ $run->row_count }} jours continus</td>
-                                <td>{{ number_format($run->observed_departures_count, 0, ',', ' ') }}</td>
+                                <td>{{ App\Support\Ui\BusinessNumber::count($run->row_count, 'jour') }} continus</td>
+                                <td>{{ App\Support\Ui\BusinessNumber::integer($run->observed_departures_count) }}</td>
                                 <td>
-                                    <p>{{ $run->forecast_runs_count }}</p>
+                                    <p>{{ App\Support\Ui\BusinessNumber::integer($run->forecast_runs_count) }}</p>
                                     @if ($execution)
                                         <p class="mt-1"><x-status-badge :value="$execution->status->value" :label="$execution->status->label()" /></p>
                                         @if ($execution->failure_code)
@@ -155,26 +155,27 @@
                                 <td class="text-right">
                                     <div class="flex flex-wrap justify-end gap-3">
                                         @can('view', $run)
-                                            <a href="{{ route('intelligence.demand-history.manifest', $run) }}" class="font-medium text-indigo-700">Manifeste</a>
-                                            <a href="{{ route('intelligence.demand-history.download', $run) }}" class="font-medium text-indigo-700">CSV</a>
+                                            <x-icon-button icon="file" :label="'Consulter le manifeste de '.$run->agency->name" :href="route('intelligence.demand-history.manifest', $run)" data-no-global-loading="true" />
+                                            <x-icon-button icon="download" :label="'Télécharger le CSV de '.$run->agency->name" :href="route('intelligence.demand-history.download', $run)" data-no-global-loading="true" />
                                         @endcan
                                     </div>
                                     @can('importForecast', $run)
                                         @if ($runtime['ready'])
-                                            <form method="POST" action="{{ route('intelligence.demand-forecast-executions.store', $run) }}" class="mt-3">
+                                            <form method="POST" action="{{ route('intelligence.demand-forecast-executions.store', $run) }}" class="mt-3" data-loading-form>
                                                 @csrf
-                                                <x-primary-button :disabled="$executionIsActive">
-                                                    {{ $executionIsActive ? 'Prévision déjà en cours' : 'Générer la prévision' }}
-                                                </x-primary-button>
+                                                <x-submit-button
+                                                    :label="$executionIsActive ? 'Prévision déjà en cours' : 'Générer la prévision'"
+                                                    loading-label="Génération en cours…"
+                                                    :disabled="$executionIsActive"
+                                                />
                                             </form>
                                         @endif
                                         <details class="mt-3 text-left">
                                             <summary class="cursor-pointer text-xs font-medium text-slate-600">Import JSON manuel de secours</summary>
-                                            <form method="POST" action="{{ route('intelligence.demand-forecasts.store', $run) }}" enctype="multipart/form-data" class="mt-2 flex flex-col items-end gap-2">
+                                            <form method="POST" action="{{ route('intelligence.demand-forecasts.store', $run) }}" enctype="multipart/form-data" class="mt-2 space-y-3" data-loading-form>
                                                 @csrf
-                                                <label for="forecast-batch-{{ $run->id }}" class="text-xs font-medium text-slate-600">Résultat JSON du modèle</label>
-                                                <input id="forecast-batch-{{ $run->id }}" name="forecast_batch" type="file" accept="application/json,.json" class="block max-w-xs text-xs" required />
-                                                <x-primary-button>Importer en shadow</x-primary-button>
+                                                <x-file-input :id="'forecast-batch-'.$run->id" name="forecast_batch" label="Résultat JSON du modèle" accept="application/json,.json" formats="JSON" required :errors="$errors->get('forecast_batch')" />
+                                                <x-submit-button label="Importer en shadow" loading-label="Import en cours…" />
                                             </form>
                                         </details>
                                     @endcan
@@ -250,18 +251,17 @@
                                         <tr>
                                             <td class="whitespace-nowrap px-3 py-3 font-semibold">D+{{ $forecast->horizon }}</td>
                                             <td class="whitespace-nowrap px-3 py-3">{{ $forecast->target_date->format('d/m/Y') }}</td>
-                                            <td class="whitespace-nowrap px-3 py-3">{{ number_format((float) $forecast->conditional_mean, 1, ',', ' ') }}</td>
-                                            <td class="whitespace-nowrap px-3 py-3 font-semibold text-indigo-800">{{ number_format((float) $forecast->p50, 1, ',', ' ') }}</td>
-                                            <td class="whitespace-nowrap px-3 py-3 font-semibold text-amber-800">{{ number_format((float) $forecast->p90, 1, ',', ' ') }}</td>
-                                            <td class="whitespace-nowrap px-3 py-3">{{ number_format((float) $forecast->p05, 1, ',', ' ') }} – {{ number_format((float) $forecast->p95, 1, ',', ' ') }}</td>
+                                            <td class="whitespace-nowrap px-3 py-3">{{ App\Support\Ui\BusinessNumber::scientificDecimal($forecast->conditional_mean, 2) }}</td>
+                                            <td class="whitespace-nowrap px-3 py-3 font-semibold text-indigo-800">{{ App\Support\Ui\BusinessNumber::scientificDecimal($forecast->p50, 2) }}</td>
+                                            <td class="whitespace-nowrap px-3 py-3 font-semibold text-amber-800">{{ App\Support\Ui\BusinessNumber::scientificDecimal($forecast->p90, 2) }}</td>
+                                            <td class="whitespace-nowrap px-3 py-3">{{ App\Support\Ui\BusinessNumber::scientificDecimal($forecast->p05, 2) }} – {{ App\Support\Ui\BusinessNumber::scientificDecimal($forecast->p95, 2) }}</td>
                                             <td class="min-w-72 px-3 py-3">
                                                 <ul class="space-y-1">
                                                     @foreach ($forecast->explanations as $factor)
-                                                        @php($delta = (float) $factor['prediction_delta'])
                                                         <li>
                                                             <span class="font-medium">{{ $factorLabels[$factor['feature']] ?? $factor['feature'] }}</span>
                                                             <span class="text-slate-500">· {{ $factor['direction'] === 'increase' ? 'hausse' : ($factor['direction'] === 'decrease' ? 'baisse' : 'neutre') }}</span>
-                                                            <span class="text-slate-500">· {{ $delta > 0 ? '+' : '' }}{{ number_format($delta, 2, ',', ' ') }} départ(s)</span>
+                                                            <span class="text-slate-500">· {{ App\Support\Ui\BusinessNumber::signedScientificDecimal($factor['prediction_delta'], 2) }} départ(s)</span>
                                                         </li>
                                                     @endforeach
                                                 </ul>

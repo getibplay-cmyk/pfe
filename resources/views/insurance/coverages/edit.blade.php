@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="mx-auto max-w-3xl space-y-6">
         <x-page-header title="Modifier la garantie" eyebrow="Assurance" description="Mettez à jour les limites contractuelles dans la devise de la police.">
-            <x-slot:actions><a href="{{ route('insurance.policies.show', $policy) }}" class="rf-button-secondary">Retour à la police</a></x-slot:actions>
+            <x-slot:actions><a href="{{ route('insurance.policies.show', $policy) }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour à la police</a></x-slot:actions>
         </x-page-header>
         <x-form-errors />
         <form method="POST" action="{{ route('insurance.coverages.update', [$policy, $coverage]) }}" class="grid gap-5 rounded-xl bg-white p-6 shadow-sm md:grid-cols-2">
@@ -31,7 +31,7 @@
                 <input id="coverage-edit-deductible" name="deductible_amount" inputmode="decimal" value="{{ old('deductible_amount', $coverage->deductible_amount) }}" aria-describedby="coverage-edit-deductible-error" class="mt-1 w-full rounded border-slate-300">
                 <x-field-error id="coverage-edit-deductible-error" :messages="$errors->get('deductible_amount')" />
             </div>
-            <div class="md:col-span-2 flex justify-end"><button class="rf-button-primary">Enregistrer</button></div>
+            <div class="md:col-span-2 flex justify-end"><button class="rf-button-primary"><x-icon name="save" size="xs" />Enregistrer</button></div>
         </form>
     </div>
 </x-app-layout>

@@ -7,9 +7,9 @@
         >
             <x-slot:actions>
                 @can('viewAny', App\Models\FleetReallocationProposal::class)
-                    <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary">Retour aux propositions de démonstration</a>
+                    <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux propositions de démonstration</a>
                 @endcan
-                <a href="{{ route('vehicles.index') }}" class="rf-button-secondary">Retour à la flotte</a>
+                <a href="{{ route('vehicles.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour à la flotte</a>
             </x-slot:actions>
         </x-page-header>
 
@@ -82,7 +82,7 @@
         @if ($canManage)
             <x-section-card
                 title="Ajouter une distance vérifiée"
-                description="La référence est informative ; RentFleet ne la consulte jamais automatiquement."
+                :description="'La référence est informative ; '.config('brand.name').' ne la consulte jamais automatiquement.'"
             >
                 <form method="POST" action="{{ route('agency-distances.store') }}" class="grid gap-4 md:grid-cols-2">
                     @csrf

@@ -13,11 +13,8 @@
                     x-bind:disabled="busy || !ready"
                     x-bind:aria-busy="busy.toString()"
                 >
-                    <svg x-cloak x-show="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
-                    </svg>
-                    Calculer un plan
+                    <x-spinner x-cloak x-show="busy" />
+                    <span x-text="busy ? 'Calcul en cours…' : 'Calculer un plan'">Calculer un plan</span>
                 </button>
             </x-slot:actions>
         </x-page-header>
@@ -45,10 +42,10 @@
             <div x-show="agencies.length > 0">
                 <x-responsive-table label="Besoins de planification par agence et par date">
                     <table>
-                        <thead><tr><th>Date</th><th>Agence</th><th class="text-right">Départs prévus</th><th class="text-right">Besoin de planification arrondi à l’unité supérieure</th><th class="text-right">Véhicules disponibles</th><th class="text-right">Surplus transférable</th><th class="text-right">Besoin non couvert</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Agence</th><th class="text-right">Moyenne des départs prévus</th><th class="text-right">Besoin de planification arrondi à l’unité supérieure</th><th class="text-right">Véhicules disponibles</th><th class="text-right">Surplus transférable</th><th class="text-right">Besoin non couvert</th></tr></thead>
                         <tbody>
                             <template x-for="row in agencies" x-bind:key="`${row.date}-${row.name}`">
-                                <tr><td x-text="formatDate(row.date)"></td><td x-text="row.name"></td><td class="text-right" x-text="row.predicted_departures"></td><td class="text-right" x-text="row.planning_vehicle_units"></td><td class="text-right" x-text="row.available_vehicle_units"></td><td class="text-right" x-text="row.transferable_surplus"></td><td class="text-right" x-text="row.uncovered_need"></td></tr>
+                                <tr><td x-text="formatDate(row.date)"></td><td x-text="row.name"></td><td class="text-right" x-text="formatAverage(row.predicted_departures)"></td><td class="text-right" x-text="formatBusinessInteger(row.planning_vehicle_units)"></td><td class="text-right" x-text="formatBusinessInteger(row.available_vehicle_units)"></td><td class="text-right" x-text="formatBusinessInteger(row.transferable_surplus)"></td><td class="text-right" x-text="formatBusinessInteger(row.uncovered_need)"></td></tr>
                             </template>
                         </tbody>
                     </table>
@@ -66,7 +63,7 @@
                         <thead><tr><th>Date</th><th>Agence de départ</th><th>Agence de destination</th><th class="text-right">Véhicules</th><th class="text-right">Distance</th></tr></thead>
                         <tbody>
                             <template x-for="row in recommendations" x-bind:key="`${row.date}-${row.from_agency}-${row.to_agency}`">
-                                <tr><td x-text="formatDate(row.date)"></td><td x-text="row.from_agency"></td><td x-text="row.to_agency"></td><td class="text-right" x-text="row.vehicle_units"></td><td class="text-right"><span x-text="row.distance_km"></span> km</td></tr>
+                                <tr><td x-text="formatDate(row.date)"></td><td x-text="row.from_agency"></td><td x-text="row.to_agency"></td><td class="text-right" x-text="formatBusinessInteger(row.vehicle_units)"></td><td class="text-right" x-text="formatDistance(row.distance_km)"></td></tr>
                             </template>
                         </tbody>
                     </table>

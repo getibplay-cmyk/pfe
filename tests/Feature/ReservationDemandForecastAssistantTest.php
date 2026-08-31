@@ -205,11 +205,20 @@ class ReservationDemandForecastAssistantTest extends TestCase
         $page = $this->actingAs($fixture['user'])
             ->get(route('reservations.index', ['agency_id' => $fixture['agency']->id]))
             ->assertOk()
-            ->assertSee('Les prévisions sont disponibles pour préparer le planning.');
+            ->assertSee('Les prévisions sont disponibles pour préparer le planning.')
+            ->assertSee('Véhicules à prévoir')
+            ->assertDontSee('7,2 véhicules')
+            ->assertDontSee('7.2 véhicules')
+            ->assertDontSee('19,263290 véhicules');
         foreach ($expected as $forecast) {
             $page->assertSee($forecast['date']);
             $page->assertSee($forecast['predicted_demand']);
         }
+
+        $this->assertSame(
+            $expected[0]['predicted_demand'],
+            (string) DemandForecast::withoutGlobalScopes()->orderBy('horizon')->value('conditional_mean'),
+        );
     }
 
     public function test_disabled_or_unavailable_service_fails_safely_without_creating_anything(): void

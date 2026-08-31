@@ -1,28 +1,29 @@
 <x-guest-layout>
-    <header>
-        <p class="text-xs font-bold uppercase tracking-[0.16em] text-brand-700">Espace sécurisé</p>
-        <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-950">Connexion à RentFleet</h1>
-        <p class="mt-2 text-sm leading-6 text-slate-600">Accédez à l’espace de travail de votre organisation avec le compte fourni par votre administrateur.</p>
-    </header>
+    <x-auth-heading
+        eyebrow="Espace sécurisé"
+        :title="'Connexion à '.config('brand.name')"
+        description="Accédez à l’espace de travail de votre organisation avec le compte fourni par votre administrateur."
+    />
 
     <x-auth-session-status class="mt-5" :status="session('status')" />
-    <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5">
+    <form method="POST" action="{{ route('login') }}" class="mt-7 space-y-5" data-loading-form>
         @csrf
         <x-form-errors />
-        <div>
-            <x-input-label for="email" value="Adresse e-mail" required />
-            <x-text-input id="email" class="mt-1" type="email" name="email" :value="old('email')" :invalid="$errors->has('email')" required autofocus autocomplete="username" aria-describedby="email-error" />
-            <x-field-error id="email-error" :messages="$errors->get('email')" class="mt-2" />
-        </div>
+        <x-auth-email-field :value="old('email')" :messages="$errors->get('email')" autofocus />
         <x-password-field id="password" name="password" label="Mot de passe" :messages="$errors->get('password')" autocomplete="current-password" />
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <label for="remember_me" class="inline-flex items-center gap-2 text-sm text-slate-600">
-                <input id="remember_me" type="checkbox" class="rounded" name="remember" @checked(old('remember'))>
+            <label for="remember_me" class="inline-flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg pe-2 text-sm text-belkhir-space-muted">
+                <input id="remember_me" type="checkbox" class="h-4 w-4 rounded" name="remember" @checked(old('remember'))>
                 Se souvenir de moi
             </label>
-            @if (Route::has('password.request'))<a class="rf-button-link -me-3" href="{{ route('password.request') }}">Mot de passe oublié ?</a>@endif
+            @if (Route::has('password.request'))
+                <a class="rf-button-link -me-3" href="{{ route('password.request') }}">Mot de passe oublié ?</a>
+            @endif
         </div>
-        <x-primary-button class="w-full">Se connecter</x-primary-button>
+        <x-submit-button label="Se connecter" loading-label="Connexion en cours…" class="w-full" />
     </form>
-    <p class="mt-6 rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-600"><strong class="text-slate-800">Accès B2B :</strong> les comptes sont créés par l’administrateur de la plateforme ou l’administrateur de votre organisation. Aucun compte ne peut être ouvert publiquement.</p>
+    <div class="mt-6 flex gap-3 rounded-xl border border-belkhir-space-border bg-belkhir-space-canvas p-4 text-xs leading-5 text-belkhir-space-muted">
+        <svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0 text-belkhir-space-blue" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></svg>
+        <p><strong class="text-belkhir-space-text">Accès professionnel :</strong> les comptes sont créés par un administrateur autorisé. Aucun compte ne peut être ouvert publiquement.</p>
+    </div>
 </x-guest-layout>

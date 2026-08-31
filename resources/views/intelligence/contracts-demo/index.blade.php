@@ -5,7 +5,7 @@
             eyebrow="Démonstration isolée J12"
             description="Validez l’adaptateur Laravel sans modèle, sans donnée réelle et sans action sur la flotte."
         >
-            <x-slot:actions><a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a></x-slot:actions>
+            <x-slot:actions><a href="{{ route('intelligence.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour aux analyses</a></x-slot:actions>
         </x-page-header>
 
         <x-form-errors />

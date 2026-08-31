@@ -101,4 +101,7 @@ test('accepts the bounded successful business contract', async () => {
     assert.equal(state.status, 'succeeded');
     assert.equal(state.recommendations.length, 1);
     assert.equal(state.busy, false);
+    assert.equal(state.formatAverage(state.agencies[0].predicted_departures), '3,25');
+    assert.equal(state.formatBusinessInteger(state.agencies[0].planning_vehicle_units), '4');
+    assert.equal(state.formatDistance(state.recommendations[0].distance_km), '87,4 km');
 });

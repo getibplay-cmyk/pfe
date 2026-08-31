@@ -13,9 +13,9 @@
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="max-w-3xl text-sm leading-6 text-slate-600">
                     <p><span class="font-semibold text-slate-900">HGB Poisson régularisé</span> · WAPE public 15,234 % · couverture P05–P95 86,07 %.</p>
-                    <p class="mt-1">Ces métriques proviennent du proxy public Munich. La validation sur l’historique réel RentFleet reste obligatoire avant toute affirmation de performance locale.</p>
+                    <p class="mt-1">Ces métriques proviennent du proxy public Munich. La validation sur l’historique réel {{ config('brand.name') }} reste obligatoire avant toute affirmation de performance locale.</p>
                 </div>
-                <a href="{{ route('intelligence.demand-forecasts.index') }}" class="rf-button-secondary">Ouvrir les prévisions de demande</a>
+                <a href="{{ route('intelligence.demand-forecasts.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les prévisions de demande</a>
             </div>
         </x-section-card>
 
@@ -27,7 +27,7 @@
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
                     Macro-F1 externe finale 0,914989 · précision des prédictions acceptées 100 % · couverture 59,375 % · seuil d’acceptation 0,977. Le module reste désactivé par défaut jusqu’à activation explicite.
                 </p>
-                <a href="{{ route('intelligence.vehicle-colors.index') }}" class="rf-button-secondary">Ouvrir l’analyse couleur</a>
+                <a href="{{ route('intelligence.vehicle-colors.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir l’analyse couleur</a>
             </div>
         </x-section-card>
 
@@ -37,9 +37,9 @@
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    Balanced accuracy 85,7633 % · macro-F1 85,2923 % · rappel dommage 86,7117 % · ECE 0,025848. Les régions proposées sont grossières et la validation locale RentFleet reste obligatoire.
+                    Balanced accuracy 85,7633 % · macro-F1 85,2923 % · rappel dommage 86,7117 % · ECE 0,025848. Les régions proposées sont grossières et la validation locale {{ config('brand.name') }} reste obligatoire.
                 </p>
-                <a href="{{ route('intelligence.vehicle-damages.index') }}" class="rf-button-secondary">Ouvrir l’assistant dommages</a>
+                <a href="{{ route('intelligence.vehicle-damages.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir l’assistant dommages</a>
             </div>
         </x-section-card>
 
@@ -51,7 +51,7 @@
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
                     Le pilote privé a traité 1 819 crops et produit 821 suggestions complètes. La revue manuelle reste incomplète : ces chiffres prouvent le fonctionnement et la couverture, pas encore l’exactitude locale.
                 </p>
-                <a href="{{ route('intelligence.vehicle-plates.index') }}" class="rf-button-secondary">Ouvrir la revue des plaques</a>
+                <a href="{{ route('intelligence.vehicle-plates.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir la revue des plaques</a>
             </div>
         </x-section-card>
 
@@ -63,7 +63,7 @@
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
                     <code>robust_mad_top2</code> reste le classement principal aux budgets 0,5 %, 1 % et 2 %. Isolation Forest mesure uniquement le désaccord. Aucun score ne déclenche une sanction, des frais, une accusation ou une modification de contrat.
                 </p>
-                <a href="{{ route('intelligence.rental-usage-anomalies.index') }}" class="rf-button-secondary">Ouvrir les usages atypiques</a>
+                <a href="{{ route('intelligence.rental-usage-anomalies.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les usages atypiques</a>
             </div>
         </x-section-card>
 
@@ -89,7 +89,7 @@
 
         <x-section-card
             title="J13 · preuves consultatives désactivées"
-            description="Quatre cartes en lecture seule exposent la provenance et les limites gelées ; elles ne constituent pas des sorties de modèles RentFleet."
+            :description="'Quatre cartes en lecture seule exposent la provenance et les limites gelées ; elles ne constituent pas des sorties de modèles '.config('brand.name').'.'"
         >
             <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
                 <p class="font-semibold">Mode consultatif fermé</p>
@@ -187,7 +187,7 @@
                 </div>
                 <div class="rounded-xl border border-slate-200 p-3">
                     <p class="text-slate-500">Contrats</p>
-                    <p class="mt-1 font-semibold">{{ $contractDemo['contract_count'] }} fixtures synthétiques</p>
+                    <p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($contractDemo['contract_count']) }} fixtures synthétiques</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-3">
                     <p class="text-slate-500">Prêt pour le SaaS</p>
@@ -202,12 +202,12 @@
                 Les payloads publics Munich et Scania ne sont jamais importés comme recommandations opérationnelles. Les routes de démonstration répondent 404 tant que le verrou J12 reste fermé.
             </p>
             @if ($contractDemo['enabled'])
-                <div class="mt-4"><a href="{{ route('intelligence.contract-demo.index') }}" class="rf-button-secondary">Ouvrir la démonstration isolée</a></div>
+                <div class="mt-4"><a href="{{ route('intelligence.contract-demo.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir la démonstration isolée</a></div>
             @endif
         </x-section-card>
 
         <x-filter-panel title="Périmètre du dataset réel">
-            <form method="GET" action="{{ route('intelligence.export') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <form method="GET" action="{{ route('intelligence.export') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4" data-no-global-loading="true">
                 <div>
                     <x-input-label for="intelligence-date-from" value="Du" />
                     <x-text-input id="intelligence-date-from" name="date_from" type="date" class="mt-1 block w-full" :value="$filters['date_from']" required />
@@ -261,12 +261,12 @@
                                     <td class="font-mono text-xs">{{ $run->run_id }}</td>
                                     <td>{{ $run->date_from->format('d/m/Y') }} → {{ $run->date_to->format('d/m/Y') }}</td>
                                     <td>{{ $run->scope_kind === 'agency' ? 'Agence autorisée' : 'Entreprise entière' }}</td>
-                                    <td>{{ number_format($run->row_count, 0, ',', ' ') }}</td>
+                                    <td>{{ App\Support\Ui\BusinessNumber::integer($run->row_count) }}</td>
                                     <td>{{ App\Support\Ui\UiLabel::dateTime($run->created_at) }}</td>
                                     <td class="text-right">
                                         <div class="flex flex-wrap justify-end gap-3">
-                                            <a href="{{ route('intelligence.exports.manifest', $run) }}" class="font-medium text-indigo-700">Manifeste JSON</a>
-                                            <a href="{{ route('intelligence.exports.download', $run) }}" class="font-medium text-indigo-700">Snapshot CSV</a>
+                                            <a href="{{ route('intelligence.exports.manifest', $run) }}" class="font-medium text-indigo-700" data-no-global-loading="true">Manifeste JSON</a>
+                                            <a href="{{ route('intelligence.exports.download', $run) }}" class="font-medium text-indigo-700" data-no-global-loading="true">Snapshot CSV</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -292,7 +292,7 @@
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
                     La revue J14-B n’accepte que des sorties qualitatives de fixture synthétique. Elle refuse tout score, identifiant direct, coordonnée, action automatique ou payload non documenté.
                 </p>
-                <a href="{{ route('intelligence.result-batches.index') }}" class="rf-button-secondary">Ouvrir le registre J14-B</a>
+                <a href="{{ route('intelligence.result-batches.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir le registre J14-B</a>
             </div>
         </x-section-card>
 
@@ -302,10 +302,10 @@
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    Le solveur qualifié reste externe à Laravel. RentFleet vérifie sa lignée, l’abstention CatBoost, les coûts et les mouvements avant de les afficher ; accepter une proposition signifie seulement « retenue pour la démonstration ».
+                    Le solveur qualifié reste externe à Laravel. {{ config('brand.name') }} vérifie sa lignée, l’abstention CatBoost, les coûts et les mouvements avant de les afficher ; accepter une proposition signifie seulement « retenue pour la démonstration ».
                 </p>
                 @if (auth()->user()->agency_id === null)
-                    <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary">Ouvrir les propositions</a>
+                    <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les propositions</a>
                 @else
                     <span class="text-sm text-slate-500">Registre réservé à la vue entreprise entière.</span>
                 @endif

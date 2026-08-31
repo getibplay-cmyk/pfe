@@ -13,7 +13,7 @@
                     <label class="text-sm">Devise par défaut *<input name="currency" required maxlength="3" value="{{ old('currency', $tenant->settings['currency'] ?? 'MAD') }}" class="mt-1 w-full"><x-input-error :messages="$errors->get('currency')" /></label>
                     <label class="text-sm">Fuseau horaire *<input name="timezone" required value="{{ old('timezone', $tenant->settings['timezone'] ?? 'Africa/Casablanca') }}" class="mt-1 w-full"><x-input-error :messages="$errors->get('timezone')" /></label>
                 </div>
-                <button type="submit" class="rounded-lg bg-slate-950 px-5 py-2 text-white">Enregistrer</button>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-5 py-2 text-white"><x-icon name="save" size="xs" />Enregistrer</button>
             </form>
         @else
             <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-semibold">Consultation uniquement</h2><dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2"><div><dt class="text-slate-500">Nom commercial</dt><dd>{{ $tenant->name }}</dd></div><div><dt class="text-slate-500">Raison sociale</dt><dd>{{ $tenant->legal_name ?? '—' }}</dd></div><div><dt class="text-slate-500">Devise</dt><dd>{{ $tenant->settings['currency'] ?? 'MAD' }}</dd></div><div><dt class="text-slate-500">Fuseau horaire</dt><dd>{{ $tenant->settings['timezone'] ?? 'Africa/Casablanca' }}</dd></div></dl></section>

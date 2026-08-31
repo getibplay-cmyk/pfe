@@ -6,9 +6,9 @@
                 <div><dt class="text-slate-500">Type</dt><dd class="font-medium">{{ App\Support\Ui\UiLabel::get($document->document_type) }}</dd></div>
                 <div><dt class="text-slate-500">Échéance de conservation</dt><dd class="font-medium">{{ App\Support\Ui\UiLabel::date($document->retention_until) }}</dd></div>
             </dl>
-            @can('download', $document)<a class="mt-5 inline-flex rounded-lg bg-slate-950 px-4 py-2 text-sm font-medium text-white" href="{{ route('documents.download', $document) }}">Télécharger la version courante</a>@endcan
+            @can('download', $document)<div class="mt-5"><x-icon-button icon="download" label="Télécharger la version courante" :href="route('documents.download', $document)" variant="primary" data-no-global-loading="true" /></div>@endcan
             @can('delete', $document)
-                <form class="mt-4" method="POST" action="{{ route('documents.destroy', $document) }}" onsubmit="return confirm('Archiver ce document sans supprimer son fichier ni ses versions ?')">
+                <form class="mt-4" method="POST" action="{{ route('documents.destroy', $document) }}" x-belkhir-space-confirm data-confirm-title="Archiver le document" data-confirm-resource="Document sélectionné" data-confirm-consequence="Le document sera archivé sans supprimer son fichier ni ses versions." data-confirm-label="Archiver">
                     @csrf @method('DELETE')
                     <button class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700">Archiver le document</button>
                 </form>
@@ -19,9 +19,9 @@
                 @forelse ($document->versions as $version)<div class="p-3 text-sm"><strong>Version {{ $version->version_number }}</strong><p class="text-slate-500">{{ $version->original_name }} · {{ App\Support\Ui\UiLabel::dateTime($version->created_at) }}</p></div>@empty <x-empty-state title="Aucune version disponible" /> @endforelse
             </div>
             @can('upload', $document)
-                <form class="mt-6 space-y-3" method="POST" enctype="multipart/form-data" action="{{ route('documents.versions.store', $document) }}">@csrf
-                    <x-input-label for="document_version" value="Nouvelle version *" /><input id="document_version" type="file" name="file" required class="block w-full text-sm"><x-input-error :messages="$errors->get('file')" />
-                    <button type="submit" class="rounded-lg bg-slate-950 px-4 py-2 text-sm font-medium text-white">Ajouter la version</button>
+                <form class="mt-6 space-y-3" method="POST" enctype="multipart/form-data" action="{{ route('documents.versions.store', $document) }}" data-loading-form>@csrf
+                    <x-file-input id="document_version" name="file" label="Nouvelle version" required :errors="$errors->get('file')" />
+                    <x-submit-button label="Ajouter la version" loading-label="Ajout en cours…" />
                 </form>
             @endcan
         </section>

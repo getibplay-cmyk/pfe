@@ -21,7 +21,7 @@ class NavigationBuilder
                     'label' => 'Entreprises et facturation',
                     'items' => [
                         $this->item('platform-tenants', 'Entreprises clientes', 'platform.tenants.index', 'platform.tenants.*'),
-                        $this->item('platform-plans', 'Offres RentFleet', 'platform.plans.index', 'platform.plans.*'),
+                        $this->item('platform-plans', 'Offres '.config('brand.name'), 'platform.plans.index', 'platform.plans.*'),
                         $this->item('platform-subscriptions', 'Abonnements', 'platform.subscriptions.index', 'platform.subscriptions.*'),
                         $this->item('platform-saas-payments', 'Paiements', 'platform.saas-payments.index', 'platform.saas-payments.*'),
                     ],
@@ -65,7 +65,7 @@ class NavigationBuilder
             ]),
             $this->section('Administration', [
                 $this->when($user, 'tenant.manage', $this->item('tenant', 'Entreprise', 'tenant.show', 'tenant.*')),
-                $this->whenTenantOwner($user, $this->item('tenant-saas-account', 'Abonnement RentFleet', 'tenant-saas-account.show', 'tenant-saas-account.*')),
+                $this->whenTenantOwner($user, $this->item('tenant-saas-account', 'Abonnement '.config('brand.name'), 'tenant-saas-account.show', 'tenant-saas-account.*')),
                 $this->whenAny($user, ['agency.view', 'agency.manage'], $this->item('agencies', 'Agences', 'agencies.index', 'agencies.*')),
                 $this->whenAny($user, ['user.view', 'user.manage'], $this->item('users', 'Utilisateurs', 'users.index', 'users.*')),
                 $this->when($user, 'role.view', $this->item('roles', 'Rôles et permissions', 'roles.index', 'roles.*')),

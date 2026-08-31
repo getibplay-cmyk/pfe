@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="rf-page">
-        <x-page-header title="Mon abonnement RentFleet" eyebrow="Compte SaaS" :description="'Consultation de l’offre, des paiements administratifs et des assistances accessibles pour '.$tenant->name.'.'" />
+        <x-page-header :title="'Mon abonnement '.config('brand.name')" eyebrow="Compte SaaS" :description="'Consultation de l’offre, des paiements administratifs et des assistances accessibles pour '.$tenant->name.'.'" />
 
         <div class="grid gap-6 lg:grid-cols-2">
             <x-section-card title="Abonnement courant">
@@ -15,7 +15,7 @@
                         <x-metadata-item label="Prochain renouvellement">{{ App\Support\Ui\UiLabel::dateTime($currentSubscription->next_renewal_at) }}</x-metadata-item>
                         <x-metadata-item label="Fin prévue">{{ App\Support\Ui\UiLabel::dateTime($currentSubscription->ends_at) }}</x-metadata-item>
                     </x-metadata-list>
-                @else<x-empty-state title="Aucun abonnement courant" description="Votre accès historique reste disponible. Contactez l’administration RentFleet pour toute question." />@endif
+                @else<x-empty-state title="Aucun abonnement courant" :description="'Votre accès historique reste disponible. Contactez l’administration '.config('brand.name').' pour toute question.'" />@endif
             </x-section-card>
 
             <x-section-card title="Assistances accessibles" description="Ces fonctions restent consultatives et soumises à vos permissions métier.">

@@ -181,3 +181,22 @@ test('aucun message technique reçu ne peut être rendu au client', () => {
         assert.equal(state.message.toLowerCase().includes(term.toLowerCase()), false);
     }
 });
+
+test('les aperçus complet et rapproché sont indépendants puis révoqués', () => {
+    const revoked = [];
+    const assistant = createVehicleRegistrationAssistant({
+        fetchRequest: async () => {},
+        schedule: () => {},
+        urlApi: {
+            createObjectURL: (file) => `blob:${file.name}`,
+            revokeObjectURL: (url) => revoked.push(url),
+        },
+    });
+
+    assistant.selectPhoto({ target: { files: [{ name: 'vehicule.jpg', type: 'image/jpeg' }] } }, 'full_vehicle_image');
+    assistant.selectPhoto({ target: { files: [{ name: 'plaque.jpg', type: 'image/jpeg' }] } }, 'plate_crop');
+    assistant.selectPhoto({ target: { files: [{ name: 'plaque-2.jpg', type: 'image/jpeg' }] } }, 'plate_crop');
+    assistant.destroy();
+
+    assert.deepEqual(revoked, ['blob:plaque.jpg', 'blob:vehicule.jpg', 'blob:plaque-2.jpg']);
+});

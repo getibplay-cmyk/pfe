@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createVehicleColorAssistantState } from '../../resources/js/vehicle-color-assistant.js';
+import {
+    createVehicleColorAssistant,
+    createVehicleColorAssistantState,
+} from '../../resources/js/vehicle-color-assistant.js';
 
 const succeeded = (value = 'white', label = 'Blanc', confidence = 0.775) => ({
     status: 'succeeded',
@@ -87,4 +90,22 @@ test('le bouton applique explicitement une suggestion protégée', () => {
     assert.equal(state.useSuggestion(), true);
     assert.equal(state.colorValue, 'Blanc');
     assert.equal(state.showUseSuggestion, false);
+});
+
+test('le remplacement de photo révoque l’ancien aperçu local', () => {
+    const revoked = [];
+    const assistant = createVehicleColorAssistant({
+        fetchRequest: async () => {},
+        schedule: () => {},
+        urlApi: {
+            createObjectURL: (file) => `blob:${file.name}`,
+            revokeObjectURL: (url) => revoked.push(url),
+        },
+    });
+
+    assistant.selectPhoto({ target: { files: [{ name: 'avant.jpg', type: 'image/jpeg' }] } });
+    assistant.selectPhoto({ target: { files: [{ name: 'apres.jpg', type: 'image/jpeg' }] } });
+    assistant.destroy();
+
+    assert.deepEqual(revoked, ['blob:avant.jpg', 'blob:apres.jpg']);
 });
