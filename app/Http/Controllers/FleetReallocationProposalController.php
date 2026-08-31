@@ -61,7 +61,7 @@ class FleetReallocationProposalController extends Controller
 
         return redirect()->route('intelligence.fleet-reallocation.index')->with(
             'status',
-            'Exécution OR-Tools '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'Le calcul d’une suggestion de réallocation a été lancé.',
         );
     }
 
@@ -83,8 +83,8 @@ class FleetReallocationProposalController extends Controller
         return redirect()->route('intelligence.fleet-reallocation.index')->with(
             'status',
             $result->created
-                ? 'Proposition OR-Tools synthétique importée sans effet opérationnel.'
-                : 'Proposition déjà présente : rejeu idempotent sans duplication.',
+                ? 'Suggestion de démonstration importée sans action automatique.'
+                : 'Cette suggestion est déjà présente et n’a pas été dupliquée.',
         );
     }
 

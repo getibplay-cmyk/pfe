@@ -10,7 +10,7 @@ class VehiclePlateRuntimeUnavailableException extends ServiceUnavailableHttpExce
     {
         parent::__construct(
             null,
-            'OCR de plaque indisponible : vérifiez le runtime PaddleOCR local avant activation.',
+            'Le service de lecture de l’immatriculation est temporairement indisponible. Contactez l’administrateur de la plateforme.',
         );
     }
 }

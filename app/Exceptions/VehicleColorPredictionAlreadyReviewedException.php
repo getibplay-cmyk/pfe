@@ -8,6 +8,6 @@ class VehicleColorPredictionAlreadyReviewedException extends ConflictHttpExcepti
 {
     public function __construct()
     {
-        parent::__construct('Une décision humaine append-only existe déjà pour cette analyse couleur.');
+        parent::__construct('Une décision a déjà été enregistrée pour cette analyse de couleur.');
     }
 }

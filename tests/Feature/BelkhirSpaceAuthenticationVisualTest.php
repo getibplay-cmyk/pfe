@@ -97,4 +97,20 @@ class BelkhirSpaceAuthenticationVisualTest extends TestCase
             $this->assertTrue(Route::has($routeName), $routeName);
         }
     }
+
+    public function test_authentication_emails_use_professional_french_copy(): void
+    {
+        app()->setLocale('fr');
+
+        $this->assertSame('Réinitialisation de votre mot de passe', __('Reset Password Notification'));
+        $this->assertSame('Réinitialiser le mot de passe', __('Reset Password'));
+        $this->assertSame('Vérifier votre adresse e-mail', __('Verify Email Address'));
+        $this->assertSame('Bonjour,', __('Hello!'));
+        $this->assertSame('Cordialement,', __('Regards,'));
+        $this->assertSame('Tous droits réservés.', __('All rights reserved.'));
+        $this->assertStringContainsString(
+            'expirera dans 60 minutes',
+            __('This password reset link will expire in :count minutes.', ['count' => 60]),
+        );
+    }
 }

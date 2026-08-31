@@ -1,9 +1,9 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="Propositions de réallocation OR-Tools"
+            title="Suggestions de réallocation"
             eyebrow="Aide à la décision"
-            description="Lancez réellement le solveur OR-Tools sur un scénario synthétique qualifié, puis vérifiez et révisez son résultat sans déplacer aucun véhicule."
+            description="Générez une suggestion pour équilibrer la disponibilité entre agences, puis vérifiez-la avant toute décision. Aucun véhicule n’est déplacé automatiquement."
         >
             <x-slot:actions>
                 @can('viewAny', App\Models\AgencyDistance::class)
@@ -16,25 +16,24 @@
 
         <x-form-errors />
 
-        <x-section-card title="Frontière de sécurité" description="La validation humaine reste obligatoire et non opérationnelle.">
+        <x-section-card title="Règles de décision" description="Chaque suggestion doit être vérifiée par un responsable avant toute organisation de la flotte.">
             <ul class="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
-                <li>Données et nœuds explicitement synthétiques ; aucune identité, coordonnée ou agence réelle dans le payload.</li>
-                <li>Distances exclusivement en kilomètres et coûts recalculés côté serveur à 5,00 MAD par véhicule-km.</li>
-                <li>CatBoost s’abstient : probabilité de présence 1,000000 et aucune réduction de demande.</li>
-                <li>Le statut local reste <code>NOT_VALIDATED_NO_REAL_HISTORY</code>.</li>
-                <li>Toute décision conserve l’effet <code>NO_OPERATIONAL_ACTION</code>.</li>
+                <li>Les distances entre agences et les coûts estimés sont contrôlés par {{ config('brand.name') }}.</li>
+                <li>La suggestion sert uniquement à préparer le planning.</li>
+                <li>Aucun véhicule, réservation ou contrat n’est modifié automatiquement.</li>
+                <li>Le responsable garde la décision finale et peut accepter ou rejeter la suggestion.</li>
             </ul>
         </x-section-card>
 
         @if ($canExecute)
             <x-section-card
-                title="Lancer un nouveau calcul OR-Tools"
-                description="Le bouton crée une exécution fraîche, traitée par la queue PostgreSQL et le script Python qualifié. La prévision HGB reste ici une entrée synthétique clairement signalée, pas une inférence."
+                title="Générer une suggestion"
+                description="Choisissez le jour à analyser. Le calcul utilise les prévisions et les distances disponibles, sans déplacer automatiquement de véhicule."
             >
                 <form method="POST" action="{{ route('intelligence.fleet-reallocation.runs.store') }}" class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                     @csrf
                     <div>
-                        <x-input-label for="fleet-reallocation-horizon" value="Horizon de démonstration" required />
+                        <x-input-label for="fleet-reallocation-horizon" value="Jour à analyser" required />
                         <select id="fleet-reallocation-horizon" name="forecast_horizon" class="mt-1 block w-full rounded-lg border-slate-300 text-sm" required>
                             @foreach (range(1, 7) as $horizon)
                                 <option value="{{ $horizon }}" @selected((int) old('forecast_horizon', 1) === $horizon)>D+{{ $horizon }}</option>
@@ -44,17 +43,15 @@
                     </div>
                     <x-primary-button>Générer une proposition</x-primary-button>
                 </form>
-                <p class="mt-3 text-xs leading-5 text-slate-500">
-                    En local, le worker <code>php artisan queue:work --queue=intelligence</code> doit être actif. Chaque lancement produit un identifiant et un JSON privés distincts.
-                </p>
+                <p class="mt-3 text-xs leading-5 text-slate-500">Le calcul peut prendre quelques instants. Actualisez la page pour suivre son avancement.</p>
             </x-section-card>
         @endif
 
-        <x-section-card title="Dernières exécutions" description="Ce registre permet de distinguer une proposition réellement calculée d’un fichier simplement importé.">
+        <x-section-card title="Demandes récentes" description="Suivez l’état des calculs et ouvrez les suggestions disponibles.">
             @if ($runtimeRuns->isEmpty())
-                <x-empty-state title="Aucune exécution lancée" description="Utilisez « Générer une proposition » pour créer le premier calcul OR-Tools depuis le SaaS." />
+                <x-empty-state title="Aucune suggestion demandée" description="Utilisez « Générer une proposition » pour préparer la première suggestion." />
             @else
-                <x-responsive-table label="Dernières exécutions OR-Tools" class="shadow-none">
+                <x-responsive-table label="Demandes récentes de réallocation" class="shadow-none">
                     <table>
                         <thead>
                             <tr>
@@ -91,10 +88,10 @@
         </x-section-card>
 
         @if ($canImport)
-            <x-section-card title="Importer une proposition privée" description="Le tenant provient uniquement de la session ; aucun identifiant de périmètre n’est accepté dans le formulaire.">
+            <x-section-card title="Importer une suggestion" description="Le fichier reste privé et son périmètre est déterminé automatiquement à partir de votre session.">
                 <form method="POST" action="{{ route('intelligence.fleet-reallocation.store') }}" enctype="multipart/form-data" class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end" data-loading-form>
                     @csrf
-                    <x-file-input id="reallocation-proposal" name="proposal" label="Fichier JSON contractuel" accept="application/json,.json" formats="JSON" required :errors="$errors->get('proposal')" />
+                    <x-file-input id="reallocation-proposal" name="proposal" label="Fichier de suggestion" accept="application/json,.json" formats="JSON" required :errors="$errors->get('proposal')" />
                     <x-submit-button label="Vérifier et importer" loading-label="Vérification…" />
                 </form>
             </x-section-card>
@@ -106,13 +103,13 @@
             <x-section-card
                 id="proposal-{{ $proposal->proposal_id }}"
                 title="Plan D+{{ $proposal->forecast_horizon }} · {{ $proposal->target_date->format('d/m/Y') }}"
-                description="{{ $proposal->solver_name }} {{ $proposal->solver_version }} · {{ $proposal->solver_status }}"
+                description="Suggestion à vérifier avant toute décision"
             >
                 <div class="mb-4 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
                     @if ($proposal->runtimeRun)
-                        <strong>Calcul réellement exécuté depuis le SaaS</strong> · exécution {{ $proposal->runtimeRun->run_id }}
+                        <strong>Suggestion calculée depuis {{ config('brand.name') }}.</strong>
                     @else
-                        <strong>Résultat importé</strong> · aucune exécution Python associée dans le SaaS
+                        <strong>Suggestion importée.</strong> Vérifiez les informations avant de prendre une décision.
                     @endif
                 </div>
                 <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
@@ -130,17 +127,13 @@
                         <p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($proposal->relocated_vehicle_count) }}</p>
                     </div>
                     <div class="rounded-xl bg-slate-50 p-3">
-                        <p class="text-slate-500">Temps solveur</p>
-                        <p class="mt-1 font-semibold">{{ $proposal->solver_runtime_ms }} ms</p>
-                    </div>
-                    <div class="rounded-xl bg-slate-50 p-3">
                         <p class="text-slate-500">Revue humaine</p>
                         <p class="mt-1 font-semibold">{{ $proposal->decision?->decision->label() ?? 'En attente' }}</p>
                     </div>
                 </div>
 
                 <div class="mt-5">
-                    <x-responsive-table label="Déplacements synthétiques proposés" class="shadow-none">
+                    <x-responsive-table label="Déplacements proposés" class="shadow-none">
                         <table>
                             <thead>
                                 <tr>
@@ -169,7 +162,7 @@
                 <div class="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-slate-200 pt-4">
                     <div class="text-xs leading-5 text-slate-500">
                         <p>Importé le {{ App\Support\Ui\UiLabel::dateTime($proposal->imported_at) }}</p>
-                        <p>HGB consultatif · CatBoost refusé · validation locale absente</p>
+                        <p>Suggestion consultative · validation humaine obligatoire</p>
                     </div>
                     <div class="flex flex-wrap items-end gap-3">
                         <a href="{{ route('intelligence.fleet-reallocation.download', $proposal) }}" class="rf-button-secondary" data-no-global-loading="true"><x-icon name="download" size="xs" />Télécharger la preuve</a>
@@ -181,7 +174,7 @@
                                     <div>
                                         <x-input-label for="accept-reallocation-reason-{{ $proposal->id }}" value="Motif d’acceptation" />
                                         <select id="accept-reallocation-reason-{{ $proposal->id }}" name="reason_code" class="mt-1 rounded-lg border-slate-300 text-sm">
-                                            @foreach ($acceptReasonCodes as $reasonCode)<option value="{{ $reasonCode }}">{{ $reasonCode }}</option>@endforeach
+                                            @foreach ($acceptReasonCodes as $reasonCode)<option value="{{ $reasonCode }}">{{ App\Support\Ui\UiLabel::get($reasonCode) }}</option>@endforeach
                                         </select>
                                     </div>
                                     <x-primary-button>Accepter pour la démo</x-primary-button>
@@ -192,20 +185,20 @@
                                     <div>
                                         <x-input-label for="reject-reallocation-reason-{{ $proposal->id }}" value="Motif de rejet" />
                                         <select id="reject-reallocation-reason-{{ $proposal->id }}" name="reason_code" class="mt-1 rounded-lg border-slate-300 text-sm">
-                                            @foreach ($rejectReasonCodes as $reasonCode)<option value="{{ $reasonCode }}">{{ $reasonCode }}</option>@endforeach
+                                            @foreach ($rejectReasonCodes as $reasonCode)<option value="{{ $reasonCode }}">{{ App\Support\Ui\UiLabel::get($reasonCode) }}</option>@endforeach
                                         </select>
                                     </div>
                                     <x-secondary-button type="submit">Rejeter</x-secondary-button>
                                 </form>
                             @else
-                                <p class="text-sm font-medium text-slate-700">Décision append-only déjà enregistrée.</p>
+                                <p class="text-sm font-medium text-slate-700">Décision déjà enregistrée et conservée dans l’historique.</p>
                             @endif
                         @endcan
                     </div>
                 </div>
             </x-section-card>
         @empty
-            <x-empty-state title="Aucune proposition importée" description="Le registre reste vide tant qu’aucun résultat OR-Tools synthétique conforme n’est fourni." />
+            <x-empty-state title="Aucune suggestion disponible" description="Générez ou importez une suggestion pour commencer." />
         @endforelse
 
         {{ $proposals->links() }}

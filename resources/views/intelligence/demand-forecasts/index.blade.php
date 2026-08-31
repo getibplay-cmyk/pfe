@@ -25,67 +25,43 @@
             @endif
         </div>
 
-        <x-section-card title="Niveau de preuve du modèle" :description="'Les performances ci-dessous viennent du benchmark public Munich ; elles ne mesurent pas encore '.config('brand.name').'.'">
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Modèle gelé</p>
-                    <p class="mt-2 break-words font-mono text-sm font-semibold text-slate-900">{{ $contract['model_name'] }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ $contract['model_version'] }} · {{ $contract['compute'] }}</p>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">WAPE public</p>
-                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ App\Support\Ui\BusinessNumber::confidence($contract['public_wape']) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Plus faible = meilleur</p>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Complément du WAPE</p>
-                    <p class="mt-2 text-2xl font-semibold text-indigo-800">{{ App\Support\Ui\BusinessNumber::complementConfidence($contract['public_wape']) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Indicateur lisible, pas une accuracy de classification</p>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">MASE public</p>
-                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ App\Support\Ui\BusinessNumber::scientificDecimal($contract['public_mase'], 4, 4) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Meilleur que la référence naïve si &lt; 1</p>
-                </div>
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Couverture P05–P95</p>
-                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ App\Support\Ui\BusinessNumber::confidence($contract['public_interval_coverage']) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Benchmark public, nominal 90 %</p>
-                </div>
+        <x-section-card title="Comment utiliser la prévision" description="Les résultats aident à préparer le planning et restent soumis à votre connaissance du terrain.">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl border border-slate-200 p-4"><p class="text-slate-500">Période</p><p class="mt-2 font-semibold text-slate-950">Les 7 prochains jours</p></div>
+                <div class="rounded-xl border border-slate-200 p-4"><p class="text-slate-500">Estimation centrale</p><p class="mt-2 font-semibold text-slate-950">Scénario le plus probable</p></div>
+                <div class="rounded-xl border border-slate-200 p-4"><p class="text-slate-500">Scénario prudent</p><p class="mt-2 font-semibold text-slate-950">Marge pour anticiper un pic</p></div>
+                <div class="rounded-xl border border-slate-200 p-4"><p class="text-slate-500">Décision</p><p class="mt-2 font-semibold text-slate-950">Toujours validée par un responsable</p></div>
             </div>
-            <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-                <span class="font-semibold">Statut scientifique :</span>
-                validation locale non disponible tant qu’un historique réel suffisant n’a pas été constitué et évalué sur un holdout temporel fermé. Les sorties sont des aides à la planification, jamais des décisions métier.
-            </div>
+            <p class="mt-4 text-xs leading-5 text-slate-500">Comparez la prévision avec les réservations, les événements locaux et la disponibilité réelle avant d’adapter le planning.</p>
         </x-section-card>
 
-        <x-section-card :title="'Prétraitement compatible '.config('brand.name')" description="Une série agrégée par agence, sans identité client ni coordonnées.">
+        <x-section-card title="Données utilisées" description="Un historique agrégé par agence, sans identité client ni coordonnées.">
             <div class="grid gap-3 text-sm md:grid-cols-4">
                 <div class="rounded-xl bg-slate-50 p-4">
-                    <p class="font-medium text-slate-500">Cible</p>
+                    <p class="font-medium text-slate-500">Activité mesurée</p>
                     <p class="mt-1 font-semibold text-slate-900">Départs réellement observés</p>
-                    <p class="mt-1 text-xs text-slate-500">Champ source : <code>actual_start_at</code></p>
+                    <p class="mt-1 text-xs text-slate-500">Comptés par jour et par agence</p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4">
                     <p class="font-medium text-slate-500">Dates manquantes</p>
                     <p class="mt-1 font-semibold text-slate-900">Remplies à zéro</p>
-                    <p class="mt-1 text-xs text-slate-500">Grille locale continue</p>
+                    <p class="mt-1 text-xs text-slate-500">Pour conserver un calendrier continu</p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4">
                     <p class="font-medium text-slate-500">Historique minimal</p>
                     <p class="mt-1 font-semibold text-slate-900">{{ $contract['minimum_history_days'] }} jours</p>
-                    <p class="mt-1 text-xs text-slate-500">Lags jusqu’à J-28</p>
+                    <p class="mt-1 text-xs text-slate-500">Une période plus longue améliore le contexte</p>
                 </div>
                 <div class="rounded-xl bg-slate-50 p-4">
-                    <p class="font-medium text-slate-500">Unité de distance SaaS</p>
-                    <p class="mt-1 text-xl font-semibold text-slate-900">{{ $contract['distance_unit'] }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Les miles sont refusés ; ce modèle n’utilise pas de variable de distance</p>
+                    <p class="font-medium text-slate-500">Protection des données</p>
+                    <p class="mt-1 font-semibold text-slate-900">Données agrégées</p>
+                    <p class="mt-1 text-xs text-slate-500">Aucune identité ni coordonnée exportée</p>
                 </div>
             </div>
         </x-section-card>
 
         @if (auth()->user()->hasPermission('prediction.export'))
-            <x-filter-panel title="Créer un snapshot d’historique">
+            <x-filter-panel title="Préparer l’historique de demande">
                 <form method="GET" action="{{ route('intelligence.demand-history.export') }}" class="grid gap-4 md:grid-cols-4" data-loading-form data-no-global-loading="true">
                     <div>
                         <x-input-label for="demand-date-from" value="Du" />
@@ -112,13 +88,13 @@
                     </div>
                 </form>
                 @unless ($configured)
-                    <p class="mt-3 text-sm text-amber-800">La clé de pseudonymisation Intelligence doit être configurée.</p>
+                    <p class="mt-3 text-sm text-amber-800">La préparation des données doit être configurée par l’administrateur.</p>
                 @endunless
             </x-filter-panel>
         @endif
 
-        <x-section-card title="Snapshots disponibles" description="Le CSV et son manifeste servent d’entrée vérifiable au notebook ou au script d’inférence.">
-            <x-responsive-table label="Snapshots de demande" class="shadow-none">
+        <x-section-card title="Historiques disponibles" description="Sélectionnez un historique pour générer ou importer une prévision.">
+            <x-responsive-table label="Historiques de demande" class="shadow-none">
                 <table>
                     <thead>
                         <tr>
@@ -138,7 +114,6 @@
                             <tr>
                                 <td>
                                     <p class="font-medium text-slate-900">{{ $run->agency->name }}</p>
-                                    <p class="mt-1 font-mono text-xs text-slate-500">{{ $run->run_id }}</p>
                                     <p class="mt-1 text-xs text-slate-500">{{ $run->date_from->format('d/m/Y') }} → {{ $run->date_to->format('d/m/Y') }}</p>
                                 </td>
                                 <td>{{ App\Support\Ui\BusinessNumber::count($run->row_count, 'jour') }} continus</td>
@@ -155,7 +130,7 @@
                                 <td class="text-right">
                                     <div class="flex flex-wrap justify-end gap-3">
                                         @can('view', $run)
-                                            <x-icon-button icon="file" :label="'Consulter le manifeste de '.$run->agency->name" :href="route('intelligence.demand-history.manifest', $run)" data-no-global-loading="true" />
+                                            <x-icon-button icon="file" :label="'Consulter les informations de contrôle de '.$run->agency->name" :href="route('intelligence.demand-history.manifest', $run)" data-no-global-loading="true" />
                                             <x-icon-button icon="download" :label="'Télécharger le CSV de '.$run->agency->name" :href="route('intelligence.demand-history.download', $run)" data-no-global-loading="true" />
                                         @endcan
                                     </div>
@@ -171,11 +146,11 @@
                                             </form>
                                         @endif
                                         <details class="mt-3 text-left">
-                                            <summary class="cursor-pointer text-xs font-medium text-slate-600">Import JSON manuel de secours</summary>
+                                            <summary class="cursor-pointer text-xs font-medium text-slate-600">Import manuel de secours</summary>
                                             <form method="POST" action="{{ route('intelligence.demand-forecasts.store', $run) }}" enctype="multipart/form-data" class="mt-2 space-y-3" data-loading-form>
                                                 @csrf
-                                                <x-file-input :id="'forecast-batch-'.$run->id" name="forecast_batch" label="Résultat JSON du modèle" accept="application/json,.json" formats="JSON" required :errors="$errors->get('forecast_batch')" />
-                                                <x-submit-button label="Importer en shadow" loading-label="Import en cours…" />
+                                                <x-file-input :id="'forecast-batch-'.$run->id" name="forecast_batch" label="Fichier de prévision" accept="application/json,.json" formats="JSON" required :errors="$errors->get('forecast_batch')" />
+                                                <x-submit-button label="Importer" loading-label="Import en cours…" />
                                             </form>
                                         </details>
                                     @endcan
@@ -209,28 +184,26 @@
             ];
         @endphp
 
-        <x-section-card title="Résultats consultatifs" description="P50 représente le scénario central ; P90 un scénario prudent de capacité. Les facteurs sont des sensibilités locales non causales.">
+        <x-section-card title="Prévisions disponibles" description="Comparez le scénario central, le scénario prudent et la fourchette probable avant d’organiser la flotte.">
             <div class="space-y-6">
                 @forelse ($forecastRuns as $run)
                     <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         @if ($run->executionRun)
                             <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
-                                <strong>Inférence HGB réellement exécutée depuis le SaaS</strong>
-                                · exécution <span class="font-mono text-xs">{{ $run->executionRun->run_id }}</span>
-                                · bundle J5 authentique vérifié avant chargement.
+                                <strong>Prévision générée depuis {{ config('brand.name') }}.</strong>
+                                Les données ont été vérifiées avant le calcul.
                             </div>
                         @endif
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Shadow consultatif · {{ $run->agency->name }}</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">Prévision consultative · {{ $run->agency->name }}</p>
                                 <h2 class="mt-1 text-lg font-semibold text-slate-950">Prévision arrêtée au {{ $run->as_of_date->format('d/m/Y') }}</h2>
-                                <p class="mt-1 font-mono text-xs text-slate-500">{{ $run->model_name }} {{ $run->model_version }} · {{ $run->run_id }}</p>
                             </div>
-                            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Validation locale en attente</span>
+                            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">À vérifier</span>
                         </div>
 
                         <div class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950">
-                            Le complément du WAPE public est <span class="font-semibold">{{ $run->publicWapeComplement() }} %</span>, mais il ne constitue pas une accuracy locale. Intervalle et facteurs doivent être interprétés par un responsable humain ; effet technique : <code>{{ $run->operational_effect }}</code>.
+                            Ces valeurs aident à planifier la flotte. Comparez-les avec les réservations, les événements locaux et le contexte de l’agence avant toute décision.
                         </div>
 
                         <div class="mt-4 overflow-x-auto">
@@ -239,11 +212,11 @@
                                     <tr class="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                                         <th class="px-3 py-2">Horizon</th>
                                         <th class="px-3 py-2">Date</th>
-                                        <th class="px-3 py-2">Moyenne</th>
-                                        <th class="px-3 py-2">Central P50</th>
-                                        <th class="px-3 py-2">Prudent P90</th>
-                                        <th class="px-3 py-2">Intervalle P05–P95</th>
-                                        <th class="px-3 py-2">Facteurs principaux</th>
+                                        <th class="px-3 py-2">Demande moyenne</th>
+                                        <th class="px-3 py-2">Estimation centrale</th>
+                                        <th class="px-3 py-2">Scénario prudent</th>
+                                        <th class="px-3 py-2">Fourchette probable</th>
+                                        <th class="px-3 py-2">Éléments pris en compte</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -274,8 +247,8 @@
                     </article>
                 @empty
                     <x-empty-state
-                        title="Aucune prévision locale importée"
-                        description="Créez un snapshot, exécutez le modèle en environnement contrôlé, puis importez le JSON muni de son empreinte canonique."
+                        title="Aucune prévision disponible"
+                        description="Préparez un historique puis lancez une prévision."
                     />
                 @endforelse
             </div>

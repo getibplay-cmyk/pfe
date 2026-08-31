@@ -8,7 +8,7 @@ class DemandForecastExecutionException extends RuntimeException
 {
     public function __construct(private readonly string $failureCode)
     {
-        parent::__construct('L’inférence HGB a échoué de manière contrôlée.');
+        parent::__construct('La prévision n’a pas pu être générée. Réessayez ou contactez l’administrateur.');
     }
 
     public function failureCode(): string

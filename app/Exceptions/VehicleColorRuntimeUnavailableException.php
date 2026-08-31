@@ -10,7 +10,7 @@ class VehicleColorRuntimeUnavailableException extends ServiceUnavailableHttpExce
     {
         parent::__construct(
             null,
-            'Modèle couleur indisponible : installez le bundle v8 exact puis vérifiez rentfleet:doctor.',
+            'Le service de suggestion de couleur est temporairement indisponible. Contactez l’administrateur de la plateforme.',
         );
     }
 }

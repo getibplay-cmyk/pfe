@@ -90,7 +90,8 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->assertOk()
             ->assertSee('Désactivé par défaut')
             ->assertSee('Aucune action automatique')
-            ->assertSee('1 783 lignes restantes');
+            ->assertSee('Conseils pour une lecture fiable')
+            ->assertDontSee('PaddleOCR');
     }
 
     public function test_job_timeout_covers_both_runtime_stages_and_process_overhead(): void
@@ -166,7 +167,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-plates.index'))
             ->assertOk()
             ->assertSee('12345 | أ | 7')
-            ->assertSee('Confiance non calibrée')
+            ->assertSee('Niveau de confiance')
             ->assertDontSee($completed->input_stored_path)
             ->assertDontSee($completed->input_sha256);
         $this->assertStringNotContainsString('raw_text', $page->getContent());
@@ -243,7 +244,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-plates.index'))
             ->assertOk()
             ->assertSee('Photo complète + détection')
-            ->assertSee('Ouvrir le crop détecté')
+            ->assertSee('Ouvrir l’image recadrée')
             ->assertDontSee($completed->crop_stored_path)
             ->assertDontSee($completed->crop_sha256)
             ->assertDontSee($completed->detector_checkpoint_sha256);
@@ -281,7 +282,7 @@ class VehiclePlatePredictionIntegrationTest extends TestCase
         $this->actingAs($fixture['user'])
             ->get(route('intelligence.vehicle-plates.index'))
             ->assertOk()
-            ->assertSee('Recadrez manuellement la plaque');
+            ->assertSee('Aucune plaque n’a été localisée. Essayez une photo rapprochée de la plaque.');
     }
 
     public function test_ambiguous_detector_candidates_never_reach_ocr(): void

@@ -125,7 +125,7 @@ class VehicleDamagePredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-damages.index')->with(
             'status',
-            'Analyse dommages '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'L’analyse des dommages a été lancée.',
         );
     }
 

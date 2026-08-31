@@ -17,12 +17,12 @@
                     <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Disponible' : 'Désactivé par défaut' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Fichiers nécessaires</p>
-                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'Vérifiés' : 'Installation requise' }}</p>
+                    <p class="text-slate-500">Installation</p>
+                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'Prête' : 'À finaliser' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Traitement</p>
-                    <p class="mt-1 font-semibold text-slate-900">{{ $runtime['provider'] === 'CUDAExecutionProvider' ? 'Accéléré' : 'Local' }}</p>
+                    <p class="text-slate-500">Confidentialité</p>
+                    <p class="mt-1 font-semibold text-slate-900">Traitement privé</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-slate-500">Effet métier</p>
@@ -31,18 +31,14 @@
             </div>
         </x-section-card>
 
-        <x-section-card title="Fiabilité et limites" description="Mesures de validation du service ; une confirmation humaine reste obligatoire.">
-            <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                <div><dt class="text-slate-500">Macro-F1</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::scientificDecimal($contract['macro_f1'], 4) }}</dd></div>
-                <div><dt class="text-slate-500">Balanced accuracy</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($contract['balanced_accuracy']) }}</dd></div>
-                <div><dt class="text-slate-500">Rappel minimal</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($contract['minimum_recall']) }}</dd></div>
-                <div><dt class="text-slate-500">ECE</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::scientificDecimal($contract['ece'], 4, 4) }}</dd></div>
-                <div><dt class="text-slate-500">Précision acceptée</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($contract['accepted_precision']) }}</dd></div>
-                <div><dt class="text-slate-500">Couverture</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($contract['coverage']) }}</dd></div>
-                <div><dt class="text-slate-500">Fausse acceptation rejet</dt><dd class="font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($contract['reject_false_acceptance']) }}</dd></div>
-                <div><dt class="text-slate-500">Version</dt><dd class="font-mono text-xs font-semibold">{{ $contract['model_version'] }}</dd></div>
-            </dl>
-            <p class="mt-4 text-xs leading-5 text-slate-500">Ces résultats qualifient l’artefact gelé sur son protocole externe ; ils ne garantissent pas une exactitude identique sur toutes les photos {{ config('brand.name') }}. L’abstention et la validation humaine restent obligatoires.</p>
+        <x-section-card title="Règles d’utilisation" description="La suggestion accélère la saisie sans remplacer votre vérification.">
+            <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Suggestion</p><p class="mt-1 font-semibold">À vérifier sur la photo</p></div>
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confirmation humaine</p><p class="mt-1 font-semibold">Obligatoire</p></div>
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Fiche véhicule</p><p class="mt-1 font-semibold">Jamais modifiée automatiquement</p></div>
+                <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Photo</p><p class="mt-1 font-semibold">Conservée en stockage privé</p></div>
+            </div>
+            <p class="mt-4 text-xs leading-5 text-slate-500">Vous pouvez accepter, corriger ou ignorer la couleur proposée. Comparez toujours la suggestion avec la photo et le véhicule.</p>
         </x-section-card>
 
         @if (auth()->user()->hasPermission('prediction.color.review'))
@@ -88,18 +84,17 @@
                         <x-submit-button label="Lancer l’analyse" loading-label="Envoi de la photo…" class="justify-center" />
                     </form>
                 @else
-                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Le lancement est fermé. Installez la paire authentique, vérifiez le runtime avec <code>rentfleet:doctor</code>, puis activez explicitement <code>RENTFLEET_COLOR_V8_ENABLED</code>.</div>
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Ce service n’est pas encore disponible. Contactez l’administrateur de la plateforme.</div>
                 @endif
             </x-section-card>
         @endif
 
-        <x-section-card title="Registre des analyses" description="Entrées tenant/agence-scopées, résultats consultatifs et revues append-only.">
+        <x-section-card title="Historique des analyses" description="Consultez les suggestions et les décisions enregistrées pour votre périmètre autorisé.">
             <div class="space-y-4">
                 @forelse ($runs as $run)
                     <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <p class="font-mono text-xs text-slate-500">{{ $run->run_id }}</p>
                                 @if ($run->vehicle)
                                     <h3 class="mt-1 text-lg font-semibold text-slate-950">{{ $run->vehicle->registration_number }} · {{ $run->vehicle->brand }} {{ $run->vehicle->model }}</h3>
                                     <p class="text-sm text-slate-600">Couleur actuellement enregistrée : <span class="font-medium">{{ $run->vehicle->color ?: 'non renseignée' }}</span></p>
@@ -121,8 +116,8 @@
                                     @if ($run->hasDisplayableCandidate())
                                         <div class="grid gap-3 text-sm sm:grid-cols-3">
                                             <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Couleur la plus probable</p><p class="mt-1 font-semibold">{{ $run->outcomeLabel() }}</p></div>
-                                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Confiance du modèle</p><p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($run->confidence) }}</p></div>
-                                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Statut consultatif</p><p class="mt-1"><x-status-badge :value="$run->consultativeStatus()" /></p></div>
+                                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">Niveau de confiance</p><p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::confidence($run->confidence) }}</p></div>
+                                            <div class="rounded-xl bg-slate-50 p-3"><p class="text-slate-500">État de la suggestion</p><p class="mt-1"><x-status-badge :value="$run->consultativeStatus()" /></p></div>
                                         </div>
                                         @if ($run->hasLowConfidenceCandidate())
                                             <div class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-900">
@@ -130,7 +125,7 @@
                                                 <p>Comparez directement la photo au véhicule avant toute décision humaine.</p>
                                             </div>
                                         @endif
-                                        <p class="mt-3 text-xs leading-5 text-amber-800">Confirmation humaine obligatoire. Le seuil scientifique de {{ App\Support\Ui\BusinessNumber::ratioPercentage($contract['threshold'], '1', 1) }} reste inchangé et cette suggestion ne peut produire aucune modification automatique.</p>
+                                        <p class="mt-3 text-xs leading-5 text-amber-800">Vérifiez toujours la photo avant d’accepter la suggestion. Aucune modification de la fiche véhicule n’est automatique.</p>
                                     @else
                                         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                                             <p class="font-semibold">{{ $run->outcomeLabel() }}</p>
@@ -165,7 +160,7 @@
                                 @elseif ($run->status->value === 'failed')
                                     <p class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">{{ $run->failureLabel() }}</p>
                                 @else
-                                    <p class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">L’image attend son traitement par le worker <code>intelligence</code>. Aucun effet métier n’est en attente.</p>
+                                    <p class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">Analyse en cours. Vous pouvez continuer à utiliser le formulaire : aucune modification n’est appliquée automatiquement.</p>
                                 @endif
                             </div>
                         </div>

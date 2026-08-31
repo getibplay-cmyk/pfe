@@ -297,10 +297,9 @@ class Lot07B1IntelligenceExportTest extends TestCase
         $page = $this->actingAs($fixture['user'])
             ->get(route('intelligence.index', $this->filters($fixture['agency'])))
             ->assertOk()
-            ->assertSee('J14-A · snapshots d’export reproductibles')
-            ->assertSee($firstRun->run_id)
-            ->assertSee('Manifeste JSON')
-            ->assertSee('Snapshot CSV');
+            ->assertSee('Exports anonymisés')
+            ->assertSee('Informations de contrôle')
+            ->assertSee('Télécharger le CSV');
         $page->assertDontSee($firstRun->content_sha256)
             ->assertDontSee($firstRun->stored_path);
     }

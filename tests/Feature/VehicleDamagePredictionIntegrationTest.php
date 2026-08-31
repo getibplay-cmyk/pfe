@@ -88,8 +88,9 @@ class VehicleDamagePredictionIntegrationTest extends TestCase
             ->get(route('intelligence.vehicle-damages.index'))
             ->assertOk()
             ->assertSee('Désactivé par défaut')
-            ->assertSee('RT-DETRv2-S')
-            ->assertSee('Rappel IoU50 au seuil')
+            ->assertSee('Installation')
+            ->assertSee('À finaliser')
+            ->assertDontSee('RT-DETRv2-S')
             ->assertSee('Aucune action automatique');
     }
 

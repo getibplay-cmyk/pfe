@@ -173,7 +173,7 @@ class Lot06FC2InsuranceCompletionTest extends TestCase
         Storage::disk(config('documents.disk'))->assertExists($version->stored_path);
         $this->assertSame(Storage::disk(config('documents.disk'))->size($version->stored_path), (int) $version->size_bytes);
         $this->assertSame(hash('sha256', Storage::disk(config('documents.disk'))->get($version->stored_path)), $version->sha256);
-        $this->actingAs($f['owner'])->get(route('insurance.policies.show', $policy))->assertOk()->assertSee('Documents privés')->assertSee('Historique append-only');
+        $this->actingAs($f['owner'])->get(route('insurance.policies.show', $policy))->assertOk()->assertSee('Documents privés')->assertSee('Historique de la police');
         $this->get(route('documents.download', $document))->assertOk();
         $this->assertDatabaseHas('document_access_logs', ['document_id' => $document->id, 'action' => 'download']);
 

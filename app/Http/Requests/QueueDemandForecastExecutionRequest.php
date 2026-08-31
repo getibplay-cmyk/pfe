@@ -41,7 +41,7 @@ class QueueDemandForecastExecutionRequest extends FormRequest
                 'python_binary',
             ];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $declared) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour l’inférence HGB.');
+                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour générer une prévision de demande.');
             }
         }];
     }

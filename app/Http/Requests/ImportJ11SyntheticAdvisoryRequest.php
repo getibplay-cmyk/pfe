@@ -32,7 +32,7 @@ class ImportJ11SyntheticAdvisoryRequest extends FormRequest
         return [function (Validator $validator): void {
             $allowed = ['module_id', 'tenant_id', 'agency_id', 'payload', 'feature_flag', 'ready_for_saas'];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé par le contrat J12.');
+                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour cette démonstration.');
             }
         }];
     }

@@ -105,7 +105,7 @@ class DemandForecastController extends Controller
 
         return redirect()->route('intelligence.demand-forecasts.index')->with(
             'status',
-            'Inférence HGB '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'La prévision de demande a été lancée.',
         );
     }
 
@@ -188,7 +188,7 @@ class DemandForecastController extends Controller
             'status',
             $result->created
                 ? 'Prévisions D+1 à D+7 validées et importées en mode consultatif.'
-                : 'Prévisions déjà présentes : rejeu idempotent sans duplication.',
+                : 'Ces prévisions sont déjà présentes et n’ont pas été dupliquées.',
         );
     }
 }

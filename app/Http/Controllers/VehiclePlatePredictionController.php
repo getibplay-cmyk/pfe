@@ -111,7 +111,7 @@ class VehiclePlatePredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-plates.index')->with(
             'status',
-            'Analyse ANPR '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'La lecture de l’immatriculation a été lancée.',
         );
     }
 

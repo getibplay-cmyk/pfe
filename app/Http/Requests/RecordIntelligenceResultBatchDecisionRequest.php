@@ -56,7 +56,7 @@ class RecordIntelligenceResultBatchDecisionRequest extends FormRequest
         return [function (Validator $validator): void {
             $allowed = ['decision', 'reason_code', 'tenant_id', 'agency_id', 'effect', 'note'];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé par le contrat J14-B.');
+                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour ces résultats de démonstration.');
             }
 
             $decision = $this->input('decision');

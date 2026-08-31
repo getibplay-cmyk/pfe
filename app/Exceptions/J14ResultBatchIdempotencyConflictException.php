@@ -8,6 +8,6 @@ class J14ResultBatchIdempotencyConflictException extends ConflictHttpException
 {
     public function __construct()
     {
-        parent::__construct('La clé d’idempotence J14-B existe avec un payload différent.');
+        parent::__construct('Ces résultats existent déjà avec un contenu différent. Rechargez la page avant de réessayer.');
     }
 }

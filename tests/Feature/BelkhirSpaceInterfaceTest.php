@@ -87,7 +87,7 @@ class BelkhirSpaceInterfaceTest extends TestCase
         $this->assertStringContainsString('motion-reduce:transition-none', $statistics);
         $this->assertStringContainsString('Opérations en attente', $statistics);
         $this->assertStringContainsString('Analyses et prévisions', $navigation);
-        $this->assertStringContainsString('Modèles IA et accès', $navigation);
+        $this->assertStringContainsString('Fonctionnalités et accès', $navigation);
         $this->assertStringContainsString('title="Aide à la décision"', $intelligence);
         $this->assertStringNotContainsString('title="Intelligence et export anonymisé"', $intelligence);
     }
@@ -106,6 +106,28 @@ class BelkhirSpaceInterfaceTest extends TestCase
 
         foreach (['HGB', 'OR-Tools', 'ANPR', 'RT-DETR', 'Runtime', 'worker', 'Feature flag', 'checkpoint', 'SHA-256', 'ONNX'] as $technicalTerm) {
             $this->assertStringNotContainsString($technicalTerm, $operationalPages);
+        }
+    }
+
+    public function test_intelligence_pages_hide_internal_model_language(): void
+    {
+        $intelligencePages = collect([
+            'index.blade.php',
+            'demand-forecasts/index.blade.php',
+            'fleet-reallocation/index.blade.php',
+            'vehicle-colors/index.blade.php',
+            'vehicle-damages/index.blade.php',
+            'vehicle-plates/index.blade.php',
+            'rental-usage-anomalies/index.blade.php',
+        ])->map(fn (string $path): string => file_get_contents(resource_path('views/intelligence/'.$path)))
+            ->implode("\n");
+
+        foreach (['HGB', 'OR-Tools', 'ANPR', 'RT-DETR', 'ONNX', 'CatBoost', 'Isolation Forest', 'benchmark', 'scientifique', 'artefact', 'worker', 'feature flag', 'append-only'] as $technicalTerm) {
+            $this->assertStringNotContainsStringIgnoringCase($technicalTerm, $intelligencePages);
+        }
+
+        foreach (['Couleur suggérée', 'Immatriculation détectée', 'Analyse des dommages', 'Prévision de demande', 'Suggestions de réallocation'] as $businessLabel) {
+            $this->assertStringContainsString($businessLabel, $intelligencePages);
         }
     }
 }

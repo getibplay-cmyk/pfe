@@ -8,6 +8,6 @@ class J11ContractDemoDisabledException extends RuntimeException
 {
     public function __construct()
     {
-        parent::__construct('La démonstration contractuelle Intelligence est désactivée.');
+        parent::__construct('Cette démonstration n’est pas disponible.');
     }
 }

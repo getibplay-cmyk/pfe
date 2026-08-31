@@ -45,8 +45,8 @@ class J11ContractDemoController extends Controller
         return redirect()->route('intelligence.contract-demo.index')->with(
             'status',
             $result->created
-                ? 'Fixture synthétique validée et ajoutée sans effet opérationnel.'
-                : 'Fixture déjà présente : rejeu idempotent sans duplication.',
+                ? 'Démonstration vérifiée et ajoutée sans action automatique.'
+                : 'Cette démonstration est déjà présente et n’a pas été dupliquée.',
         );
     }
 

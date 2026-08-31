@@ -8,6 +8,6 @@ class FleetReallocationAlreadyReviewedException extends ConflictHttpException
 {
     public function __construct()
     {
-        parent::__construct('Une décision humaine append-only existe déjà pour cette proposition.');
+        parent::__construct('Une décision a déjà été enregistrée pour cette suggestion.');
     }
 }

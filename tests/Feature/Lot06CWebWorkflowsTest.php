@@ -178,7 +178,7 @@ class Lot06CWebWorkflowsTest extends TestCase
         $this->post(route('insurance.claims.store'), $claimData)->assertRedirect();
         $claim = $this->inTenant($f, fn () => InsuranceClaim::latest('id')->firstOrFail());
         $this->assertSame('reported', $claim->status->value);
-        $this->get(route('insurance.claims.show', $claim))->assertOk()->assertSee('Chronologie immuable')->assertDontSee('REF-WEB-SENSIBLE');
+        $this->get(route('insurance.claims.show', $claim))->assertOk()->assertSee('Historique du sinistre')->assertDontSee('REF-WEB-SENSIBLE');
         $this->post(route('insurance.claims.approve', $claim), ['approved_amount' => '4500.00'])->assertSessionHasErrors('status');
         $this->post(route('insurance.claims.submit', $claim), ['note' => 'Soumission'])->assertRedirect();
         $this->post(route('insurance.claims.review', $claim), ['note' => 'Revue humaine'])->assertRedirect();

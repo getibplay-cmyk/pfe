@@ -39,7 +39,7 @@ class QueueFleetReallocationRunRequest extends FormRequest
                 'python_binary',
             ];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour l’exécution OR-Tools.');
+                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour générer une suggestion de réallocation.');
             }
         }];
     }

@@ -8,175 +8,83 @@
 
         <x-section-card
             title="Prévision de demande D+1 à D+7"
-            description="Premier modèle fonctionnel intégré : historique local pseudonymisé, scénarios probabilistes et facteurs explicatifs, sans action automatique."
+            description="Anticipez les départs des sept prochains jours pour mieux préparer les véhicules et les équipes."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="max-w-3xl text-sm leading-6 text-slate-600">
-                    <p><span class="font-semibold text-slate-900">HGB Poisson régularisé</span> · WAPE public 15,234 % · couverture P05–P95 86,07 %.</p>
-                    <p class="mt-1">Ces métriques proviennent du proxy public Munich. La validation sur l’historique réel {{ config('brand.name') }} reste obligatoire avant toute affirmation de performance locale.</p>
-                </div>
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">Consultez une estimation centrale, un scénario prudent et les principaux éléments qui influencent la demande. La décision finale reste humaine.</p>
                 <a href="{{ route('intelligence.demand-forecasts.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les prévisions de demande</a>
             </div>
         </x-section-card>
 
         <x-section-card
-            title="Couleur d’un véhicule · S7 v8"
-            description="Modèle ONNX gelé avec abstention et validation humaine obligatoire, sans mise à jour automatique du véhicule."
+            title="Couleur suggérée"
+            description="Chargez une photo du véhicule et obtenez une couleur proposée, que vous pouvez confirmer ou corriger."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    Macro-F1 externe finale 0,914989 · précision des prédictions acceptées 100 % · couverture 59,375 % · seuil d’acceptation 0,977. Le module reste désactivé par défaut jusqu’à activation explicite.
-                </p>
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">La photo reste privée et la couleur enregistrée du véhicule n’est jamais modifiée sans votre confirmation.</p>
                 <a href="{{ route('intelligence.vehicle-colors.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir l’analyse couleur</a>
             </div>
         </x-section-card>
 
         <x-section-card
-            title="Dommages visibles au retour · EfficientNetV2-S"
-            description="Assistant ONNX qualifié, scan par patches chevauchants et validation humaine obligatoire, sans décision métier automatique."
+            title="Analyse des dommages"
+            description="Repérez les zones à vérifier sur une photo d’inspection de retour."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    Balanced accuracy 85,7633 % · macro-F1 85,2923 % · rappel dommage 86,7117 % · ECE 0,025848. Les régions proposées sont grossières et la validation locale {{ config('brand.name') }} reste obligatoire.
-                </p>
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">Chaque zone proposée doit être vérifiée. Aucun dommage, frais ou responsable n’est déterminé automatiquement.</p>
                 <a href="{{ route('intelligence.vehicle-damages.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir l’assistant dommages</a>
             </div>
         </x-section-card>
 
         <x-section-card
-            title="Plaques marocaines · ANPR hybride"
-            description="Photo complète, détection privée, OCR local du crop, fallback par zones et correction humaine append-only, sans mise à jour automatique du véhicule."
+            title="Immatriculation détectée"
+            description="Utilisez une photo complète du véhicule ou une photo rapprochée de la plaque pour faciliter la saisie."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    Le pilote privé a traité 1 819 crops et produit 821 suggestions complètes. La revue manuelle reste incomplète : ces chiffres prouvent le fonctionnement et la couverture, pas encore l’exactitude locale.
-                </p>
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">La proposition doit être confirmée ou corrigée avant toute utilisation dans la fiche véhicule.</p>
                 <a href="{{ route('intelligence.vehicle-plates.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir la revue des plaques</a>
             </div>
         </x-section-card>
 
         <x-section-card
-            title="Usages de location atypiques · CPU"
-            description="Classement explicable des exports réels v1.1, challenger Isolation Forest et revue humaine append-only."
+            title="Usages atypiques"
+            description="Repérez les dossiers qui méritent une vérification complémentaire."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    <code>robust_mad_top2</code> reste le classement principal aux budgets 0,5 %, 1 % et 2 %. Isolation Forest mesure uniquement le désaccord. Aucun score ne déclenche une sanction, des frais, une accusation ou une modification de contrat.
-                </p>
+                <p class="max-w-3xl text-sm leading-6 text-slate-600">Un signal atypique attire l’attention d’un responsable ; il ne prouve ni fraude, faute, dommage ou responsabilité.</p>
                 <a href="{{ route('intelligence.rental-usage-anomalies.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les usages atypiques</a>
             </div>
         </x-section-card>
 
-        <x-section-card title="Cadre scientifique et humain" description="Les preuves disponibles n’exécutent aucune décision métier.">
+        <x-section-card title="Principes d’utilisation" description="Les fonctionnalités intelligentes assistent les équipes sans prendre de décision à leur place.">
             <ul class="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
-                <li><span class="font-medium">rental_anomaly_iforest 0.1.0</span> est un artefact synthétique historique du Lot 07B1, distinct du candidat public J9.</li>
-                <li>Le benchmark public J9 a sélectionné <span class="font-medium">robust_mad_top2</span>. Le pilote CPU distinct de J13 peut maintenant classer un export réel, sans revendiquer d’exactitude locale avant constitution d’étiquettes humaines.</li>
-                <li>L’export réel v1.1 ne contient aucune étiquette, cible, identité ou décision humaine.</li>
+                <li>Chaque résultat doit être vérifié par un utilisateur autorisé.</li>
+                <li>Aucune suggestion ne modifie automatiquement un véhicule, une réservation ou un contrat.</li>
+                <li>Les données préparées pour l’analyse excluent les identités et coordonnées des clients.</li>
                 <li>Une anomalie ne prouve ni fraude, danger, dommage, faute ou responsabilité.</li>
-                <li>Cet écran d’accueil n’exécute aucun modèle ; chaque lancement explicite passe par la queue du module dédié.</li>
+                <li>Chaque traitement est lancé explicitement depuis son écran métier.</li>
             </ul>
         </x-section-card>
 
-        <x-section-card title="Configuration de l’export">
+        <x-section-card title="Protection des données">
             <div class="flex flex-wrap items-center gap-3 text-sm">
-                <span class="font-medium text-slate-700">Clé de pseudonymisation :</span>
+                <span class="font-medium text-slate-700">Préparation des données :</span>
                 <span class="rounded-full px-3 py-1 font-semibold {{ $configured ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900' }}">
                     {{ $configured ? 'Configurée' : 'Configuration requise' }}
                 </span>
-                <span class="text-slate-500">La valeur du secret n’est jamais affichée, auditée ou transmise au navigateur.</span>
+                <span class="text-slate-500">Les exports destinés aux analyses sont anonymisés et conservés dans le stockage privé.</span>
+            </div>
+        </x-section-card>
+
+        <x-section-card title="Fonctionnalités en préparation" description="Les services indisponibles ne sont pas proposés dans les parcours métier.">
+            <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950">
+                Leur activation dépend de la configuration de la plateforme et des autorisations de votre entreprise. Contactez l’administrateur si une fonctionnalité attendue n’apparaît pas.
             </div>
         </x-section-card>
 
         <x-section-card
-            title="J13 · preuves consultatives désactivées"
-            :description="'Quatre cartes en lecture seule exposent la provenance et les limites gelées ; elles ne constituent pas des sorties de modèles '.config('brand.name').'.'"
-        >
-            <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
-                <p class="font-semibold">Mode consultatif fermé</p>
-                <p class="mt-1 leading-6">
-                    Feature flags désactivés, SaaS et production interdits. Toute future utilisation exigerait une décision humaine auditée avec l’effet constant
-                    <code class="font-semibold">{{ $consultativeGate['decision_effect'] }}</code>.
-                </p>
-            </div>
-
-            <div class="mt-5 grid gap-4 lg:grid-cols-2">
-                @foreach ($consultativeModules as $module)
-                    <article data-j13-module="{{ $module['id'] }}" aria-labelledby="j13-module-{{ $module['id'] }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div class="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $module['authoritative_stage'] }} · audit {{ $module['audit_score'] }}</p>
-                                <h3 id="j13-module-{{ $module['id'] }}" class="mt-1 text-lg font-semibold text-slate-950">{{ $module['label'] }}</h3>
-                            </div>
-                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $module['benchmark_gate_passed'] ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900' }}">
-                                {{ $module['benchmark_gate_passed'] ? 'Gate du benchmark proxy franchie' : 'Gate du benchmark proxy non franchie' }}
-                            </span>
-                        </div>
-
-                        <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                            <div>
-                                <dt class="font-medium text-slate-500">Niveau de preuve</dt>
-                                <dd class="mt-1 font-semibold text-slate-800">{{ $module['evidence_label'] }}</dd>
-                            </div>
-                            <div>
-                                <dt class="font-medium text-slate-500">Rôle du benchmark</dt>
-                                <dd class="mt-1 break-words font-mono text-xs text-slate-700">{{ $module['benchmark_role'] }}</dd>
-                            </div>
-                            <div class="sm:col-span-2">
-                                <dt class="font-medium text-slate-500">Décision gelée</dt>
-                                <dd class="mt-1 break-words font-mono text-xs text-slate-700">{{ $module['gate_decision'] }}</dd>
-                            </div>
-                        </dl>
-
-                        <div class="mt-4 rounded-xl bg-slate-50 p-4">
-                            <p class="text-sm font-semibold text-slate-800">Affirmation autorisée</p>
-                            <p lang="en" class="mt-2 text-sm leading-6 text-slate-700">{{ $module['claim_allowed'] }}</p>
-                            <p lang="en" class="mt-2 text-xs leading-5 text-slate-500">{{ $module['evidence_description'] }}</p>
-                        </div>
-
-                        <div class="mt-4">
-                            <p class="text-sm font-semibold text-slate-800">Limites scientifiques</p>
-                            <ul lang="en" class="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
-                                @foreach ($module['claims_forbidden'] as $claim)
-                                    <li>{{ $claim }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-
-                        <p class="mt-4 border-t border-slate-200 pt-3 text-xs font-semibold text-slate-600">
-                            Feature flag : désactivé · SaaS : non · Production : non
-                        </p>
-                    </article>
-                @endforeach
-            </div>
-
-            <div class="mt-5">
-                <h3 class="text-base font-semibold text-slate-950">Lignée distincte du module d’usages atypiques</h3>
-                <div class="mt-3 grid gap-3 text-sm md:grid-cols-3">
-                    <div class="rounded-xl border border-slate-200 p-4">
-                        <p class="font-semibold text-slate-900">Benchmark public J9</p>
-                        <p class="mt-2"><code>{{ $anomalyLineage['j9_public_proxy_benchmark']['selected_candidate'] }}</code></p>
-                        <p class="mt-1 text-slate-600">{{ $anomalyLineage['j9_public_proxy_benchmark']['source'] }}</p>
-                        <p class="mt-2 font-medium text-amber-800">Interdit dans J13</p>
-                    </div>
-                    <div class="rounded-xl border border-slate-200 p-4">
-                        <p class="font-semibold text-slate-900">Artefact historique Lot 07B1</p>
-                        <p class="mt-2"><code>{{ $anomalyLineage['legacy_lot07b1_synthetic_artifact']['name'] }} {{ $anomalyLineage['legacy_lot07b1_synthetic_artifact']['version'] }}</code></p>
-                        <p class="mt-1 text-slate-600">{{ $anomalyLineage['legacy_lot07b1_synthetic_artifact']['algorithm'] }} · données synthétiques</p>
-                        <p class="mt-2 font-medium text-amber-800">Distinct de J9 et interdit dans J13</p>
-                    </div>
-                    <div class="rounded-xl border border-slate-200 p-4">
-                        <p class="font-semibold text-slate-900">Fixture contractuelle J11/J12</p>
-                        <p class="mt-2 break-words"><code>{{ $anomalyLineage['j11_j12_fixture']['computation_status'] }}</code></p>
-                        <p class="mt-1 text-slate-600">Aucun modèle ni solveur exécuté</p>
-                        <p class="mt-2 font-medium text-slate-700">Preuve d’intégration uniquement</p>
-                    </div>
-                </div>
-            </div>
-        </x-section-card>
-
-        <x-section-card
-            title="Adaptateur contractuel J11 / J12"
-            description="Quatre contrats synthétiques sont intégrés comme preuve technique, sans modèle ni effet sur l’exploitation."
+            title="Démonstrations isolées"
+            description="Ces exemples permettent de découvrir le fonctionnement sans utiliser de données réelles ni modifier l’exploitation."
         >
             <div class="grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 p-3">
@@ -186,27 +94,25 @@
                     </p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-3">
-                    <p class="text-slate-500">Contrats</p>
-                    <p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($contractDemo['contract_count']) }} fixtures synthétiques</p>
+                    <p class="text-slate-500">Exemples disponibles</p>
+                    <p class="mt-1 font-semibold">{{ App\Support\Ui\BusinessNumber::integer($contractDemo['contract_count']) }} démonstrations</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-3">
-                    <p class="text-slate-500">Prêt pour le SaaS</p>
-                    <p class="mt-1 font-semibold text-amber-800">Non</p>
+                    <p class="text-slate-500">Données réelles</p>
+                    <p class="mt-1 font-semibold text-amber-800">Aucune</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-3">
                     <p class="text-slate-500">Effet autorisé</p>
                     <p class="mt-1 font-semibold">Aucune action métier</p>
                 </div>
             </div>
-            <p class="mt-4 text-sm leading-6 text-slate-600">
-                Les payloads publics Munich et Scania ne sont jamais importés comme recommandations opérationnelles. Les routes de démonstration répondent 404 tant que le verrou J12 reste fermé.
-            </p>
+            <p class="mt-4 text-sm leading-6 text-slate-600">Les démonstrations restent séparées des véhicules, réservations et contrats de votre entreprise.</p>
             @if ($contractDemo['enabled'])
                 <div class="mt-4"><a href="{{ route('intelligence.contract-demo.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir la démonstration isolée</a></div>
             @endif
         </x-section-card>
 
-        <x-filter-panel title="Périmètre du dataset réel">
+        <x-filter-panel title="Période des données anonymisées">
             <form method="GET" action="{{ route('intelligence.export') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4" data-no-global-loading="true">
                 <div>
                     <x-input-label for="intelligence-date-from" value="Du" />
@@ -240,14 +146,13 @@
 
         @if (auth()->user()->hasPermission('prediction.export'))
             <x-section-card
-                title="J14-A · snapshots d’export reproductibles"
-                description="Chaque CSV est conservé sur le disque privé avec un identifiant d’exécution et un manifeste d’intégrité, sans prédiction ni effet métier."
+                title="Exports anonymisés"
+                description="Chaque fichier est conservé dans le stockage privé et peut être téléchargé par un utilisateur autorisé."
             >
-                <x-responsive-table label="Registre append-only des snapshots Intelligence" class="shadow-none">
+                <x-responsive-table label="Historique des exports anonymisés" class="shadow-none">
                     <table>
                         <thead>
                             <tr>
-                                <th>Exécution</th>
                                 <th>Période</th>
                                 <th>Périmètre</th>
                                 <th>Lignes</th>
@@ -258,54 +163,51 @@
                         <tbody>
                             @forelse ($exportRuns as $run)
                                 <tr>
-                                    <td class="font-mono text-xs">{{ $run->run_id }}</td>
                                     <td>{{ $run->date_from->format('d/m/Y') }} → {{ $run->date_to->format('d/m/Y') }}</td>
                                     <td>{{ $run->scope_kind === 'agency' ? 'Agence autorisée' : 'Entreprise entière' }}</td>
                                     <td>{{ App\Support\Ui\BusinessNumber::integer($run->row_count) }}</td>
                                     <td>{{ App\Support\Ui\UiLabel::dateTime($run->created_at) }}</td>
                                     <td class="text-right">
                                         <div class="flex flex-wrap justify-end gap-3">
-                                            <a href="{{ route('intelligence.exports.manifest', $run) }}" class="font-medium text-indigo-700" data-no-global-loading="true">Manifeste JSON</a>
-                                            <a href="{{ route('intelligence.exports.download', $run) }}" class="font-medium text-indigo-700" data-no-global-loading="true">Snapshot CSV</a>
+                                            <a href="{{ route('intelligence.exports.manifest', $run) }}" class="font-medium text-indigo-700" data-no-global-loading="true">Informations de contrôle</a>
+                                            <a href="{{ route('intelligence.exports.download', $run) }}" class="font-medium text-indigo-700" data-no-global-loading="true">Télécharger le CSV</a>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="p-10 text-center text-slate-500">Aucun snapshot n’a encore été créé pour ce périmètre.</td>
+                                    <td colspan="5" class="p-10 text-center text-slate-500">Aucun export n’a encore été créé pour ce périmètre.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </x-responsive-table>
-                <p class="mt-4 text-xs leading-5 text-slate-500">
-                    L’empreinte SHA-256 complète et les versions autorisées figurent dans le manifeste. Le chemin du fichier privé n’est jamais exposé.
-                </p>
+                <p class="mt-4 text-xs leading-5 text-slate-500">Les informations de contrôle permettent de vérifier le fichier sans exposer son emplacement privé.</p>
             </x-section-card>
         @endif
 
         <x-section-card
-            title="J14-B · lots de résultats synthétiques"
-            description="Import fermé, lignée exacte vers J14-A, idempotence et décision humaine append-only, toujours sans effet métier."
+            title="Résultats de démonstration"
+            description="Consultez et vérifiez des exemples isolés, sans effet sur les données métier."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    La revue J14-B n’accepte que des sorties qualitatives de fixture synthétique. Elle refuse tout score, identifiant direct, coordonnée, action automatique ou payload non documenté.
+                    Ces exemples ne contiennent aucune identité, coordonnée ou action automatique. Toute décision reste humaine.
                 </p>
-                <a href="{{ route('intelligence.result-batches.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir le registre J14-B</a>
+                <a href="{{ route('intelligence.result-batches.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les résultats de démonstration</a>
             </div>
         </x-section-card>
 
         <x-section-card
-            title="OR-Tools · réallocation consultative qualifiée"
-            description="Import privé de propositions synthétiques en kilomètres, puis décision humaine append-only sans écriture métier."
+            title="Suggestions de réallocation"
+            description="Préparez un meilleur équilibre de la flotte entre agences, puis vérifiez chaque déplacement proposé."
         >
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <p class="max-w-3xl text-sm leading-6 text-slate-600">
-                    Le solveur qualifié reste externe à Laravel. {{ config('brand.name') }} vérifie sa lignée, l’abstention CatBoost, les coûts et les mouvements avant de les afficher ; accepter une proposition signifie seulement « retenue pour la démonstration ».
+                    Les distances, les coûts estimés et la disponibilité sont contrôlés avant l’affichage. Accepter une suggestion ne déplace aucun véhicule automatiquement.
                 </p>
                 @if (auth()->user()->agency_id === null)
-                    <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les propositions</a>
+                    <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary"><x-icon name="launch" size="xs" />Ouvrir les suggestions</a>
                 @else
                     <span class="text-sm text-slate-500">Registre réservé à la vue entreprise entière.</span>
                 @endif
@@ -313,8 +215,8 @@
         </x-section-card>
 
         <x-empty-state
-            title="Aucune recommandation opérationnelle automatique"
-            description="Les preuves J13/J14 et les prévisions de demande restent consultatives. Toute interprétation et toute décision relèvent d’un utilisateur autorisé."
+            title="Aucune action automatique"
+            description="Les prévisions et suggestions restent consultatives. Toute interprétation et toute décision relèvent d’un utilisateur autorisé."
         />
     </div>
 </x-app-layout>

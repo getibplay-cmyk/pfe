@@ -28,7 +28,7 @@ class ReverseSaasPayment
         }
         $idempotencyKey = trim((string) ($data['idempotency_key'] ?? ''));
         if ($idempotencyKey === '') {
-            throw ValidationException::withMessages(['idempotency_key' => 'La clé d’idempotence est obligatoire.']);
+            throw ValidationException::withMessages(['idempotency_key' => 'La demande n’a pas pu être sécurisée. Rechargez la page puis réessayez.']);
         }
         $reference = $this->nullableText($data['reference'] ?? null);
         $note = $this->nullableText($data['note'] ?? null);
@@ -134,7 +134,7 @@ class ReverseSaasPayment
 
         if (! $same) {
             throw ValidationException::withMessages([
-                'idempotency_key' => 'Cette clé d’idempotence correspond déjà à une autre opération SaaS.',
+                'idempotency_key' => 'Cette demande a déjà été envoyée avec des informations différentes. Rechargez la page puis réessayez.',
             ]);
         }
     }

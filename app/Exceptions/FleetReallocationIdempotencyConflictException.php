@@ -8,6 +8,6 @@ class FleetReallocationIdempotencyConflictException extends ConflictHttpExceptio
 {
     public function __construct()
     {
-        parent::__construct('La clé d’idempotence de réallocation existe avec un payload différent.');
+        parent::__construct('Cette demande de réallocation existe déjà avec des données différentes. Rechargez la page avant de réessayer.');
     }
 }

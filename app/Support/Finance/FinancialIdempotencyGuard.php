@@ -26,7 +26,7 @@ class FinancialIdempotencyGuard
         foreach ($expected as $field => $value) {
             if ($this->normalize($field, $existing->getAttribute($field)) !== $this->normalize($field, $value)) {
                 throw ValidationException::withMessages([
-                    'idempotency_key' => 'Cette clé d’idempotence est déjà associée à une opération métier différente.',
+                    'idempotency_key' => 'Cette demande a déjà été envoyée avec des informations différentes. Rechargez la page puis réessayez.',
                 ]);
             }
         }

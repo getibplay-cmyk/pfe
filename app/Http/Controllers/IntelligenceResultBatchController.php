@@ -75,8 +75,8 @@ class IntelligenceResultBatchController extends Controller
         return redirect()->route('intelligence.result-batches.index')->with(
             'status',
             $result->created
-                ? 'Lot J14-B validé et importé sans effet opérationnel.'
-                : 'Lot J14-B déjà présent : rejeu idempotent sans duplication.',
+                ? 'Résultats vérifiés et importés sans action automatique.'
+                : 'Ces résultats sont déjà présents et n’ont pas été dupliqués.',
         );
     }
 
@@ -94,7 +94,7 @@ class IntelligenceResultBatchController extends Controller
         );
 
         return redirect()->route('intelligence.result-batches.index')
-            ->with('status', 'Décision humaine J14-B enregistrée sans action métier.');
+            ->with('status', 'Décision enregistrée sans action automatique.');
     }
 
     public function download(

@@ -147,7 +147,7 @@
                     ['route' => 'platform.tenants.index', 'label' => 'Entreprises', 'icon' => 'building'],
                     ['route' => 'platform.subscriptions.index', 'label' => 'Abonnements', 'icon' => 'file'],
                     ['route' => 'platform.saas-payments.index', 'label' => 'Paiements', 'icon' => 'payment'],
-                    ['route' => 'platform.intelligence.index', 'label' => 'Modèles IA', 'icon' => 'chart'],
+                    ['route' => 'platform.intelligence.index', 'label' => 'Fonctionnalités intelligentes', 'icon' => 'chart'],
                     ['route' => 'platform.statistics.index', 'label' => 'Statistiques', 'icon' => 'chart'],
                 ] as $shortcut)
                     <a href="{{ route($shortcut['route']) }}" class="group flex min-h-24 flex-col justify-between rounded-xl border border-belkhir-space-border bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:border-belkhir-space-blue/40 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none">

@@ -1,11 +1,11 @@
 <x-app-layout>
     <div class="rf-page">
-        <x-page-header title="Modèles IA et activation" eyebrow="Administration de la plateforme" description="Contrôlez l’accès de chaque entreprise aux aides à la décision disponibles, sans lancer de traitement."></x-page-header>
+        <x-page-header title="Fonctionnalités intelligentes et accès" eyebrow="Administration de la plateforme" description="Contrôlez l’accès de chaque entreprise aux aides à la décision disponibles, sans lancer de traitement."></x-page-header>
         <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">Une autorisation ne lance aucun traitement. L’utilisateur conserve ses permissions métier habituelles et toutes les suggestions restent consultatives.</div>
         <x-form-errors />
 
         <x-section-card title="Catalogue applicatif" description="État global assaini des six fonctionnalités réellement intégrées.">
-            <x-responsive-table label="Catalogue des fonctionnalités intelligentes"><table><thead><tr><th>Fonctionnalité</th><th>Usage</th><th>Disponibilité</th><th>Environnement prêt</th><th>Entreprises autorisées</th><th>Dernière modification</th></tr></thead><tbody>
+            <x-responsive-table label="Catalogue des fonctionnalités intelligentes"><table><thead><tr><th>Fonctionnalité</th><th>Usage</th><th>Disponibilité</th><th>Service prêt</th><th>Entreprises autorisées</th><th>Dernière modification</th></tr></thead><tbody>
                 @foreach($capabilities as $item)<tr><td><strong>{{ $item['label'] }}</strong><br><span class="text-slate-500">{{ $item['description'] }}</span></td><td>{{ $item['usage'] }}</td><td><x-status-badge :value="$item['globally_enabled'] ? 'active' : 'inactive'" /><p class="mt-1 text-xs text-slate-500">{{ $item['message'] }}</p></td><td>{{ $item['runtime_ready'] ? 'Prêt' : 'Non prêt' }}</td><td>{{ $item['enabled_tenants'] }}</td><td>{{ $item['latest_change'] ? App\Support\Ui\UiLabel::dateTime($item['latest_change']) : '—' }}</td></tr>@endforeach
             </tbody></table></x-responsive-table>
         </x-section-card>

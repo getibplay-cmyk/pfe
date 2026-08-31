@@ -109,7 +109,7 @@ class VehicleColorPredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-colors.index')->with(
             'status',
-            'Analyse couleur '.$run->run_id.' ajoutée à la queue Intelligence.',
+            'L’analyse de la couleur a été lancée.',
         );
     }
 

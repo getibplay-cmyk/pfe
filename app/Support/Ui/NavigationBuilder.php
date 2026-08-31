@@ -27,9 +27,9 @@ class NavigationBuilder
                     ],
                 ],
                 [
-                    'label' => 'Modèles IA',
+                    'label' => 'Fonctionnalités intelligentes',
                     'items' => [
-                        $this->item('platform-intelligence', 'Modèles IA et accès', 'platform.intelligence.index', 'platform.intelligence.*'),
+                        $this->item('platform-intelligence', 'Fonctionnalités et accès', 'platform.intelligence.index', 'platform.intelligence.*'),
                     ],
                 ],
             ];

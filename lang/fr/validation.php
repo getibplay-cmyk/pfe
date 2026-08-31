@@ -78,6 +78,7 @@ return [
         'email' => 'adresse e-mail',
         'password' => 'mot de passe',
         'password_confirmation' => 'confirmation du mot de passe',
+        'idempotency_key' => 'demande sécurisée',
         'reason' => 'motif',
         'file' => 'fichier',
         'title' => 'titre',
