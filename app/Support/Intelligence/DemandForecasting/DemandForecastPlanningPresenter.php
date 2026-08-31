@@ -41,9 +41,9 @@ final class DemandForecastPlanningPresenter
             throw new UnexpectedValueException('Forecast result is incomplete.');
         }
 
-        $today = CarbonImmutable::now(DemandForecastContract::TIMEZONE)->startOfDay();
-        if ($run->forecastRun->as_of_date?->toDateString() !== $today->toDateString()) {
-            throw new UnexpectedValueException('Forecast result is stale.');
+        $asOfDate = $run->forecastRun->as_of_date;
+        if ($asOfDate === null) {
+            throw new UnexpectedValueException('Forecast result is incomplete.');
         }
 
         $rows = $run->forecastRun->forecasts->sortBy('horizon')->values();
@@ -56,7 +56,7 @@ final class DemandForecastPlanningPresenter
             $horizon = $position + 1;
             $value = (string) $forecast->conditional_mean;
             if ($forecast->horizon !== $horizon
-                || $forecast->target_date?->toDateString() !== $today->addDays($horizon)->toDateString()
+                || $forecast->target_date?->toDateString() !== $asOfDate->addDays($horizon)->toDateString()
                 || preg_match('/^(?:0|[1-9][0-9]{0,7})\.[0-9]{6}$/D', $value) !== 1
                 || str_starts_with($value, '-')) {
                 throw new UnexpectedValueException('Forecast result values are invalid.');
