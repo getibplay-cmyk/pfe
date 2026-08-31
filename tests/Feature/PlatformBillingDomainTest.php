@@ -153,6 +153,26 @@ class PlatformBillingDomainTest extends TestCase
         ], $platform->id), 'payment');
     }
 
+    public function test_reversal_rejects_a_date_before_the_original_payment_without_a_database_error(): void
+    {
+        [$platform, $tenant] = $this->actors();
+        $subscription = $this->subscription($platform, $tenant, $this->plan($platform, 'reversal-date'));
+        $payment = app(RecordSaasPayment::class)->handle($subscription, [
+            'payment_method' => 'cash',
+            'amount' => '100.00',
+            'idempotency_key' => 'original-date-001',
+            'occurred_at' => '2026-08-31T10:00:00+00:00',
+        ], $platform->id);
+
+        $this->expectValidation(fn () => app(ReverseSaasPayment::class)->handle($payment, [
+            'reason' => 'Correction administrative.',
+            'idempotency_key' => 'reversal-date-001',
+            'occurred_at' => '2026-08-31T09:59:59+00:00',
+        ], $platform->id), 'occurred_at');
+
+        $this->assertDatabaseCount('saas_payments', 1);
+    }
+
     public function test_actions_reject_client_supplied_scope_and_unknown_fields_without_side_effect(): void
     {
         [$platform, $tenant] = $this->actors();
