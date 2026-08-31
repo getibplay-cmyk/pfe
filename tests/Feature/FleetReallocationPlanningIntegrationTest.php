@@ -213,6 +213,7 @@ class FleetReallocationPlanningIntegrationTest extends TestCase
         $run = FleetReallocationPlanningRun::withoutGlobalScopes()
             ->where('run_id', $accepted['run_id'])
             ->firstOrFail();
+        config(['intelligence.fleet_reallocation.python_binary' => PHP_BINARY]);
         Process::fake(['*' => Process::result(output: json_encode(
             $this->runtimeOutput($run, true),
             JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
