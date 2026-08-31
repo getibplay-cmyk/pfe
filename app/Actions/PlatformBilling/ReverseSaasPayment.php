@@ -114,6 +114,13 @@ class ReverseSaasPayment
                 return $reversal;
             });
         } catch (QueryException $exception) {
+            if ((string) $exception->getCode() === '23514'
+                && str_contains($exception->getMessage(), 'A SaaS payment reversal cannot predate its original')) {
+                throw ValidationException::withMessages([
+                    'occurred_at' => 'La date de contrepassation ne peut pas précéder celle du paiement original.',
+                ]);
+            }
+
             if ((string) $exception->getCode() === '23505'
                 && str_contains($exception->getMessage(), 'saas_payments_reference_unique_idx')) {
                 throw ValidationException::withMessages(['reference' => 'Cette référence administrative est déjà utilisée.']);
