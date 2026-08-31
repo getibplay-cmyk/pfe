@@ -1,30 +1,28 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="Lecture de plaques marocaines · ANPR hybride"
-            eyebrow="Intelligence consultative"
+            title="Lecture de l’immatriculation"
+            eyebrow="Aide à la décision"
             description="Soumettez une photo du véhicule : le détecteur privé recadre la plaque, l’OCR local propose une lecture, puis un humain confirme ou corrige. La fiche véhicule n’est jamais modifiée automatiquement."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
-        <x-section-card title="État du pipeline local" description="Détecteur Faster R-CNN privé et OCR arabe PP-OCRv5 dans deux environnements Python isolés.">
+        <x-section-card title="Disponibilité du service" description="Utilisez une photo complète du véhicule ou une photo rapprochée de la plaque.">
             <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Feature flag</p>
-                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Activé explicitement' : 'Désactivé par défaut' }}</p>
+                    <p class="text-slate-500">Accès au service</p>
+                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Disponible' : 'Désactivé par défaut' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Détection de plaque</p>
-                    <p class="mt-1 font-semibold {{ $runtime['detector_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['detector_ready'] ? 'Checkpoint vérifié · prêt' : 'Checkpoint privé non configuré' }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ $runtime['detector_device'] === 'gpu:0' ? 'GPU local' : 'CPU local' }}</p>
+                    <p class="text-slate-500">Photo complète</p>
+                    <p class="mt-1 font-semibold {{ $runtime['detector_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['detector_ready'] ? 'Lecture prête' : 'Service non configuré' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Reconnaissance OCR</p>
-                    <p class="mt-1 font-semibold {{ $runtime['ocr_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['ocr_ready'] ? 'PP-OCRv5 prêt' : 'Runtime OCR non prêt' }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ $runtime['ocr_device'] === 'gpu:0' ? 'GPU local' : 'CPU local' }}</p>
+                    <p class="text-slate-500">Photo rapprochée</p>
+                    <p class="mt-1 font-semibold {{ $runtime['ocr_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['ocr_ready'] ? 'Lecture prête' : 'Service non configuré' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-slate-500">Effet métier</p>
@@ -87,7 +85,7 @@
                             <input id="plate-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="mt-1 block w-full rounded-lg border border-slate-300 bg-white text-sm" required>
                             <x-field-error :messages="$errors->get('image')" class="mt-2" />
                         </div>
-                        <x-primary-button class="justify-center">Lancer l’ANPR</x-primary-button>
+                        <x-primary-button class="justify-center">Lire l’immatriculation</x-primary-button>
                     </form>
                 @else
                     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">Le lancement est fermé. Préchargez les runtimes locaux, testez leurs workers, puis activez explicitement <code>RENTFLEET_PLATE_HYBRID_REVIEW_ENABLED</code>.</div>

@@ -3,78 +3,121 @@
 @tailwind utilities;
 
 @layer base {
+    :root {
+        --atlas-ink: theme('colors.atlas.ink');
+        --atlas-navy: theme('colors.atlas.navy');
+        --atlas-blue: theme('colors.atlas.blue');
+        --atlas-blue-hover: theme('colors.atlas.blue-hover');
+        --atlas-orange: theme('colors.atlas.orange');
+        --atlas-orange-soft: theme('colors.atlas.orange-soft');
+        --atlas-canvas: theme('colors.atlas.canvas');
+        --atlas-surface: theme('colors.atlas.surface');
+        --atlas-text: theme('colors.atlas.text');
+        --atlas-muted: theme('colors.atlas.muted');
+        --atlas-border: theme('colors.atlas.border');
+        --atlas-success: theme('colors.atlas.success');
+        --atlas-warning: theme('colors.atlas.warning');
+        --atlas-danger: theme('colors.atlas.danger');
+        --atlas-information: theme('colors.atlas.information');
+    }
+
     [x-cloak] { display: none !important; }
 
     html {
-        @apply scroll-smooth bg-slate-50;
+        @apply scroll-smooth bg-atlas-canvas;
         overflow-x: clip;
     }
 
     body {
-        @apply min-w-0 bg-slate-50 text-slate-900;
+        @apply min-w-0 bg-atlas-canvas text-atlas-text;
         overflow-x: clip;
     }
 
     :focus-visible {
-        @apply outline-none ring-2 ring-brand-600 ring-offset-2;
+        @apply outline-none ring-2 ring-atlas-blue ring-offset-2;
     }
 
     input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
     select,
     textarea {
-        @apply min-h-11 rounded-lg border-slate-300 bg-white text-slate-950 shadow-sm placeholder:text-slate-400 focus:border-brand-600 focus:ring-brand-600;
+        @apply min-h-11 rounded-lg border-atlas-border bg-atlas-surface text-atlas-text shadow-sm placeholder:text-atlas-muted focus:border-atlas-blue focus:ring-atlas-blue;
     }
 
     input[type='checkbox'], input[type='radio'] {
-        @apply border-slate-300 text-brand-700 focus:ring-brand-600;
+        @apply border-atlas-border text-atlas-blue focus:ring-atlas-blue;
     }
 
     label {
-        @apply text-slate-700;
+        @apply text-atlas-text;
     }
 
     button, [role='button'] {
         @apply disabled:cursor-not-allowed disabled:opacity-60;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
 }
 
 @layer components {
     .rf-skip-link {
-        @apply fixed left-4 top-3 z-[100] -translate-y-20 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-brand-900 shadow-lg transition focus:translate-y-0;
+        @apply fixed left-4 top-3 z-[100] -translate-y-20 rounded-lg bg-atlas-surface px-4 py-2 text-sm font-semibold text-atlas-blue shadow-lg transition focus:translate-y-0;
     }
 
     .rf-page { @apply mx-auto w-full max-w-7xl space-y-6; }
-    .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-slate-200 bg-white shadow-panel; }
+    .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-atlas-border bg-atlas-surface shadow-panel; }
     .rf-panel-body { @apply p-4 sm:p-6; }
-    .rf-panel-heading { @apply border-b border-slate-100 px-4 py-4 sm:px-6; }
+    .rf-panel-heading { @apply border-b border-atlas-border px-4 py-4 sm:px-6; }
 
     .rf-button {
-        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 disabled:pointer-events-none;
+        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:transform-none;
     }
-    .rf-button-primary { @apply rf-button border-brand-700 bg-brand-700 text-white hover:border-brand-800 hover:bg-brand-800; }
-    .rf-button-secondary { @apply rf-button border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-950; }
-    .rf-button-danger { @apply rf-button border-red-700 bg-red-700 text-white hover:border-red-800 hover:bg-red-800; }
-    .rf-button-link { @apply inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 hover:text-brand-900; }
+    .rf-button-primary { @apply rf-button border-atlas-blue bg-atlas-blue text-white hover:border-atlas-blue-hover hover:bg-atlas-blue-hover; }
+    .rf-button-secondary { @apply rf-button border-atlas-border bg-atlas-surface text-atlas-text shadow-sm hover:border-slate-400 hover:bg-slate-50; }
+    .rf-button-quiet { @apply rf-button border-transparent bg-transparent text-atlas-blue hover:bg-brand-50 hover:text-atlas-blue-hover; }
+    .rf-button-danger { @apply rf-button border-atlas-danger bg-atlas-danger text-white hover:brightness-90; }
+    .rf-button-link { @apply inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-semibold text-atlas-blue hover:bg-brand-50 hover:text-atlas-blue-hover; }
 
-    .rf-field-label { @apply block text-sm font-semibold text-slate-700; }
-    .rf-field-help { @apply mt-1 text-xs leading-5 text-slate-500; }
+    .rf-field-label { @apply block text-sm font-semibold text-atlas-text; }
+    .rf-field-help { @apply mt-1 text-xs leading-5 text-atlas-muted; }
     .rf-filter-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4; }
 
     .rf-table-scroll {
         @apply max-w-full overflow-x-auto overscroll-x-contain;
         scrollbar-gutter: stable;
     }
-    .rf-table-scroll > table { @apply min-w-full divide-y divide-slate-200 text-sm; }
-    .rf-table-scroll thead { @apply bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-600; }
+    .rf-table-scroll > table { @apply min-w-full divide-y divide-atlas-border text-sm; }
+    .rf-table-scroll thead { @apply bg-atlas-canvas text-left text-xs font-semibold uppercase tracking-wide text-atlas-muted; }
     .rf-table-scroll th { @apply whitespace-nowrap px-4 py-3; }
-    .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-white; }
+    .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-atlas-surface; }
+    .rf-table-scroll tbody tr { @apply transition-colors hover:bg-brand-50/40; }
     .rf-table-scroll td { @apply px-4 py-3 align-top text-slate-700; }
-    .rf-mobile-scroll-hint { @apply border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-500 sm:hidden; }
+    .rf-mobile-scroll-hint { @apply border-b border-atlas-border bg-atlas-canvas px-4 py-2 text-xs text-atlas-muted sm:hidden; }
     .rf-kbd { @apply rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-[0.7rem] text-slate-600; }
 
     main section[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
     main article[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
-    main div[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'] {
-        @apply border border-slate-200 shadow-panel;
+    main div[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
+    main section[class~='rounded-xl'][class~='bg-white'][class~='shadow'],
+    main article[class~='rounded-xl'][class~='bg-white'][class~='shadow'],
+    main div[class~='rounded-xl'][class~='bg-white'][class~='shadow'] {
+        @apply border border-atlas-border shadow-panel;
+    }
+
+    .rf-chart-surface { @apply relative min-h-72 rounded-xl border border-atlas-border bg-atlas-surface p-3; }
+
+    main a[class*='text-blue-'], main a[class*='text-indigo-'] { @apply text-atlas-blue hover:text-atlas-blue-hover; }
+
+    main button[class*='bg-slate-8'], main button[class*='bg-slate-9'],
+    main a[class*='bg-slate-8'], main a[class*='bg-slate-9'] {
+        @apply border-atlas-blue bg-atlas-blue text-white hover:bg-atlas-blue-hover;
     }
 }

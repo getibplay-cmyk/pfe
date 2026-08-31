@@ -1,9 +1,12 @@
 <x-app-layout>
     <div class="mx-auto max-w-4xl space-y-6">
-        <div>
-            <p class="text-sm text-slate-500">{{ $reservation->exists ? $reservation->reservation_number : 'Nouveau brouillon' }}</p>
-            <h1 class="text-2xl font-bold">Réservation</h1>
-        </div>
+        <x-page-header
+            title="{{ $reservation->exists ? 'Modifier la réservation' : 'Nouvelle réservation' }}"
+            :eyebrow="$reservation->exists ? $reservation->reservation_number : 'Activité locative'"
+            :breadcrumbs="[['label' => 'Réservations', 'url' => route('reservations.index')], ['label' => $reservation->exists ? $reservation->reservation_number : 'Nouvelle réservation']]"
+        >
+            <x-slot:actions><a href="{{ $reservation->exists ? route('reservations.show', $reservation) : route('reservations.index') }}" class="rf-button-secondary">Retour</a></x-slot:actions>
+        </x-page-header>
 
         @if ($agencies->count() > 1)
             <form method="GET" action="{{ $reservation->exists ? route('reservations.edit', $reservation) : route('reservations.create') }}" class="rounded-xl border border-slate-200 bg-white p-4">

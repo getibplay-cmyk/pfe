@@ -1,28 +1,28 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="Couleur du véhicule · modèle S7 v8"
-            eyebrow="Intelligence consultative"
+            title="Couleur suggérée"
+            eyebrow="Aide à la décision"
             description="Soumettez une photo privée, consultez la couleur la plus probable puis consignez une décision humaine. La couleur enregistrée du véhicule n’est jamais modifiée automatiquement."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
-        <x-section-card title="État du runtime" description="Activation explicite, artefacts gelés et exécution asynchrone sur la queue Intelligence.">
+        <x-section-card title="Disponibilité du service" description="Les photos restent privées et chaque suggestion doit être confirmée par un utilisateur.">
             <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Feature flag</p>
-                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Activé' : 'Désactivé par défaut' }}</p>
+                    <p class="text-slate-500">Accès au service</p>
+                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Disponible' : 'Désactivé par défaut' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Paire ONNX / métadonnées</p>
-                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'SHA-256 vérifiés' : 'Installation requise' }}</p>
+                    <p class="text-slate-500">Fichiers nécessaires</p>
+                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'Vérifiés' : 'Installation requise' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Calcul</p>
-                    <p class="mt-1 font-semibold text-slate-900">{{ $runtime['provider'] === 'CUDAExecutionProvider' ? 'GPU CUDA' : 'CPU ONNX Runtime' }}</p>
+                    <p class="text-slate-500">Traitement</p>
+                    <p class="mt-1 font-semibold text-slate-900">{{ $runtime['provider'] === 'CUDAExecutionProvider' ? 'Accéléré' : 'Local' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-slate-500">Effet métier</p>
@@ -31,7 +31,7 @@
             </div>
         </x-section-card>
 
-        <x-section-card title="Gate scientifique final indépendant" description="Mesures gelées sur l’évaluation externe finale, avec abstention au seuil 0,977.">
+        <x-section-card title="Fiabilité et limites" description="Mesures de validation du service ; une confirmation humaine reste obligatoire.">
             <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div><dt class="text-slate-500">Macro-F1</dt><dd class="font-semibold">{{ number_format($contract['macro_f1'], 6, ',', ' ') }}</dd></div>
                 <div><dt class="text-slate-500">Balanced accuracy</dt><dd class="font-semibold">{{ number_format($contract['balanced_accuracy'] * 100, 3, ',', ' ') }} %</dd></div>

@@ -22,7 +22,13 @@
     >
         @csrf
         @if ($vehicle->exists) @method('PUT') @endif
-        <h1 class="text-2xl font-bold">{{ $vehicle->exists ? 'Modifier le véhicule' : 'Nouveau véhicule' }}</h1>
+        <x-page-header
+            :title="$vehicle->exists ? 'Modifier le véhicule' : 'Nouveau véhicule'"
+            eyebrow="Parc automobile"
+            :breadcrumbs="[['label' => 'Véhicules', 'url' => route('vehicles.index')], ['label' => $vehicle->exists ? $vehicle->registration_number : 'Nouveau véhicule']]"
+        >
+            <x-slot:actions><a href="{{ $vehicle->exists ? route('vehicles.show', $vehicle) : route('vehicles.index') }}" class="rf-button-secondary">Retour</a></x-slot:actions>
+        </x-page-header>
         <x-form-errors />
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm">
@@ -82,9 +88,10 @@
                                 type="button"
                                 class="inline-flex min-h-10 items-center justify-center rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 :disabled="busy || !readyFull"
+                                :aria-busy="(busy && activeMode === 'full_vehicle_image').toString()"
                                 @click="analyze($refs.fullPhoto.files[0], $el.closest('form').elements.agency_id.value, 'full_vehicle_image')"
                             >
-                                <span x-show="busy && activeMode === 'full_vehicle_image'" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
+                                <span x-cloak x-show="busy && activeMode === 'full_vehicle_image'" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
                                 <span x-text="busy && activeMode === 'full_vehicle_image' ? 'Lecture en cours…' : 'Lire l’immatriculation'">Lire l’immatriculation</span>
                             </button>
                         </div>
@@ -135,9 +142,10 @@
                                     type="button"
                                     class="inline-flex min-h-10 items-center justify-center rounded-lg border border-orange-600 px-4 py-2 text-sm font-semibold text-orange-900 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
                                     :disabled="busy || !readyCloseUp"
+                                    :aria-busy="(busy && activeMode === 'plate_crop').toString()"
                                     @click="analyze($refs.closeUpPhoto.files[0], $el.closest('form').elements.agency_id.value, 'plate_crop')"
                                 >
-                                    <span x-show="busy && activeMode === 'plate_crop'" class="me-2 size-4 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700" aria-hidden="true"></span>
+                                    <span x-cloak x-show="busy && activeMode === 'plate_crop'" class="me-2 size-4 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700" aria-hidden="true"></span>
                                     <span x-text="busy && activeMode === 'plate_crop' ? 'Lecture en cours…' : 'Lire la photo rapprochée'">Lire la photo rapprochée</span>
                                 </button>
                             </div>
@@ -204,9 +212,10 @@
                             type="button"
                             class="inline-flex min-h-10 items-center justify-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="busy || !ready"
+                            :aria-busy="busy.toString()"
                             @click="analyze($refs.colorPhoto.files[0], $refs.agencyField.value)"
                         >
-                            <span x-show="busy" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
+                            <span x-cloak x-show="busy" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
                             <span x-text="busy ? 'Analyse en cours…' : 'Analyser la couleur'">Analyser la couleur</span>
                         </button>
                     </div>

@@ -24,7 +24,7 @@ class AppLayout extends Component
         $notificationPreview = $user->is_platform_admin ? collect() : $this->notifications->recent($user);
         $pageTitle = collect($sections)
             ->flatMap(fn (array $section) => $section['items'])
-            ->first(fn (array $item) => request()->routeIs($item['pattern']))['label'] ?? match (true) {
+            ->first(fn (array $item) => request()->routeIs(...(array) $item['pattern']))['label'] ?? match (true) {
                 request()->routeIs('profile.*') => 'Mon profil',
                 request()->routeIs('password.change-required*') => 'Sécurité du compte',
                 default => 'Espace de travail',

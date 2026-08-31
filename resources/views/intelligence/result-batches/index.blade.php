@@ -6,7 +6,7 @@
             description="Validez un résultat synthétique lié à un snapshot J14-A, puis consignez une décision humaine append-only. Aucun modèle ni aucune action métier ne sont exécutés."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 

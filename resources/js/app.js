@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (invalidField instanceof HTMLElement) {
         invalidField.focus({ preventScroll: true });
-        invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        invalidField.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
     }
 });

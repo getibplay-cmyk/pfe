@@ -1,9 +1,10 @@
 <x-app-layout>
     <div class="mx-auto max-w-6xl space-y-6">
-        <x-page-header :title="$customer->displayName()" eyebrow="Client">
+        <x-page-header :title="$customer->displayName()" eyebrow="Client" :breadcrumbs="[['label' => 'Clients et conducteurs', 'url' => route('customers.index')], ['label' => $customer->displayName()]]">
             <x-slot:actions>
-                @can('update', $customer)<a href="{{ route('customers.edit', $customer) }}" class="rounded-lg border bg-white px-4 py-2 text-sm font-medium">Modifier</a>@endcan
-                @can('archive', $customer)<form method="POST" action="{{ route('customers.destroy', $customer) }}" onsubmit="return confirm('Archiver ce client sans supprimer son historique ?')">@csrf @method('DELETE')<button class="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700">Archiver</button></form>@endcan
+                <a href="{{ route('customers.index') }}" class="rf-button-secondary">Retour aux clients</a>
+                @can('update', $customer)<a href="{{ route('customers.edit', $customer) }}" class="rf-button-secondary">Modifier</a>@endcan
+                @can('archive', $customer)<form method="POST" action="{{ route('customers.destroy', $customer) }}" onsubmit="return confirm('Archiver ce client sans supprimer son historique ?')">@csrf @method('DELETE')<button class="rf-button-danger">Archiver</button></form>@endcan
             </x-slot:actions>
         </x-page-header>
         <x-form-errors />

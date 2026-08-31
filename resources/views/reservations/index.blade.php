@@ -26,7 +26,7 @@
                             <p class="mt-1 text-sm text-slate-600">
                                 Agence : <span class="font-medium text-slate-800" x-text="scope.agency || 'À sélectionner'"></span>
                             </p>
-                            <p x-show="generatedAt" class="mt-1 text-sm text-slate-500">
+                            <p x-cloak x-show="generatedAt" class="mt-1 text-sm text-slate-500">
                                 Générée le <span x-text="formatGeneratedAt(generatedAt)"></span>
                             </p>
                         </div>
@@ -38,7 +38,7 @@
                                 x-bind:disabled="busy || !available || !agencyId"
                                 x-bind:aria-busy="busy.toString()"
                             >
-                                <svg x-show="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg x-cloak x-show="busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
                                 </svg>
@@ -47,10 +47,11 @@
                         @endif
                     </div>
 
-                    <p class="text-sm text-slate-700" role="status" aria-live="polite" x-text="message">{{ $demandForecastAssistant['initial']['message'] }}</p>
+                    <x-loading-state x-cloak x-show="busy" message="Préparation de la prévision…" />
+                    <p x-show="! busy" class="text-sm text-slate-700" role="status" aria-live="polite" x-text="message">{{ $demandForecastAssistant['initial']['message'] }}</p>
 
                     <div x-show="forecasts.length === 7" class="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]">
-                        <div class="h-72 rounded-xl border border-slate-200 bg-white p-3">
+                        <div class="rf-chart-surface">
                             <canvas
                                 x-ref="forecastChart"
                                 role="img"

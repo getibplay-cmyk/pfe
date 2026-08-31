@@ -1,5 +1,6 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
+import { ATLAS_COLORS } from './resources/js/atlas-tokens.js';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -7,6 +8,7 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        './resources/js/**/*.js',
     ],
 
     theme: {
@@ -15,12 +17,13 @@ export default {
                 sans: ['Inter', 'Segoe UI', ...defaultTheme.fontFamily.sans],
             },
             colors: {
+                atlas: ATLAS_COLORS,
                 brand: {
-                    50: '#eef7ff', 100: '#d9edff', 200: '#bce0ff', 300: '#8ecfff',
-                    400: '#59b3ff', 500: '#338ff8', 600: '#1d70ed', 700: '#1859da',
-                    800: '#1a49b0', 900: '#1b408a', 950: '#162954',
+                    50: '#EFF6FF', 100: '#DBEAFE', 200: '#BFDBFE', 300: '#93C5FD',
+                    400: '#60A5FA', 500: '#3B82F6', 600: '#2563EB', 700: '#1D4ED8',
+                    800: '#1E40AF', 900: '#1E3A8A', 950: '#172554',
                 },
-                fleet: { 500: '#0f9f8f', 600: '#0b8277', 700: '#0f665f' },
+                fleet: { 500: '#22C55E', 600: '#16A34A', 700: '#15803D' },
             },
             boxShadow: {
                 panel: '0 1px 2px rgb(15 23 42 / 0.05), 0 8px 24px rgb(15 23 42 / 0.04)',

@@ -1,28 +1,28 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="Assistant dommages · {{ $contract['backend'] === 'rtdetrv2_s' ? 'RT-DETRv2-S' : 'EfficientNetV2-S' }}"
-            eyebrow="Intelligence consultative"
+            title="Analyse des dommages"
+            eyebrow="Aide à la décision"
             description="Analysez une photo privée liée à une inspection de retour, visualisez des zones candidates puis consignez une vérification humaine. Aucun dommage, frais ou responsabilité n’est créé automatiquement."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 
-        <x-section-card title="État du runtime" description="Activation explicite, artefacts privés vérifiés et inférence asynchrone sur la queue Intelligence.">
+        <x-section-card title="Disponibilité du service" description="Les photos restent privées et chaque résultat doit être validé pendant l’inspection.">
             <div class="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Feature flag</p>
-                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Activé' : 'Désactivé par défaut' }}</p>
+                    <p class="text-slate-500">Accès au service</p>
+                    <p class="mt-1 font-semibold {{ $runtime['enabled'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['enabled'] ? 'Disponible' : 'Désactivé par défaut' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">ONNX / carte du modèle</p>
-                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'SHA-256 privés vérifiés' : 'Installation requise' }}</p>
+                    <p class="text-slate-500">Fichiers nécessaires</p>
+                    <p class="mt-1 font-semibold {{ $runtime['artifact_ready'] ? 'text-emerald-700' : 'text-amber-800' }}">{{ $runtime['artifact_ready'] ? 'Vérifiés' : 'Installation requise' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <p class="text-slate-500">Calcul</p>
-                    <p class="mt-1 font-semibold text-slate-900">{{ $runtime['provider'] === 'CUDAExecutionProvider' ? 'GPU CUDA' : 'CPU ONNX Runtime' }}</p>
+                    <p class="text-slate-500">Traitement</p>
+                    <p class="mt-1 font-semibold text-slate-900">{{ $runtime['provider'] === 'CUDAExecutionProvider' ? 'Accéléré' : 'Local' }}</p>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
                     <p class="text-slate-500">Effet métier</p>

@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
             title="Rapports opérationnels et financiers"
-            eyebrow="Pilotage"
+            eyebrow="Aide à la décision"
             description="Indicateurs explicables de votre périmètre autorisé. Les montants restent séparés par devise."
         >
             <x-slot:actions>

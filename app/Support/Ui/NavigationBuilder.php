@@ -13,18 +13,23 @@ class NavigationBuilder
                 [
                     'label' => 'Vue d’ensemble',
                     'items' => [
-                        $this->item('platform-dashboard', 'Vue plateforme', 'platform.dashboard', 'platform.dashboard'),
+                        $this->item('platform-dashboard', 'Tableau de bord', 'platform.dashboard', 'platform.dashboard'),
                         $this->item('platform-statistics', 'Statistiques', 'platform.statistics.index', 'platform.statistics.*'),
                     ],
                 ],
                 [
-                    'label' => 'Administration',
+                    'label' => 'Entreprises et facturation',
                     'items' => [
                         $this->item('platform-tenants', 'Entreprises clientes', 'platform.tenants.index', 'platform.tenants.*'),
-                        $this->item('platform-plans', 'Plans SaaS', 'platform.plans.index', 'platform.plans.*'),
+                        $this->item('platform-plans', 'Offres RentFleet', 'platform.plans.index', 'platform.plans.*'),
                         $this->item('platform-subscriptions', 'Abonnements', 'platform.subscriptions.index', 'platform.subscriptions.*'),
-                        $this->item('platform-saas-payments', 'Paiements SaaS', 'platform.saas-payments.index', 'platform.saas-payments.*'),
-                        $this->item('platform-intelligence', 'Assistances intelligentes', 'platform.intelligence.index', 'platform.intelligence.*'),
+                        $this->item('platform-saas-payments', 'Paiements', 'platform.saas-payments.index', 'platform.saas-payments.*'),
+                    ],
+                ],
+                [
+                    'label' => 'Modèles IA',
+                    'items' => [
+                        $this->item('platform-intelligence', 'Modèles IA et accès', 'platform.intelligence.index', 'platform.intelligence.*'),
                     ],
                 ],
             ];
@@ -35,20 +40,16 @@ class NavigationBuilder
                 $this->item('dashboard', 'Tableau de bord', 'dashboard', 'dashboard'),
                 $this->item('notifications', 'Notifications', 'notifications.index', 'notifications.*'),
             ]),
-            $this->section('Exploitation', [
+            $this->section('Activité locative', [
                 $this->when($user, 'reservation.view', $this->item('availability', 'Disponibilité', 'availability.index', 'availability.*')),
-                $this->when($user, 'customer.view', $this->item('customers', 'Clients et conducteurs', 'customers.index', 'customers.*')),
-            ]),
-            $this->section('Locations', [
                 $this->when($user, 'reservation.view', $this->item('reservations', 'Réservations', 'reservations.index', 'reservations.*')),
                 $this->when($user, 'contract.view', $this->item('contracts', 'Contrats', 'contracts.index', 'contracts.*')),
+                $this->when($user, 'customer.view', $this->item('customers', 'Clients et conducteurs', 'customers.index', ['customers.*', 'drivers.*'])),
                 $this->when($user, 'pricing.view', $this->item('pricing', 'Tarification', 'pricing-rules.index', 'pricing-rules.*')),
             ]),
-            $this->section('Flotte', [
+            $this->section('Parc automobile', [
                 $this->when($user, 'vehicle.view', $this->item('vehicles', 'Véhicules', 'vehicles.index', 'vehicles.*')),
                 $this->when($user, 'vehicle.view', $this->item('vehicle-categories', 'Catégories', 'vehicle-categories.index', 'vehicle-categories.*')),
-                $this->when($user, 'fleet.distance.view', $this->item('agency-distances', 'Distances inter-agences', 'agency-distances.index', 'agency-distances.*')),
-                $this->whenOperationalPlanner($user, $this->item('fleet-reallocation-planning', 'Planification de réallocation', 'fleet.reallocation-planning.index', 'fleet.reallocation-planning.*')),
                 $this->when($user, 'vehicle_block.manage', $this->item('vehicle-blocks', 'Blocs véhicules', 'vehicle-blocks.index', 'vehicle-blocks.*')),
                 $this->when($user, 'maintenance.view', $this->item('maintenance', 'Maintenance', 'maintenance.index', 'maintenance.*')),
                 $this->when($user, 'insurance.view', $this->item('insurance', 'Assurance', 'insurance.index', 'insurance.*')),
@@ -56,8 +57,10 @@ class NavigationBuilder
             $this->section('Finance', [
                 $this->whenAny($user, ['invoice.view', 'payment.view', 'deposit.view', 'expense.view'], $this->item('finance', 'Finance', 'finance.index', 'finance.*')),
             ]),
-            $this->section('Pilotage', [
-                $this->when($user, 'prediction.view', $this->item('intelligence', 'Intelligence', 'intelligence.index', 'intelligence.*')),
+            $this->section('Aide à la décision', [
+                $this->when($user, 'fleet.distance.view', $this->item('agency-distances', 'Distances inter-agences', 'agency-distances.index', 'agency-distances.*')),
+                $this->whenOperationalPlanner($user, $this->item('fleet-reallocation-planning', 'Planification des réallocations', 'fleet.reallocation-planning.index', 'fleet.reallocation-planning.*')),
+                $this->when($user, 'prediction.view', $this->item('intelligence', 'Analyses et prévisions', 'intelligence.index', 'intelligence.*')),
                 $this->when($user, 'report.view', $this->item('reports', 'Rapports', 'reports.index', 'reports.*')),
             ]),
             $this->section('Administration', [
@@ -78,7 +81,7 @@ class NavigationBuilder
         return $items === [] ? null : compact('label', 'items');
     }
 
-    private function item(string $key, string $label, string $route, string $pattern): array
+    private function item(string $key, string $label, string $route, string|array $pattern): array
     {
         return compact('key', 'label', 'route', 'pattern');
     }

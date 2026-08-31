@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="rf-page">
-        <x-page-header :title="$tenant->name" :eyebrow="'Entreprise cliente · '.$tenant->slug" description="Structure, abonnement, paiements SaaS et assistances autorisées.">
-            <x-slot:actions><x-status-badge :value="$tenant->status" /><a href="{{ route('platform.tenants.edit', $tenant) }}" class="rf-button-primary">Modifier</a></x-slot:actions>
+        <x-page-header :title="$tenant->name" eyebrow="Entreprise cliente" description="Structure, abonnement, paiements et modèles IA autorisés." :breadcrumbs="[['label' => 'Entreprises clientes', 'url' => route('platform.tenants.index')], ['label' => $tenant->name]]">
+            <x-slot:actions><x-status-badge :value="$tenant->status" /><a href="{{ route('platform.tenants.index') }}" class="rf-button-secondary">Retour aux entreprises</a><a href="{{ route('platform.tenants.edit', $tenant) }}" class="rf-button-primary">Modifier</a></x-slot:actions>
         </x-page-header>
 
         <x-form-errors />

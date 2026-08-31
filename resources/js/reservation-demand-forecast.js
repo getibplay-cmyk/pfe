@@ -8,6 +8,7 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
+import { atlasChartColors, atlasCartesianScales } from './atlas-chart-theme.js';
 
 Chart.register(
     CategoryScale,
@@ -225,6 +226,9 @@ export function createReservationDemandForecast(config = {}) {
 }
 
 export function chartConfiguration(forecasts) {
+    const colors = atlasChartColors();
+    const scales = atlasCartesianScales();
+
     return {
         type: 'line',
         data: {
@@ -232,10 +236,10 @@ export function chartConfiguration(forecasts) {
             datasets: [{
                 label: 'Demande prévue',
                 data: forecasts.map((forecast) => forecast.predictedDemand),
-                borderColor: '#ea580c',
-                backgroundColor: '#ea580c',
-                pointBackgroundColor: '#1d4ed8',
-                pointBorderColor: '#ffffff',
+                borderColor: colors.blue,
+                backgroundColor: colors.blue,
+                pointBackgroundColor: colors.orange,
+                pointBorderColor: colors.surface,
                 pointBorderWidth: 2,
                 pointRadius: 4,
                 tension: 0.3,
@@ -248,15 +252,16 @@ export function chartConfiguration(forecasts) {
             interaction: { intersect: false, mode: 'index' },
             scales: {
                 y: {
-                    beginAtZero: true,
+                    ...scales.y,
                     title: { display: true, text: 'Départs prévus' },
                 },
                 x: {
+                    ...scales.x,
                     title: { display: true, text: 'Date' },
                 },
             },
             plugins: {
-                legend: { display: true },
+                legend: { display: true, labels: { color: colors.muted } },
             },
         },
     };

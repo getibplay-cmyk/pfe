@@ -1,7 +1,8 @@
 <x-app-layout>
     <div class="mx-auto max-w-6xl space-y-6">
-        <x-page-header :title="$vehicle->registration_number.' · '.$vehicle->brand.' '.$vehicle->model" :eyebrow="$vehicle->category->name" description="Fiche opérationnelle du véhicule, de ses indisponibilités et de ses documents privés.">
+        <x-page-header :title="$vehicle->registration_number.' · '.$vehicle->brand.' '.$vehicle->model" :eyebrow="$vehicle->category->name" description="Fiche opérationnelle du véhicule, de ses indisponibilités et de ses documents privés." :breadcrumbs="[['label' => 'Véhicules', 'url' => route('vehicles.index')], ['label' => $vehicle->registration_number]]">
             <x-slot:actions>
+                <a href="{{ route('vehicles.index') }}" class="rf-button-secondary">Retour aux véhicules</a>
                 @can('viewAny', App\Models\VehicleBlock::class)<a href="{{ route('vehicle-blocks.index', ['vehicle_id' => $vehicle->id]) }}" class="rf-button-secondary">Voir les blocs</a>@endcan
                 @can('create', App\Models\VehicleBlock::class)<a href="{{ route('vehicle-blocks.create', ['vehicle_id' => $vehicle->id]) }}" class="rf-button-secondary">Créer un bloc</a>@endcan
                 @can('update', $vehicle)<a href="{{ route('vehicles.edit', $vehicle) }}" class="rf-button-primary">Modifier</a>@endcan

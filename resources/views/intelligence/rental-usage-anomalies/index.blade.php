@@ -2,11 +2,11 @@
     <div class="rf-page">
         <x-page-header
             title="Usage atypique à vérifier"
-            eyebrow="Intelligence"
+            eyebrow="Aide à la décision"
             description="Une file consultative pour vérifier certains retours de location, sans modifier les contrats ni la facturation."
         >
             <x-slot:actions>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 

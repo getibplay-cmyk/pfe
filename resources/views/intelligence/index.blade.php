@@ -1,9 +1,9 @@
 <x-app-layout>
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
-            title="Intelligence et export anonymisé"
-            eyebrow="Pilotage"
-            description="Préparez des datasets réels tenant/agence-scopés, consultez les preuves gelées et accédez aux prévisions de demande en mode consultatif."
+            title="Aide à la décision"
+            eyebrow="Analyses et prévisions"
+            description="Consultez les prévisions et suggestions disponibles dans les agences auxquelles vous avez accès. Toutes les décisions restent sous contrôle humain."
         />
 
         <x-section-card

@@ -10,9 +10,10 @@
         ];
     @endphp
     <div class="rf-page">
-        <x-page-header :title="$contract->contract_number" eyebrow="Contrat de location" description="Cycle contractuel, preuves documentaires et situation financière dans la devise du contrat.">
+        <x-page-header :title="$contract->contract_number" eyebrow="Contrat de location" description="Cycle contractuel, documents et situation financière dans la devise du contrat." :breadcrumbs="[['label' => 'Contrats', 'url' => route('contracts.index')], ['label' => $contract->contract_number]]">
             <x-slot:actions>
                 <x-status-badge :value="$contract->status" />
+                <a href="{{ route('contracts.index') }}" class="rf-button-secondary">Retour aux contrats</a>
                 <a href="{{ route('contracts.print', $contract) }}" class="rf-button-secondary" target="_blank" rel="noopener">Aperçu du contrat</a>
                 <a href="{{ route('contracts.print', ['contract' => $contract, 'print' => 1]) }}" class="rf-button-primary" target="_blank" rel="noopener">Imprimer le contrat</a>
             </x-slot:actions>
@@ -140,26 +141,25 @@
                             <template x-for="photo in photos" :key="photo.id">
                                 <article class="rounded-xl border border-slate-200 bg-white p-3">
                                     <div class="flex items-start gap-3">
-                                        <img x-show="photo.preview" :src="photo.preview" alt="Photo sélectionnée pour l’inspection de retour" class="h-24 w-32 rounded-lg object-cover">
+                                        <img x-cloak x-show="photo.preview" :src="photo.preview" alt="Photo sélectionnée pour l’inspection de retour" class="h-24 w-32 rounded-lg object-cover">
                                         <div class="min-w-0 flex-1">
                                             <p class="truncate text-sm font-semibold" x-text="photo.name"></p>
                                             <div class="mt-2 flex flex-wrap gap-2">
                                                 <button type="button" class="rf-button-secondary" x-on:click="analyze(photo)" :disabled="photo.phase === 'uploading' || photo.phase === 'processing'">Analyser cette photo</button>
-                                                <button type="button" class="rf-button-ghost" x-on:click="removePhoto(photo)">Retirer</button>
+                                                <x-quiet-button x-on:click="removePhoto(photo)">Retirer</x-quiet-button>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mt-3 text-sm" aria-live="polite">
-                                        <p x-show="photo.phase === 'uploading' || photo.phase === 'processing'" class="font-medium text-blue-800">Analyse en cours…</p>
-                                        <p x-show="photo.message" x-text="photo.message" class="text-slate-700"></p>
-                                        <ul x-show="photo.detections.length > 0" class="mt-2 space-y-1">
+                                        <p x-cloak x-show="photo.message" x-text="photo.message" class="text-slate-700" role="status" aria-live="polite"></p>
+                                        <ul x-cloak x-show="photo.detections.length > 0" class="mt-2 space-y-1">
                                             <template x-for="(detection, index) in photo.detections" :key="index">
                                                 <li class="rounded bg-amber-50 px-2 py-1 text-amber-950"><span x-text="detection.label"></span> — confiance indicative <span x-text="confidenceText(detection.confidence)"></span></li>
                                             </template>
                                         </ul>
-                                        <div x-show="photo.detections.length > 0" class="mt-3 flex flex-wrap gap-2">
-                                            <button x-show="! photo.suggestionApplied" type="button" class="rf-button-secondary" x-on:click="addSuggestion(photo)">Ajouter aux observations</button>
-                                            <button x-show="photo.suggestionApplied" type="button" class="rf-button-ghost" x-on:click="removeSuggestion(photo)">Supprimer la suggestion</button>
+                                        <div x-cloak x-show="photo.detections.length > 0" class="mt-3 flex flex-wrap gap-2">
+                                            <button x-cloak x-show="! photo.suggestionApplied" type="button" class="rf-button-secondary" x-on:click="addSuggestion(photo)">Ajouter aux observations</button>
+                                            <x-quiet-button x-cloak x-show="photo.suggestionApplied" x-on:click="removeSuggestion(photo)">Supprimer la suggestion</x-quiet-button>
                                         </div>
                                     </div>
                                 </article>

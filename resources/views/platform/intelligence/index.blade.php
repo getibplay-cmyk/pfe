@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="rf-page">
-        <x-page-header title="Fonctionnalités intelligentes" eyebrow="Administration de la plateforme" description="Contrôlez l’accès de chaque entreprise aux assistants intégrés, sans modifier leurs modèles ni leurs paramètres scientifiques."></x-page-header>
+        <x-page-header title="Modèles IA et activation" eyebrow="Administration de la plateforme" description="Contrôlez l’accès de chaque entreprise aux aides à la décision disponibles, sans lancer de traitement."></x-page-header>
         <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">Une autorisation ne lance aucun traitement. L’utilisateur conserve ses permissions métier habituelles et toutes les suggestions restent consultatives.</div>
         <x-form-errors />
 

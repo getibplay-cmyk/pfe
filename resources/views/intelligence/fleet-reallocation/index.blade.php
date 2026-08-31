@@ -2,7 +2,7 @@
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
             title="Propositions de réallocation OR-Tools"
-            eyebrow="Intelligence consultative"
+            eyebrow="Aide à la décision"
             description="Lancez réellement le solveur OR-Tools sur un scénario synthétique qualifié, puis vérifiez et révisez son résultat sans déplacer aucun véhicule."
         >
             <x-slot:actions>
@@ -10,7 +10,7 @@
                     <a href="{{ route('agency-distances.index') }}" class="rf-button-secondary">Distances inter-agences</a>
                 @endcan
                 <a href="{{ route('intelligence.fleet-reallocation.index') }}" class="rf-button-secondary">Actualiser</a>
-                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour à Intelligence</a>
+                <a href="{{ route('intelligence.index') }}" class="rf-button-secondary">Retour aux analyses</a>
             </x-slot:actions>
         </x-page-header>
 

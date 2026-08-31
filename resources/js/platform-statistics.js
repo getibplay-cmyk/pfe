@@ -7,34 +7,36 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import { atlasCartesianScales, atlasChartColors } from './atlas-chart-theme.js';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
-const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    plugins: {
-        legend: { display: false },
-        tooltip: { intersect: false },
-    },
-    scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { precision: 0 } },
-    },
-};
-
-function renderBar(canvas, labels, values, color) {
-    if (! (canvas instanceof HTMLCanvasElement)) return;
-
-    new Chart(canvas, {
+export function platformChartConfiguration(labels, values, color) {
+    return {
         type: 'bar',
         data: {
             labels,
-            datasets: [{ data: values, backgroundColor: color, borderRadius: 6 }],
+            datasets: [{ data: values, backgroundColor: color, borderRadius: 6, maxBarThickness: 44 }],
         },
-        options: chartOptions,
-    });
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { intersect: false },
+            },
+            scales: atlasCartesianScales({ integer: true }),
+        },
+    };
+}
+
+export function renderPlatformBar(canvas, labels, values, color, ChartClass = Chart) {
+    if (typeof HTMLCanvasElement === 'undefined' || ! (canvas instanceof HTMLCanvasElement)) return null;
+
+    ChartClass.getChart(canvas)?.destroy();
+
+    return new ChartClass(canvas, platformChartConfiguration(labels, values, color));
 }
 
 export function initializePlatformStatistics() {
@@ -49,17 +51,19 @@ export function initializePlatformStatistics() {
             return;
         }
 
-        renderBar(
+        const colors = atlasChartColors(root);
+
+        renderPlatformBar(
             root.querySelector('[data-platform-chart="states"]'),
             payload.states?.labels ?? [],
             payload.states?.values ?? [],
-            '#1d4ed8',
+            colors.blue,
         );
-        renderBar(
+        renderPlatformBar(
             root.querySelector('[data-platform-chart="activity"]'),
             payload.activity?.labels ?? [],
             payload.activity?.values ?? [],
-            '#f97316',
+            colors.orange,
         );
     });
 }

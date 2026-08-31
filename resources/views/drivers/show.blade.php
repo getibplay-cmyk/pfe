@@ -1,9 +1,10 @@
 <x-app-layout>
     <div class="mx-auto max-w-5xl space-y-6">
-        <x-page-header :title="$driver->first_name.' '.$driver->last_name" eyebrow="Conducteur" :description="'Client : '.$driver->customer->displayName()">
+        <x-page-header :title="$driver->first_name.' '.$driver->last_name" eyebrow="Conducteur" :description="'Client : '.$driver->customer->displayName()" :breadcrumbs="[['label' => 'Clients et conducteurs', 'url' => route('customers.index')], ['label' => $driver->customer->displayName(), 'url' => route('customers.show', $driver->customer)], ['label' => $driver->first_name.' '.$driver->last_name]]">
             <x-slot:actions>
-                @can('update', $driver)<a href="{{ route('drivers.edit', $driver) }}" class="rounded-lg border bg-white px-4 py-2 text-sm font-medium">Modifier</a>@endcan
-                @can('archive', $driver)<form method="POST" action="{{ route('drivers.destroy', $driver) }}" onsubmit="return confirm('Archiver ce conducteur ?')">@csrf @method('DELETE')<button class="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm text-red-700">Archiver</button></form>@endcan
+                <a href="{{ route('customers.show', $driver->customer) }}" class="rf-button-secondary">Retour au client</a>
+                @can('update', $driver)<a href="{{ route('drivers.edit', $driver) }}" class="rf-button-secondary">Modifier</a>@endcan
+                @can('archive', $driver)<form method="POST" action="{{ route('drivers.destroy', $driver) }}" onsubmit="return confirm('Archiver ce conducteur ?')">@csrf @method('DELETE')<button class="rf-button-danger">Archiver</button></form>@endcan
             </x-slot:actions>
         </x-page-header>
         <x-form-errors />

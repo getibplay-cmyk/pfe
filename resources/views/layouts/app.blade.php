@@ -20,7 +20,7 @@
 @endphp
 <a href="#contenu" class="rf-skip-link">Aller au contenu principal</a>
 <div x-data="appShell" data-component="app-shell" class="min-h-screen lg:flex">
-    <aside class="hidden w-72 shrink-0 flex-col bg-slate-950 px-5 py-6 text-white lg:flex" aria-label="Barre latérale">
+    <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-atlas-ink px-5 py-6 text-white lg:flex" aria-label="Barre latérale">
         <a href="{{ $home }}" class="rounded-lg px-2" aria-label="RentFleet — accueil">
             <x-brand-logo surface="dark" />
         </a>
@@ -42,10 +42,10 @@
     </aside>
 
     <div class="min-w-0 flex-1">
-        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6" aria-label="En-tête de l’application">
+        <header class="sticky top-0 z-30 border-b border-atlas-border bg-white px-4 py-3 sm:px-6" aria-label="En-tête de l’application">
             <div class="flex items-center justify-between gap-4">
                 <div class="flex min-w-0 items-center gap-3">
-                    <button x-ref="menuButton" type="button" @click="openMenu($el)" class="rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50 lg:hidden" aria-label="Ouvrir le menu principal" :aria-expanded="mobileMenu.toString()" aria-controls="navigation-mobile">
+                    <button x-ref="menuButton" type="button" @click="openMenu($el)" class="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-atlas-border p-2 text-atlas-text hover:bg-brand-50 lg:hidden" aria-label="Ouvrir le menu principal" :aria-expanded="mobileMenu.toString()" aria-controls="navigation-mobile">
                         <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     <div class="min-w-0">

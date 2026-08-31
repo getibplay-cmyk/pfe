@@ -24,7 +24,7 @@
             <x-stat-card label="Entreprises actives" :value="$statistics['totals']['active_tenants']" tone="success" />
             <x-stat-card label="Paiements SaaS enregistrés" :value="$statistics['totals']['recorded_saas_payments']" />
             <x-stat-card label="Traitements en échec" :value="$statistics['totals']['failed_jobs']" :tone="$statistics['totals']['failed_jobs'] > 0 ? 'danger' : 'success'" />
-            <x-stat-card label="Travaux en attente" :value="$statistics['totals']['jobs']" :tone="$statistics['totals']['jobs'] > 0 ? 'warning' : 'success'" />
+            <x-stat-card label="Opérations en attente" :value="$statistics['totals']['jobs']" :tone="$statistics['totals']['jobs'] > 0 ? 'warning' : 'success'" />
             <x-stat-card label="Agences" :value="$statistics['totals']['agencies']" />
             <x-stat-card label="Utilisateurs" :value="$statistics['totals']['users']" />
             <x-stat-card label="Véhicules" :value="$statistics['totals']['vehicles']" />
@@ -33,7 +33,7 @@
 
         <div class="grid gap-6 xl:grid-cols-2">
             <x-section-card title="Entreprises et abonnements par état" description="Le tableau reste la référence accessible du graphique.">
-                <div class="h-72"><canvas data-platform-chart="states" aria-label="Entreprises et abonnements par état" aria-describedby="platform-states-table"></canvas></div>
+                <div class="rf-chart-surface"><canvas role="img" data-platform-chart="states" aria-label="Entreprises et abonnements par état" aria-describedby="platform-states-table"></canvas></div>
                 <div id="platform-states-table" class="mt-6 grid gap-4 sm:grid-cols-2">
                     <table class="w-full text-sm"><caption class="mb-2 text-left font-semibold">Entreprises</caption><tbody>@foreach($statistics['tenant_states'] as $state)<tr class="border-t"><th scope="row" class="py-2 text-left font-medium">{{ $state['label'] }}</th><td class="py-2 text-right">{{ $state['total'] }}</td></tr>@endforeach</tbody></table>
                     <table class="w-full text-sm"><caption class="mb-2 text-left font-semibold">Abonnements</caption><tbody>@foreach($statistics['subscription_states'] as $state)<tr class="border-t"><th scope="row" class="py-2 text-left font-medium">{{ $state['label'] }}</th><td class="py-2 text-right">{{ $state['total'] }}</td></tr>@endforeach</tbody></table>
@@ -41,7 +41,7 @@
             </x-section-card>
 
             <x-section-card title="Analyses mensuelles" description="Nombre total d’analyses consultatives demandées pendant la période.">
-                <div class="h-72"><canvas data-platform-chart="activity" aria-label="Analyses mensuelles" aria-describedby="platform-activity-table"></canvas></div>
+                <div class="rf-chart-surface"><canvas role="img" data-platform-chart="activity" aria-label="Analyses mensuelles" aria-describedby="platform-activity-table"></canvas></div>
                 <table id="platform-activity-table" class="mt-6 w-full text-sm"><caption class="sr-only">Analyses mensuelles</caption><thead><tr class="border-b"><th scope="col" class="py-2 text-left">Mois</th><th scope="col" class="py-2 text-right">Analyses</th></tr></thead><tbody>@foreach($statistics['monthly_runs'] as $month)<tr class="border-t"><th scope="row" class="py-2 text-left font-medium">{{ $month['label'] }}</th><td class="py-2 text-right">{{ $month['total'] }}</td></tr>@endforeach</tbody></table>
             </x-section-card>
         </div>

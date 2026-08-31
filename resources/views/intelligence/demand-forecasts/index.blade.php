@@ -2,8 +2,8 @@
     <div class="mx-auto max-w-7xl space-y-6">
         <x-page-header
             title="Prévision de demande D+1 à D+7"
-            eyebrow="Intelligence consultative"
-            description="Préparez l’historique quotidien RentFleet, exécutez le modèle HGB authentique depuis le SaaS et examinez ses scénarios expliqués, sans action automatique."
+            eyebrow="Aide à la décision"
+            description="Préparez une prévision sur sept jours, examinez les scénarios proposés et gardez la décision finale."
         />
 
         @if (session('status'))
@@ -14,15 +14,14 @@
 
         <div class="rounded-xl border p-4 text-sm leading-6 {{ $runtime['ready'] ? 'border-emerald-200 bg-emerald-50 text-emerald-950' : 'border-amber-200 bg-amber-50 text-amber-950' }}">
             @if ($runtime['ready'])
-                <span class="font-semibold">Runtime HGB disponible :</span>
-                bundle J5 authentique présent dans le stockage privé et empreinte SHA-256 exacte vérifiée. Les calculs passent par la queue <code>intelligence</code>.
+                <span class="font-semibold">Service de prévision disponible.</span>
+                Les fichiers nécessaires sont vérifiés et le traitement peut être demandé depuis RentFleet.
             @elseif (! $runtime['enabled'])
-                <span class="font-semibold">Runtime HGB désactivé :</span>
-                l’import JSON manuel reste disponible, mais aucune inférence ne peut être lancée depuis le SaaS.
+                <span class="font-semibold">Service de prévision non disponible.</span>
+                L’import manuel reste disponible, mais aucune nouvelle prévision ne peut être lancée.
             @else
-                <span class="font-semibold">Runtime HGB incomplet :</span>
-                {{ $runtime['artifact_ready'] ? 'le bundle privé est vérifié, mais la configuration Python ou le script doit être contrôlé.' : 'le bundle J5 exact doit être installé dans le stockage privé.' }}
-                Exécutez <code>php artisan rentfleet:doctor</code> après l’installation.
+                <span class="font-semibold">Service d’analyse temporairement indisponible.</span>
+                Contactez l’administrateur de la plateforme avant de relancer une prévision.
             @endif
         </div>
 
@@ -165,7 +164,7 @@
                                             <form method="POST" action="{{ route('intelligence.demand-forecast-executions.store', $run) }}" class="mt-3">
                                                 @csrf
                                                 <x-primary-button :disabled="$executionIsActive">
-                                                    {{ $executionIsActive ? 'Exécution déjà active' : 'Exécuter HGB authentique' }}
+                                                    {{ $executionIsActive ? 'Prévision déjà en cours' : 'Générer la prévision' }}
                                                 </x-primary-button>
                                             </form>
                                         @endif
