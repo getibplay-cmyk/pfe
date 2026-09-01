@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
     createBelkhirSpaceLoadingController,
@@ -72,6 +73,12 @@ function timerHarness() {
         get pending() { return callback !== null; },
     };
 }
+
+test('le spinner masqué reste invisible malgré sa classe inline-block', () => {
+    const css = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+
+    assert.match(css, /\.rf-spinner\[hidden\][^{]*\{\s*display:\s*none\s*!important;\s*\}/u);
+});
 
 test('la barre attend 140 ms, expose aria-busy puis se nettoie après succès', () => {
     const elements = fakeLoadingElements();
