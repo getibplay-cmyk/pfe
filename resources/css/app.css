@@ -112,7 +112,7 @@
     }
     .rf-loading-overlay { @apply fixed inset-0 z-[105] grid place-items-center bg-belkhir-space-ink/45 p-5 backdrop-blur-sm; }
     .rf-loading-overlay-card { @apply flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-belkhir-space-border bg-white px-6 py-8 text-center shadow-2xl; }
-    .rf-page-progress[hidden], .rf-loading-overlay[hidden] { display: none !important; }
+    .rf-spinner[hidden], .rf-page-progress[hidden], .rf-loading-overlay[hidden] { display: none !important; }
 
     [data-loading-form][aria-busy='true'] { @apply cursor-wait; }
     [data-loading-form][aria-busy='true'] [data-loading-submit] { @apply pointer-events-none; }
