@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import sys
+import os
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -18,6 +21,7 @@ from recommender_core import (  # noqa: E402
     observed_means,
     train_test_split_per_user,
 )
+import recommender_core as core  # noqa: E402
 
 
 class RecommenderCoreTest(unittest.TestCase):
@@ -60,6 +64,25 @@ class RecommenderCoreTest(unittest.TestCase):
         test_set = np.array([[0, 1, 5], [0, 2, 3], [0, 3, 1]], dtype=np.float32)
         predictions = np.array([[99.0, 5.0, 3.0, 1.0]], dtype=np.float32)
         self.assertAlmostEqual(ndcg_at_k_from_matrix(test_set, predictions, train_mask, 3), 1.0)
+
+    def test_latest_small_uses_fallback_when_archive_is_unavailable(self):
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as temporary:
+            os.chdir(temporary)
+
+            def create_fallback(folder, _files):
+                folder.mkdir(parents=True, exist_ok=True)
+                (folder / "ratings.csv").write_text("userId,movieId,rating,timestamp\n", encoding="utf-8")
+                (folder / "movies.csv").write_text("movieId,title,genres\n", encoding="utf-8")
+
+            try:
+                with patch.object(core, "_download_and_extract", side_effect=RuntimeError("réseau")), \
+                     patch.object(core, "_download_fallback_files", side_effect=create_fallback):
+                    folder = core.ensure_ml_latest_small()
+                    self.assertTrue((folder / "ratings.csv").exists())
+                    self.assertTrue((folder / "movies.csv").exists())
+            finally:
+                os.chdir(previous)
 
 
 if __name__ == "__main__":

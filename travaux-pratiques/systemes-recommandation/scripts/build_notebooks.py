@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from textwrap import dedent
-
-import nbformat as nbf
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,11 +18,31 @@ def markdown(text: str):
     text = text.replace("\x0crac", "\\frac")
     text = text.replace("\rVert", "\\rVert")
     text = text.replace("\x08ar", "\\bar")
-    return nbf.v4.new_markdown_cell(dedent(text).strip())
+    return {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": dedent(text).strip(),
+    }
 
 
 def code(text: str):
-    return nbf.v4.new_code_cell(dedent(text).strip())
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": dedent(text).strip(),
+    }
+
+
+def write_notebook(path: Path, cells: list[dict], title: str) -> None:
+    notebook = {
+        "cells": cells,
+        "metadata": notebook_metadata(title),
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(notebook, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 def notebook_metadata(title: str) -> dict:
@@ -46,7 +65,8 @@ def build_tp1() -> None:
             Réponses aux questions **1.a à 1.o** : matrice d'utilité, filtrage
             user-based et item-based, RMSE, NDCG@10, SVD, choix du rang et
             correction du biais utilisateur. Le notebook est autoportant dans Colab et
-            utilise une graine aléatoire fixée à 42.
+            utilise une graine aléatoire fixée à 42. En cas d'indisponibilité de
+            GroupLens, un miroir de secours est utilisé automatiquement.
             """
         ),
         markdown(
@@ -54,7 +74,9 @@ def build_tp1() -> None:
             ## Préparation
 
             Les fonctions demandées sont définies ci-dessous. Le zéro code une valeur
-            manquante et n'entre jamais dans le calcul des moyennes de notes.
+            manquante et n'entre jamais dans le calcul des moyennes de notes. Dans
+            Colab, sélectionner **Exécution > Tout exécuter** et attendre les messages
+            de progression du téléchargement et de la SVD.
             """
         ),
         code(CORE_SOURCE),
@@ -64,7 +86,10 @@ def build_tp1() -> None:
             from pathlib import Path
             import matplotlib.pyplot as plt
             import seaborn as sns
-            from IPython.display import display
+            try:
+                from IPython.display import display
+            except ModuleNotFoundError:
+                pass  # Le petit exécuteur local injecte déjà une fonction display.
 
             sns.set_theme(style="whitegrid", context="notebook")
             OUTPUT_DIR = Path(os.environ.get("TP_OUTPUT_DIR", "artifacts"))
@@ -105,7 +130,7 @@ def build_tp1() -> None:
             """
         ),
         markdown(
-            """
+            r"""
             ## Question 1.c - Similarité cosinus
 
             $$\operatorname{sim}_{cos}(x,y)=\frac{x^Ty}{\lVert x\rVert_2\lVert y\rVert_2}.$$
@@ -163,7 +188,7 @@ def build_tp1() -> None:
             """
         ),
         markdown(
-            """
+            r"""
             ## Questions 1.g et 1.h - RMSE
 
             $$\operatorname{RMSE}=\sqrt{\frac{1}{n}\sum_{j=1}^n(\hat r_j-r_j)^2}.$$
@@ -208,7 +233,7 @@ def build_tp1() -> None:
             """
         ),
         markdown(
-            """
+            r"""
             ## Questions 1.k à 1.m - SVD, rang optimal et NDCG
 
             NumPy calcule $R=U\Sigma V^T$. La reconstruction au rang $N$ conserve les $N$
@@ -260,7 +285,7 @@ def build_tp1() -> None:
             """
         ),
         markdown(
-            """
+            r"""
             ## Question 1.o - Centrage par utilisateur
 
             On soustrait la moyenne de chaque utilisateur aux seules notes connues, puis on
@@ -349,10 +374,11 @@ def build_tp1() -> None:
             """
         ),
     ]
-    notebook = nbf.v4.new_notebook(
-        cells=cells, metadata=notebook_metadata("TP1_Systemes_de_recommandation.ipynb"))
-    nbf.validate(notebook)
-    nbf.write(notebook, NOTEBOOKS / "TP1_Systemes_de_recommandation.ipynb")
+    write_notebook(
+        NOTEBOOKS / "TP1_Systemes_de_recommandation.ipynb",
+        cells,
+        "TP1_Systemes_de_recommandation.ipynb",
+    )
 
 
 def build_tp2() -> None:
@@ -366,6 +392,8 @@ def build_tp2() -> None:
 
             Notebook complété : matrice d'interactions, densité, cosinus, premières
             prédictions, top-k, influence de $k$, débiaisage, films similaires et Pearson.
+            Dans Colab, sélectionner **Exécution > Tout exécuter**. Le téléchargement
+            bascule automatiquement vers un miroir de secours si GroupLens ne répond pas.
             """
         ),
         code(CORE_SOURCE),
@@ -375,7 +403,10 @@ def build_tp2() -> None:
             from pathlib import Path
             import matplotlib.pyplot as plt
             import seaborn as sns
-            from IPython.display import display
+            try:
+                from IPython.display import display
+            except ModuleNotFoundError:
+                pass  # Le petit exécuteur local injecte déjà une fonction display.
 
             sns.set_theme(style="whitegrid", context="notebook")
             OUTPUT_DIR = Path(os.environ.get("TP_OUTPUT_DIR", "artifacts"))
@@ -608,10 +639,11 @@ def build_tp2() -> None:
             """
         ),
     ]
-    notebook = nbf.v4.new_notebook(
-        cells=cells, metadata=notebook_metadata("TP2_Filtrage_collaboratif.ipynb"))
-    nbf.validate(notebook)
-    nbf.write(notebook, NOTEBOOKS / "TP2_Filtrage_collaboratif.ipynb")
+    write_notebook(
+        NOTEBOOKS / "TP2_Filtrage_collaboratif.ipynb",
+        cells,
+        "TP2_Filtrage_collaboratif.ipynb",
+    )
 
 
 def main() -> None:

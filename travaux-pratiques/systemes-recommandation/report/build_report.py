@@ -535,7 +535,7 @@ def build_report() -> Path:
         doc,
         ["Contrôle", "Mise en œuvre", "Résultat"],
         [
-            ["Données", "Téléchargement GroupLens à l’exécution", "Pas de données redistribuées"],
+            ["Données", "GroupLens puis miroir automatique en secours", "Téléchargement robuste dans Colab"],
             ["Aléatoire", "Graine SEED = 42", "Splits reproductibles"],
             ["Valeurs manquantes", "Zéros exclus des moyennes", "Biais non dilué par la sparsité"],
             ["Fuite de données", "Masques train/test disjoints", "Aucune observation partagée"],
@@ -855,7 +855,7 @@ def build_report() -> Path:
 
     doc.add_heading("6. Livrables et mode d’exécution", level=1)
     add_number(doc, "Ouvrir le notebook TP1_Systemes_de_recommandation.ipynb ou TP2_Filtrage_collaboratif.ipynb dans Colab.", num_id=execution_num)
-    add_number(doc, "Choisir « Exécution > Tout exécuter ». Le notebook télécharge automatiquement le jeu GroupLens requis.", num_id=execution_num)
+    add_number(doc, "Choisir « Exécution > Tout exécuter ». Le notebook télécharge le jeu GroupLens requis et bascule automatiquement vers un miroir si la source ne répond pas.", num_id=execution_num)
     add_number(doc, "Conserver la connexion internet le temps du premier téléchargement ; les exécutions suivantes réutilisent /content/data.", num_id=execution_num)
     add_number(doc, "Les métriques et figures sont écrites dans le dossier artifacts du runtime.", num_id=execution_num)
     doc.add_paragraph("Structure livrée :", style="Table Citation")

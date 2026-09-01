@@ -8,6 +8,8 @@ manquantes ; les moyennes sont donc calculées sur les valeurs observées.
 from __future__ import annotations
 
 import os
+import shutil
+import time
 import urllib.request
 import zipfile
 from collections import defaultdict
@@ -22,14 +24,49 @@ SEED = 42
 EPS = 1e-12
 
 
+def _download_file(url: str, destination: Path, timeout: int = 45) -> None:
+    """Télécharge un fichier avec un délai borné et un User-Agent explicite."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 TP-MovieLens/1.0"})
+    temporary = destination.with_suffix(destination.suffix + ".part")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response, temporary.open("wb") as stream:
+            shutil.copyfileobj(response, stream)
+        temporary.replace(destination)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
 def _download_and_extract(url: str, archive_path: Path, target_parent: Path) -> None:
-    """Télécharge puis extrait une archive MovieLens si elle est absente."""
+    """Télécharge puis extrait une archive MovieLens avec trois tentatives."""
     target_parent.mkdir(parents=True, exist_ok=True)
-    if not archive_path.exists():
-        print(f"Téléchargement de {url}")
-        urllib.request.urlretrieve(url, archive_path)
-    with zipfile.ZipFile(archive_path) as archive:
-        archive.extractall(target_parent)
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            if not archive_path.exists():
+                print(f"Téléchargement GroupLens (tentative {attempt}/3)…")
+                _download_file(url, archive_path)
+            with zipfile.ZipFile(archive_path) as archive:
+                archive.extractall(target_parent)
+            return
+        except Exception as exc:
+            last_error = exc
+            archive_path.unlink(missing_ok=True)
+            if attempt < 3:
+                time.sleep(attempt)
+    raise RuntimeError(f"Téléchargement GroupLens impossible : {last_error}") from last_error
+
+
+def _download_fallback_files(folder: Path, files: dict[str, str]) -> None:
+    """Récupère les seuls fichiers nécessaires depuis un miroir GitHub public."""
+    print("Source GroupLens momentanément indisponible : utilisation du miroir de secours…")
+    folder.mkdir(parents=True, exist_ok=True)
+    for filename, url in files.items():
+        destination = folder / filename
+        if not destination.exists():
+            print(f"  - {filename}")
+            _download_file(url, destination)
 
 
 def ensure_ml_latest_small() -> Path:
@@ -40,11 +77,22 @@ def ensure_ml_latest_small() -> Path:
     root = Path("/content/data") if Path("/content").exists() else Path("data")
     folder = root / "ml-latest-small"
     if not (folder / "ratings.csv").exists():
-        _download_and_extract(
-            "https://files.grouplens.org/datasets/movielens/ml-latest-small.zip",
-            root / "ml-latest-small.zip",
-            root,
-        )
+        try:
+            _download_and_extract(
+                "https://files.grouplens.org/datasets/movielens/ml-latest-small.zip",
+                root / "ml-latest-small.zip",
+                root,
+            )
+        except RuntimeError:
+            _download_fallback_files(
+                folder,
+                {
+                    "ratings.csv": "https://raw.githubusercontent.com/alura-cursos/introducao-a-data-science/master/aula0/ml-latest-small/ratings.csv",
+                    "movies.csv": "https://raw.githubusercontent.com/alura-cursos/introducao-a-data-science/master/aula0/ml-latest-small/movies.csv",
+                },
+            )
+    if not all((folder / name).exists() for name in ("ratings.csv", "movies.csv")):
+        raise FileNotFoundError("MovieLens Latest Small incomplet après téléchargement")
     return folder
 
 
@@ -56,11 +104,22 @@ def ensure_ml100k() -> Path:
     root = Path("/content/data") if Path("/content").exists() else Path("data")
     folder = root / "ml-100k"
     if not (folder / "u.data").exists():
-        _download_and_extract(
-            "https://files.grouplens.org/datasets/movielens/ml-100k.zip",
-            root / "ml-100k.zip",
-            root,
-        )
+        try:
+            _download_and_extract(
+                "https://files.grouplens.org/datasets/movielens/ml-100k.zip",
+                root / "ml-100k.zip",
+                root,
+            )
+        except RuntimeError:
+            _download_fallback_files(
+                folder,
+                {
+                    "u.data": "https://raw.githubusercontent.com/tiepvupsu/ebookML_src/master/src/NBCF/ml-100k/u.data",
+                    "u.item": "https://raw.githubusercontent.com/tiepvupsu/ebookML_src/master/src/NBCF/ml-100k/u.item",
+                },
+            )
+    if not all((folder / name).exists() for name in ("u.data", "u.item")):
+        raise FileNotFoundError("MovieLens 100K incomplet après téléchargement")
     return folder
 
 

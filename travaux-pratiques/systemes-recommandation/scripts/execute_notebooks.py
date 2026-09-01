@@ -11,30 +11,28 @@ import argparse
 import base64
 import contextlib
 import io
+import json
 import os
 import traceback
 from pathlib import Path
-
-import nbformat
-import nbformat as nbf
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def execute(path: Path) -> None:
-    notebook = nbformat.read(path, as_version=4)
+    notebook = json.loads(path.read_text(encoding="utf-8"))
     namespace = {"__name__": "__main__"}
     execution_count = 0
     previous_cwd = Path.cwd()
     os.chdir(ROOT)
     try:
-        for cell in notebook.cells:
-            if cell.cell_type != "code":
+        for cell in notebook["cells"]:
+            if cell["cell_type"] != "code":
                 continue
             execution_count += 1
-            cell.execution_count = execution_count
-            cell.outputs = []
+            cell["execution_count"] = execution_count
+            cell["outputs"] = []
             stdout = io.StringIO()
             stderr = io.StringIO()
             displayed = []
@@ -46,30 +44,28 @@ def execute(path: Path) -> None:
             namespace["display"] = capture_display
             try:
                 with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                    exec(compile(cell.source, f"{path.name}:cell-{execution_count}", "exec"), namespace)
+                    exec(compile(cell["source"], f"{path.name}:cell-{execution_count}", "exec"), namespace)
             except Exception as exc:
                 text = stdout.getvalue()
                 if text:
-                    cell.outputs.append(nbf.v4.new_output("stream", name="stdout", text=text))
+                    cell["outputs"].append({"output_type": "stream", "name": "stdout", "text": text})
                 err = stderr.getvalue()
                 if err:
-                    cell.outputs.append(nbf.v4.new_output("stream", name="stderr", text=err))
-                cell.outputs.append(
-                    nbf.v4.new_output(
-                        "error",
-                        ename=type(exc).__name__,
-                        evalue=str(exc),
-                        traceback=traceback.format_exc().splitlines(),
-                    )
-                )
+                    cell["outputs"].append({"output_type": "stream", "name": "stderr", "text": err})
+                cell["outputs"].append({
+                    "output_type": "error",
+                    "ename": type(exc).__name__,
+                    "evalue": str(exc),
+                    "traceback": traceback.format_exc().splitlines(),
+                })
                 raise
 
             text = stdout.getvalue()
             if text:
-                cell.outputs.append(nbf.v4.new_output("stream", name="stdout", text=text))
+                cell["outputs"].append({"output_type": "stream", "name": "stdout", "text": text})
             err = stderr.getvalue()
             if err:
-                cell.outputs.append(nbf.v4.new_output("stream", name="stderr", text=err))
+                cell["outputs"].append({"output_type": "stream", "name": "stderr", "text": err})
 
             for obj in displayed:
                 data = {"text/plain": repr(obj)}
@@ -77,7 +73,7 @@ def execute(path: Path) -> None:
                     html = obj._repr_html_()
                     if html:
                         data["text/html"] = html
-                cell.outputs.append(nbf.v4.new_output("display_data", data=data, metadata={}))
+                cell["outputs"].append({"output_type": "display_data", "data": data, "metadata": {}})
 
             if "plt" in namespace:
                 plt = namespace["plt"]
@@ -86,17 +82,15 @@ def execute(path: Path) -> None:
                     buffer = io.BytesIO()
                     figure.savefig(buffer, format="png", dpi=120, bbox_inches="tight")
                     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
-                    cell.outputs.append(
-                        nbf.v4.new_output(
-                            "display_data",
-                            data={"image/png": encoded, "text/plain": "<Figure>"},
-                            metadata={},
-                        )
-                    )
+                    cell["outputs"].append({
+                        "output_type": "display_data",
+                        "data": {"image/png": encoded, "text/plain": "<Figure>"},
+                        "metadata": {},
+                    })
                 plt.close("all")
     finally:
         os.chdir(previous_cwd)
-        nbformat.write(notebook, path)
+        path.write_text(json.dumps(notebook, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"Exécuté : {path.name}")
 
 
