@@ -128,7 +128,7 @@
                 </div>
             </x-section-card>
 
-            <x-section-card title="Encaissements SaaS manuels sur 30 jours" description="Montants nets séparés par devise ; aucune conversion implicite.">
+            <x-section-card title="Encaissements SaaS sur 30 jours" description="Paiements manuels et CMI, nets et séparés par devise ; aucune conversion implicite.">
                 <div class="mb-4 grid grid-cols-2 gap-3">
                     <div class="rounded-xl bg-belkhir-space-blue/5 p-3"><p class="text-xs text-slate-500">Paiements</p><p class="mt-1 text-xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['recorded_count']) }}</p></div>
                     <div class="rounded-xl bg-belkhir-space-orange-soft p-3"><p class="text-xs text-slate-600">Contrepassations</p><p class="mt-1 text-xl font-bold text-belkhir-space-orange">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['reversal_count']) }}</p></div>
@@ -142,13 +142,14 @@
         </div>
 
         <x-section-card title="Accès rapides" description="Rejoignez directement les fonctions d’administration les plus utilisées.">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                 @foreach ([
                     ['route' => 'platform.tenants.index', 'label' => 'Entreprises', 'icon' => 'building'],
                     ['route' => 'platform.subscriptions.index', 'label' => 'Abonnements', 'icon' => 'file'],
                     ['route' => 'platform.saas-payments.index', 'label' => 'Paiements', 'icon' => 'payment'],
                     ['route' => 'platform.intelligence.index', 'label' => 'Fonctionnalités intelligentes', 'icon' => 'chart'],
                     ['route' => 'platform.statistics.index', 'label' => 'Statistiques', 'icon' => 'chart'],
+                    ['route' => 'platform.audit-logs.index', 'label' => 'Journal global', 'icon' => 'file'],
                 ] as $shortcut)
                     <a href="{{ route($shortcut['route']) }}" class="group flex min-h-24 flex-col justify-between rounded-xl border border-belkhir-space-border bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:border-belkhir-space-blue/40 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none">
                         <span class="grid h-10 w-10 place-items-center rounded-xl bg-belkhir-space-blue/10 text-belkhir-space-blue"><x-icon :name="$shortcut['icon']" /></span>

@@ -23,7 +23,10 @@
 - [ ] `DB_CONNECTION=pgsql`, aucune connexion SQLite de repli.
 - [ ] sessions chiffrées, cookies secure/httpOnly/SameSite et cache database.
 - [ ] stockage local privé non servi ; aucun `storage:link` nécessaire.
-- [ ] logs quotidiens rotatifs et SMTP configuré avec `MAIL_SCHEME`.
+- [ ] logs quotidiens rotatifs et SMTP réel configuré avec `MAIL_SCHEME` ; vérification et réinitialisation testées de bout en bout.
+- [ ] kit marchand CMI courant archivé sans secret, vecteur `ver3` comparé et bac à sable validé.
+- [ ] secrets CMI injectés par le gestionnaire de secrets ; callback HTTPS déclaré et testé en rejeu/tampering.
+- [ ] remboursement et rapprochement CMI testés dans l’espace marchand avant l’activation production.
 - [ ] HSTS activé seulement avec `APP_ENV=production` et HTTPS.
 - [ ] `DEMO_PASSWORD` vide ; seeders de démonstration interdits.
 - [ ] inscription publique et comptes par défaut absents.

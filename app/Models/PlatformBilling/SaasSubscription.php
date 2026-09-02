@@ -47,6 +47,11 @@ class SaasSubscription extends Model
         return $this->hasMany(SaasPayment::class);
     }
 
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(SaasPaymentAttempt::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

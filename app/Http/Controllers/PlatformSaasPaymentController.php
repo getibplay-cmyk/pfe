@@ -10,8 +10,10 @@ use App\Enums\PlatformBilling\TenantSubscriptionStatus;
 use App\Http\Requests\PlatformBilling\ReverseSaasPaymentRequest;
 use App\Http\Requests\PlatformBilling\StoreSaasPaymentRequest;
 use App\Models\PlatformBilling\SaasPayment;
+use App\Models\PlatformBilling\SaasPaymentAttempt;
 use App\Models\PlatformBilling\SaasSubscription;
 use App\Models\Tenant;
+use App\Support\PlatformBilling\Cmi\CmiConfiguration;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,7 +22,7 @@ use Illuminate\View\View;
 
 class PlatformSaasPaymentController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, CmiConfiguration $cmiConfiguration): View
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
@@ -40,10 +42,17 @@ class PlatformSaasPaymentController extends Controller
             ->latest('occurred_at')
             ->paginate(20)
             ->withQueryString();
+        $attempts = SaasPaymentAttempt::query()
+            ->with(['tenant:id,name,slug', 'subscription.plan:id,name,code'])
+            ->latest()
+            ->limit(50)
+            ->get();
 
         return view('platform.saas-payments.index', [
             'payments' => $payments,
+            'attempts' => $attempts,
             'entryTypes' => SaasPaymentEntryType::cases(),
+            'cmiReadiness' => $cmiConfiguration->readiness(),
         ]);
     }
 
@@ -59,7 +68,10 @@ class PlatformSaasPaymentController extends Controller
         return view('platform.saas-payments.create', [
             'tenant' => $tenant,
             'subscription' => $subscription,
-            'methods' => SaasPaymentMethod::cases(),
+            'methods' => array_values(array_filter(
+                SaasPaymentMethod::cases(),
+                fn (SaasPaymentMethod $method): bool => $method !== SaasPaymentMethod::Cmi,
+            )),
             'idempotencyKey' => (string) Str::uuid(),
         ]);
     }

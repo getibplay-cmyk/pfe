@@ -1,7 +1,7 @@
 <x-app-layout>
     @php($activeFilterCount = collect(['q', 'active'])->filter(fn (string $key): bool => request()->filled($key))->count())
     <div class="rf-page">
-        <x-page-header title="Plans SaaS" eyebrow="Administration de la plateforme" :description="'Définissez les offres commerciales de '.config('brand.name').' sans activer de passerelle bancaire.'">
+        <x-page-header title="Plans SaaS" eyebrow="Administration de la plateforme" :description="'Définissez les offres commerciales publiées par '.config('brand.name').' et utilisées pour les abonnements.'">
             <x-slot:actions><a href="{{ route('platform.subscriptions.index') }}" class="rf-button-secondary"><x-icon name="view" size="xs" />Voir les abonnements</a></x-slot:actions>
         </x-page-header>
 

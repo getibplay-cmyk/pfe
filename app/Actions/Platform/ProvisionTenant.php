@@ -22,7 +22,7 @@ class ProvisionTenant
         private readonly AuditRecorder $audit,
     ) {}
 
-    /** @return array{tenant: Tenant, temporary_password: string} */
+    /** @return array{tenant: Tenant, owner: User, temporary_password: string} */
     public function handle(array $data, int $actorId): array
     {
         return DB::transaction(function () use ($data, $actorId): array {
@@ -53,7 +53,7 @@ class ProvisionTenant
                 ]);
             }
 
-            $this->context->run($tenant, function () use ($tenant, $data, $ownerRole, $temporaryPassword): void {
+            $owner = $this->context->run($tenant, function () use ($tenant, $data, $ownerRole, $temporaryPassword): User {
                 Agency::create([
                     'code' => $data['agency_code'],
                     'name' => $data['agency_name'],
@@ -63,13 +63,13 @@ class ProvisionTenant
                     'is_active' => true,
                 ]);
 
-                User::forceCreate([
+                return User::forceCreate([
                     'tenant_id' => $tenant->id,
                     'agency_id' => null,
                     'role_id' => $ownerRole->id,
                     'name' => $data['owner_name'],
                     'email' => $data['owner_email'],
-                    'email_verified_at' => now(),
+                    'email_verified_at' => null,
                     'password' => Hash::make($temporaryPassword),
                     'is_active' => true,
                     'must_change_password' => true,
@@ -82,7 +82,7 @@ class ProvisionTenant
                 'initial_agency_code' => $data['agency_code'],
             ]);
 
-            return ['tenant' => $tenant, 'temporary_password' => $temporaryPassword];
+            return ['tenant' => $tenant, 'owner' => $owner, 'temporary_password' => $temporaryPassword];
         });
     }
 }

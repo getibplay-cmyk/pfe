@@ -3,6 +3,7 @@
 namespace App\Actions\PlatformBilling;
 
 use App\Enums\PlatformBilling\SaasPaymentEntryType;
+use App\Enums\PlatformBilling\SaasPaymentMethod;
 use App\Models\PlatformBilling\SaasPayment;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Platform\PlatformAdminGuard;
@@ -46,6 +47,11 @@ class ReverseSaasPayment
                 $original = SaasPayment::query()->whereKey($payment)->lockForUpdate()->firstOrFail();
                 if ($original->entry_type !== SaasPaymentEntryType::Payment) {
                     throw ValidationException::withMessages(['payment' => 'Seul un paiement SaaS original peut être contrepassé.']);
+                }
+                if ($original->payment_method === SaasPaymentMethod::Cmi) {
+                    throw ValidationException::withMessages([
+                        'payment' => 'Effectuez et confirmez d’abord le remboursement dans le portail marchand CMI.',
+                    ]);
                 }
 
                 $occurredAt = isset($data['occurred_at'])

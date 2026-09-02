@@ -183,7 +183,7 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-            <x-section-card title="Encaissements SaaS manuels" description="Montants nets après contrepassations, toujours séparés par devise.">
+            <x-section-card title="Encaissements SaaS" description="Paiements manuels et CMI, nets après contrepassations et toujours séparés par devise.">
                 <div class="mb-4 grid grid-cols-2 gap-3">
                     <div class="rounded-xl bg-belkhir-space-blue/5 p-3"><p class="text-xs text-slate-500">Paiements enregistrés</p><p class="mt-1 text-xl font-bold text-belkhir-space-blue">{{ $statistics['payments']['recorded_count'] }}</p></div>
                     <div class="rounded-xl bg-belkhir-space-orange-soft p-3"><p class="text-xs text-slate-600">Contrepassations</p><p class="mt-1 text-xl font-bold text-belkhir-space-orange">{{ $statistics['payments']['reversal_count'] }}</p></div>

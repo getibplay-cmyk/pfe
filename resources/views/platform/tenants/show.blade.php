@@ -46,7 +46,7 @@
                 @else<x-empty-state title="Aucun abonnement courant" description="L’entreprise conserve son accès historique ; un abonnement peut être attribué depuis l’administration." />@endif
             </x-section-card>
 
-            <x-section-card title="Paiements SaaS manuels" description="Registre administratif distinct des paiements de location.">
+            <x-section-card title="Paiements SaaS" description="Registre comptable manuel et CMI, distinct des paiements de location.">
                 <x-slot:actions>
                     @if($currentSubscription)<a href="{{ route('platform.tenants.saas-payments.create', $tenant) }}" class="rf-button-primary"><x-icon name="payment" size="xs" />Enregistrer un paiement</a>
                     @else<span class="text-sm text-slate-500">Abonnement requis</span>@endif
