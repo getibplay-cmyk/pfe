@@ -29,8 +29,7 @@ class ProfileController extends Controller
         ProfileUpdateRequest $request,
         AuditRecorder $audit,
         VerificationNotificationSender $verificationSender,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $old = $request->user()->only(['name', 'email']);
         $request->user()->fill($request->validated());
 

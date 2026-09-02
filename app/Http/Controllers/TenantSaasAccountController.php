@@ -60,12 +60,12 @@ final class TenantSaasAccountController extends Controller
 
         return view('tenant.account-saas', [
             ...compact(
-            'tenant',
-            'currentSubscription',
-            'subscriptions',
-            'payments',
-            'paymentAttempts',
-            'enabledCapabilities',
+                'tenant',
+                'currentSubscription',
+                'subscriptions',
+                'payments',
+                'paymentAttempts',
+                'enabledCapabilities',
             ),
             'cmiReadiness' => $cmiConfiguration->readiness(),
         ]);

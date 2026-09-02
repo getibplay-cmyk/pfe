@@ -94,8 +94,7 @@ class PlatformTenantController extends Controller
         StoreTenantRequest $request,
         ProvisionTenant $action,
         VerificationNotificationSender $verificationSender,
-    ): Response
-    {
+    ): Response {
         $result = $action->handle($request->validated(), $request->user()->id);
         $verificationSent = $verificationSender->send($result['owner']);
 

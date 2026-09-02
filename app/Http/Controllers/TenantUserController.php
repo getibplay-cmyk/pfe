@@ -54,8 +54,7 @@ class TenantUserController extends Controller
         StoreTenantUserRequest $request,
         CreateTenantUser $action,
         VerificationNotificationSender $verificationSender,
-    ): Response
-    {
+    ): Response {
         $result = $action->handle($request->validated(), $request->user());
         $verificationSent = $verificationSender->send($result['user']);
 
@@ -79,8 +78,7 @@ class TenantUserController extends Controller
         User $user,
         UpdateTenantUser $action,
         VerificationNotificationSender $verificationSender,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $oldEmail = $user->email;
         $updated = $action->handle($user, $request->validated(), $request->user());
         $verificationSent = $oldEmail === $updated->email || $verificationSender->send($updated);
@@ -128,8 +126,7 @@ class TenantUserController extends Controller
         string $temporaryPassword,
         string $title,
         ?bool $verificationSent = null,
-    ): Response
-    {
+    ): Response {
         return response()->view('shared.temporary-password', [
             'title' => $title,
             'message' => match ($verificationSent) {
