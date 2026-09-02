@@ -80,7 +80,8 @@ class StartCmiCheckout
                 'paid_at' => null,
             ])->save();
 
-            $this->audit->record('platform.saas_payment.cmi_started', $attempt, [], [
+            $this->audit->record('platform.saas_payment.cmi_started', $locked, [], [
+                'payment_attempt_id' => $attempt->getKey(),
                 'provider' => 'cmi',
                 'merchant_order_id' => $attempt->merchant_order_id,
                 'amount' => $attempt->amount,

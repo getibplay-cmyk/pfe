@@ -74,10 +74,17 @@ class ProcessCmiCallback
                     : $this->result(false, $existingEvent->signature_valid, 200);
             }
 
+            $subscription = SaasSubscription::query()
+                ->whereKey($lockedAttempt->saas_subscription_id)
+                ->where('tenant_id', $lockedAttempt->tenant_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $responseCode = trim((string) $this->value($parameters, 'ProcReturnCode'));
             if (! $signatureValid) {
                 $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, false, SaasGatewayEventResult::Rejected, $responseCode);
-                $this->audit->record('platform.saas_payment.cmi_callback_rejected', $lockedAttempt, [], [
+                $this->audit->record('platform.saas_payment.cmi_callback_rejected', $subscription, [], [
+                    'payment_attempt_id' => $lockedAttempt->getKey(),
                     'reason' => 'invalid_signature',
                 ]);
 
@@ -96,7 +103,8 @@ class ProcessCmiCallback
             if ($localFailure !== null) {
                 $this->declineAttempt($lockedAttempt, $localFailure);
                 $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true, SaasGatewayEventResult::Rejected, $localFailure);
-                $this->audit->record('platform.saas_payment.cmi_callback_rejected', $lockedAttempt, [], [
+                $this->audit->record('platform.saas_payment.cmi_callback_rejected', $subscription, [], [
+                    'payment_attempt_id' => $lockedAttempt->getKey(),
                     'reason' => $localFailure,
                 ]);
 
@@ -106,18 +114,14 @@ class ProcessCmiCallback
             if ($responseCode !== '00') {
                 $this->declineAttempt($lockedAttempt, $responseCode === '' ? 'CMI_DECLINED' : $responseCode);
                 $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true, SaasGatewayEventResult::Declined, $responseCode);
-                $this->audit->record('platform.saas_payment.cmi_declined', $lockedAttempt, [], [
+                $this->audit->record('platform.saas_payment.cmi_declined', $subscription, [], [
+                    'payment_attempt_id' => $lockedAttempt->getKey(),
                     'response_code' => $responseCode,
                 ]);
 
                 return $this->result(false, true, 200);
             }
 
-            $subscription = SaasSubscription::query()
-                ->whereKey($lockedAttempt->saas_subscription_id)
-                ->where('tenant_id', $lockedAttempt->tenant_id)
-                ->lockForUpdate()
-                ->firstOrFail();
             if (! in_array($subscription->status, TenantSubscriptionStatus::current(), true)) {
                 $this->declineAttempt($lockedAttempt, 'LOCAL_SUBSCRIPTION_TERMINAL');
                 $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true, SaasGatewayEventResult::Rejected, 'LOCAL_SUBSCRIPTION_TERMINAL');

@@ -188,7 +188,7 @@ class RentalUsageAnomalyIntegrationTest extends TestCase
             'slug' => 'prediction.anomaly.review',
             'group' => 'prediction',
         ]);
-        $this->assertSame(91, DB::table('migrations')->count());
+        $this->assertSame(92, DB::table('migrations')->count());
     }
 
     public function test_missing_private_snapshot_returns_a_safe_validation_error(): void
