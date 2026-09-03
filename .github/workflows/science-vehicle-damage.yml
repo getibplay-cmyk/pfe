@@ -41,9 +41,18 @@ jobs:
             scripts/intelligence/vehicle_damage/protocol.py \
             scripts/intelligence/vehicle_damage/validate_manifest.py \
             scripts/intelligence/vehicle_damage/train_efficientnetv2s.py \
-            scripts/intelligence/vehicle_damage/build_colab_notebook.py
+            scripts/intelligence/vehicle_damage/build_colab_notebook.py \
+            scripts/intelligence/vehicle_damage_v2/protocol.py \
+            scripts/intelligence/vehicle_damage_v2/stage_hitl_archive.py \
+            scripts/intelligence/vehicle_damage_v2/prepare_hitl_coco.py \
+            scripts/intelligence/vehicle_damage_v2/build_rtdetr_config.py \
+            scripts/intelligence/vehicle_damage_v2/verify_onnx_smoke.py \
+            scripts/intelligence/vehicle_damage_v2/build_colab_notebook.py
           python -m json.tool \
             notebooks/colab/vehicle_damage_efficientnetv2s.ipynb \
+            >/dev/null
+          python -m json.tool \
+            notebooks/colab/vehicle_damage_rtdetrv2.ipynb \
             >/dev/null
           python -m json.tool \
             docs/intelligence/schemas/vehicle-damage-result-v1.0.0.json \
@@ -56,6 +65,14 @@ jobs:
           python scripts/intelligence/vehicle_damage/build_colab_notebook.py
           diff --unified "$RUNNER_TEMP/notebook.ipynb" \
             notebooks/colab/vehicle_damage_efficientnetv2s.ipynb
+          cp notebooks/colab/vehicle_damage_rtdetrv2.ipynb \
+            "$RUNNER_TEMP/notebook-v2.ipynb"
+          python scripts/intelligence/vehicle_damage_v2/build_colab_notebook.py
+          diff --unified "$RUNNER_TEMP/notebook-v2.ipynb" \
+            notebooks/colab/vehicle_damage_rtdetrv2.ipynb
 
       - name: Test licence, split and release safeguards
-        run: python -m unittest -v tests/Python/test_vehicle_damage_protocol.py
+        run: |
+          python -m unittest -v \
+            tests/Python/test_vehicle_damage_protocol.py \
+            tests/Python/test_vehicle_damage_v2_protocol.py
