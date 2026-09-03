@@ -28,7 +28,7 @@ class CreateTenantUser
                 'role_id' => $role->id,
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'email_verified_at' => now(),
+                'email_verified_at' => null,
                 'password' => Hash::make($temporaryPassword),
                 'is_active' => $data['is_active'],
                 'must_change_password' => true,

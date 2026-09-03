@@ -3,6 +3,7 @@
 namespace App\Actions\PlatformBilling;
 
 use App\Enums\PlatformBilling\SaasPaymentEntryType;
+use App\Enums\PlatformBilling\SaasPaymentMethod;
 use App\Models\PlatformBilling\SaasPayment;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Platform\PlatformAdminGuard;
@@ -21,7 +22,9 @@ class ReverseSaasPayment
     public function handle(SaasPayment $payment, array $data, int $actorId): SaasPayment
     {
         $this->platformAdmin->actor($actorId);
-        $this->rejectUnexpected($data, ['reason', 'reference', 'idempotency_key', 'occurred_at', 'note']);
+        $this->rejectUnexpected($data, [
+            'reason', 'reference', 'idempotency_key', 'occurred_at', 'note', 'cmi_refund_confirmed',
+        ]);
         $reason = trim((string) ($data['reason'] ?? ''));
         if ($reason === '') {
             throw ValidationException::withMessages(['reason' => 'Le motif de contrepassation est obligatoire.']);
@@ -32,6 +35,10 @@ class ReverseSaasPayment
         }
         $reference = $this->nullableText($data['reference'] ?? null);
         $note = $this->nullableText($data['note'] ?? null);
+        $cmiRefundConfirmed = filter_var(
+            $data['cmi_refund_confirmed'] ?? false,
+            FILTER_VALIDATE_BOOL,
+        );
 
         try {
             return DB::transaction(function () use (
@@ -42,10 +49,21 @@ class ReverseSaasPayment
                 $idempotencyKey,
                 $reference,
                 $note,
+                $cmiRefundConfirmed,
             ): SaasPayment {
                 $original = SaasPayment::query()->whereKey($payment)->lockForUpdate()->firstOrFail();
                 if ($original->entry_type !== SaasPaymentEntryType::Payment) {
                     throw ValidationException::withMessages(['payment' => 'Seul un paiement SaaS original peut être contrepassé.']);
+                }
+                if ($original->payment_method === SaasPaymentMethod::Cmi && ! $cmiRefundConfirmed) {
+                    throw ValidationException::withMessages([
+                        'cmi_refund_confirmed' => 'Confirmez que le remboursement a réussi dans le portail marchand CMI.',
+                    ]);
+                }
+                if ($original->payment_method === SaasPaymentMethod::Cmi && $reference === null) {
+                    throw ValidationException::withMessages([
+                        'reference' => 'La référence du remboursement confirmé par CMI est obligatoire.',
+                    ]);
                 }
 
                 $occurredAt = isset($data['occurred_at'])
@@ -109,6 +127,10 @@ class ReverseSaasPayment
                     'amount' => $reversal->amount,
                     'currency' => $reversal->currency,
                     'reversal_of_id' => $original->getKey(),
+                    'cmi_refund_confirmed' => $original->payment_method === SaasPaymentMethod::Cmi,
+                    'gateway_refund_reference' => $original->payment_method === SaasPaymentMethod::Cmi
+                        ? $reference
+                        : null,
                 ]);
 
                 return $reversal;

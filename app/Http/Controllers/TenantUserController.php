@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateTenantUserRequest;
 use App\Models\Agency;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Auth\VerificationNotificationSender;
 use App\Support\Tenancy\TenantUserAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,11 +50,20 @@ class TenantUserController extends Controller
         return view('users.form', $this->formData($request, new User));
     }
 
-    public function store(StoreTenantUserRequest $request, CreateTenantUser $action): Response
-    {
+    public function store(
+        StoreTenantUserRequest $request,
+        CreateTenantUser $action,
+        VerificationNotificationSender $verificationSender,
+    ): Response {
         $result = $action->handle($request->validated(), $request->user());
+        $verificationSent = $verificationSender->send($result['user']);
 
-        return $this->temporaryPasswordResponse($result['user'], $result['temporary_password'], 'Utilisateur créé');
+        return $this->temporaryPasswordResponse(
+            $result['user'],
+            $result['temporary_password'],
+            'Utilisateur créé',
+            $verificationSent,
+        );
     }
 
     public function edit(Request $request, User $user): View
@@ -63,11 +73,22 @@ class TenantUserController extends Controller
         return view('users.form', $this->formData($request, $user));
     }
 
-    public function update(UpdateTenantUserRequest $request, User $user, UpdateTenantUser $action): RedirectResponse
-    {
-        $action->handle($user, $request->validated(), $request->user());
+    public function update(
+        UpdateTenantUserRequest $request,
+        User $user,
+        UpdateTenantUser $action,
+        VerificationNotificationSender $verificationSender,
+    ): RedirectResponse {
+        $oldEmail = $user->email;
+        $updated = $action->handle($user, $request->validated(), $request->user());
+        $verificationSent = $oldEmail === $updated->email || $verificationSender->send($updated);
 
-        return redirect()->route('users.index')->with('status', 'Utilisateur mis à jour.');
+        return redirect()->route('users.index')->with(
+            'status',
+            $verificationSent
+                ? 'Utilisateur mis à jour. Un lien de vérification a été envoyé si l’adresse a changé.'
+                : 'Utilisateur mis à jour, mais le lien de vérification n’a pas pu être envoyé.',
+        );
     }
 
     public function resetPassword(Request $request, User $user, ResetTenantUserPassword $action): Response
@@ -100,11 +121,19 @@ class TenantUserController extends Controller
         ];
     }
 
-    private function temporaryPasswordResponse(User $user, string $temporaryPassword, string $title): Response
-    {
+    private function temporaryPasswordResponse(
+        User $user,
+        string $temporaryPassword,
+        string $title,
+        ?bool $verificationSent = null,
+    ): Response {
         return response()->view('shared.temporary-password', [
             'title' => $title,
-            'message' => 'Transmettez ce mot de passe par un canal sûr. Il ne sera plus affiché et devra être changé à la première connexion.',
+            'message' => match ($verificationSent) {
+                true => 'Le lien de vérification a été envoyé. Transmettez ce mot de passe temporaire par un canal distinct et sûr.',
+                false => 'Le compte est créé, mais le lien de vérification n’a pas pu être envoyé. Transmettez le mot de passe temporaire par un canal sûr puis réessayez l’envoi.',
+                null => 'Transmettez ce mot de passe par un canal sûr. Il ne sera plus affiché et devra être changé à la première connexion.',
+            },
             'loginEmail' => $user->email,
             'temporaryPassword' => $temporaryPassword,
             'continueUrl' => route('users.index'),

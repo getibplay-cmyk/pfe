@@ -20,7 +20,7 @@
         @case('tenant-saas-account') @case('platform-plans') @case('platform-subscriptions') <path d="M5 5h14v14H5V5Zm3 4h8m-8 4h8m-8 3h5" /> @break
         @case('roles') <path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6l-7-3Zm0 5v4m0 4h.01" /> @break
         @case('tenant') @case('agencies') @case('platform-tenants') <path d="M4 21V8l8-5 8 5v13M8 21v-5h8v5M8 10h.01M12 10h.01M16 10h.01" /> @break
-        @case('audit') <path d="M4 5h16v14H4V5Zm4 4h8m-8 4h8m-8 4h5" /> @break
+        @case('audit') @case('platform-audit') <path d="M4 5h16v14H4V5Zm4 4h8m-8 4h8m-8 4h5" /> @break
         @default <circle cx="12" cy="12" r="8" /><path d="M12 8v4l2 2" />
     @endswitch
 </svg>

@@ -54,7 +54,7 @@ class UiLabel
         'insurance_claim_declaration' => 'Déclaration de sinistre', 'insurance_claim_report' => 'Constat de sinistre',
         'insurance_claim_correspondence' => 'Correspondance assureur', 'insurance_claim_expertise' => 'Rapport d’expertise',
         'insurance_claim_settlement_proof' => 'Preuve de règlement du sinistre',
-        'cash' => 'Espèces', 'bank_transfer' => 'Virement bancaire', 'cheque' => 'Chèque', 'card' => 'Carte (référence externe)',
+        'cash' => 'Espèces', 'bank_transfer' => 'Virement bancaire', 'cheque' => 'Chèque', 'card' => 'Carte (référence externe)', 'cmi' => 'Carte via CMI',
         'incoming' => 'Encaissement', 'outgoing' => 'Décaissement',
         'preventive' => 'Préventive', 'corrective' => 'Corrective', 'inspection' => 'Contrôle', 'repair' => 'Réparation',
         'maintenance' => 'Maintenance', 'insurance' => 'Assurance', 'fuel' => 'Carburant', 'cleaning' => 'Nettoyage',
@@ -196,6 +196,12 @@ class UiLabel
         'deposit.reversed' => 'Mouvement de caution contrepassé', 'expense.created' => 'Dépense créée', 'expense.approved' => 'Dépense approuvée',
         'insurance_claim.reported' => 'Sinistre déclaré', 'insurance_claim.status.changed' => 'État du sinistre modifié',
         'platform.tenant.updated' => 'Entreprise cliente mise à jour',
+        'platform.saas_payment.cmi_started' => 'Paiement CMI démarré',
+        'platform.saas_payment.cmi_recorded' => 'Paiement CMI confirmé',
+        'platform.saas_payment.cmi_declined' => 'Paiement CMI refusé',
+        'platform.saas_payment.cmi_callback_rejected' => 'Callback CMI rejeté',
+        'user.password_reset.email' => 'Mot de passe réinitialisé par e-mail',
+        'user.email_verified' => 'Adresse e-mail vérifiée',
     ];
 
     private const PERMISSION_GROUPS = [

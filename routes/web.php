@@ -5,6 +5,8 @@ use App\Http\Controllers\AgencyDistanceController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\AvailabilityController;
+use App\Http\Controllers\CmiCallbackController;
+use App\Http\Controllers\CmiReturnController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DashboardController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\IntelligenceResultBatchController;
 use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PlatformAuditLogController;
 use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlatformIntelligenceController;
 use App\Http\Controllers\PlatformPlanController;
@@ -32,6 +35,7 @@ use App\Http\Controllers\PlatformSubscriptionController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\RentalContractController;
 use App\Http\Controllers\RentalUsageAnomalyController;
 use App\Http\Controllers\ReportController;
@@ -43,6 +47,7 @@ use App\Http\Controllers\ReturnDamageAssistantController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantSaasAccountController;
+use App\Http\Controllers\TenantSaasCheckoutController;
 use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleBlockController;
 use App\Http\Controllers\VehicleCategoryController;
@@ -56,12 +61,19 @@ use App\Http\Controllers\VehicleRegistrationAssistantController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
-});
+Route::get('/', [PublicSiteController::class, 'home'])->name('home');
+Route::get('/tarifs', [PublicSiteController::class, 'pricing'])->name('pricing');
+Route::get('/abonnement', [PublicSiteController::class, 'subscription'])->name('subscription.public');
+Route::post('/billing/cmi/callback', CmiCallbackController::class)
+    ->middleware('throttle:120,1')
+    ->name('billing.cmi.callback');
+Route::match(['get', 'post'], '/billing/cmi/return/{attempt}', CmiReturnController::class)
+    ->whereUuid('attempt')
+    ->middleware(['signed', 'throttle:60,1'])
+    ->name('billing.cmi.return');
 
 Route::get('/dashboard', DashboardController::class)
-    ->middleware(['auth', 'tenant', 'password.changed'])
+    ->middleware(['auth', 'tenant', 'password.changed', 'verified'])
     ->name('dashboard');
 
 Route::get('/health', function () {
@@ -86,10 +98,17 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::put('/password/change-required', [ChangeRequiredPasswordController::class, 'update'])->name('password.change-required.update');
 });
 
-Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
+Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(function () {
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
     Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
     Route::get('/tenant/saas-account', TenantSaasAccountController::class)->name('tenant-saas-account.show');
+    Route::post('/tenant/saas-account/subscriptions/{subscription}/cmi-checkout', [TenantSaasCheckoutController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('tenant-saas-checkout.store');
+    Route::get('/tenant/saas-account/cmi-checkout/{attempt}', [TenantSaasCheckoutController::class, 'show'])
+        ->whereUuid('attempt')
+        ->middleware('throttle:30,1')
+        ->name('tenant-saas-checkout.show');
     Route::resource('agencies', AgencyController::class);
     Route::get('/fleet/agency-distances', [AgencyDistanceController::class, 'index'])
         ->name('agency-distances.index');
@@ -366,9 +385,10 @@ Route::middleware(['auth', 'tenant', 'password.changed'])->group(function () {
     Route::get('/intelligence', IntelligenceController::class)->name('intelligence.index');
 });
 
-Route::prefix('platform')->name('platform.')->middleware(['auth', 'platform'])->group(function () {
+Route::prefix('platform')->name('platform.')->middleware(['auth', 'active.account', 'platform', 'verified'])->group(function () {
     Route::get('/dashboard', PlatformDashboardController::class)->name('dashboard');
     Route::get('/statistics', PlatformStatisticsController::class)->name('statistics.index');
+    Route::get('/audit-logs', PlatformAuditLogController::class)->name('audit-logs.index');
     Route::resource('tenants', PlatformTenantController::class)->only(['index', 'create', 'show', 'edit']);
     Route::get('/plans', [PlatformPlanController::class, 'index'])->name('plans.index');
     Route::get('/subscriptions', [PlatformSubscriptionController::class, 'index'])->name('subscriptions.index');

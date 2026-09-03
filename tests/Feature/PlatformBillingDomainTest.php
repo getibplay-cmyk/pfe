@@ -9,6 +9,7 @@ use App\Actions\PlatformBilling\ReverseSaasPayment;
 use App\Actions\PlatformBilling\TransitionSaasSubscription;
 use App\Actions\PlatformBilling\UpdateSaasPlan;
 use App\Enums\PlatformBilling\SaasPaymentEntryType;
+use App\Enums\PlatformBilling\SaasPaymentMethod;
 use App\Enums\PlatformBilling\TenantSubscriptionStatus;
 use App\Enums\TenantStatus;
 use App\Models\PlatformBilling\SaasPayment;
@@ -171,6 +172,59 @@ class PlatformBillingDomainTest extends TestCase
         ], $platform->id), 'occurred_at');
 
         $this->assertDatabaseCount('saas_payments', 1);
+    }
+
+    public function test_cmi_reversal_requires_a_confirmed_gateway_refund_and_keeps_its_reference(): void
+    {
+        [$platform, $tenant] = $this->actors();
+        $subscription = $this->subscription($platform, $tenant, $this->plan($platform, 'cmi-refund'));
+        $payment = new SaasPayment;
+        $payment->forceFill([
+            'tenant_id' => $tenant->getKey(),
+            'saas_subscription_id' => $subscription->getKey(),
+            'entry_type' => SaasPaymentEntryType::Payment,
+            'payment_method' => SaasPaymentMethod::Cmi,
+            'amount' => '499.90',
+            'currency' => 'MAD',
+            'reference' => 'CMI:PAYMENT-REFUND-001',
+            'idempotency_key' => 'cmi:payment-refund-001',
+            'occurred_at' => now(),
+            'reversal_of_id' => null,
+            'reason' => null,
+            'note' => 'Paiement confirmé par callback signé CMI.',
+            'created_by' => $platform->getKey(),
+        ])->save();
+
+        $this->expectValidation(fn () => app(ReverseSaasPayment::class)->handle($payment, [
+            'reason' => 'Remboursement client.',
+            'reference' => 'CMI-REFUND-001',
+            'idempotency_key' => 'cmi-reversal-001',
+        ], $platform->getKey()), 'cmi_refund_confirmed');
+
+        $this->expectValidation(fn () => app(ReverseSaasPayment::class)->handle($payment, [
+            'reason' => 'Remboursement client.',
+            'idempotency_key' => 'cmi-reversal-001',
+            'cmi_refund_confirmed' => true,
+        ], $platform->getKey()), 'reference');
+
+        $data = [
+            'reason' => 'Remboursement client confirmé dans le portail CMI.',
+            'reference' => 'CMI-REFUND-001',
+            'idempotency_key' => 'cmi-reversal-001',
+            'cmi_refund_confirmed' => true,
+        ];
+        $reversal = app(ReverseSaasPayment::class)->handle($payment, $data, $platform->getKey());
+        $retry = app(ReverseSaasPayment::class)->handle($payment, $data, $platform->getKey());
+
+        $this->assertSame($reversal->getKey(), $retry->getKey());
+        $this->assertSame(SaasPaymentEntryType::Reversal, $reversal->entry_type);
+        $this->assertSame(SaasPaymentMethod::Cmi, $reversal->payment_method);
+        $this->assertSame('CMI-REFUND-001', $reversal->reference);
+        $this->assertSame($payment->getKey(), $reversal->reversal_of_id);
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $tenant->getKey(),
+            'action' => 'platform.saas_payment.reversed',
+        ]);
     }
 
     public function test_actions_reject_client_supplied_scope_and_unknown_fields_without_side_effect(): void

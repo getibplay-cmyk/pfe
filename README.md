@@ -132,6 +132,21 @@ php vendor/bin/pint --test
 npm.cmd run build
 ```
 
+## E-mails de compte et abonnement CMI
+
+Les adresses e-mail sont vérifiées avant l’accès aux espaces protégés. La
+réinitialisation par e-mail révoque les sessions existantes et répond de manière
+identique pour une adresse connue ou inconnue. Un SMTP réel doit remplacer le
+pilote `log` en recette et en production.
+
+Les pages `/`, `/tarifs` et `/abonnement` sont publiques, sans réintroduire
+l’inscription libre. Le propriétaire d’une entreprise peut régler son
+abonnement en MAD sur la page hébergée de CMI lorsque le kit marchand est
+configuré. Le callback signé est la seule source de confirmation ; aucune donnée
+de carte n’est stockée. Consulter le guide
+[E-mails de compte et paiement CMI](docs/operations/saas-email-and-cmi.md) avant
+toute activation de bac à sable ou de production.
+
 Pour corriger le formatage :
 
 ```powershell

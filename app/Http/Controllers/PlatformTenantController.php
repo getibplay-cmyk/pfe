@@ -17,6 +17,7 @@ use App\Models\PlatformBilling\SaasSubscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
+use App\Support\Auth\VerificationNotificationSender;
 use App\Support\Intelligence\IntelligenceCapabilityCatalog;
 use App\Support\Intelligence\TenantIntelligenceAccess;
 use Carbon\CarbonImmutable;
@@ -89,13 +90,19 @@ class PlatformTenantController extends Controller
         return view('platform.tenants.form', ['tenant' => new Tenant]);
     }
 
-    public function store(StoreTenantRequest $request, ProvisionTenant $action): Response
-    {
+    public function store(
+        StoreTenantRequest $request,
+        ProvisionTenant $action,
+        VerificationNotificationSender $verificationSender,
+    ): Response {
         $result = $action->handle($request->validated(), $request->user()->id);
+        $verificationSent = $verificationSender->send($result['owner']);
 
         return response()->view('shared.temporary-password', [
             'title' => 'Entreprise cliente créée',
-            'message' => 'Transmettez ces identifiants au propriétaire par un canal sûr. Le mot de passe ne sera plus affiché.',
+            'message' => $verificationSent
+                ? 'Le lien de vérification a été envoyé. Transmettez le mot de passe temporaire par un canal distinct et sûr.'
+                : 'Le compte est créé, mais le lien de vérification n’a pas pu être envoyé. Vérifiez la configuration e-mail puis demandez un nouvel envoi.',
             'loginEmail' => $request->validated('owner_email'),
             'temporaryPassword' => $result['temporary_password'],
             'continueUrl' => route('platform.tenants.show', $result['tenant']),

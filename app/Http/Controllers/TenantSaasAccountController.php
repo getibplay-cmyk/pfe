@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Enums\IntelligenceCapability;
 use App\Models\PlatformBilling\SaasPayment;
+use App\Models\PlatformBilling\SaasPaymentAttempt;
 use App\Models\PlatformBilling\SaasSubscription;
 use App\Models\Tenant;
 use App\Support\Intelligence\IntelligenceCapabilityCatalog;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\PlatformBilling\Cmi\CmiConfiguration;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,6 +23,7 @@ final class TenantSaasAccountController extends Controller
         TenantContext $context,
         IntelligenceCapabilityCatalog $catalog,
         TenantIntelligenceAccess $intelligenceAccess,
+        CmiConfiguration $cmiConfiguration,
     ): View {
         abort_unless($request->user()->isTenantOwner(), 403);
 
@@ -43,6 +46,11 @@ final class TenantSaasAccountController extends Controller
             ->latest('occurred_at')
             ->limit(50)
             ->get();
+        $paymentAttempts = SaasPaymentAttempt::query()
+            ->where('tenant_id', $tenantId)
+            ->latest()
+            ->limit(20)
+            ->get();
         $enabledCapabilities = collect(IntelligenceCapability::cases())
             ->filter(fn (IntelligenceCapability $capability): bool => $request->user()
                 ->hasPermission($catalog->permission($capability))
@@ -50,12 +58,16 @@ final class TenantSaasAccountController extends Controller
             ->map(fn (IntelligenceCapability $capability): string => $catalog->definition($capability)['label'])
             ->values();
 
-        return view('tenant.account-saas', compact(
-            'tenant',
-            'currentSubscription',
-            'subscriptions',
-            'payments',
-            'enabledCapabilities',
-        ));
+        return view('tenant.account-saas', [
+            ...compact(
+                'tenant',
+                'currentSubscription',
+                'subscriptions',
+                'payments',
+                'paymentAttempts',
+                'enabledCapabilities',
+            ),
+            'cmiReadiness' => $cmiConfiguration->readiness(),
+        ]);
     }
 }

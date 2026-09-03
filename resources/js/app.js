@@ -10,6 +10,7 @@ import { initializePlatformStatistics } from './platform-statistics';
 import { initializeTenantStatistics } from './tenant-statistics';
 import { initializeBelkhirSpaceLoading, initializeLoadingForms } from './form-enhancements';
 import { registerBelkhirSpaceUi } from './belkhir-space-ui';
+import { initializeCmiCheckout } from './cmi-checkout';
 
 window.Alpine = Alpine;
 
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTenantStatistics();
     const belkhirSpaceLoading = initializeBelkhirSpaceLoading();
     initializeLoadingForms(document, window, belkhirSpaceLoading);
+    initializeCmiCheckout();
 
     const invalidField = document.querySelector('[aria-invalid="true"]');
 

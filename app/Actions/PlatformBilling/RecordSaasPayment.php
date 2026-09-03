@@ -32,6 +32,11 @@ class RecordSaasPayment
         if ($method === null) {
             throw ValidationException::withMessages(['payment_method' => 'Le mode de paiement SaaS est invalide.']);
         }
+        if ($method === SaasPaymentMethod::Cmi) {
+            throw ValidationException::withMessages([
+                'payment_method' => 'Un paiement CMI ne peut être créé que par un callback signé de la passerelle.',
+            ]);
+        }
 
         $amount = $this->positiveMoney($data['amount'] ?? null);
         $idempotencyKey = trim((string) ($data['idempotency_key'] ?? ''));

@@ -32,11 +32,13 @@ class UpdateTenantUser
             $this->protectLastOwner($locked, $role, $data['is_active']);
 
             $old = $locked->only(['name', 'email', 'agency_id', 'role_id', 'is_active']);
+            $emailChanged = $locked->email !== $data['email'];
             $locked->forceFill([
                 'agency_id' => $agencyId,
                 'role_id' => $role->id,
                 'name' => $data['name'],
                 'email' => $data['email'],
+                'email_verified_at' => $emailChanged ? null : $locked->email_verified_at,
                 'is_active' => $data['is_active'],
             ])->save();
 

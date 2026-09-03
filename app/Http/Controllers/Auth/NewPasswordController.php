@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Audit\AuditRecorder;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -29,7 +31,7 @@ class NewPasswordController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AuditRecorder $audit): RedirectResponse
     {
         $request->validate([
             'token' => ['required'],
@@ -42,12 +44,15 @@ class NewPasswordController extends Controller
         // database. Otherwise we will parse the error and return the response.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
+            function (User $user) use ($request, $audit) {
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                     'must_change_password' => false,
                 ])->save();
+
+                DB::table('sessions')->where('user_id', $user->getKey())->delete();
+                $audit->record('user.password_reset.email', $user, [], ['sessions_revoked' => true]);
 
                 event(new PasswordReset($user));
             }

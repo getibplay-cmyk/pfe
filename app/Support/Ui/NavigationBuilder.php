@@ -15,6 +15,7 @@ class NavigationBuilder
                     'items' => [
                         $this->item('platform-dashboard', 'Tableau de bord', 'platform.dashboard', 'platform.dashboard'),
                         $this->item('platform-statistics', 'Statistiques', 'platform.statistics.index', 'platform.statistics.*'),
+                        $this->item('platform-audit', 'Journal global', 'platform.audit-logs.index', 'platform.audit-logs.*'),
                     ],
                 ],
                 [
