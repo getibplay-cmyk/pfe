@@ -69,7 +69,7 @@ Route::post('/billing/cmi/callback', CmiCallbackController::class)
     ->name('billing.cmi.callback');
 Route::match(['get', 'post'], '/billing/cmi/return/{attempt}', CmiReturnController::class)
     ->whereUuid('attempt')
-    ->middleware('throttle:60,1')
+    ->middleware(['signed', 'throttle:60,1'])
     ->name('billing.cmi.return');
 
 Route::get('/dashboard', DashboardController::class)

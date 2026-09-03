@@ -153,11 +153,25 @@ return new class extends Migration
         Schema::dropIfExists('saas_payment_gateway_events');
         Schema::dropIfExists('saas_payment_attempts');
 
+        // CMI ledger entries are append-only and cannot be rewritten merely to
+        // restore the older constraint during a rollback.
+        $hasImmutableCmiEntries = DB::table('saas_payments')
+            ->where('payment_method', 'cmi')
+            ->exists();
+
         DB::statement('ALTER TABLE saas_payments DROP CONSTRAINT saas_payments_method_check');
-        DB::statement(<<<'SQL'
-            ALTER TABLE saas_payments
-                ADD CONSTRAINT saas_payments_method_check
-                    CHECK (payment_method IN ('bank_transfer', 'cash', 'cheque', 'other'))
-        SQL);
+        if ($hasImmutableCmiEntries) {
+            DB::statement(<<<'SQL'
+                ALTER TABLE saas_payments
+                    ADD CONSTRAINT saas_payments_method_check
+                        CHECK (payment_method IN ('bank_transfer', 'cash', 'cheque', 'cmi', 'other'))
+            SQL);
+        } else {
+            DB::statement(<<<'SQL'
+                ALTER TABLE saas_payments
+                    ADD CONSTRAINT saas_payments_method_check
+                        CHECK (payment_method IN ('bank_transfer', 'cash', 'cheque', 'other'))
+            SQL);
+        }
     }
 };

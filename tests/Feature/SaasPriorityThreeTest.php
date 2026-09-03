@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Actions\PlatformBilling\AssignSaasSubscription;
 use App\Actions\PlatformBilling\CreateSaasPlan;
 use App\Enums\PlatformBilling\SaasPaymentAttemptStatus;
+use App\Enums\PlatformBilling\SaasPaymentEntryType;
+use App\Enums\PlatformBilling\SaasPaymentMethod;
 use App\Models\PlatformBilling\SaasPayment;
 use App\Models\PlatformBilling\SaasPaymentAttempt;
 use App\Models\PlatformBilling\SaasPaymentGatewayEvent;
@@ -20,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -145,6 +148,7 @@ class SaasPriorityThreeTest extends TestCase
             ->assertOk()
             ->assertSee('name="HASH"', false)
             ->assertSee('name="amount" value="499.90"', false)
+            ->assertSee('signature=', false)
             ->assertSee('https://testpayment.cmi.co.ma/fim/est3Dgate', false)
             ->assertDontSee('card_number');
 
@@ -168,6 +172,35 @@ class SaasPriorityThreeTest extends TestCase
         ]);
         $this->assertSame('active', $subscription->refresh()->status->value);
         $this->assertNotNull($subscription->next_renewal_at);
+    }
+
+    public function test_cmi_reuses_an_outstanding_attempt_and_blocks_a_second_payment_for_the_same_period(): void
+    {
+        $this->enableCmi();
+        [$owner, $subscription] = $this->billingFixture();
+
+        $this->actingAs($owner)->post(route('tenant-saas-checkout.store', $subscription), [
+            'idempotency_key' => (string) Str::uuid(),
+        ])->assertRedirect();
+        $attempt = SaasPaymentAttempt::query()->sole();
+
+        $this->actingAs($owner)->post(route('tenant-saas-checkout.store', $subscription), [
+            'idempotency_key' => (string) Str::uuid(),
+        ])->assertRedirect(route('tenant-saas-checkout.show', $attempt));
+        $this->assertDatabaseCount('saas_payment_attempts', 1);
+
+        $this->post(route('billing.cmi.callback'), $this->signedCallback($attempt, 'TX-CMI-PERIOD'))
+            ->assertOk();
+
+        $this->actingAs($owner)
+            ->from(route('tenant-saas-account.show'))
+            ->post(route('tenant-saas-checkout.store', $subscription), [
+                'idempotency_key' => (string) Str::uuid(),
+            ])
+            ->assertRedirect(route('tenant-saas-account.show'))
+            ->assertSessionHasErrors('payment');
+        $this->assertDatabaseCount('saas_payment_attempts', 1);
+        $this->assertDatabaseCount('saas_payments', 1);
     }
 
     public function test_invalid_or_amount_mismatched_cmi_callbacks_never_create_a_payment(): void
@@ -196,9 +229,18 @@ class SaasPriorityThreeTest extends TestCase
         $attempt = $this->startAttempt($owner, $subscription);
         $otherOwner = $this->createTenantOwner();
 
-        $this->get(route('billing.cmi.return', ['attempt' => $attempt, 'result' => 'success']))
+        $unsignedReturn = route('billing.cmi.return', ['attempt' => $attempt, 'result' => 'success']);
+        $this->get($unsignedReturn)->assertForbidden();
+
+        $signedReturn = URL::temporarySignedRoute(
+            'billing.cmi.return',
+            now()->addMinute(),
+            ['attempt' => $attempt, 'result' => 'success'],
+        );
+        $this->get($signedReturn)
             ->assertOk()
             ->assertSee('Confirmation en cours');
+        $this->get(str_replace('result=success', 'result=failed', $signedReturn))->assertForbidden();
         $this->assertSame(SaasPaymentAttemptStatus::Pending, $attempt->refresh()->status);
         $this->assertSame(0, SaasPayment::query()->count());
 
@@ -206,6 +248,47 @@ class SaasPriorityThreeTest extends TestCase
             'idempotency_key' => (string) Str::uuid(),
         ])->assertNotFound();
         $this->actingAs($otherOwner)->get(route('tenant-saas-checkout.show', $attempt))->assertNotFound();
+    }
+
+    public function test_cmi_migration_can_roll_back_without_discarding_immutable_payment_entries(): void
+    {
+        [$owner, $subscription] = $this->billingFixture();
+        $payment = new SaasPayment;
+        $payment->forceFill([
+            'tenant_id' => $owner->tenant_id,
+            'saas_subscription_id' => $subscription->getKey(),
+            'entry_type' => SaasPaymentEntryType::Payment,
+            'payment_method' => SaasPaymentMethod::Cmi,
+            'amount' => $subscription->price_amount,
+            'currency' => $subscription->currency,
+            'reference' => 'CMI:ROLLBACK-SAFE-001',
+            'idempotency_key' => 'cmi:rollback-safe-001',
+            'occurred_at' => now(),
+            'reversal_of_id' => null,
+            'reason' => null,
+            'note' => 'Paiement CMI immuable conservé pendant le rollback.',
+            'created_by' => $owner->getKey(),
+        ])->save();
+
+        $migration = require database_path('migrations/2026_09_02_000003_create_cmi_saas_payment_attempts.php');
+        $migration->down();
+
+        try {
+            $this->assertDatabaseHas('saas_payments', [
+                'id' => $payment->getKey(),
+                'payment_method' => 'cmi',
+            ]);
+            $constraint = DB::selectOne(<<<'SQL'
+                SELECT pg_get_constraintdef(oid) AS definition
+                FROM pg_constraint
+                WHERE conrelid = 'saas_payments'::regclass
+                  AND conname = 'saas_payments_method_check'
+            SQL);
+            $this->assertNotNull($constraint);
+            $this->assertStringContainsString("'cmi'", $constraint->definition);
+        } finally {
+            $migration->up();
+        }
     }
 
     public function test_platform_admin_can_read_global_audit_log_but_tenant_owner_cannot(): void

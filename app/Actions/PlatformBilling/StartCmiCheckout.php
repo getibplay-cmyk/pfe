@@ -2,14 +2,18 @@
 
 namespace App\Actions\PlatformBilling;
 
+use App\Enums\PlatformBilling\SaasBillingInterval;
 use App\Enums\PlatformBilling\SaasPaymentAttemptStatus;
+use App\Enums\PlatformBilling\SaasPaymentEntryType;
 use App\Enums\PlatformBilling\TenantSubscriptionStatus;
+use App\Models\PlatformBilling\SaasPayment;
 use App\Models\PlatformBilling\SaasPaymentAttempt;
 use App\Models\PlatformBilling\SaasSubscription;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\PlatformBilling\Cmi\CmiConfiguration;
 use App\Support\Pricing\DecimalMoney;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -40,7 +44,6 @@ class StartCmiCheckout
             $existing = SaasPaymentAttempt::query()
                 ->where('tenant_id', $actor->tenant_id)
                 ->where('idempotency_key', $idempotencyKey)
-                ->lockForUpdate()
                 ->first();
             if ($existing !== null) {
                 if ($existing->saas_subscription_id !== $locked->getKey()) {
@@ -62,6 +65,33 @@ class StartCmiCheckout
                 throw ValidationException::withMessages(['payment' => 'Aucun paiement n’est requis pour cette offre.']);
             }
 
+            $now = CarbonImmutable::now();
+            $outstanding = SaasPaymentAttempt::query()
+                ->where('tenant_id', $locked->tenant_id)
+                ->where('saas_subscription_id', $locked->getKey())
+                ->where('provider', 'cmi')
+                ->where('status', SaasPaymentAttemptStatus::Pending->value)
+                ->where('expires_at', '>', $now)
+                ->latest('created_at')
+                ->first();
+            if ($outstanding !== null) {
+                return $outstanding;
+            }
+
+            $billingPeriodStartsAt = $this->billingPeriodStartsAt($locked, $now);
+            $alreadySettled = SaasPayment::query()
+                ->where('tenant_id', $locked->tenant_id)
+                ->where('saas_subscription_id', $locked->getKey())
+                ->where('entry_type', SaasPaymentEntryType::Payment->value)
+                ->where('occurred_at', '>=', $billingPeriodStartsAt)
+                ->whereDoesntHave('reversal')
+                ->first(['id']) !== null;
+            if ($alreadySettled) {
+                throw ValidationException::withMessages([
+                    'payment' => 'La période de facturation courante est déjà réglée.',
+                ]);
+            }
+
             $attempt = new SaasPaymentAttempt;
             $attempt->forceFill([
                 'tenant_id' => $locked->tenant_id,
@@ -75,7 +105,7 @@ class StartCmiCheckout
                 'gateway_transaction_id' => null,
                 'gateway_response_code' => null,
                 'initiated_by' => $actor->getKey(),
-                'expires_at' => now()->addMinutes((int) config('platform_billing.cmi.attempt_ttl_minutes')),
+                'expires_at' => $now->addMinutes((int) config('platform_billing.cmi.attempt_ttl_minutes')),
                 'resolved_at' => null,
                 'paid_at' => null,
             ])->save();
@@ -86,9 +116,31 @@ class StartCmiCheckout
                 'merchant_order_id' => $attempt->merchant_order_id,
                 'amount' => $attempt->amount,
                 'currency' => $attempt->currency,
+                'billing_period_starts_at' => $billingPeriodStartsAt->toIso8601String(),
             ]);
 
             return $attempt;
         });
+    }
+
+    private function billingPeriodStartsAt(
+        SaasSubscription $subscription,
+        CarbonImmutable $now,
+    ): CarbonImmutable {
+        $periodStart = $subscription->starts_at;
+        if ($periodStart->greaterThan($now)) {
+            return $periodStart;
+        }
+
+        while (true) {
+            $nextPeriod = $subscription->billing_interval === SaasBillingInterval::Annual
+                ? $periodStart->addYearNoOverflow()
+                : $periodStart->addMonthNoOverflow();
+            if ($nextPeriod->greaterThan($now)) {
+                return $periodStart;
+            }
+
+            $periodStart = $nextPeriod;
+        }
     }
 }
