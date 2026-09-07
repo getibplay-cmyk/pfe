@@ -106,7 +106,7 @@ class TenantOnboardingInvitationTest extends TestCase
             'status' => 'trialing',
         ]);
         $subscription = $plan->subscriptions()->where('tenant_id', $owner->tenant_id)->sole();
-        $this->assertSame($plan->entitlements, $subscription->entitlements);
+        $this->assertSame($plan->refresh()->entitlements, $subscription->entitlements);
         $this->assertSame(21, (int) round($subscription->starts_at->diffInDays($subscription->trial_ends_at)));
         $this->assertDatabaseHas('tenant_intelligence_accesses', [
             'tenant_id' => $owner->tenant_id,
@@ -207,7 +207,7 @@ class TenantOnboardingInvitationTest extends TestCase
 
     public function test_wrong_token_replay_and_expiration_are_rejected_without_creating_a_second_tenant(): void
     {
-        CarbonImmutable::setTestNow('2026-09-03 09:00:00');
+        $this->travelTo(CarbonImmutable::parse('2026-09-03T09:00:00Z'));
         $platform = $this->platformAdmin();
         $plan = $this->plan($platform);
         $first = app(CreateTenantOnboardingInvitation::class)->handle([
@@ -239,8 +239,8 @@ class TenantOnboardingInvitationTest extends TestCase
             'trial_days' => 14,
             'expires_in_hours' => 1,
         ], $platform->getKey());
-        CarbonImmutable::setTestNow('2026-09-03 11:00:00');
-        $expiredUrl = URL::temporarySignedRoute('onboarding-invitations.show', '2026-09-03 10:00:00', [
+        $this->travelTo($second['invitation']->expires_at->addHour());
+        $expiredUrl = URL::temporarySignedRoute('onboarding-invitations.show', $second['invitation']->expires_at, [
             'invitation' => $second['invitation']->getKey(),
             'token' => $second['token'],
         ]);
