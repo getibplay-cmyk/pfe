@@ -56,12 +56,12 @@ return new class extends Migration
                         IF (value->>quota_key) !~ '^[0-9]+$' THEN
                             RETURN false;
                         END IF;
-                        IF (value->>quota_key)::numeric > CASE quota_key
+                        IF (value->>quota_key)::numeric > (CASE quota_key
                             WHEN 'max_agencies' THEN 10000
                             WHEN 'max_users' THEN 100000
                             WHEN 'max_vehicles' THEN 1000000
                             WHEN 'monthly_intelligence_runs' THEN 10000000
-                        END THEN
+                        END) THEN
                             RETURN false;
                         END IF;
                     END IF;
