@@ -37,8 +37,9 @@ class TenantSaasCheckoutController extends Controller
         CmiHostedGateway $gateway,
         TenantContext $context,
     ): View|RedirectResponse {
-        abort_unless($request->user()->isTenantOwner() && $attempt->tenant_id === $context->tenantId(), 404);
-        if ($attempt->status !== SaasPaymentAttemptStatus::Pending || $attempt->expires_at->isPast()) {
+        abort_unless($request->user()->isTenantOwner() && ($request->user()->role?->is_active ?? false)
+            && $attempt->tenant_id === $context->tenantId(), 404);
+        if ($attempt->status !== SaasPaymentAttemptStatus::Pending || $attempt->expires_at->lessThanOrEqualTo(now())) {
             return redirect()->route('tenant-saas-account.show')
                 ->with('error', 'Cette tentative de paiement n’est plus disponible.');
         }

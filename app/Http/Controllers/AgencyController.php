@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateAgencyRequest;
 use App\Models\Agency;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,10 +38,17 @@ class AgencyController extends Controller
         return view('agencies.form', ['agency' => new Agency]);
     }
 
-    public function store(StoreAgencyRequest $request, AuditRecorder $audit): RedirectResponse
+    public function store(
+        StoreAgencyRequest $request,
+        AuditRecorder $audit,
+        TenantPlanAccess $planAccess,
+    ): RedirectResponse
     {
-        $agency = Agency::create([...$request->validated(), 'is_active' => true]);
-        $audit->record('agency.created', $agency, [], $agency->only(['code', 'name', 'is_active']));
+        DB::transaction(function () use ($request, $audit, $planAccess): void {
+            $planAccess->ensureCanCreate('agencies');
+            $agency = Agency::create([...$request->validated(), 'is_active' => true]);
+            $audit->record('agency.created', $agency, [], $agency->only(['code', 'name', 'is_active']));
+        });
 
         return redirect()->route('agencies.index')->with('status', 'Agence créée.');
     }

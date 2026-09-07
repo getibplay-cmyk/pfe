@@ -33,6 +33,7 @@ class SaasPriorityThreeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp]);
         $this->seed(RolesPermissionsSeeder::class);
     }
 

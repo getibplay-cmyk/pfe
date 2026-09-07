@@ -17,9 +17,13 @@ class SaasSubscription extends Model
     protected function casts(): array
     {
         return [
+            'billing_suspended' => 'boolean',
+            'auto_renew' => 'boolean',
+            'change_expires_at' => 'immutable_datetime',
             'status' => TenantSubscriptionStatus::class,
             'billing_interval' => SaasBillingInterval::class,
             'price_amount' => 'decimal:2',
+            'entitlements' => 'array',
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
             'trial_ends_at' => 'immutable_datetime',
@@ -45,6 +49,11 @@ class SaasSubscription extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(SaasPayment::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(SaasInvoice::class);
     }
 
     public function paymentAttempts(): HasMany

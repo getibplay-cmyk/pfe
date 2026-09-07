@@ -61,13 +61,15 @@ class PlatformSaasPaymentController extends Controller
         $subscription = SaasSubscription::query()
             ->with('plan')
             ->where('tenant_id', $tenant->getKey())
-            ->whereIn('status', collect(TenantSubscriptionStatus::current())->pluck('value'))
+            ->whereIn('status', ['pending_payment', ...collect(TenantSubscriptionStatus::current())->pluck('value')->all()])
             ->latest('starts_at')
             ->first();
 
         return view('platform.saas-payments.create', [
             'tenant' => $tenant,
             'subscription' => $subscription,
+            'invoices' => $subscription?->invoices()->where('status', 'open')->oldest('period_starts_at')->get() ?? collect(),
+            'requiresInvoice' => $subscription?->invoices()->exists() ?? false,
             'methods' => array_values(array_filter(
                 SaasPaymentMethod::cases(),
                 fn (SaasPaymentMethod $method): bool => $method !== SaasPaymentMethod::Cmi,

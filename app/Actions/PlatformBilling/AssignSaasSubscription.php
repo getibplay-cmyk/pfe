@@ -62,6 +62,7 @@ class AssignSaasSubscription
                 'billing_interval' => $lockedPlan->billing_interval,
                 'price_amount' => $lockedPlan->price_amount,
                 'currency' => $lockedPlan->currency,
+                'entitlements' => $lockedPlan->entitlements,
                 'starts_at' => $data['starts_at'],
                 'ends_at' => $data['ends_at'] ?? null,
                 'trial_ends_at' => $data['trial_ends_at'] ?? null,

@@ -15,6 +15,7 @@ use App\Models\TenantIntelligenceAccess as TenantIntelligenceAccessModel;
 use App\Models\User;
 use App\Support\Intelligence\IntelligenceCapabilityCatalog;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -203,7 +204,7 @@ class TenantIntelligenceAccessTest extends TestCase
         $catalog->shouldReceive('globallyEnabled')->zeroOrMoreTimes()->andReturn($globallyEnabled);
         $catalog->shouldReceive('runtimeReady')->zeroOrMoreTimes()->andReturn($runtimeReady);
 
-        return new TenantIntelligenceAccess($context, $catalog);
+        return new TenantIntelligenceAccess($context, $catalog, app(TenantPlanAccess::class));
     }
 
     private function platformAdmin(): User

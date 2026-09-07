@@ -34,6 +34,7 @@ class PlatformAdministrationHttpTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp]);
 
         $this->assertSame('rentfleet_test', $this->assertUsesAuthorizedPostgreSqlTestDatabase());
         $this->assertSame('rentfleet_test', DB::scalar('select current_database()'));

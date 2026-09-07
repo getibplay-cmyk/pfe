@@ -2,7 +2,7 @@
 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" {{ $attributes->class('h-5 w-5 shrink-0') }}>
     @switch($name)
         @case('dashboard') @case('platform-dashboard') <path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-12h6V4h-6v4Z" /> @break
-        @case('notifications') <path d="M18 9a6 6 0 1 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8Zm-8 11h4" /> @break
+        @case('notifications') @case('platform-operations') <path d="M18 9a6 6 0 1 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8Zm-8 11h4" /> @break
         @case('reservations') <path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Zm3 8h3m3 0h2m-8 4h3" /> @break
         @case('availability') <circle cx="12" cy="12" r="8" /><path d="m8.5 12 2.2 2.2 4.8-5" /> @break
         @case('contracts') <path d="M7 3h8l4 4v14H7V3Zm8 0v5h4M10 12h6m-6 4h6" /> @break
@@ -18,6 +18,7 @@
         @case('fleet-reallocation-planning') <path d="M4 7h14m-3-3 3 3-3 3M20 17H6m3-3-3 3 3 3" /> @break
         @case('intelligence') @case('platform-intelligence') <path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Zm6 11 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14Z" /> @break
         @case('tenant-saas-account') @case('platform-plans') @case('platform-subscriptions') <path d="M5 5h14v14H5V5Zm3 4h8m-8 4h8m-8 3h5" /> @break
+        @case('onboarding') @case('platform-onboarding') <path d="M4 5h16v14H4V5Zm4 4h8m-8 4h5m5-8v14" /> @break
         @case('roles') <path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6l-7-3Zm0 5v4m0 4h.01" /> @break
         @case('tenant') @case('agencies') @case('platform-tenants') <path d="M4 21V8l8-5 8 5v13M8 21v-5h8v5M8 10h.01M12 10h.01M16 10h.01" /> @break
         @case('audit') @case('platform-audit') <path d="M4 5h16v14H4V5Zm4 4h8m-8 4h8m-8 4h5" /> @break

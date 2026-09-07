@@ -15,6 +15,7 @@ class NavigationBuilder
                     'items' => [
                         $this->item('platform-dashboard', 'Tableau de bord', 'platform.dashboard', 'platform.dashboard'),
                         $this->item('platform-statistics', 'Statistiques', 'platform.statistics.index', 'platform.statistics.*'),
+                        $this->item('platform-operations', 'Supervision', 'platform.operations.index', 'platform.operations.*'),
                         $this->item('platform-audit', 'Journal global', 'platform.audit-logs.index', 'platform.audit-logs.*'),
                     ],
                 ],
@@ -22,6 +23,7 @@ class NavigationBuilder
                     'label' => 'Entreprises et facturation',
                     'items' => [
                         $this->item('platform-tenants', 'Entreprises clientes', 'platform.tenants.index', 'platform.tenants.*'),
+                        $this->item('platform-onboarding', 'Invitations d’accueil', 'platform.onboarding-invitations.index', 'platform.onboarding-invitations.*'),
                         $this->item('platform-plans', 'Offres '.config('brand.name'), 'platform.plans.index', 'platform.plans.*'),
                         $this->item('platform-subscriptions', 'Abonnements', 'platform.subscriptions.index', 'platform.subscriptions.*'),
                         $this->item('platform-saas-payments', 'Paiements', 'platform.saas-payments.index', 'platform.saas-payments.*'),
@@ -39,6 +41,7 @@ class NavigationBuilder
         return array_values(array_filter([
             $this->section('Vue d’ensemble', [
                 $this->item('dashboard', 'Tableau de bord', 'dashboard', 'dashboard'),
+                $this->whenTenantOwner($user, $this->item('onboarding', 'Démarrage guidé', 'onboarding.index', 'onboarding.*')),
                 $this->item('notifications', 'Notifications', 'notifications.index', 'notifications.*'),
             ]),
             $this->section('Activité locative', [

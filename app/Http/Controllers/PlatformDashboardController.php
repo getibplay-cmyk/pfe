@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Platform\TenantOnboardingInvitationStatus;
 use App\Enums\TenantStatus;
+use App\Models\PlatformOperationalIncident;
+use App\Models\Platform\TenantOnboardingInvitation;
 use App\Models\Tenant;
 use App\Support\Platform\BuildPlatformStatistics;
 use Carbon\CarbonImmutable;
@@ -37,6 +40,18 @@ class PlatformDashboardController extends Controller
         $timezone = (string) config('app.timezone', 'Africa/Casablanca');
         $endsAt = CarbonImmutable::now($timezone)->addDay()->startOfDay();
         $statistics = $statisticsBuilder->handle($endsAt->subDays(30), $endsAt);
+        $operationalIncidents = PlatformOperationalIncident::query()
+            ->where('status', 'open')
+            ->orderByRaw("CASE WHEN severity = 'critical' THEN 0 ELSE 1 END")
+            ->latest('last_detected_at')
+            ->limit(5)
+            ->get();
+        $monitoringHeartbeat = DB::table('operational_heartbeats')
+            ->where('component', config('operations.monitoring.heartbeat_component'))
+            ->value('last_succeeded_at');
+        $monitoringFresh = $monitoringHeartbeat !== null
+            && CarbonImmutable::parse((string) $monitoringHeartbeat)->diffInSeconds(now(), true)
+                <= ((int) config('operations.scheduler.heartbeat_max_age_minutes') * 60);
 
         return view('platform.dashboard', [
             'metrics' => [
@@ -52,10 +67,17 @@ class PlatformDashboardController extends Controller
                 'Assistances autorisées' => $statistics['totals']['enabled_capabilities'],
                 'Travaux en attente' => $statistics['totals']['jobs'],
                 'Traitements en échec' => $statistics['totals']['failed_jobs'],
+                'Invitations en attente' => TenantOnboardingInvitation::query()
+                    ->where('status', TenantOnboardingInvitationStatus::Pending->value)
+                    ->where('expires_at', '>', now())
+                    ->count(),
+                'Incidents opérationnels ouverts' => PlatformOperationalIncident::query()->where('status', 'open')->count(),
             ],
             'latestTenants' => Tenant::query()->latest()->limit(8)->get(),
             'alerts' => $alerts,
             'statistics' => $statistics,
+            'operationalIncidents' => $operationalIncidents,
+            'monitoringFresh' => $monitoringFresh,
         ]);
     }
 }

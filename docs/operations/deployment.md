@@ -14,9 +14,9 @@ PostgreSQL est l’unique moteur pris en charge.
 - cache PostgreSQL partagé pour les verrous du scheduler ;
 - cron ou planificateur système appelant Laravel chaque minute.
 
-Aucune tâche applicative n’implémente actuellement `ShouldQueue` ou `dispatch`.
-Le pilote `database` reste prêt, mais aucun worker `queue:work` n’est requis pour
-cette release. Ne pas ajouter Redis.
+Les analyses intelligentes utilisent la file PostgreSQL. Maintenir au moins un
+worker `queue:work --queue=intelligence,default` supervisé par le système et le
+redémarrer proprement à chaque release. Ne pas ajouter Redis à cette architecture.
 
 ## Préparer le code et les secrets
 
@@ -95,14 +95,18 @@ Linux, chaque minute :
 Windows Task Scheduler : programme
 `C:\Users\pc\.config\herd\bin\php85\php.exe`, arguments
 `artisan schedule:run`, répertoire de démarrage égal à la release, fréquence
-d’une minute. `schedule:list` doit montrer le heartbeat chaque minute,
-l’expiration des réservations chaque minute et l’expiration des polices à
-00:15, fuseau `Africa/Casablanca`.
+d’une minute. `schedule:list` doit montrer le heartbeat et la supervision chaque
+minute, l’expiration des invitations chaque heure, l’expiration des réservations
+chaque minute et l’expiration des polices à 00:15, fuseau `Africa/Casablanca`.
 
 ## Vérifications post-déploiement
 
 - `/health` répond `ok` sans secret ;
 - `rentfleet:doctor --production` est vert, heartbeat compris ;
+- `/platform/operations` indique un heartbeat récent et aucun incident critique ;
+- le worker consomme la file et aucun travail ancien ou échoué ne s’accumule ;
+- une invitation de recette atteint la boîte SMTP, puis son lien ne fonctionne
+  plus après acceptation ;
 - aucune route `register`, `signup` ou `storage/*` ;
 - connexion, dashboard, isolation tenant/agence et téléchargement privé ;
 - logs quotidiens exploitables par l’identifiant de corrélation ;

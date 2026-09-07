@@ -33,5 +33,5 @@ physique de ces ressources.
 - le mot de passe affiché une fois doit être transmis par un canal organisationnel
   adapté, hors RentFleet ;
 - la suspension ne remplace pas une politique contractuelle de rétention ;
-- invitation par e-mail, SSO, facturation d’abonnement et administration avancée
-  de rôles restent hors de ce lot.
+- le provisioning manuel reste disponible ; le parcours d’invitation ajouté
+  ultérieurement est régi par l’ADR 0016.

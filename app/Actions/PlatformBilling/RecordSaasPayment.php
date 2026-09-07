@@ -4,10 +4,12 @@ namespace App\Actions\PlatformBilling;
 
 use App\Enums\PlatformBilling\SaasPaymentEntryType;
 use App\Enums\PlatformBilling\SaasPaymentMethod;
+use App\Models\PlatformBilling\SaasInvoice;
 use App\Models\PlatformBilling\SaasPayment;
 use App\Models\PlatformBilling\SaasSubscription;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Platform\PlatformAdminGuard;
+use App\Support\PlatformBilling\SaasBillingLock;
 use App\Support\Pricing\DecimalMoney;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
@@ -26,7 +28,7 @@ class RecordSaasPayment
     {
         $this->platformAdmin->actor($actorId);
         $this->rejectUnexpected($data, [
-            'payment_method', 'amount', 'reference', 'idempotency_key', 'occurred_at', 'note',
+            'payment_method', 'amount', 'reference', 'idempotency_key', 'occurred_at', 'note', 'saas_invoice_id',
         ]);
         $method = SaasPaymentMethod::tryFrom((string) ($data['payment_method'] ?? ''));
         if ($method === null) {
@@ -45,6 +47,9 @@ class RecordSaasPayment
         }
         $reference = $this->nullableText($data['reference'] ?? null);
         $note = $this->nullableText($data['note'] ?? null);
+        if (isset($data['occurred_at']) && CarbonImmutable::parse((string) $data['occurred_at'])->isFuture()) {
+            throw ValidationException::withMessages(['occurred_at' => 'Un paiement ne peut pas être daté dans le futur.']);
+        }
 
         try {
             return DB::transaction(function () use (
@@ -57,6 +62,7 @@ class RecordSaasPayment
                 $reference,
                 $note,
             ): SaasPayment {
+                app(SaasBillingLock::class)->tenant($subscription->tenant_id);
                 $locked = SaasSubscription::query()->whereKey($subscription)->lockForUpdate()->firstOrFail();
                 $this->lockIdempotency($locked->tenant_id, $idempotencyKey);
 
@@ -66,6 +72,9 @@ class RecordSaasPayment
                     ->lockForUpdate()
                     ->first();
                 if ($existing !== null) {
+                    if ($existing->saas_invoice_id !== ($data['saas_invoice_id'] ?? null)) {
+                        throw ValidationException::withMessages(['idempotency_key' => 'Cette demande désigne une autre facture.']);
+                    }
                     $this->assertSamePayment(
                         $existing,
                         $locked,
@@ -78,6 +87,21 @@ class RecordSaasPayment
 
                     return $existing;
                 }
+                app(SaasBillingLock::class)->ensureNoCheckout($locked->getKey());
+                if (SaasSubscription::query()->where('previous_subscription_id', $locked->getKey())->where('status', 'pending_payment')->exists()) {
+                    throw ValidationException::withMessages(['payment' => 'Réglez ou annulez le changement de formule en cours avant un autre paiement.']);
+                }
+                $invoice = empty($data['saas_invoice_id']) ? null : SaasInvoice::query()
+                    ->whereKey($data['saas_invoice_id'])->where('tenant_id', $locked->tenant_id)
+                    ->where('saas_subscription_id', $locked->getKey())->lockForUpdate()->firstOrFail();
+                if ($invoice !== null) {
+                    app(SaasInvoiceLifecycle::class)->payable($invoice);
+                    if ($invoice->amount !== $amount) {
+                        throw ValidationException::withMessages(['amount' => 'Le montant doit correspondre exactement à la facture.']);
+                    }
+                } elseif ($locked->invoices()->exists() || $locked->status->value === 'pending_payment') {
+                    throw ValidationException::withMessages(['saas_invoice_id' => 'Sélectionnez une facture ouverte.']);
+                }
                 if ($reference !== null && SaasPayment::query()
                     ->whereRaw('lower(reference) = lower(?)', [$reference])
                     ->exists()) {
@@ -86,6 +110,7 @@ class RecordSaasPayment
 
                 $payment = new SaasPayment;
                 $payment->forceFill([
+                    'saas_invoice_id' => $invoice?->getKey(),
                     'entry_type' => SaasPaymentEntryType::Payment,
                     'payment_method' => $method,
                     'amount' => $amount,
@@ -101,6 +126,9 @@ class RecordSaasPayment
                 $payment->tenant_id = $locked->tenant_id;
                 $payment->subscription()->associate($locked);
                 $payment->save();
+                if ($invoice !== null) {
+                    app(SaasInvoiceLifecycle::class)->settle($invoice, $payment);
+                }
 
                 $this->audit->record('platform.saas_payment.recorded', $payment, [], [
                     'entry_type' => SaasPaymentEntryType::Payment->value,

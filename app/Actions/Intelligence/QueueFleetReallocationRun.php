@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ final class QueueFleetReallocationRun
         private readonly TenantContext $context,
         private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(User $actor, int $forecastHorizon): FleetReallocationRun
@@ -43,6 +45,7 @@ final class QueueFleetReallocationRun
                 throw new FleetReallocationRunAlreadyActiveException;
             }
 
+            $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::FleetReallocation);
             $run = FleetReallocationRun::create([
                 'run_id' => (string) Str::uuid(),
                 'requested_by' => $actor->id,

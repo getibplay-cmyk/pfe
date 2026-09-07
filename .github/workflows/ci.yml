@@ -409,6 +409,9 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
+      - name: Test all JavaScript including bounded smoke harness
+        run: npm run test:js
+
       - name: Check PHP formatting
         run: vendor/bin/pint --test
 
@@ -417,6 +420,24 @@ jobs:
 
       - name: Run test suite
         run: php artisan test --log-junit "$RUNNER_TEMP/j15-tests.xml"
+
+      - name: Audit SaaS billing guards
+        run: php artisan saas:audit-billing --json
+
+      - name: Bounded local HTTP smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -S 127.0.0.1:8099 -t public > "$RUNNER_TEMP/saas-smoke-server.log" 2>&1 &
+          saas_smoke_pid=$!
+          trap 'kill "$saas_smoke_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8099/health > /dev/null; then break; fi
+            sleep 0.5
+          done
+          node scripts/quality/load-smoke.mjs --base-url http://127.0.0.1:8099 \
+            --requests 60 --concurrency 4 --p95-ms 5000 \
+            | tee "$RUNNER_TEMP/saas-load-smoke.json"
 
       - name: Run deployment diagnostics
         shell: bash

@@ -15,6 +15,7 @@ use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract;
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyRuntimeReadiness;
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalySnapshotInspector;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ final class QueueRentalUsageAnomalyRun
         private readonly RentalUsageAnomalyRuntimeReadiness $runtimeReadiness,
         private readonly RentalUsageAnomalySnapshotInspector $snapshotInspector,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(IntelligenceDatasetExportRun $export, User $actor): RentalUsageAnomalyRun
@@ -56,6 +58,7 @@ final class QueueRentalUsageAnomalyRun
                 throw new RentalUsageAnomalyAlreadyActiveException;
             }
 
+            $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::RentalUsageAnomaly);
             $run = RentalUsageAnomalyRun::create([
                 'agency_id' => $lockedExport->agency_id,
                 'run_id' => (string) Str::uuid(),

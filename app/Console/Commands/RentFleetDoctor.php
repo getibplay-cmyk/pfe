@@ -104,6 +104,11 @@ class RentFleetDoctor extends Command
 
         $mailScheme = config('mail.mailers.smtp.scheme');
         $this->add('Schéma SMTP', in_array($mailScheme, ['smtp', 'smtps'], true) ? 'pass' : 'fail', $mailScheme ?: 'absent');
+        $smtpReady = config('mail.default') === 'smtp'
+            && filled(config('mail.mailers.smtp.host'))
+            && (int) config('mail.mailers.smtp.port') > 0
+            && filter_var(config('mail.from.address'), FILTER_VALIDATE_EMAIL) !== false;
+        $this->add('Transport e-mail', $smtpReady ? 'pass' : 'fail', $smtpReady ? 'SMTP configuré' : 'hôte, port et expéditeur SMTP requis');
     }
 
     private function checkRuntime(): void
@@ -472,15 +477,18 @@ class RentFleetDoctor extends Command
         try {
             $events = app(Schedule::class)->events();
             $heartbeatScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'operations:scheduler-heartbeat'));
+            $monitoringScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'operations:monitor-platform'));
+            $onboardingScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'onboarding:expire-invitations'));
             $reservationScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'reservations:expire-pending'));
             $insuranceScheduled = collect($events)->contains(fn ($event) => str_contains((string) $event->command, 'insurance:expire-policies'));
-            $scheduled = $heartbeatScheduled && $reservationScheduled && $insuranceScheduled;
-            $this->add('Scheduler', $scheduled ? 'pass' : 'fail', $scheduled ? 'heartbeat et expirations planifiés' : 'une commande planifiée attendue est absente');
+            $scheduled = $heartbeatScheduled && $monitoringScheduled && $onboardingScheduled && $reservationScheduled && $insuranceScheduled;
+            $this->add('Scheduler', $scheduled ? 'pass' : 'fail', $scheduled ? 'heartbeat, supervision, accueil et expirations planifiés' : 'une commande planifiée attendue est absente');
         } catch (Throwable) {
             $this->add('Scheduler', 'fail', 'état non lisible');
         }
 
         $this->checkSchedulerHeartbeat();
+        $this->checkPlatformMonitoringHeartbeat();
     }
 
     private function checkSchedulerHeartbeat(): void
@@ -512,6 +520,35 @@ class RentFleetDoctor extends Command
         }
     }
 
+    private function checkPlatformMonitoringHeartbeat(): void
+    {
+        $production = app()->environment('production') || $this->option('production');
+        $component = (string) config('operations.monitoring.heartbeat_component');
+        $maxAge = (int) config('operations.scheduler.heartbeat_max_age_minutes');
+
+        if (config('database.default') !== 'pgsql') {
+            $this->add('Heartbeat supervision', $production ? 'fail' : 'warn', 'non vérifiable sans PostgreSQL');
+
+            return;
+        }
+
+        try {
+            $lastSucceededAt = DB::table('operational_heartbeats')->where('component', $component)->value('last_succeeded_at');
+            if (! $lastSucceededAt) {
+                $this->add('Heartbeat supervision', $production ? 'fail' : 'warn', 'absent');
+
+                return;
+            }
+
+            $ageSeconds = CarbonImmutable::parse((string) $lastSucceededAt)->diffInSeconds(now(), true);
+            $fresh = $ageSeconds <= ($maxAge * 60);
+            $ageMinutes = (int) floor($ageSeconds / 60);
+            $this->add('Heartbeat supervision', $fresh ? 'pass' : ($production ? 'fail' : 'warn'), $fresh ? 'récent' : "ancien de {$ageMinutes} minute(s)");
+        } catch (Throwable) {
+            $this->add('Heartbeat supervision', $production ? 'fail' : 'warn', 'indisponible');
+        }
+    }
+
     private function checkDatabaseInvariants(): void
     {
         try {
@@ -528,6 +565,15 @@ class RentFleetDoctor extends Command
             $this->add('Exclusion polices actives', (int) $insuranceGist === 1 ? 'pass' : 'fail', 'insurance_policies_no_active_overlap_excl');
             $insuranceTriggers = DB::scalar("select count(*) from pg_trigger where not tgisinternal and tgname in ('insurance_companies_lifecycle','insurance_policies_cycle_immutability','insurance_policy_histories_append_only','insurance_coverages_draft_only','insurance_claims_incident_integrity')");
             $this->add('Intégrité assurance', (int) $insuranceTriggers === 5 ? 'pass' : 'fail', ((int) $insuranceTriggers).'/5 triggers');
+
+            $saasConstraints = DB::scalar("select count(*) from pg_constraint where conname in ('saas_plans_entitlements_check', 'saas_subscriptions_entitlements_check', 'tenant_onboarding_invitations_state_shape_check', 'tenant_onboarding_invitations_terminal_dates_check')");
+            $this->add('Contraintes SaaS', (int) $saasConstraints === 4 ? 'pass' : 'fail', ((int) $saasConstraints).'/4 contraintes');
+
+            $quotaIndexes = DB::scalar("select count(*) from pg_indexes where indexname in ('demand_forecast_exec_quota_usage_idx', 'fleet_reallocation_runs_scope_date_idx', 'fleet_reallocation_planning_runs_scope_date_idx', 'rental_anomaly_runs_quota_usage_idx', 'vehicle_color_runs_quota_usage_idx', 'vehicle_plate_runs_quota_usage_idx', 'vehicle_damage_runs_quota_usage_idx')");
+            $this->add('Index des quotas SaaS', (int) $quotaIndexes === 7 ? 'pass' : 'fail', ((int) $quotaIndexes).'/7 index');
+
+            $operationsTriggers = DB::scalar("select count(*) from pg_trigger where not tgisinternal and tgname in ('saas_subscriptions_guard', 'tenant_onboarding_invitations_guard', 'platform_operational_incidents_guard', 'platform_operational_incident_events_guard')");
+            $this->add('Immutabilité SaaS et supervision', (int) $operationsTriggers === 4 ? 'pass' : 'fail', ((int) $operationsTriggers).'/4 triggers');
         } catch (Throwable) {
             $this->add('Contraintes PostgreSQL', 'fail', 'état non lisible');
         }

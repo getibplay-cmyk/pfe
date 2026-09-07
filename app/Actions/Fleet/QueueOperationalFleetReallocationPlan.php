@@ -12,6 +12,7 @@ use App\Support\Audit\AuditRecorder;
 use App\Support\Fleet\BuildOperationalFleetReallocationSnapshot;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class QueueOperationalFleetReallocationPlan
         private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly BuildOperationalFleetReallocationSnapshot $snapshotBuilder,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(User $actor): FleetReallocationPlanningRun
@@ -51,6 +53,7 @@ class QueueOperationalFleetReallocationPlan
                 return $existing;
             }
 
+            $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::FleetReallocation);
             $run = FleetReallocationPlanningRun::create([
                 'run_id' => (string) Str::uuid(),
                 'requested_by' => $actor->getKey(),

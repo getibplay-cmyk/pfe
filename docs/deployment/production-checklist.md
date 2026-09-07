@@ -23,7 +23,8 @@
 - [ ] `DB_CONNECTION=pgsql`, aucune connexion SQLite de repli.
 - [ ] sessions chiffrées, cookies secure/httpOnly/SameSite et cache database.
 - [ ] stockage local privé non servi ; aucun `storage:link` nécessaire.
-- [ ] logs quotidiens rotatifs et SMTP réel configuré avec `MAIL_SCHEME` ; vérification et réinitialisation testées de bout en bout.
+- [ ] logs quotidiens rotatifs et SMTP réel configuré avec `MAIL_SCHEME` ; vérification, réinitialisation et invitation testées de bout en bout.
+- [ ] le proxy n’enregistre pas les chaînes de requête des routes `/commencer/*`.
 - [ ] kit marchand CMI courant archivé sans secret, vecteur `ver3` comparé et bac à sable validé.
 - [ ] secrets CMI injectés par le gestionnaire de secrets ; callback HTTPS déclaré et testé en rejeu/tampering.
 - [ ] remboursement et rapprochement CMI testés dans l’espace marchand avant l’activation production.
@@ -40,12 +41,13 @@
 
 - [ ] Le cache database partagé permet `withoutOverlapping` et `onOneServer`.
 - [ ] Le système lance `php artisan schedule:run` chaque minute.
-- [ ] `schedule:list` montre : heartbeat et expiration des réservations chaque
-  minute, expiration des polices à 00:15 en `Africa/Casablanca`.
+- [ ] `schedule:list` montre : heartbeat et supervision chaque minute,
+  expiration des invitations chaque heure, expiration des réservations chaque
+  minute et expiration des polices à 00:15 en `Africa/Casablanca`.
 - [ ] Le heartbeat a moins de cinq minutes et `rentfleet:doctor --production`
   le considère sain.
-- [ ] Aucun worker de queue n’est lancé inutilement : cette release ne dépêche
-  aucune tâche applicative en queue.
+- [ ] Un worker `queue:work --queue=intelligence,default` supervisé consomme la
+  file PostgreSQL et redémarre proprement à chaque release.
 
 ## Sauvegarde et preuve avant bascule
 
@@ -80,9 +82,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/deploy-check.ps1 -Sk
 
 ## Après déploiement et rollback
 
-- [ ] `/health`, login, dashboard, isolation tenant/agence et document privé
-  sont vérifiés.
-- [ ] Logs, espace disque, PostgreSQL et ancienneté du heartbeat sont surveillés.
+- [ ] `/health`, login, dashboard, invitation à usage unique, isolation
+  tenant/agence et document privé sont vérifiés.
+- [ ] `/platform/operations` ne présente aucun incident critique ; logs, file,
+  callbacks CMI, rapprochement, espace disque, PostgreSQL et heartbeat sont
+  surveillés.
 - [ ] Commit précédent et assets associés sont disponibles.
 - [ ] Aucun `migrate:rollback` automatique n’est prévu sur données réelles.
 - [ ] La restauration base + fichiers reste le dernier recours après test isolé

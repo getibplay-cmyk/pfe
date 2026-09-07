@@ -8,13 +8,14 @@ use App\Enums\PlatformBilling\SaasBillingInterval;
 use App\Http\Requests\PlatformBilling\StoreSaasPlanRequest;
 use App\Http\Requests\PlatformBilling\UpdateSaasPlanRequest;
 use App\Models\PlatformBilling\SaasPlan;
+use App\Support\Intelligence\IntelligenceCapabilityCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PlatformPlanController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, IntelligenceCapabilityCatalog $catalog): View
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
@@ -36,6 +37,7 @@ class PlatformPlanController extends Controller
         return view('platform.plans.index', [
             'plans' => $plans,
             'intervals' => SaasBillingInterval::cases(),
+            'capabilities' => $catalog->all(),
         ]);
     }
 

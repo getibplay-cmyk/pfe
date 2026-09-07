@@ -1,5 +1,12 @@
 # E-mails de compte et paiement d’abonnement CMI
 
+Le lot de changement de formule et de renouvellement est décrit dans
+[saas-self-service-renewals.md](saas-self-service-renewals.md). Il ajoute les
+factures liées au registre, le consentement au renouvellement, une file e-mail
+transactionnelle dédiée et une distinction entre suspension de facturation et
+suspension administrative. Les nouvelles options restent désactivées par défaut
+jusqu’à validation PHP/PostgreSQL et recette.
+
 ## État livré
 
 Le code couvre désormais les deux parcours e-mail et le paiement d’abonnement

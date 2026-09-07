@@ -5,6 +5,7 @@ namespace App\Actions\Tenancy;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Auth\TemporaryPassword;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantUserAssignment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -14,12 +15,16 @@ class CreateTenantUser
     public function __construct(
         private readonly TenantUserAssignment $assignment,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     /** @return array{user: User, temporary_password: string} */
     public function handle(array $data, User $actor): array
     {
         return DB::transaction(function () use ($data, $actor): array {
+            if ((bool) $data['is_active']) {
+                $this->planAccess->ensureCanCreate('users', (int) $actor->tenant_id);
+            }
             [$role, $agencyId] = $this->assignment->resolve($actor, (int) $data['role_id'], $data['agency_id'] ?? null);
             $temporaryPassword = TemporaryPassword::generate();
             $user = User::forceCreate([

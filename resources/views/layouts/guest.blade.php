@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    @php($authTitle = match (true) { request()->routeIs('login') => 'Connexion', request()->routeIs('password.request') => 'Mot de passe oublié', request()->routeIs('password.reset') => 'Réinitialiser le mot de passe', request()->routeIs('password.confirm') => 'Confirmer le mot de passe', request()->routeIs('password.change-required') => 'Choisir un mot de passe', request()->routeIs('verification.notice') => 'Vérifier l’adresse e-mail', default => 'Accès sécurisé' })
+    @php($authTitle = match (true) { request()->routeIs('login') => 'Connexion', request()->routeIs('password.request') => 'Mot de passe oublié', request()->routeIs('password.reset') => 'Réinitialiser le mot de passe', request()->routeIs('password.confirm') => 'Confirmer le mot de passe', request()->routeIs('password.change-required') => 'Choisir un mot de passe', request()->routeIs('verification.notice') => 'Vérifier l’adresse e-mail', request()->routeIs('onboarding-invitations.*') => 'Créer votre espace', default => 'Accès sécurisé' })
     <title>{{ $authTitle }} — {{ config('brand.name') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -54,7 +54,7 @@
                     </div>
                     <div class="p-6 sm:p-8 lg:p-10">{{ $slot }}</div>
                 </div>
-                <p class="mx-auto mt-5 max-w-md text-center text-xs leading-5 text-belkhir-space-muted">Pas encore de compte ? L’inscription publique est désactivée. Contactez l’administrateur de votre organisation.</p>
+                <p class="mx-auto mt-5 max-w-md text-center text-xs leading-5 text-belkhir-space-muted">{{ request()->routeIs('onboarding-invitations.*') ? 'Création réservée aux destinataires d’une invitation personnelle valide.' : 'Pas encore de compte ? L’inscription publique est désactivée. Contactez l’administrateur de votre organisation.' }}</p>
             </div>
         </section>
     </main>

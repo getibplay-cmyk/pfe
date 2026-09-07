@@ -15,6 +15,7 @@ use App\Support\Intelligence\DemandForecasting\DemandForecastArtifactVerifier;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ final class QueueDemandForecastExecution
         private readonly DemandForecastRuntimeReadiness $readiness,
         private readonly DemandForecastArtifactVerifier $historyArtifact,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(DemandHistoryExportRun $history, User $actor): DemandForecastExecutionRun
@@ -53,6 +55,7 @@ final class QueueDemandForecastExecution
                 throw new DemandForecastExecutionAlreadyActiveException;
             }
 
+            $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::DemandForecast);
             $run = DemandForecastExecutionRun::create([
                 'agency_id' => $history->agency_id,
                 'run_id' => (string) Str::uuid(),

@@ -12,6 +12,7 @@ use App\Models\PlatformBilling\SaasSubscription;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\PlatformBilling\Cmi\CmiConfiguration;
+use App\Support\PlatformBilling\SaasBillingLock;
 use App\Support\Pricing\DecimalMoney;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -28,11 +29,16 @@ class StartCmiCheckout
     public function handle(SaasSubscription $subscription, User $actor, string $idempotencyKey): SaasPaymentAttempt
     {
         $this->configuration->assertReady();
-        abort_unless($actor->isTenantOwner() && $actor->tenant_id !== null, 403);
+        abort_unless($actor->is_active && ! $actor->is_platform_admin && $actor->hasVerifiedEmail()
+            && $actor->isTenantOwner() && ($actor->role?->is_active ?? false) && $actor->tenant_id !== null, 403);
 
         $idempotencyKey = trim($idempotencyKey);
+        if ($idempotencyKey === '' || strlen($idempotencyKey) > 100) {
+            throw ValidationException::withMessages(['idempotency_key' => 'La clé de demande est invalide.']);
+        }
 
         return DB::transaction(function () use ($subscription, $actor, $idempotencyKey): SaasPaymentAttempt {
+            app(SaasBillingLock::class)->activeTenant($actor->tenant_id);
             DB::selectOne(
                 'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
                 ['cmi-checkout:'.$actor->tenant_id.':'.$idempotencyKey],
@@ -55,17 +61,23 @@ class StartCmiCheckout
                 return $existing;
             }
 
-            if (! in_array($locked->status, TenantSubscriptionStatus::current(), true)) {
+            if ((! in_array($locked->status, TenantSubscriptionStatus::current(), true)
+                && $locked->status !== TenantSubscriptionStatus::PendingPayment)
+                || ($locked->status === TenantSubscriptionStatus::Suspended && ! $locked->billing_suspended)) {
                 throw ValidationException::withMessages(['payment' => 'Cet abonnement ne peut plus être réglé.']);
             }
             if ($locked->currency !== config('platform_billing.cmi.currency')) {
                 throw ValidationException::withMessages(['payment' => 'CMI est actuellement configuré pour les paiements en MAD uniquement.']);
+            }
+            if (SaasSubscription::query()->where('previous_subscription_id', $locked->getKey())->where('status', 'pending_payment')->exists()) {
+                throw ValidationException::withMessages(['payment' => 'Réglez ou annulez le changement de formule en cours avant un autre paiement.']);
             }
             if (DecimalMoney::toMinorUnits($locked->price_amount) <= 0) {
                 throw ValidationException::withMessages(['payment' => 'Aucun paiement n’est requis pour cette offre.']);
             }
 
             $now = CarbonImmutable::now();
+            app(SaasBillingLock::class)->expireAttempts($locked->getKey());
             $outstanding = SaasPaymentAttempt::query()
                 ->where('tenant_id', $locked->tenant_id)
                 ->where('saas_subscription_id', $locked->getKey())
@@ -78,8 +90,14 @@ class StartCmiCheckout
                 return $outstanding;
             }
 
-            $billingPeriodStartsAt = $this->billingPeriodStartsAt($locked, $now);
-            $alreadySettled = SaasPayment::query()
+            $invoice = $locked->invoices()->where('status', 'open')->oldest('period_starts_at')->lockForUpdate()->first();
+            if ($invoice !== null) {
+                app(SaasInvoiceLifecycle::class)->payable($invoice);
+            } elseif ($locked->invoices()->exists() || $locked->status === TenantSubscriptionStatus::PendingPayment) {
+                throw ValidationException::withMessages(['payment' => 'Aucune facture ouverte ne nécessite de paiement.']);
+            }
+            $billingPeriodStartsAt = $invoice?->period_starts_at ?? $this->billingPeriodStartsAt($locked, $now);
+            $alreadySettled = $invoice === null && SaasPayment::query()
                 ->where('tenant_id', $locked->tenant_id)
                 ->where('saas_subscription_id', $locked->getKey())
                 ->where('entry_type', SaasPaymentEntryType::Payment->value)
@@ -96,6 +114,7 @@ class StartCmiCheckout
             $attempt->forceFill([
                 'tenant_id' => $locked->tenant_id,
                 'saas_subscription_id' => $locked->getKey(),
+                'saas_invoice_id' => $invoice?->getKey(),
                 'provider' => 'cmi',
                 'merchant_order_id' => 'BS-'.strtoupper((string) Str::ulid()),
                 'status' => SaasPaymentAttemptStatus::Pending,
@@ -105,7 +124,9 @@ class StartCmiCheckout
                 'gateway_transaction_id' => null,
                 'gateway_response_code' => null,
                 'initiated_by' => $actor->getKey(),
-                'expires_at' => $now->addMinutes((int) config('platform_billing.cmi.attempt_ttl_minutes')),
+                'expires_at' => $locked->change_expires_at !== null && $locked->status === TenantSubscriptionStatus::PendingPayment
+                    ? $now->addMinutes((int) config('platform_billing.cmi.attempt_ttl_minutes'))->min($locked->change_expires_at)
+                    : $now->addMinutes((int) config('platform_billing.cmi.attempt_ttl_minutes')),
                 'resolved_at' => null,
                 'paid_at' => null,
             ])->save();
@@ -132,7 +153,7 @@ class StartCmiCheckout
             return $periodStart;
         }
 
-        while (true) {
+        for ($period = 0; $period < 1200; $period++) {
             $nextPeriod = $subscription->billing_interval === SaasBillingInterval::Annual
                 ? $periodStart->addYearNoOverflow()
                 : $periodStart->addMonthNoOverflow();
@@ -142,5 +163,7 @@ class StartCmiCheckout
 
             $periodStart = $nextPeriod;
         }
+
+        throw ValidationException::withMessages(['payment' => 'La période historique doit être régularisée par l’administrateur.']);
     }
 }

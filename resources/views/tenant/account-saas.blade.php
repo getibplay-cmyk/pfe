@@ -1,6 +1,63 @@
 <x-app-layout>
     <div class="rf-page">
         <x-page-header :title="'Mon abonnement '.config('brand.name')" eyebrow="Compte SaaS" :description="'Consultation de l’offre, des règlements et des assistances accessibles pour '.$tenant->name.'.'" />
+        <x-form-errors />
+
+        @if($pendingChange)
+            <x-section-card title="Changement en attente de règlement" :description="$pendingChange->plan->name">
+                <p class="text-sm">Demande valable jusqu’au {{ App\Support\Ui\UiLabel::dateTime($pendingChange->change_expires_at) }}. La période facturée commence à la demande ; l’activation exige le règlement. Aucun prorata ni remboursement automatique de l’ancienne formule.</p>
+                <p class="mt-2 text-sm">Pendant l’attente, les fonctionnalités actuelles restent accessibles et les quotas les plus stricts des deux formules s’appliquent aux nouvelles créations.</p>
+                <div class="mt-4 flex flex-wrap gap-3">
+                    @if($cmiReadiness['ready'])
+                        <form method="POST" action="{{ route('tenant-saas-checkout.store', $pendingChange) }}" data-loading-form>@csrf
+                            <input type="hidden" name="idempotency_key" value="{{ (string) Illuminate\Support\Str::uuid() }}">
+                            <x-submit-button label="Régler le changement" loading-label="Préparation…" />
+                        </form>
+                    @else<p class="text-sm">Paiement en ligne indisponible. Contactez l’administration pour un règlement manuel.</p>@endif
+                    <form method="POST" action="{{ route('tenant-saas-plan-change.destroy', $pendingChange) }}">@csrf @method('DELETE')
+                        <x-confirmation-button message="Annuler cette demande sans modifier la formule actuelle ?">Annuler la demande</x-confirmation-button>
+                    </form>
+                </div>
+            </x-section-card>
+        @elseif($currentSubscription && config('platform_billing.self_service_enabled'))
+            <x-section-card title="Changer de formule">
+                <form method="POST" action="{{ route('tenant-saas-plan-change.store') }}" class="grid gap-4" data-loading-form>@csrf
+                    <div><x-input-label for="new-saas-plan" value="Nouvelle formule" required />
+                        <select id="new-saas-plan" name="saas_plan_id" required class="mt-1 w-full">
+                            @foreach($availablePlans as $plan)<option value="{{ $plan->id }}">{{ $plan->name }} — {{ App\Support\Ui\UiLabel::money($plan->price_amount, $plan->currency) }} / {{ $plan->billing_interval->value === 'annual' ? 'an' : 'mois' }}</option>@endforeach
+                        </select>
+                    </div>
+                    <label class="flex items-start gap-3 text-sm"><input type="checkbox" name="terms_accepted" value="1" required>
+                        <span>J’accepte une période commençant maintenant, sans prorata ni remboursement automatique. Le changement devient effectif après règlement (immédiatement pour une offre gratuite). Pendant l’attente de 24 heures maximum, les quotas les plus stricts des deux formules limitent les nouvelles créations. Une baisse sous l’utilisation actuelle est refusée.</span>
+                    </label>
+                    <x-submit-button label="Demander le changement" loading-label="Vérification des quotas…" />
+                </form>
+            </x-section-card>
+        @endif
+
+        @if($currentSubscription && (config('platform_billing.renewals_enabled') || $currentSubscription->auto_renew))
+            <x-section-card title="Renouvellement du service">
+                <p class="text-sm">Émission des factures : {{ $currentSubscription->auto_renew ? 'activée' : 'désactivée' }}. Aucun prélèvement automatique. Les factures déjà émises restent dues après désactivation.</p>
+                <form method="POST" action="{{ route('tenant-saas-renewal.update', $currentSubscription) }}" class="mt-4 grid gap-3">@csrf @method('PUT')
+                    <input type="hidden" name="auto_renew" value="{{ $currentSubscription->auto_renew ? '0' : '1' }}">
+                    <label class="flex items-start gap-3 text-sm"><input type="checkbox" name="terms_accepted" value="1" required><span>Je confirme ce choix. À échéance, une facture sera à régler ; un impayé peut entraîner la suspension après le délai de régularisation de {{ config('platform_billing.grace_days') }} jours. La fin d’un essai bloque les nouvelles opérations jusqu’au règlement.</span></label>
+                    <x-submit-button :label="$currentSubscription->auto_renew ? 'Désactiver le renouvellement' : 'Activer le renouvellement'" loading-label="Enregistrement…" />
+                </form>
+            </x-section-card>
+        @endif
+
+        <x-section-card title="Factures SaaS">
+            <x-responsive-table label="Factures SaaS"><table class="rf-table">
+                <thead><tr><th>Référence</th><th>Échéance</th><th>État</th><th>Montant</th></tr></thead>
+                <tbody>@forelse($invoices as $invoice)<tr>
+                    <td><a class="underline" href="{{ route('tenant-saas-invoices.show', $invoice) }}">{{ $invoice->number }}</a></td>
+                    <td>{{ App\Support\Ui\UiLabel::dateTime($invoice->due_at) }}</td>
+                    <td>{{ match($invoice->status) { 'paid' => 'Réglée', 'void' => 'Annulée', default => 'À régler' } }}</td>
+                    <td>{{ App\Support\Ui\UiLabel::money($invoice->amount, $invoice->currency) }}</td>
+                </tr>@empty<tr><td colspan="4">Aucune facture SaaS émise.</td></tr>@endforelse</tbody>
+            </table></x-responsive-table>
+            {{ $invoices->links() }}
+        </x-section-card>
 
         @php($subscriptionProgress = 1 + ($currentSubscription ? 1 : 0) + ($payments->contains(fn ($payment) => $payment->entry_type->value === 'payment') ? 1 : 0))
         <x-section-card title="Activation du service" description="Progression fondée sur trois contrôles réels : e-mail vérifié, abonnement attribué et règlement enregistré.">
@@ -39,6 +96,22 @@
                 <ul class="divide-y">@forelse($enabledCapabilities as $capability)<li class="flex items-center gap-2 py-3 text-sm"><span class="h-2 w-2 rounded-full bg-emerald-600" aria-hidden="true"></span>{{ $capability }}</li>@empty<li><x-empty-state title="Aucune assistance disponible" /></li>@endforelse</ul>
             </x-section-card>
         </div>
+
+        <x-section-card title="Utilisation du plan" :description="$planState['reason']">
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach($quotas as $quota)
+                    <div class="rounded-xl border border-slate-200 bg-white p-4">
+                        <p class="text-sm font-semibold text-slate-800">{{ ucfirst($quota['label']) }}</p>
+                        @if($quota['limit'] === null)
+                            <p class="mt-2 text-2xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\BusinessNumber::integer($quota['used']) }}</p>
+                            <p class="mt-1 text-xs text-slate-500">Sans limite contractuelle</p>
+                        @else
+                            <div class="mt-3"><x-progress-bar :label="$quota['label']" :value="min($quota['used'], $quota['limit'])" :max="max(1, $quota['limit'])" :value-text="App\Support\Ui\BusinessNumber::integer($quota['used']).' sur '.App\Support\Ui\BusinessNumber::integer($quota['limit'])" :tone="$quota['allowed'] ? 'brand' : 'orange'" /></div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </x-section-card>
 
         <x-section-card title="Historique des paiements SaaS" description="Ces écritures administratives sont distinctes des paiements de vos locations.">
             <x-responsive-table label="Paiements SaaS" class="shadow-none">

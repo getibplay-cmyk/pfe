@@ -6,7 +6,7 @@
         <ol class="grid gap-5 md:grid-cols-3" aria-label="Étapes d’abonnement">
             @foreach ([
                 ['1', 'Choix et validation', 'Sélectionnez une offre ; l’administrateur confirme le périmètre de votre entreprise.'],
-                ['2', 'Création sécurisée', 'Le propriétaire reçoit un mot de passe temporaire et vérifie son adresse e-mail.'],
+                ['2', 'Invitation sécurisée', 'Le propriétaire reçoit un lien personnel, choisit son mot de passe et crée l’agence initiale.'],
                 ['3', 'Règlement CMI', 'Depuis son espace, il rejoint la page CMI, règle en MAD puis retrouve le statut confirmé.'],
             ] as $step)
                 <li class="rf-panel p-6"><span class="grid h-10 w-10 place-items-center rounded-full bg-belkhir-space-blue text-sm font-bold text-white">{{ $step[0] }}</span><h2 class="mt-5 text-xl font-bold text-slate-950">{{ $step[1] }}</h2><p class="mt-3 text-sm leading-6 text-slate-600">{{ $step[2] }}</p></li>

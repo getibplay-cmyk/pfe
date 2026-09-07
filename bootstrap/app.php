@@ -22,11 +22,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->validateCsrfTokens(except: [
             'billing/cmi/callback',
+            'billing/cmi/return/*',
         ]);
 
-        $middleware->append([
-            RequestCorrelation::class,
+        $middleware->trustHosts(at: fn (): array => [
+            '^'.preg_quote((string) (parse_url(config('app.url'), PHP_URL_HOST) ?: 'invalid.invalid'), '/').'$',
+        ], subdomains: false);
+
+        $middleware->prepend([
             SecurityHeaders::class,
+            RequestCorrelation::class,
         ]);
 
         $middleware->alias([

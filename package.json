@@ -2,6 +2,8 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "test:js": "node --test tests/JavaScript/*.test.js",
+        "qa:load-smoke": "node scripts/quality/load-smoke.mjs",
         "build": "vite build",
         "dev": "vite",
         "test:vehicle-color-assistant": "node --test tests/JavaScript/vehicle-color-assistant.test.js",
