@@ -45,8 +45,8 @@ class TransitionSaasSubscription
                     throw ValidationException::withMessages(['status' => 'Régularisez les factures ouvertes avant de clôturer cet abonnement.']);
                 }
                 app(SaasBillingLock::class)->ensureNoCheckout($locked->getKey());
-                foreach (SaasSubscription::query()->where('previous_subscription_id', $locked->getKey())->where('status', 'pending_payment')->get() as $pending) {
-                    app(SaasBillingLock::class)->ensureNoCheckout($pending->getKey());
+                if (SaasSubscription::query()->where('previous_subscription_id', $locked->getKey())->where('status', 'pending_payment')->exists()) {
+                    throw ValidationException::withMessages(['status' => 'Réglez ou annulez le changement de formule avant de clôturer cet abonnement.']);
                 }
             }
 

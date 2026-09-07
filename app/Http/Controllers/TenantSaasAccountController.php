@@ -13,6 +13,7 @@ use App\Support\Intelligence\IntelligenceCapabilityCatalog;
 use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\PlatformBilling\Cmi\CmiConfiguration;
 use App\Support\PlatformBilling\TenantPlanAccess;
+use App\Support\Pricing\DecimalMoney;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -35,10 +36,17 @@ final class TenantSaasAccountController extends Controller
         $tenant = Tenant::query()->findOrFail($tenantId);
         $currentSubscription = SaasSubscription::query()
             ->with('plan')
+            ->withExists(['invoices', 'invoices as open_invoices_exist' => fn ($query) => $query->where('status', 'open')])
             ->where('tenant_id', $tenantId)
             ->whereIn('status', self::CURRENT_STATUSES)
             ->latest('starts_at')
             ->first();
+        $pendingChange = SaasSubscription::query()->with('plan')->where('tenant_id', $tenantId)->where('status', 'pending_payment')->first();
+        $currentCheckoutAvailable = $currentSubscription !== null && $pendingChange === null
+            && DecimalMoney::toMinorUnits($currentSubscription->price_amount) > 0
+            && $currentSubscription->currency === config('platform_billing.cmi.currency')
+            && ($currentSubscription->status->value !== 'suspended' || $currentSubscription->billing_suspended)
+            && (! $currentSubscription->invoices_exists || $currentSubscription->open_invoices_exist);
         $subscriptions = SaasSubscription::query()
             ->with('plan')
             ->where('tenant_id', $tenantId)
@@ -70,6 +78,8 @@ final class TenantSaasAccountController extends Controller
                 'payments',
                 'paymentAttempts',
                 'enabledCapabilities',
+                'pendingChange',
+                'currentCheckoutAvailable',
             ),
             'cmiReadiness' => $cmiConfiguration->readiness(),
             'planState' => $planAccess->state($tenantId),
@@ -77,7 +87,6 @@ final class TenantSaasAccountController extends Controller
             'availablePlans' => SaasPlan::query()->where('is_active', true)
                 ->when($currentSubscription, fn ($query) => $query->where('currency', $currentSubscription->currency)
                     ->where('id', '<>', $currentSubscription->saas_plan_id))->orderBy('price_amount')->get(),
-            'pendingChange' => SaasSubscription::query()->with('plan')->where('tenant_id', $tenantId)->where('status', 'pending_payment')->first(),
             'invoices' => SaasInvoice::query()->where('tenant_id', $tenantId)->latest()->paginate(15, ['*'], 'invoices_page'),
         ]);
     }

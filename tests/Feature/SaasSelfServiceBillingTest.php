@@ -78,6 +78,30 @@ class SaasSelfServiceBillingTest extends TestCase
         $this->assertDatabaseCount('saas_payments', 0);
     }
 
+    public function test_predecessor_cannot_be_terminated_until_its_pending_change_is_resolved(): void
+    {
+        [$owner, $platform, $current] = $this->fixture();
+        $pending = app(RequestSaasPlanChange::class)->handle($owner, $this->plan($platform));
+        foreach ([TenantSubscriptionStatus::Cancelled, TenantSubscriptionStatus::Expired] as $terminal) {
+            $this->reject(fn () => app(TransitionSaasSubscription::class)->handle($current, $terminal, $platform->id));
+        }
+        $this->assertSame(TenantSubscriptionStatus::Active, $current->refresh()->status);
+        $this->assertSame('open', $pending->invoices()->sole()->status);
+        app(CancelSaasPlanChange::class)->handle($pending);
+        app(TransitionSaasSubscription::class)->handle($current, TenantSubscriptionStatus::Cancelled, $platform->id);
+        $this->assertSame(TenantSubscriptionStatus::Cancelled, $current->refresh()->status);
+    }
+
+    public function test_account_only_offers_invoice_checkout_while_an_open_invoice_is_payable(): void
+    {
+        [$owner, $platform, $current] = $this->fixture();
+        $this->enableCmi();
+        $invoice = app(IssueSaasInvoice::class)->handle($current, CarbonImmutable::now());
+        $this->actingAs($owner)->get(route('tenant-saas-account.show'))->assertOk()->assertSee('Payer par carte avec CMI');
+        $this->pay($platform, $current, $invoice);
+        $this->get(route('tenant-saas-account.show'))->assertOk()->assertDontSee('Payer par carte avec CMI');
+    }
+
     public function test_downgrade_cannot_discard_existing_usage_and_reserves_new_quotas(): void
     {
         [$owner, $platform] = $this->fixture();

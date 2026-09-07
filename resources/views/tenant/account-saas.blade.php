@@ -78,13 +78,15 @@
                         <x-metadata-item label="Fin prévue">{{ App\Support\Ui\UiLabel::dateTime($currentSubscription->ends_at) }}</x-metadata-item>
                     </x-metadata-list>
                     <div class="mt-6 border-t border-slate-200 pt-5">
-                        @if($cmiReadiness['ready'] && (float) $currentSubscription->price_amount > 0)
+                        @if($cmiReadiness['ready'] && $currentCheckoutAvailable)
                             <form method="POST" action="{{ route('tenant-saas-checkout.store', $currentSubscription) }}" data-loading-form>
                                 @csrf
                                 <input type="hidden" name="idempotency_key" value="{{ (string) Illuminate\Support\Str::uuid() }}">
                                 <x-submit-button label="Payer par carte avec CMI" loading-label="Préparation du paiement…" icon="payment" class="w-full sm:w-auto" />
                             </form>
                             <p class="mt-2 text-xs leading-5 text-slate-500">Vous serez redirigé vers la page sécurisée de CMI. Aucune donnée de carte n’est saisie ici.</p>
+                        @elseif(!$currentCheckoutAvailable)
+                            <p class="text-sm text-slate-600">Aucun règlement par carte n’est disponible pour cette formule dans son état actuel. Consultez les factures et toute demande de changement ci-dessus.</p>
                         @else
                             <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{{ $cmiReadiness['message'] }} Contactez l’administration pour un règlement alternatif.</div>
                         @endif

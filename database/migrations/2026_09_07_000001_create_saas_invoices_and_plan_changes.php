@@ -128,7 +128,7 @@ return new class extends Migration
             END;
             $$ LANGUAGE plpgsql;
 
-            CREATE FUNCTION belkhir_guard_saas_invoice() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION belkhir_guard_saas_invoice() RETURNS trigger AS $$
             DECLARE subscription_row saas_subscriptions%ROWTYPE;
             BEGIN
                 IF TG_OP = 'INSERT' THEN
@@ -162,7 +162,7 @@ return new class extends Migration
             CREATE TRIGGER saas_invoice_events_guard BEFORE UPDATE OR DELETE ON saas_invoice_events
                 FOR EACH ROW EXECUTE FUNCTION belkhir_guard_saas_gateway_event();
 
-            CREATE FUNCTION belkhir_guard_saas_invoice_link() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION belkhir_guard_saas_invoice_link() RETURNS trigger AS $$
             DECLARE invoice_row saas_invoices%ROWTYPE;
             BEGIN
                 IF TG_OP = 'UPDATE' AND NEW.saas_invoice_id IS DISTINCT FROM OLD.saas_invoice_id THEN
@@ -195,7 +195,7 @@ return new class extends Migration
             CREATE TRIGGER saas_attempt_invoice_link BEFORE INSERT OR UPDATE ON saas_payment_attempts
                 FOR EACH ROW EXECUTE FUNCTION belkhir_guard_saas_invoice_link();
 
-            CREATE FUNCTION belkhir_check_saas_invoice_settlement() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION belkhir_check_saas_invoice_settlement() RETURNS trigger AS $$
             DECLARE invoice_id uuid; invoice_row saas_invoices%ROWTYPE; paid_row saas_payments%ROWTYPE;
             BEGIN
                 IF TG_TABLE_NAME = 'saas_invoices' THEN invoice_id := NEW.id;

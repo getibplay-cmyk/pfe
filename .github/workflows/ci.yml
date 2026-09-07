@@ -422,6 +422,9 @@ jobs:
       - name: Apply database migrations
         run: php artisan migrate --force --no-interaction
 
+      - name: Run focused SaaS regressions before the full suite
+        run: php artisan test --filter='Saas|CmiSignature|PlatformOperationsMonitoring|TenantOnboardingInvitation|SecurityHeaders'
+
       - name: Run test suite
         run: php artisan test --log-junit "$RUNNER_TEMP/j15-tests.xml"
 
@@ -430,6 +433,8 @@ jobs:
 
       - name: Bounded local HTTP smoke
         shell: bash
+        env:
+          APP_URL: http://127.0.0.1:8099
         run: |
           set -euo pipefail
           php -S 127.0.0.1:8099 -t public > "$RUNNER_TEMP/saas-smoke-server.log" 2>&1 &
