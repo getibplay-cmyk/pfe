@@ -413,7 +413,11 @@ jobs:
         run: npm run test:js
 
       - name: Check PHP formatting
-        run: vendor/bin/pint --test
+        run: |
+          if vendor/bin/pint --test; then exit 0; fi
+          vendor/bin/pint
+          git diff --no-ext-diff --no-color -- '*.php'
+          exit 1
 
       - name: Apply database migrations
         run: php artisan migrate --force --no-interaction
