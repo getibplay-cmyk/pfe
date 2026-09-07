@@ -7,10 +7,17 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Tests\TestCase;
 
 class SecurityHeadersTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        SymfonyRequest::setTrustedHosts([]);
+        parent::tearDown();
+    }
+
     public function test_private_errors_and_early_failures_are_not_cached(): void
     {
         $this->get('/tenant/missing-private-page')->assertNotFound()
