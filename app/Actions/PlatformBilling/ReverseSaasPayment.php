@@ -4,9 +4,11 @@ namespace App\Actions\PlatformBilling;
 
 use App\Enums\PlatformBilling\SaasPaymentEntryType;
 use App\Enums\PlatformBilling\SaasPaymentMethod;
+use App\Models\PlatformBilling\SaasInvoice;
 use App\Models\PlatformBilling\SaasPayment;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Platform\PlatformAdminGuard;
+use App\Support\PlatformBilling\SaasBillingLock;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +53,7 @@ class ReverseSaasPayment
                 $note,
                 $cmiRefundConfirmed,
             ): SaasPayment {
+                app(SaasBillingLock::class)->tenant($payment->tenant_id);
                 $original = SaasPayment::query()->whereKey($payment)->lockForUpdate()->firstOrFail();
                 if ($original->entry_type !== SaasPaymentEntryType::Payment) {
                     throw ValidationException::withMessages(['payment' => 'Seul un paiement SaaS original peut être contrepassé.']);
@@ -105,6 +108,7 @@ class ReverseSaasPayment
 
                 $reversal = new SaasPayment;
                 $reversal->forceFill([
+                    'saas_invoice_id' => $original->saas_invoice_id,
                     'entry_type' => SaasPaymentEntryType::Reversal,
                     'payment_method' => $original->payment_method,
                     'amount' => $original->amount,
@@ -120,6 +124,10 @@ class ReverseSaasPayment
                 $reversal->tenant_id = $original->tenant_id;
                 $reversal->saas_subscription_id = $original->saas_subscription_id;
                 $reversal->save();
+                if ($original->saas_invoice_id !== null) {
+                    $invoice = SaasInvoice::query()->whereKey($original->saas_invoice_id)->lockForUpdate()->firstOrFail();
+                    app(SaasInvoiceLifecycle::class)->reverse($invoice, $reversal);
+                }
 
                 $this->audit->record('platform.saas_payment.reversed', $reversal, [], [
                     'entry_type' => SaasPaymentEntryType::Reversal->value,

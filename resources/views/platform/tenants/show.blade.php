@@ -5,6 +5,17 @@
         </x-page-header>
 
         <x-form-errors />
+        <x-section-card title="Factures SaaS de l’entreprise">
+            <x-responsive-table label="Factures SaaS"><table class="rf-table"><thead><tr><th>Référence</th><th>Échéance</th><th>État</th><th>Montant</th></tr></thead>
+                <tbody>@forelse($saasInvoices as $invoice)<tr>
+                    <td><a class="underline" href="{{ route('platform.saas-invoices.show', $invoice) }}">{{ $invoice->number }}</a></td>
+                    <td>{{ App\Support\Ui\UiLabel::dateTime($invoice->due_at) }}</td>
+                    <td>{{ match($invoice->status) { 'paid' => 'Réglée', 'void' => 'Annulée', default => 'À régler' } }}</td>
+                    <td>{{ App\Support\Ui\UiLabel::money($invoice->amount, $invoice->currency) }}</td>
+                </tr>@empty<tr><td colspan="4">Aucune facture émise.</td></tr>@endforelse</tbody>
+            </table></x-responsive-table>
+            {{ $saasInvoices->links() }}
+        </x-section-card>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">@foreach($counts as $label => $value)<x-stat-card :label="$label" :value="$value" />@endforeach</div>
 
         <div class="grid gap-6 lg:grid-cols-2">
@@ -54,6 +65,17 @@
                 <div class="divide-y">@forelse($saasPayments as $payment)<div class="flex items-start justify-between gap-4 py-3 text-sm"><span><strong>{{ $payment->entry_type->value === 'reversal' ? 'Contrepassation' : 'Paiement enregistré' }}</strong><span class="block text-slate-500">{{ App\Support\Ui\UiLabel::get($payment->payment_method) }} · {{ App\Support\Ui\UiLabel::dateTime($payment->occurred_at) }}</span>@if($payment->reason)<span class="mt-1 block text-slate-600">Motif : {{ $payment->reason }}</span>@endif @if($payment->note)<span class="mt-1 block text-slate-600">{{ $payment->note }}</span>@endif</span><strong>{{ $payment->entry_type->value === 'reversal' ? '−' : '' }}{{ App\Support\Ui\UiLabel::money($payment->amount, $payment->currency) }}</strong></div>@empty<x-empty-state title="Aucun paiement SaaS" />@endforelse</div>
             </x-section-card>
         </div>
+
+        <x-section-card title="Droits et quotas du plan" :description="$planState['reason']">
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach($quotas as $quota)
+                    <div class="rounded-xl border border-slate-200 p-4 text-sm">
+                        <div class="flex items-center justify-between gap-3"><strong>{{ ucfirst($quota['label']) }}</strong><x-status-badge :value="$quota['allowed'] ? 'active' : 'inactive'" /></div>
+                        <p class="mt-2 text-slate-600">{{ App\Support\Ui\BusinessNumber::integer($quota['used']) }} utilisé(s) · {{ $quota['limit'] === null ? 'sans limite' : App\Support\Ui\BusinessNumber::integer($quota['limit']).' maximum' }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </x-section-card>
 
         <x-section-card title="Assistances intelligentes" description="Une autorisation ne lance aucune analyse et ne modifie aucune donnée métier.">
             @php

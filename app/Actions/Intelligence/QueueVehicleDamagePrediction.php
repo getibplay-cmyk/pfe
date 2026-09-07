@@ -21,6 +21,7 @@ use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageImageSanitizer;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageRuntimeReadiness;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
@@ -37,6 +38,7 @@ final class QueueVehicleDamagePrediction
         private readonly TenantIntelligenceAccess $tenantAccess,
         private readonly VehicleDamageRuntimeReadiness $readiness,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(
@@ -133,6 +135,7 @@ final class QueueVehicleDamagePrediction
                     }
                 }
 
+                $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::VehicleDamage);
                 $run = VehicleDamagePredictionRun::create([
                     'agency_id' => $lockedContract->agency_id,
                     'rental_contract_id' => $lockedContract->id,

@@ -6,6 +6,7 @@ use App\Enums\IntelligenceCapability;
 use App\Enums\TenantStatus;
 use App\Exceptions\TenantIntelligenceUnavailableException;
 use App\Models\TenantIntelligenceAccess as TenantIntelligenceAccessModel;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 
@@ -14,6 +15,7 @@ final class TenantIntelligenceAccess
     public function __construct(
         private readonly TenantContext $context,
         private readonly IntelligenceCapabilityCatalog $catalog,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function status(
@@ -26,11 +28,13 @@ final class TenantIntelligenceAccess
             ->where('status', TenantStatus::Active->value)
             ->whereNull('deleted_at')
             ->exists();
-        $tenantAuthorized = TenantIntelligenceAccessModel::query()
+        $tenantSettingEnabled = TenantIntelligenceAccessModel::query()
             ->where('tenant_id', $tenantId)
             ->where('capability', $capability->value)
             ->where('enabled', true)
             ->exists();
+        $planAuthorized = $tenantActive && $this->planAccess->allowsCapability($capability, $tenantId);
+        $tenantAuthorized = $tenantSettingEnabled && $planAuthorized;
         $globallyEnabled = $tenantActive && $tenantAuthorized
             ? $this->catalog->globallyEnabled($capability)
             : false;
@@ -48,7 +52,8 @@ final class TenantIntelligenceAccess
                 $globallyEnabled,
                 $runtimeReady,
                 $tenantActive,
-                $tenantAuthorized,
+                $tenantSettingEnabled,
+                $planAuthorized,
             ),
         );
     }
@@ -71,7 +76,8 @@ final class TenantIntelligenceAccess
                 ->where('tenant_id', $tenantId)
                 ->where('capability', $capability->value)
                 ->where('enabled', true)
-                ->exists();
+                ->exists()
+            && $this->planAccess->allowsCapability($capability, $tenantId);
     }
 
     public function ensureAuthorized(IntelligenceCapability $capability, ?int $tenantId = null): void
@@ -92,11 +98,13 @@ final class TenantIntelligenceAccess
         bool $globallyEnabled,
         bool $runtimeReady,
         bool $tenantActive,
-        bool $tenantAuthorized,
+        bool $tenantSettingEnabled,
+        bool $planAuthorized,
     ): string {
         return match (true) {
             ! $tenantActive => 'Cette entreprise n’est pas active.',
-            ! $tenantAuthorized => 'Cette fonctionnalité n’est pas autorisée pour cette entreprise.',
+            ! $tenantSettingEnabled => 'Cette fonctionnalité n’est pas autorisée pour cette entreprise.',
+            ! $planAuthorized => 'Cette fonctionnalité n’est pas incluse dans le plan ou son quota mensuel est atteint.',
             ! $globallyEnabled, ! $runtimeReady => 'Cette fonctionnalité est temporairement indisponible.',
             default => 'Disponible pour cette entreprise.',
         };

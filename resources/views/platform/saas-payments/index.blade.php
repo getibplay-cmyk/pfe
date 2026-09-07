@@ -20,6 +20,9 @@
                         <form method="POST" action="{{ route('platform.saas-payments.reverse', $payment) }}" class="mt-2 w-80 space-y-3 rounded-xl border bg-white p-4 shadow-xl" x-belkhir-space-confirm data-confirm-title="{{ $isCmiPayment ? 'Enregistrer le remboursement CMI' : 'Contrepasser le paiement SaaS' }}" data-confirm-resource="Paiement SaaS sélectionné" data-confirm-consequence="Une écriture de correction définitive sera créée ; le paiement d’origine restera conservé." data-confirm-label="Enregistrer la contrepassation" data-loading-form>
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ (string) Illuminate\Support\Str::uuid() }}">
+                            @if($payment->saas_invoice_id)
+                                <p class="text-xs text-amber-950">Cette correction rouvre la dette de renouvellement ou annule la facture de changement et peut suspendre le service. L’ancien abonnement ne sera pas réactivé automatiquement.</p>
+                            @endif
                             @if($isCmiPayment)
                                 <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">Effectuez d’abord le remboursement dans le portail marchand CMI. BELKHIR SPACE enregistre ensuite sa référence sans appeler ni simuler la passerelle.</div>
                                 <label class="flex items-start gap-2 text-sm text-slate-700">

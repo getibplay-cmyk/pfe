@@ -3,17 +3,35 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
+        try {
+            $response = $next($request);
+        } catch (Throwable $exception) {
+            $handler = app(ExceptionHandler::class);
+            $handler->report($exception);
+            $response = $handler->render($request, $exception);
+        }
 
         foreach (config('security.headers') as $name => $value) {
             $response->headers->set($name, $value);
+        }
+
+        if ($request->is('commencer/*', 'reset-password*', 'forgot-password*', 'verify-email*')) {
+            $response->headers->set('Referrer-Policy', 'no-referrer');
+        }
+
+        if ($request->user() !== null || $request->is('tenant/*', 'platform/*', 'billing/cmi/*',
+            'commencer/*', 'login', 'forgot-password*', 'reset-password*', 'verify-email*', 'confirm-password')) {
+            $explicitExpiry = $response->headers->hasCacheControlDirective('max-age');
+            $response->headers->set('Cache-Control', $explicitExpiry ? 'no-store, private, max-age=0' : 'no-store, private');
         }
 
         if (app()->environment('production') && $request->isSecure() && config('security.hsts.enabled')) {

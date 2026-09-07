@@ -5,6 +5,7 @@ namespace App\Actions\Tenancy;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantUserAssignment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,6 +15,7 @@ class UpdateTenantUser
     public function __construct(
         private readonly TenantUserAssignment $assignment,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(User $subject, array $data, User $actor): User
@@ -21,6 +23,9 @@ class UpdateTenantUser
         return DB::transaction(function () use ($subject, $data, $actor): User {
             $locked = User::query()->lockForUpdate()->findOrFail($subject->id);
             abort_unless($locked->tenant_id === $actor->tenant_id, 403);
+            if (! $locked->is_active && (bool) $data['is_active']) {
+                $this->planAccess->ensureCanCreate('users', (int) $locked->tenant_id);
+            }
             if (! $actor->isTenantOwner() && ! $actor->isAgencyManager()) {
                 abort_unless((int) $data['role_id'] === (int) $locked->role_id, 403);
                 abort_unless(($data['agency_id'] ?? null) === $locked->agency_id, 403);

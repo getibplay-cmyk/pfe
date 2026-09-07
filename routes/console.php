@@ -14,6 +14,23 @@ Schedule::command('operations:scheduler-heartbeat')
     ->withoutOverlapping(5)
     ->onOneServer();
 
+Schedule::command('operations:monitor-platform')
+    ->everyMinute()
+    ->timezone(config('app.timezone'))
+    ->withoutOverlapping(5)
+    ->onOneServer();
+
+Schedule::command('onboarding:expire-invitations')
+    ->hourly()
+    ->timezone(config('app.timezone'))
+    ->withoutOverlapping(10)
+    ->onOneServer();
+
+Schedule::command('saas:process-billing')
+    ->hourly()
+    ->withoutOverlapping(30)
+    ->onOneServer();
+
 Schedule::command('reservations:expire-pending')
     ->everyMinute()
     ->timezone(config('app.timezone'))

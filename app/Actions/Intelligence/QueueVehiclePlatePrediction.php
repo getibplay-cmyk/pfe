@@ -17,6 +17,7 @@ use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateImageSanitizer;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\AgencyAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -34,6 +35,7 @@ final class QueueVehiclePlatePrediction
         private readonly VehiclePlateRuntimeReadiness $readiness,
         private readonly VehiclePlateImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(
@@ -154,6 +156,7 @@ final class QueueVehiclePlatePrediction
                     }
                 }
 
+                $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::VehiclePlate);
                 $run = VehiclePlatePredictionRun::create([
                     'agency_id' => $agencyId,
                     'run_id' => $runId,

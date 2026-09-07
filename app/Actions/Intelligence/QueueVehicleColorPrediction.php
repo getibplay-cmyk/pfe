@@ -16,6 +16,7 @@ use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\AgencyAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -33,6 +34,7 @@ final class QueueVehicleColorPrediction
         private readonly VehicleColorRuntimeReadiness $readiness,
         private readonly VehicleColorImageSanitizer $imageSanitizer,
         private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(Vehicle $vehicle, UploadedFile $image, User $actor): VehicleColorPredictionRun
@@ -120,6 +122,7 @@ final class QueueVehicleColorPrediction
                     }
                 }
 
+                $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::VehicleColor);
                 $run = VehicleColorPredictionRun::create([
                     'agency_id' => $agencyId,
                     'run_id' => $runId,

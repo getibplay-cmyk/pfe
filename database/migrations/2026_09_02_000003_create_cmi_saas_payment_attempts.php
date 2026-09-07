@@ -143,6 +143,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::hasTable('saas_invoices')) {
+            throw new RuntimeException('SaaS invoice history depends on CMI guards. Deploy a corrective migration instead of rolling back CMI.');
+        }
+
         DB::unprepared(<<<'SQL'
             DROP TRIGGER IF EXISTS saas_payment_gateway_events_guard ON saas_payment_gateway_events;
             DROP TRIGGER IF EXISTS saas_payment_attempts_guard ON saas_payment_attempts;

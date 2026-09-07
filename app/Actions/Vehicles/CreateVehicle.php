@@ -8,6 +8,7 @@ use App\Enums\VehicleOperationalStatus;
 use App\Models\Vehicle;
 use App\Models\VehicleCategory;
 use App\Models\VehicleStatusHistory;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\AgencyAccess;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +18,7 @@ class CreateVehicle
         private readonly AgencyAccess $agencyAccess,
         private readonly AttachPreparedVehicleColorPrediction $attachColorPrediction,
         private readonly AttachPreparedVehiclePlatePrediction $attachPlatePrediction,
+        private readonly TenantPlanAccess $planAccess,
     ) {}
 
     public function handle(
@@ -34,6 +36,7 @@ class CreateVehicle
             $colorPredictionRunId,
             $platePredictionRunId,
         ) {
+            $this->planAccess->ensureCanCreate('vehicles');
             $vehicle = Vehicle::create($data);
             $vehicle->forceFill(['operational_status' => VehicleOperationalStatus::Active])->save();
             VehicleStatusHistory::create(['vehicle_id' => $vehicle->id, 'from_status' => null, 'to_status' => VehicleOperationalStatus::Active, 'changed_by' => $actorId]);

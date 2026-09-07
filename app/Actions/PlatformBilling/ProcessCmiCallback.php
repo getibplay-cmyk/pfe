@@ -8,6 +8,7 @@ use App\Enums\PlatformBilling\SaasPaymentAttemptStatus;
 use App\Enums\PlatformBilling\SaasPaymentEntryType;
 use App\Enums\PlatformBilling\SaasPaymentMethod;
 use App\Enums\PlatformBilling\TenantSubscriptionStatus;
+use App\Models\PlatformBilling\SaasInvoice;
 use App\Models\PlatformBilling\SaasPayment;
 use App\Models\PlatformBilling\SaasPaymentAttempt;
 use App\Models\PlatformBilling\SaasPaymentGatewayEvent;
@@ -15,9 +16,11 @@ use App\Models\PlatformBilling\SaasSubscription;
 use App\Support\Audit\AuditRecorder;
 use App\Support\PlatformBilling\Cmi\CmiConfiguration;
 use App\Support\PlatformBilling\Cmi\CmiHostedGateway;
+use App\Support\PlatformBilling\SaasBillingLock;
 use App\Support\Pricing\DecimalMoney;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class ProcessCmiCallback
@@ -60,6 +63,7 @@ class ProcessCmiCallback
             $payloadDigest,
             $eventKey,
         ): array {
+            $tenant = app(SaasBillingLock::class)->tenant($attempt->tenant_id);
             DB::selectOne(
                 'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
                 ['cmi-callback:'.$eventKey],
@@ -69,7 +73,9 @@ class ProcessCmiCallback
                 ->where('provider_event_key', $eventKey)
                 ->first();
             if ($existingEvent !== null) {
-                return $lockedAttempt->status === SaasPaymentAttemptStatus::Paid
+                return $existingEvent->signature_valid
+                    && in_array($existingEvent->processing_result, [SaasGatewayEventResult::Accepted, SaasGatewayEventResult::Duplicate], true)
+                    && $lockedAttempt->status === SaasPaymentAttemptStatus::Paid
                     ? $this->result(true, $existingEvent->signature_valid, 200)
                     : $this->result(false, $existingEvent->signature_valid, 200);
             }
@@ -92,11 +98,19 @@ class ProcessCmiCallback
             }
 
             if ($lockedAttempt->status->isTerminal()) {
-                $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true, SaasGatewayEventResult::Duplicate, $responseCode);
+                $sameSettlement = $lockedAttempt->status === SaasPaymentAttemptStatus::Paid
+                    && $responseCode === '00'
+                    && $this->validateSignedPayload($lockedAttempt, $parameters, false) === null
+                    && hash_equals((string) $lockedAttempt->gateway_transaction_id, trim((string) $this->value($parameters, 'TransId')));
+                $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true,
+                    $sameSettlement ? SaasGatewayEventResult::Duplicate : SaasGatewayEventResult::Rejected, $responseCode);
 
-                return $lockedAttempt->status === SaasPaymentAttemptStatus::Paid
-                    ? $this->result(true, true, 200)
-                    : $this->result(false, true, 200);
+                return $this->result($sameSettlement, true, 200);
+            }
+
+            $signedTransaction = trim((string) $this->value($parameters, 'TransId'));
+            if (preg_match('/\A[A-Za-z0-9._:-]{1,80}\z/', $signedTransaction) === 1) {
+                $lockedAttempt->gateway_transaction_id = $signedTransaction;
             }
 
             $localFailure = $this->validateSignedPayload($lockedAttempt, $parameters);
@@ -122,7 +136,10 @@ class ProcessCmiCallback
                 return $this->result(false, true, 200);
             }
 
-            if (! in_array($subscription->status, TenantSubscriptionStatus::current(), true)) {
+            if ((! in_array($subscription->status, TenantSubscriptionStatus::current(), true)
+                && $subscription->status !== TenantSubscriptionStatus::PendingPayment)
+                || ($subscription->status === TenantSubscriptionStatus::Suspended && ! $subscription->billing_suspended)
+                || $tenant->status !== 'active' || $tenant->deleted_at !== null) {
                 $this->declineAttempt($lockedAttempt, 'LOCAL_SUBSCRIPTION_TERMINAL');
                 $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true, SaasGatewayEventResult::Rejected, 'LOCAL_SUBSCRIPTION_TERMINAL');
 
@@ -131,9 +148,26 @@ class ProcessCmiCallback
 
             $transactionId = trim((string) $this->value($parameters, 'TransId'));
             $reference = 'CMI:'.$transactionId;
+            DB::selectOne('SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))', ['saas-reference:'.strtolower($reference)]);
             if (SaasPayment::query()->whereRaw('lower(reference) = lower(?)', [$reference])->exists()) {
                 $this->declineAttempt($lockedAttempt, 'DUPLICATE_TRANSACTION');
                 $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true, SaasGatewayEventResult::Rejected, 'DUPLICATE_TRANSACTION');
+
+                return $this->result(false, true, 200);
+            }
+
+            $invoice = $lockedAttempt->saas_invoice_id === null ? null : SaasInvoice::query()
+                ->whereKey($lockedAttempt->saas_invoice_id)->lockForUpdate()->firstOrFail();
+            try {
+                if ($invoice !== null) {
+                    app(SaasInvoiceLifecycle::class)->payable($invoice);
+                } elseif ($subscription->status === TenantSubscriptionStatus::PendingPayment || $subscription->invoices()->exists()) {
+                    throw ValidationException::withMessages(['payment' => 'Facture requise.']);
+                }
+            } catch (ValidationException) {
+                $lockedAttempt->gateway_transaction_id = $transactionId;
+                $this->declineAttempt($lockedAttempt, 'LOCAL_INVOICE_NOT_PAYABLE');
+                $this->recordEvent($lockedAttempt, $eventKey, $payloadDigest, true, SaasGatewayEventResult::Rejected, 'LOCAL_INVOICE_NOT_PAYABLE');
 
                 return $this->result(false, true, 200);
             }
@@ -142,6 +176,7 @@ class ProcessCmiCallback
             $payment->forceFill([
                 'tenant_id' => $lockedAttempt->tenant_id,
                 'saas_subscription_id' => $subscription->getKey(),
+                'saas_invoice_id' => $invoice?->getKey(),
                 'entry_type' => SaasPaymentEntryType::Payment,
                 'payment_method' => SaasPaymentMethod::Cmi,
                 'amount' => $lockedAttempt->amount,
@@ -162,13 +197,18 @@ class ProcessCmiCallback
             $endsAt = $subscription->ends_at === null || $subscription->ends_at->isBefore($nextRenewal)
                 ? $nextRenewal
                 : $subscription->ends_at;
-            $subscription->forceFill([
-                'status' => TenantSubscriptionStatus::Active,
-                'ends_at' => $endsAt,
-                'next_renewal_at' => $nextRenewal,
-                'suspended_at' => null,
-                'updated_by' => $lockedAttempt->initiated_by,
-            ])->save();
+            if ($invoice !== null) {
+                app(SaasInvoiceLifecycle::class)->settle($invoice, $payment);
+            } else {
+                $subscription->forceFill([
+                    'status' => TenantSubscriptionStatus::Active,
+                    'ends_at' => $endsAt,
+                    'next_renewal_at' => $nextRenewal,
+                    'suspended_at' => null,
+                    'billing_suspended' => false,
+                    'updated_by' => $lockedAttempt->initiated_by,
+                ])->save();
+            }
 
             $lockedAttempt->forceFill([
                 'status' => SaasPaymentAttemptStatus::Paid,
@@ -190,7 +230,7 @@ class ProcessCmiCallback
     }
 
     /** @param array<string, scalar|null> $parameters */
-    private function validateSignedPayload(SaasPaymentAttempt $attempt, array $parameters): ?string
+    private function validateSignedPayload(SaasPaymentAttempt $attempt, array $parameters, bool $checkExpiry = true): ?string
     {
         if (! hash_equals($attempt->merchant_order_id, trim((string) $this->value($parameters, 'oid')))) {
             return 'ORDER_MISMATCH';
@@ -212,12 +252,12 @@ class ProcessCmiCallback
         if (! hash_equals($attempt->amount, $callbackAmount)) {
             return 'AMOUNT_MISMATCH';
         }
-        if ($attempt->expires_at->isPast()) {
+        if ($checkExpiry && $attempt->expires_at->lessThanOrEqualTo(now())) {
             return 'ATTEMPT_EXPIRED';
         }
 
         $transactionId = trim((string) $this->value($parameters, 'TransId'));
-        if ((string) $this->value($parameters, 'ProcReturnCode') === '00'
+        if (trim((string) $this->value($parameters, 'ProcReturnCode')) === '00'
             && ! preg_match('/\A[A-Za-z0-9._:-]{1,80}\z/', $transactionId)) {
             return 'INVALID_TRANSACTION_ID';
         }

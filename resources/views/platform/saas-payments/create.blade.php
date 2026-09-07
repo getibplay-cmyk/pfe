@@ -8,6 +8,14 @@
             <x-section-card :title="$subscription->plan->name" :description="'Devise de l’abonnement : '.$subscription->currency">
                 <form method="POST" action="{{ route('platform.tenants.saas-payments.store', [$tenant, $subscription]) }}" class="grid gap-4 md:grid-cols-2">@csrf
                     <input type="hidden" name="idempotency_key" value="{{ $idempotencyKey }}">
+                    @if($requiresInvoice)
+                        <div class="md:col-span-2"><x-input-label for="saas-invoice-id" value="Facture à régler intégralement" required />
+                            <select id="saas-invoice-id" name="saas_invoice_id" required class="mt-1 w-full">
+                                @foreach($invoices as $invoice)<option value="{{ $invoice->id }}">{{ $invoice->number }} — {{ App\Support\Ui\UiLabel::money($invoice->amount, $invoice->currency) }}</option>@endforeach
+                            </select>
+                            @if($invoices->isEmpty())<p>Aucune facture ouverte : aucun nouveau paiement ne peut être affecté.</p>@endif
+                        </div>
+                    @endif
                     <div><x-input-label for="saas-payment-amount" :value="'Montant ('.$subscription->currency.')'" required /><input id="saas-payment-amount" name="amount" inputmode="decimal" required pattern="\d+(\.\d{1,2})?" value="{{ old('amount') }}" class="mt-1 w-full"><x-field-error :messages="$errors->get('amount')" /></div>
                     <div><x-input-label for="saas-payment-method" value="Moyen manuel" required /><select id="saas-payment-method" name="payment_method" required class="mt-1 w-full">@foreach($methods as $method)<option value="{{ $method->value }}" @selected(old('payment_method') === $method->value)>{{ App\Support\Ui\UiLabel::get($method->value) }}</option>@endforeach</select><x-field-error :messages="$errors->get('payment_method')" /></div>
                     <div><x-input-label for="saas-payment-received" value="Date de réception" required /><input id="saas-payment-received" type="datetime-local" name="occurred_at" value="{{ old('occurred_at', now()->format('Y-m-d\TH:i')) }}" required class="mt-1 w-full"><x-field-error :messages="$errors->get('occurred_at')" /></div>

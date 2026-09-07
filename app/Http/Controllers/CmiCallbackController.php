@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\PlatformBilling\ProcessCmiCallback;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Throwable;
 
 class CmiCallbackController extends Controller
 {
@@ -25,7 +26,15 @@ class CmiCallbackController extends Controller
             $parameters[$key] = $value;
         }
 
-        $result = $process->handle($parameters);
+        try {
+            $result = $process->handle($parameters);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response('ACTION=DECLINE', 500)
+                ->header('Content-Type', 'text/plain; charset=UTF-8')
+                ->header('Cache-Control', 'no-store, private');
+        }
 
         return response($result['body'], $result['http_status'])
             ->header('Content-Type', 'text/plain; charset=UTF-8')

@@ -4,7 +4,7 @@
         $activeTenantTotal = (int) $statistics['totals']['active_tenants'];
         $capabilitySlots = $tenantTotal * count($statistics['activations']);
         $subscriptionTotal = collect($statistics['subscription_states'])->sum('total');
-        $metricIcons = ['building', 'success', 'warning', 'building', 'users', 'vehicle', 'calendar', 'file', 'payment', 'chart', 'refresh', 'warning'];
+        $metricIcons = ['building', 'success', 'warning', 'building', 'users', 'vehicle', 'calendar', 'file', 'payment', 'chart', 'refresh', 'warning', 'users', 'warning'];
         $chartPayload = [
             'tenantStates' => [
                 'labels' => collect($statistics['tenant_states'])->pluck('label')->values()->all(),
@@ -26,6 +26,7 @@
     <div class="rf-page" data-platform-statistics>
         <x-page-header :title="'Plateforme '.config('brand.name')" eyebrow="Administration SaaS" description="Vue consolidée des entreprises clientes, abonnements et services de la plateforme.">
             <x-slot:actions>
+                <a href="{{ route('platform.onboarding-invitations.index') }}#nouvelle-invitation" class="rf-button-secondary"><x-icon name="add" size="xs" />Inviter une entreprise</a>
                 <a href="{{ route('platform.tenants.create') }}" class="rf-button-primary"><x-icon name="add" size="xs" />Créer une entreprise cliente</a>
             </x-slot:actions>
         </x-page-header>
@@ -113,6 +114,23 @@
             </x-section-card>
         </div>
 
+        <x-section-card title="Incidents opérationnels" description="Signaux détectés par la supervision planifiée de la plateforme.">
+            <x-slot:actions><a href="{{ route('platform.operations.index') }}" class="rf-button-link">Ouvrir la supervision</a></x-slot:actions>
+            @if(! $monitoringFresh)
+                <div role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-900">La collecte de supervision ne possède pas de heartbeat récent.</div>
+            @endif
+            <div class="grid gap-3 lg:grid-cols-2">
+                @forelse($operationalIncidents as $incident)
+                    <a href="{{ route('platform.operations.index', ['status' => 'open', 'severity' => $incident->severity]) }}" class="rounded-xl border p-4 text-sm transition hover:shadow-sm {{ $incident->severity === 'critical' ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50' }}">
+                        <span class="flex items-center justify-between gap-3"><strong class="text-slate-950">{{ $incident->title }}</strong><x-status-badge :value="$incident->severity" /></span>
+                        <span class="mt-2 block leading-5 text-slate-700">{{ $incident->summary }}</span>
+                    </a>
+                @empty
+                    <div class="lg:col-span-2"><x-empty-state title="Aucun incident ouvert" description="Les derniers signaux enregistrés sont dans un état normal." /></div>
+                @endforelse
+            </div>
+        </x-section-card>
+
         <div class="grid gap-6 lg:grid-cols-2">
             <x-section-card title="Abonnements par état" description="Chaque barre est rapportée au nombre réel d’abonnements enregistrés.">
                 <div class="space-y-4">
@@ -142,13 +160,15 @@
         </div>
 
         <x-section-card title="Accès rapides" description="Rejoignez directement les fonctions d’administration les plus utilisées.">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ([
                     ['route' => 'platform.tenants.index', 'label' => 'Entreprises', 'icon' => 'building'],
+                    ['route' => 'platform.onboarding-invitations.index', 'label' => 'Invitations', 'icon' => 'users'],
                     ['route' => 'platform.subscriptions.index', 'label' => 'Abonnements', 'icon' => 'file'],
                     ['route' => 'platform.saas-payments.index', 'label' => 'Paiements', 'icon' => 'payment'],
                     ['route' => 'platform.intelligence.index', 'label' => 'Fonctionnalités intelligentes', 'icon' => 'chart'],
                     ['route' => 'platform.statistics.index', 'label' => 'Statistiques', 'icon' => 'chart'],
+                    ['route' => 'platform.operations.index', 'label' => 'Supervision', 'icon' => 'warning'],
                     ['route' => 'platform.audit-logs.index', 'label' => 'Journal global', 'icon' => 'file'],
                 ] as $shortcut)
                     <a href="{{ route($shortcut['route']) }}" class="group flex min-h-24 flex-col justify-between rounded-xl border border-belkhir-space-border bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:border-belkhir-space-blue/40 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none">

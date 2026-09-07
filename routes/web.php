@@ -25,9 +25,12 @@ use App\Http\Controllers\IntelligenceResultBatchController;
 use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlatformAuditLogController;
 use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlatformIntelligenceController;
+use App\Http\Controllers\PlatformOnboardingInvitationController;
+use App\Http\Controllers\PlatformOperationsController;
 use App\Http\Controllers\PlatformPlanController;
 use App\Http\Controllers\PlatformSaasPaymentController;
 use App\Http\Controllers\PlatformStatisticsController;
@@ -45,9 +48,12 @@ use App\Http\Controllers\ReservationDemandForecastController;
 use App\Http\Controllers\ReservationExportController;
 use App\Http\Controllers\ReturnDamageAssistantController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SaasInvoiceController;
 use App\Http\Controllers\TenantController;
+use App\Http\Controllers\TenantOnboardingInvitationController;
 use App\Http\Controllers\TenantSaasAccountController;
 use App\Http\Controllers\TenantSaasCheckoutController;
+use App\Http\Controllers\TenantSaasPlanChangeController;
 use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleBlockController;
 use App\Http\Controllers\VehicleCategoryController;
@@ -64,12 +70,20 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PublicSiteController::class, 'home'])->name('home');
 Route::get('/tarifs', [PublicSiteController::class, 'pricing'])->name('pricing');
 Route::get('/abonnement', [PublicSiteController::class, 'subscription'])->name('subscription.public');
+Route::get('/commencer/{invitation}', [TenantOnboardingInvitationController::class, 'show'])
+    ->whereUuid('invitation')
+    ->middleware(['guest', 'signed', 'throttle:20,1,onboarding-show'])
+    ->name('onboarding-invitations.show');
+Route::post('/commencer/{invitation}', [TenantOnboardingInvitationController::class, 'accept'])
+    ->whereUuid('invitation')
+    ->middleware(['guest', 'signed', 'throttle:5,1,onboarding-accept'])
+    ->name('onboarding-invitations.accept');
 Route::post('/billing/cmi/callback', CmiCallbackController::class)
-    ->middleware('throttle:120,1')
+    ->middleware('throttle:120,1,cmi-callback')
     ->name('billing.cmi.callback');
 Route::match(['get', 'post'], '/billing/cmi/return/{attempt}', CmiReturnController::class)
     ->whereUuid('attempt')
-    ->middleware(['signed', 'throttle:60,1'])
+    ->middleware(['signed', 'throttle:60,1,cmi-return'])
     ->name('billing.cmi.return');
 
 Route::get('/dashboard', DashboardController::class)
@@ -99,15 +113,24 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 });
 
 Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(function () {
+    Route::get('/onboarding', OnboardingController::class)->name('onboarding.index');
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
     Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
     Route::get('/tenant/saas-account', TenantSaasAccountController::class)->name('tenant-saas-account.show');
+    Route::get('/tenant/saas-account/invoices/{invoice}', SaasInvoiceController::class)
+        ->whereUuid('invoice')->name('tenant-saas-invoices.show');
+    Route::post('/tenant/saas-account/plan-change', [TenantSaasPlanChangeController::class, 'store'])
+        ->middleware(['password.confirm', 'throttle:5,1,saas-change'])->name('tenant-saas-plan-change.store');
+    Route::delete('/tenant/saas-account/plan-change/{subscription}', [TenantSaasPlanChangeController::class, 'destroy'])
+        ->middleware(['password.confirm', 'throttle:10,1,saas-cancel'])->name('tenant-saas-plan-change.destroy');
+    Route::put('/tenant/saas-account/subscriptions/{subscription}/renewal', [TenantSaasPlanChangeController::class, 'renewal'])
+        ->middleware(['password.confirm', 'throttle:5,1,saas-renewal'])->name('tenant-saas-renewal.update');
     Route::post('/tenant/saas-account/subscriptions/{subscription}/cmi-checkout', [TenantSaasCheckoutController::class, 'store'])
-        ->middleware('throttle:10,1')
+        ->middleware(['password.confirm', 'throttle:10,1,cmi-checkout'])
         ->name('tenant-saas-checkout.store');
     Route::get('/tenant/saas-account/cmi-checkout/{attempt}', [TenantSaasCheckoutController::class, 'show'])
         ->whereUuid('attempt')
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,cmi-checkout-view')
         ->name('tenant-saas-checkout.show');
     Route::resource('agencies', AgencyController::class);
     Route::get('/fleet/agency-distances', [AgencyDistanceController::class, 'index'])
@@ -386,9 +409,13 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
 });
 
 Route::prefix('platform')->name('platform.')->middleware(['auth', 'active.account', 'platform', 'verified'])->group(function () {
+    Route::get('/saas-invoices/{invoice}', SaasInvoiceController::class)
+        ->whereUuid('invoice')->name('saas-invoices.show');
     Route::get('/dashboard', PlatformDashboardController::class)->name('dashboard');
     Route::get('/statistics', PlatformStatisticsController::class)->name('statistics.index');
     Route::get('/audit-logs', PlatformAuditLogController::class)->name('audit-logs.index');
+    Route::get('/operations', [PlatformOperationsController::class, 'index'])->name('operations.index');
+    Route::get('/onboarding-invitations', [PlatformOnboardingInvitationController::class, 'index'])->name('onboarding-invitations.index');
     Route::resource('tenants', PlatformTenantController::class)->only(['index', 'create', 'show', 'edit']);
     Route::get('/plans', [PlatformPlanController::class, 'index'])->name('plans.index');
     Route::get('/subscriptions', [PlatformSubscriptionController::class, 'index'])->name('subscriptions.index');
@@ -406,9 +433,12 @@ Route::prefix('platform')->name('platform.')->middleware(['auth', 'active.accoun
         Route::patch('/plans/{plan}', [PlatformPlanController::class, 'update'])->name('plans.update');
         Route::post('/tenants/{tenant}/subscriptions', [PlatformSubscriptionController::class, 'store'])->name('tenants.subscriptions.store');
         Route::patch('/subscriptions/{subscription}/status', [PlatformSubscriptionController::class, 'transition'])->name('subscriptions.transition');
-        Route::post('/tenants/{tenant}/subscriptions/{subscription}/saas-payments', [PlatformSaasPaymentController::class, 'store'])->name('tenants.saas-payments.store');
-        Route::post('/saas-payments/{payment}/reverse', [PlatformSaasPaymentController::class, 'reverse'])->name('saas-payments.reverse');
+        Route::post('/tenants/{tenant}/subscriptions/{subscription}/saas-payments', [PlatformSaasPaymentController::class, 'store'])->middleware('password.confirm')->name('tenants.saas-payments.store');
+        Route::post('/saas-payments/{payment}/reverse', [PlatformSaasPaymentController::class, 'reverse'])->middleware('password.confirm')->name('saas-payments.reverse');
         Route::patch('/tenants/{tenant}/intelligence/{capability}', [PlatformIntelligenceController::class, 'update'])->name('intelligence.update');
+        Route::post('/operations/refresh', [PlatformOperationsController::class, 'refresh'])->name('operations.refresh');
+        Route::post('/onboarding-invitations', [PlatformOnboardingInvitationController::class, 'store'])->name('onboarding-invitations.store');
+        Route::patch('/onboarding-invitations/{invitation}/revoke', [PlatformOnboardingInvitationController::class, 'revoke'])->name('onboarding-invitations.revoke');
     });
 });
 

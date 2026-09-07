@@ -9,24 +9,32 @@ use App\Models\Reservation;
 use App\Models\User;
 use App\Models\VehicleBlock;
 use App\Support\Audit\AuditRecorder;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UpdateAgency
 {
-    public function __construct(private readonly AuditRecorder $audit) {}
+    public function __construct(
+        private readonly AuditRecorder $audit,
+        private readonly TenantPlanAccess $planAccess,
+    ) {}
 
     public function handle(Agency $agency, array $data, User $actor): Agency
     {
         return DB::transaction(function () use ($agency, $data, $actor): Agency {
             $locked = Agency::query()->lockForUpdate()->findOrFail($agency->id);
             $deactivating = $locked->is_active && ! $data['is_active'];
+            $reactivating = ! $locked->is_active && (bool) $data['is_active'];
 
             if ($actor->agency_id !== null && $locked->is_active !== $data['is_active']) {
                 throw ValidationException::withMessages(['is_active' => 'Seul le Tenant Owner peut changer l’état d’une agence.']);
             }
             if ($deactivating) {
                 $this->ensureCanDeactivate($locked);
+            }
+            if ($reactivating) {
+                $this->planAccess->ensureCanCreate('agencies', (int) $locked->tenant_id);
             }
 
             $old = $locked->only(['code', 'name', 'email', 'phone', 'address', 'is_active']);

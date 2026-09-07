@@ -18,6 +18,7 @@ class SaasPlan extends Model
             'billing_interval' => SaasBillingInterval::class,
             'price_amount' => 'decimal:2',
             'features' => 'array',
+            'entitlements' => 'array',
             'is_active' => 'boolean',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',

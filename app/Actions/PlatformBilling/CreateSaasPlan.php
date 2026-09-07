@@ -6,6 +6,7 @@ use App\Enums\PlatformBilling\SaasBillingInterval;
 use App\Models\PlatformBilling\SaasPlan;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Platform\PlatformAdminGuard;
+use App\Support\PlatformBilling\SaasPlanEntitlements;
 use App\Support\Pricing\DecimalMoney;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,7 @@ class CreateSaasPlan
     public function __construct(
         private readonly AuditRecorder $audit,
         private readonly PlatformAdminGuard $platformAdmin,
+        private readonly SaasPlanEntitlements $entitlements,
     ) {}
 
     public function handle(array $data, int $actorId): SaasPlan
@@ -23,6 +25,8 @@ class CreateSaasPlan
         $this->platformAdmin->actor($actorId);
         $this->rejectUnexpected($data, [
             'code', 'name', 'description', 'billing_interval', 'price_amount', 'currency', 'features', 'is_active',
+            'entitlements_configured', 'max_agencies', 'max_users', 'max_vehicles',
+            'monthly_intelligence_runs', 'intelligence_capabilities',
         ]);
 
         $interval = SaasBillingInterval::tryFrom((string) ($data['billing_interval'] ?? ''));
@@ -31,8 +35,9 @@ class CreateSaasPlan
         }
 
         $price = $this->money($data['price_amount'] ?? null);
+        $entitlements = $this->entitlements->fromInput($data);
 
-        return DB::transaction(function () use ($data, $actorId, $interval, $price): SaasPlan {
+        return DB::transaction(function () use ($data, $actorId, $interval, $price, $entitlements): SaasPlan {
             $plan = new SaasPlan;
             $plan->forceFill([
                 'code' => strtolower(trim((string) $data['code'])),
@@ -42,6 +47,7 @@ class CreateSaasPlan
                 'price_amount' => $price,
                 'currency' => strtoupper(trim((string) ($data['currency'] ?? 'MAD'))),
                 'features' => array_values($data['features'] ?? []),
+                'entitlements' => $entitlements,
                 'is_active' => (bool) ($data['is_active'] ?? true),
                 'created_by' => $actorId,
                 'updated_by' => $actorId,
@@ -53,6 +59,7 @@ class CreateSaasPlan
                 'price_amount' => $plan->price_amount,
                 'currency' => $plan->currency,
                 'is_active' => $plan->is_active,
+                'entitlements' => $plan->entitlements,
             ]);
 
             return $plan;

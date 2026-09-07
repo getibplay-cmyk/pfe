@@ -33,6 +33,7 @@ class SaasPriorityThreeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp]);
         $this->seed(RolesPermissionsSeeder::class);
     }
 
@@ -250,7 +251,7 @@ class SaasPriorityThreeTest extends TestCase
         $this->actingAs($otherOwner)->get(route('tenant-saas-checkout.show', $attempt))->assertNotFound();
     }
 
-    public function test_cmi_migration_can_roll_back_without_discarding_immutable_payment_entries(): void
+    public function test_cmi_rollback_refuses_invoice_dependencies_without_discarding_immutable_payment_entries(): void
     {
         [$owner, $subscription] = $this->billingFixture();
         $payment = new SaasPayment;
@@ -271,24 +272,26 @@ class SaasPriorityThreeTest extends TestCase
         ])->save();
 
         $migration = require database_path('migrations/2026_09_02_000003_create_cmi_saas_payment_attempts.php');
-        $migration->down();
-
         try {
-            $this->assertDatabaseHas('saas_payments', [
-                'id' => $payment->getKey(),
-                'payment_method' => 'cmi',
-            ]);
-            $constraint = DB::selectOne(<<<'SQL'
-                SELECT pg_get_constraintdef(oid) AS definition
-                FROM pg_constraint
-                WHERE conrelid = 'saas_payments'::regclass
-                  AND conname = 'saas_payments_method_check'
-            SQL);
-            $this->assertNotNull($constraint);
-            $this->assertStringContainsString("'cmi'", $constraint->definition);
-        } finally {
-            $migration->up();
+            $migration->down();
+            $this->fail('CMI rollback must refuse the dependent invoice ledger before changing the schema.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('invoice history depends on CMI guards', $exception->getMessage());
         }
+
+        $this->assertDatabaseHas('saas_payments', [
+            'id' => $payment->getKey(),
+            'payment_method' => 'cmi',
+        ]);
+        $constraint = DB::selectOne(<<<'SQL'
+            SELECT pg_get_constraintdef(oid) AS definition
+            FROM pg_constraint
+            WHERE conrelid = 'saas_payments'::regclass
+              AND conname = 'saas_payments_method_check'
+        SQL);
+        $this->assertNotNull($constraint);
+        $this->assertStringContainsString("'cmi'", $constraint->definition);
+        $this->artisan('saas:audit-billing', ['--json' => true])->assertSuccessful();
     }
 
     public function test_platform_admin_can_read_global_audit_log_but_tenant_owner_cannot(): void
