@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\Platform\TenantOnboardingInvitationStatus;
 use App\Enums\TenantStatus;
-use App\Models\PlatformOperationalIncident;
 use App\Models\Platform\TenantOnboardingInvitation;
+use App\Models\PlatformOperationalIncident;
 use App\Models\Tenant;
 use App\Support\Platform\BuildPlatformStatistics;
 use Carbon\CarbonImmutable;

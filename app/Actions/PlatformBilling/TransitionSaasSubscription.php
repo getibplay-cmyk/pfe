@@ -34,6 +34,7 @@ class TransitionSaasSubscription
                     $locked->forceFill(['billing_suspended' => false, 'updated_by' => $actorId])->save();
                     $this->audit->record('platform.subscription.administrative_hold', $locked, [], ['status' => 'suspended']);
                 }
+
                 return $locked;
             }
             if (! $this->allows($oldStatus, $status)) {

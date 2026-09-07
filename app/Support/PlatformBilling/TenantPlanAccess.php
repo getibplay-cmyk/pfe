@@ -200,8 +200,7 @@ final class TenantPlanAccess
         string $resource,
         ?int $tenantId = null,
         ?IntelligenceCapability $capability = null,
-    ): void
-    {
+    ): void {
         $tenantId ??= $this->context->tenantId();
         if (DB::connection()->transactionLevel() < 1) {
             throw new \LogicException('SaaS quotas must be enforced inside a database transaction.');

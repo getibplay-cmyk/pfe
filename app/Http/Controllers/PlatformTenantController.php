@@ -11,6 +11,7 @@ use App\Http\Requests\Platform\StoreTenantRequest;
 use App\Http\Requests\Platform\SuspendTenantRequest;
 use App\Http\Requests\Platform\UpdateTenantRequest;
 use App\Models\Agency;
+use App\Models\PlatformBilling\SaasInvoice;
 use App\Models\PlatformBilling\SaasPayment;
 use App\Models\PlatformBilling\SaasPlan;
 use App\Models\PlatformBilling\SaasSubscription;
@@ -177,7 +178,7 @@ class PlatformTenantController extends Controller
             'currentSubscription' => $currentSubscription,
             'hasActivePlans' => SaasPlan::query()->where('is_active', true)->exists(),
             'saasPayments' => $payments,
-            'saasInvoices' => \App\Models\PlatformBilling\SaasInvoice::query()->where('tenant_id', $tenant->id)
+            'saasInvoices' => SaasInvoice::query()->where('tenant_id', $tenant->id)
                 ->latest()->paginate(15, ['*'], 'invoices_page'),
             'capabilities' => $capabilities,
             'administrativeHistory' => $administrativeHistory,

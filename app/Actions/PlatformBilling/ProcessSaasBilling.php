@@ -29,6 +29,7 @@ final class ProcessSaasBilling
                                 // Checkout expiry is capped by change expiry, so no active attempt remains.
                                 app(CancelSaasPlanChange::class)->handle($subscription);
                             }
+
                             return;
                         }
                         $openInvoice = $subscription->invoices()->where('status', 'open')->oldest('period_starts_at')->first();
@@ -53,6 +54,7 @@ final class ProcessSaasBilling
                         }
                         if ($invoice->amount === '0.00') {
                             app(SaasInvoiceLifecycle::class)->settle($invoice, null);
+
                             return;
                         }
                         $suspend = $subscription->status === TenantSubscriptionStatus::Trialing

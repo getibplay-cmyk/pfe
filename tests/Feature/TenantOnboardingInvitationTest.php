@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Actions\PlatformBilling\CreateSaasPlan;
 use App\Actions\Platform\CreateTenantOnboardingInvitation;
+use App\Actions\PlatformBilling\CreateSaasPlan;
 use App\Enums\IntelligenceCapability;
 use App\Enums\Platform\TenantOnboardingInvitationStatus;
-use App\Models\PlatformBilling\SaasPlan;
 use App\Models\Platform\TenantOnboardingInvitation;
+use App\Models\PlatformBilling\SaasPlan;
 use App\Models\User;
 use App\Notifications\TenantOnboardingInvitationNotification;
 use Carbon\CarbonImmutable;

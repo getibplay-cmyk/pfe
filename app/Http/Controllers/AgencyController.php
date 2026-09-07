@@ -42,8 +42,7 @@ class AgencyController extends Controller
         StoreAgencyRequest $request,
         AuditRecorder $audit,
         TenantPlanAccess $planAccess,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         DB::transaction(function () use ($request, $audit, $planAccess): void {
             $planAccess->ensureCanCreate('agencies');
             $agency = Agency::create([...$request->validated(), 'is_active' => true]);

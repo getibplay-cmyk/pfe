@@ -48,10 +48,12 @@ use App\Http\Controllers\ReservationDemandForecastController;
 use App\Http\Controllers\ReservationExportController;
 use App\Http\Controllers\ReturnDamageAssistantController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SaasInvoiceController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\TenantOnboardingInvitationController;
 use App\Http\Controllers\TenantSaasAccountController;
 use App\Http\Controllers\TenantSaasCheckoutController;
+use App\Http\Controllers\TenantSaasPlanChangeController;
 use App\Http\Controllers\TenantUserController;
 use App\Http\Controllers\VehicleBlockController;
 use App\Http\Controllers\VehicleCategoryController;
@@ -115,13 +117,13 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
     Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
     Route::get('/tenant/saas-account', TenantSaasAccountController::class)->name('tenant-saas-account.show');
-    Route::get('/tenant/saas-account/invoices/{invoice}', \App\Http\Controllers\SaasInvoiceController::class)
+    Route::get('/tenant/saas-account/invoices/{invoice}', SaasInvoiceController::class)
         ->whereUuid('invoice')->name('tenant-saas-invoices.show');
-    Route::post('/tenant/saas-account/plan-change', [\App\Http\Controllers\TenantSaasPlanChangeController::class, 'store'])
+    Route::post('/tenant/saas-account/plan-change', [TenantSaasPlanChangeController::class, 'store'])
         ->middleware(['password.confirm', 'throttle:5,1,saas-change'])->name('tenant-saas-plan-change.store');
-    Route::delete('/tenant/saas-account/plan-change/{subscription}', [\App\Http\Controllers\TenantSaasPlanChangeController::class, 'destroy'])
+    Route::delete('/tenant/saas-account/plan-change/{subscription}', [TenantSaasPlanChangeController::class, 'destroy'])
         ->middleware(['password.confirm', 'throttle:10,1,saas-cancel'])->name('tenant-saas-plan-change.destroy');
-    Route::put('/tenant/saas-account/subscriptions/{subscription}/renewal', [\App\Http\Controllers\TenantSaasPlanChangeController::class, 'renewal'])
+    Route::put('/tenant/saas-account/subscriptions/{subscription}/renewal', [TenantSaasPlanChangeController::class, 'renewal'])
         ->middleware(['password.confirm', 'throttle:5,1,saas-renewal'])->name('tenant-saas-renewal.update');
     Route::post('/tenant/saas-account/subscriptions/{subscription}/cmi-checkout', [TenantSaasCheckoutController::class, 'store'])
         ->middleware(['password.confirm', 'throttle:10,1,cmi-checkout'])
@@ -407,7 +409,7 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
 });
 
 Route::prefix('platform')->name('platform.')->middleware(['auth', 'active.account', 'platform', 'verified'])->group(function () {
-    Route::get('/saas-invoices/{invoice}', \App\Http\Controllers\SaasInvoiceController::class)
+    Route::get('/saas-invoices/{invoice}', SaasInvoiceController::class)
         ->whereUuid('invoice')->name('saas-invoices.show');
     Route::get('/dashboard', PlatformDashboardController::class)->name('dashboard');
     Route::get('/statistics', PlatformStatisticsController::class)->name('statistics.index');
