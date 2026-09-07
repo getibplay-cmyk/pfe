@@ -38,6 +38,15 @@ class SecurityHeadersTest extends TestCase
         $this->get('https://attacker.invalid/login')->assertStatus(400);
     }
 
+    public function test_private_responses_preserve_zero_expiry_and_remove_public_cache_lifetimes(): void
+    {
+        foreach (['private, no-store, max-age=0', 'public, max-age=3600, s-maxage=7200'] as $index => $cacheControl) {
+            $path = '/tenant/__test/private-cache-'.$index;
+            Route::get($path, fn () => response('Private test response')->header('Cache-Control', $cacheControl));
+            $this->get($path)->assertOk()->assertHeader('Cache-Control', 'max-age=0, no-store, private');
+        }
+    }
+
     public function test_sensitive_auth_and_payment_routes_have_separate_rate_limit_buckets(): void
     {
         $prefixes = [];

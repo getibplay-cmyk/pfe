@@ -6,7 +6,7 @@
     @endphp
     <div class="rf-page">
         <x-page-header title="Entreprises clientes" eyebrow="Administration SaaS" description="Structure, abonnement et accès aux assistances de chaque entreprise.">
-            <x-slot:actions><a href="{{ route('platform.onboarding-invitations.index') }}#nouvelle-invitation" class="rf-button-secondary"><x-icon name="add" size="xs" />Inviter</a><a href="{{ route('platform.tenants.create') }}" class="rf-button-primary"><x-icon name="add" size="xs" />Créer manuellement</a></x-slot:actions>
+            <x-slot:actions><a href="{{ route('platform.onboarding-invitations.index') }}#nouvelle-invitation" class="rf-button-secondary"><x-icon name="add" size="xs" />Inviter</a><a href="{{ route('platform.tenants.create') }}" class="rf-button-primary"><x-icon name="add" size="xs" />Nouvelle entreprise cliente</a></x-slot:actions>
         </x-page-header>
 
         <x-filter-panel title="Rechercher et filtrer" :active-count="$activeFilterCount" :result-count="$tenants->total()">

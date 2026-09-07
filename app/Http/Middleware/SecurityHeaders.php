@@ -30,7 +30,8 @@ class SecurityHeaders
 
         if ($request->user() !== null || $request->is('tenant/*', 'platform/*', 'billing/cmi/*',
             'commencer/*', 'login', 'forgot-password*', 'reset-password*', 'verify-email*', 'confirm-password')) {
-            $response->headers->set('Cache-Control', 'no-store, private');
+            $explicitExpiry = $response->headers->hasCacheControlDirective('max-age');
+            $response->headers->set('Cache-Control', $explicitExpiry ? 'no-store, private, max-age=0' : 'no-store, private');
         }
 
         if (app()->environment('production') && $request->isSecure() && config('security.hsts.enabled')) {
