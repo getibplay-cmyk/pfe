@@ -236,7 +236,7 @@ class SaasSelfServiceBillingTest extends TestCase
         $attempt = app(StartCmiCheckout::class)->handle($pending, $owner, (string) Str::uuid());
         $this->assertSame($invoice->id, $attempt->saas_invoice_id);
         $this->reject(fn () => $this->pay($platform, $pending, $invoice));
-        $callback = $this->callback($attempt);
+        $callback = $this->signedCmiCallback($attempt);
         $this->assertTrue(app(ProcessCmiCallback::class)->handle($callback)['accepted']);
         $this->assertTrue(app(ProcessCmiCallback::class)->handle($callback)['accepted']);
         $this->assertSame('paid', $invoice->refresh()->status);
@@ -250,7 +250,7 @@ class SaasSelfServiceBillingTest extends TestCase
         $this->enableCmi();
         $attempt = app(StartCmiCheckout::class)->handle($pending, $owner, (string) Str::uuid());
         app(TransitionSaasSubscription::class)->handle($current, TenantSubscriptionStatus::Suspended, $platform->id);
-        $this->assertFalse(app(ProcessCmiCallback::class)->handle($this->callback($attempt))['accepted']);
+        $this->assertFalse(app(ProcessCmiCallback::class)->handle($this->signedCmiCallback($attempt))['accepted']);
         $this->assertSame('TEST-TX-1', $attempt->refresh()->gateway_transaction_id);
         $this->assertDatabaseCount('saas_payments', 0);
     }
@@ -260,7 +260,7 @@ class SaasSelfServiceBillingTest extends TestCase
         [$owner, $platform, $current] = $this->fixture();
         $this->enableCmi();
         $attempt = app(StartCmiCheckout::class)->handle($current, $owner, (string) Str::uuid());
-        $valid = $this->callback($attempt);
+        $valid = $this->signedCmiCallback($attempt);
         $invalid = [...$valid, 'HASH' => 'invalid'];
         $this->assertFalse(app(ProcessCmiCallback::class)->handle($invalid)['accepted']);
         $this->assertTrue(app(ProcessCmiCallback::class)->handle($valid)['accepted']);
@@ -272,7 +272,7 @@ class SaasSelfServiceBillingTest extends TestCase
         [$owner, $platform, $current] = $this->fixture();
         $this->enableCmi();
         $attempt = app(StartCmiCheckout::class)->handle($current, $owner, (string) Str::uuid());
-        $valid = $this->callback($attempt);
+        $valid = $this->signedCmiCallback($attempt);
         $this->assertTrue(app(ProcessCmiCallback::class)->handle($valid)['accepted']);
         $altered = [...$valid, 'TransId' => 'DIFFERENT-TX'];
         unset($altered['HASH']);
@@ -287,7 +287,7 @@ class SaasSelfServiceBillingTest extends TestCase
         $this->enableCmi();
         $attempt = app(StartCmiCheckout::class)->handle($current, $owner, (string) Str::uuid());
         $this->travelTo($attempt->expires_at);
-        $this->assertFalse(app(ProcessCmiCallback::class)->handle($this->callback($attempt))['accepted']);
+        $this->assertFalse(app(ProcessCmiCallback::class)->handle($this->signedCmiCallback($attempt))['accepted']);
         $next = app(StartCmiCheckout::class)->handle($current, $owner, (string) Str::uuid());
         $this->assertNotSame($attempt->id, $next->id);
         $this->assertSame('expired', $attempt->refresh()->status->value);
@@ -437,7 +437,7 @@ class SaasSelfServiceBillingTest extends TestCase
         ]);
     }
 
-    private function callback(SaasPaymentAttempt $attempt): array
+    private function signedCmiCallback(SaasPaymentAttempt $attempt): array
     {
         $data = ['amount' => $attempt->amount, 'clientid' => 'merchant-test-123', 'currency' => '504',
             'oid' => $attempt->merchant_order_id, 'ProcReturnCode' => '00', 'TransId' => 'TEST-TX-1'];

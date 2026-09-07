@@ -1,14 +1,18 @@
 # Lot 7 — audit ciblé et test de charge borné
 
-## Validation locale au 7 septembre 2026
+## Validation au 7 septembre 2026
 
 | Contrôle | Résultat |
 | --- | --- |
 | Suite JavaScript | 88 tests réussis, dont 8 tests du pilote de charge |
 | Build Vite | Réussi, 72 modules |
-| PHP, Pint, PostgreSQL et migration | Non exécutés : runtime absent, installation refusée |
-| Charge sur le SaaS Laravel | Préparée dans la CI, non mesurée localement |
+| PHP, Pint, PostgreSQL et migration | Contrôles bloquants de la CI ; pas de runtime local |
+| Smoke sur le SaaS Laravel | Exécution bornée dans la CI ; pas de mesure de capacité en production |
 | CMI sandbox / e-mail SMTP réel | Non validés |
+
+Les résultats par commit sont conservés dans les contrôles de la
+[PR #32](https://github.com/getibplay-cmyk/pfe/pull/32). Consulter l’exécution
+correspondant au commit déployé, pas une exécution antérieure échouée ou remplacée.
 
 Les tests du pilote HTTP utilisent un serveur local factice : ils vérifient le
 nombre de requêtes, la concurrence, les limites, le refus des cibles externes,

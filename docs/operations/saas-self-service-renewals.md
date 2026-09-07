@@ -1,17 +1,18 @@
 # Lots 5–6 — changement de formule et renouvellement SaaS
 
-## État de cette livraison locale
+## État de la livraison et preuves de validation
 
-Reconstruction du lot sur `feature/saas-self-service-renewals-security-qa`, à
-partir de `e7bf151`. Le travail non commité de la session précédente n’était plus
-présent ; aucune ancienne annonce de test PHP n’est reprise comme preuve.
+Les lots de supervision, droits, onboarding invité et facturation sont publiés
+dans la [PR #32](https://github.com/getibplay-cmyk/pfe/pull/32). Ses contrôles
+GitHub Actions font foi pour la version effectivement fusionnée.
 
 Le 7 septembre 2026 : 88 tests JavaScript réussis, build Vite réussi (72 modules).
-Les tests PHP/PostgreSQL, Pint, la migration et le diagnostic structurel sont
-ajoutés/préparés mais **non exécutés localement** : PHP et PostgreSQL sont absents
-et l’installation est bloquée par les permissions de l’environnement. Ne pas
-activer ce lot en production avant CI verte et recette. Aucun push de ce nouveau
-lot, aucune fusion ni relance distante de CI n’a été effectué dans cette reprise.
+La CI exécute Pint, les migrations PostgreSQL 18.4, la suite Laravel sous PHP
+8.5.8, l’audit structurel et le smoke HTTP borné. Ils ne sont pas exécutés dans
+l’environnement local de développement de cette livraison, dépourvu de PHP et
+PostgreSQL. Ne pas activer ce lot en production avant CI verte et recette métier.
+Une CI verte ne valide ni SMTP réel, ni transaction CMI sandbox, ni capacité de
+production : ces qualifications restent distinctes.
 
 ## Changement de formule
 
@@ -137,7 +138,8 @@ SMTP et `APP_URL` HTTPS avec le domaine exact ; les hosts non autorisés sont
 rejetés en production. Ne jamais ajouter de clé CMI/SMTP au dépôt.
 
 La migration est **forward-only** : son `down()` refuse la destruction des
-factures. Elle marque les anciennes tentatives dépassées comme expirées, puis
+factures. Le rollback de la migration CMI refuse également de commencer lorsque
+ce registre dépend de ses gardes. Elle marque les anciennes tentatives dépassées comme expirées, puis
 impose une seule tentative CMI en attente par abonnement. En cas de doublons
 encore valides, l’index refuse la migration : rapprocher ces commandes avant de
 réessayer, sans supprimer de ligne financière. En cas d’incident, désactiver les flags, conserver la base et appliquer
