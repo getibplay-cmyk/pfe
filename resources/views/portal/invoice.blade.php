@@ -1,0 +1,7 @@
+<x-portal-layout :title="'Facture '.$invoice->invoice_number">
+    <div class="flex flex-wrap gap-3 print:hidden"><a class="rf-button-secondary" href="{{ route('portal.home') }}">← Mon espace</a><button type="button" class="rf-button-primary" x-data @click="window.print()">Imprimer / enregistrer en PDF</button></div>
+    <x-section-card title="Détail de la facture"><p>{{ $customer->displayName() }}</p><p class="mt-2 text-sm text-slate-600">Émise le {{ App\Support\Ui\UiLabel::date($invoice->issued_at) }} · Échéance {{ App\Support\Ui\UiLabel::date($invoice->due_at) }}</p><x-status-badge :value="$invoice->status" />
+        <div class="mt-4 overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr><th class="p-3">Libellé</th><th class="p-3">Montant</th></tr></thead><tbody>@foreach($invoice->lines as $line)<tr class="border-t"><td class="p-3">{{ $line->description }}</td><td class="p-3">{{ App\Support\Ui\UiLabel::money($line->total_amount, $invoice->currency) }}</td></tr>@endforeach</tbody></table></div>
+        <dl class="mt-5 grid grid-cols-2 gap-3"><dt>Total</dt><dd class="text-right font-bold">{{ App\Support\Ui\UiLabel::money($invoice->total_amount, $invoice->currency) }}</dd><dt>Déjà réglé</dt><dd class="text-right">{{ App\Support\Ui\UiLabel::money($invoice->paid_amount, $invoice->currency) }}</dd><dt>Reste à régler</dt><dd class="text-right font-bold">{{ App\Support\Ui\UiLabel::money($invoice->balance_due, $invoice->currency) }}</dd></dl>
+    </x-section-card>
+</x-portal-layout>

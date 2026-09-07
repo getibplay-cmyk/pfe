@@ -31,8 +31,8 @@ class ReportFilterRequest extends FormRequest
     {
         return [
             'tenant_id' => ['prohibited'],
-            'date_from' => ['required', 'date'],
-            'date_to' => ['required', 'date', 'after_or_equal:date_from'],
+            'date_from' => ['required', 'date_format:Y-m-d'],
+            'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
             'agency_id' => ['nullable', 'integer', Rule::exists('agencies', 'id')->where('tenant_id', $this->user()->tenant_id)],
             'currency' => ['nullable', 'string', 'size:3', 'regex:/^[A-Z]{3}$/'],
         ];

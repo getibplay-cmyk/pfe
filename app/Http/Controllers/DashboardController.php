@@ -13,8 +13,10 @@ use App\Models\MaintenanceOrder;
 use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\Vehicle;
+use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Reporting\BelkhirSpaceReportPresenter;
 use App\Support\Reporting\BuildMinimalReport;
+use App\Support\Reporting\DashboardActions;
 use App\Support\Reporting\ReportCriteria;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Ui\UiLabel;
@@ -113,6 +115,8 @@ class DashboardController extends Controller
         }
 
         return view('dashboard', [
+            'actionGroups' => app(DashboardActions::class)->for($user),
+            'billingState' => $user->isTenantOwner() ? app(TenantPlanAccess::class)->state() : null,
             'kpis' => $kpis,
             'dashboardStatistics' => $canonicalReport === null ? null : $presenter->present($canonicalReport),
             'maintenanceSummary' => $maintenanceSummary,

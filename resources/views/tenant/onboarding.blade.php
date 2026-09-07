@@ -10,6 +10,9 @@
         </x-section-card>
 
         <div class="grid gap-4 lg:grid-cols-2">
+            @if(auth()->user()->hasPermission('vehicle.create') && auth()->user()->hasPermission('customer.create'))
+                <section class="rf-panel p-5 lg:col-span-2"><h2 class="font-semibold">Vous avez déjà vos données ?</h2><p class="mt-2 text-sm text-slate-600">Importez un CSV de véhicules ou de clients. Vérifiez l’aperçu, corrigez les doublons, puis confirmez l’ensemble.</p><a href="{{ route('onboarding.import.index') }}" class="rf-button-primary mt-3">Importer mes données</a></section>
+            @endif
             @foreach($steps as $index => $step)
                 <article class="rf-panel flex gap-4 p-5">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {{ $step['complete'] ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }} font-bold" aria-hidden="true">{{ $step['complete'] ? '✓' : $index + 1 }}</span>

@@ -107,3 +107,13 @@ multi-devise, prévision ou décision automatisée. Une facture n’a pas encore
 d’historique de statut daté : son exclusion `void` reflète donc son état
 autoritatif courant. Les registres append-only et le journal d’audit restent la
 preuve détaillée des corrections.
+# Complément — rentabilité par véhicule
+
+- **Facturé** : somme `invoices.total_amount` des factures émises non annulées, selon `issued_at` dans la période.
+- **Encaissé net** : allocations de paiements comptabilisés (`posted` ou contrepassés `reversed`), positives à l'entrée, négatives à la sortie, selon `posted_at` dans la période. Les paiements en attente et cautions sont exclus.
+- **Dépenses approuvées** : somme `expenses.amount` selon `expense_date`, rattachée par véhicule direct, sinon contrat, sinon bon de maintenance. Le coût du bon n'est pas ajouté une seconde fois.
+- **Marge connue** : facturé moins dépenses approuvées, séparément par véhicule et devise. Marge partielle, sans amortissement ni coûts non enregistrés ; aucun bénéfice comptable ou calcul fiscal officiel.
+- **Immobilisation** : durée des blocs manuels et de maintenance actifs ou libérés, coupée à la période et à leur libération effective. Une durée future est planifiée.
+- **Dépenses sans affectation** : montants approuvés sans véhicule direct ou indirect, signalés séparément sans ventilation inventée.
+
+Ce tableau porte sur les véhicules actuellement rattachés aux agences autorisées, archives comprises. Les agrégats sont indépendants pour éviter la multiplication des montants par les jointures.
