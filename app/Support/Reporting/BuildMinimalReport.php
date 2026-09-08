@@ -4,6 +4,7 @@ namespace App\Support\Reporting;
 
 use App\Models\Reservation;
 use App\Models\Tenant;
+use App\Models\Vehicle;
 use App\Support\Pricing\DecimalMoney;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
@@ -423,6 +424,63 @@ class BuildMinimalReport
             : [$criteria->currency => $currencies[$criteria->currency] ?? $this->emptyFinancialCurrency()];
 
         return ['all_currencies' => $currencies, 'visible_currencies' => $visible];
+    }
+
+    /** Financial entries are aggregated separately to avoid multiplying invoice lines or expenses. */
+    public function vehicleProfitability(ReportCriteria $criteria): array
+    {
+        $this->assertCriteria($criteria);
+        $vehicles = Vehicle::withTrashed()->whereIn('agency_id', $criteria->agencyIds)
+            ->orderBy('registration_number')->paginate(20)->withQueryString();
+        $ids = $vehicles->pluck('id')->all();
+        $joinContract = fn ($join) => $join->on('c.id', '=', 'i.rental_contract_id')->on('c.tenant_id', '=', 'i.tenant_id');
+        $invoices = $this->scoped('invoices', 'i', $criteria)->join('rental_contracts as c', $joinContract)
+            ->whereIn('c.vehicle_id', $ids)->whereNull('i.deleted_at')->whereNotNull('i.issued_at')->where('i.status', '<>', 'void')
+            ->where('i.issued_at', '>=', $criteria->startsAt)->where('i.issued_at', '<', $criteria->endsAt)
+            ->when($criteria->currency, fn ($query, $currency) => $query->where('i.currency', $currency))
+            ->selectRaw('c.vehicle_id, i.currency, SUM(i.total_amount) AS amount')->groupBy('c.vehicle_id', 'i.currency')->get();
+        $collections = DB::table('payment_allocations as a')
+            ->join('payments as p', fn ($join) => $join->on('p.id', '=', 'a.payment_id')->on('p.tenant_id', '=', 'a.tenant_id'))
+            ->join('invoices as i', fn ($join) => $join->on('i.id', '=', 'a.invoice_id')->on('i.tenant_id', '=', 'a.tenant_id'))
+            ->join('rental_contracts as c', $joinContract)
+            ->where('a.tenant_id', $criteria->tenantId)->whereIn('a.agency_id', $criteria->agencyIds)->whereIn('c.vehicle_id', $ids)
+            ->whereIn('p.status', ['posted', 'reversed'])->where('p.posted_at', '>=', $criteria->startsAt)->where('p.posted_at', '<', $criteria->endsAt)
+            ->when($criteria->currency, fn ($query, $currency) => $query->where('a.currency', $currency))
+            ->selectRaw("c.vehicle_id, a.currency, SUM(CASE WHEN p.direction = 'incoming' THEN a.amount ELSE -a.amount END) AS amount")
+            ->groupBy('c.vehicle_id', 'a.currency')->get();
+        $vehicleExpression = 'COALESCE(e.vehicle_id, ec.vehicle_id, m.vehicle_id)';
+        $expensesQuery = $this->scoped('expenses', 'e', $criteria)
+            ->leftJoin('rental_contracts as ec', fn ($join) => $join->on('ec.id', '=', 'e.rental_contract_id')->on('ec.tenant_id', '=', 'e.tenant_id'))
+            ->leftJoin('maintenance_orders as m', fn ($join) => $join->on('m.id', '=', 'e.maintenance_order_id')->on('m.tenant_id', '=', 'e.tenant_id'))
+            ->whereNull('e.deleted_at')->where('e.status', 'approved')
+            ->where('e.expense_date', '>=', $criteria->dateFrom())->where('e.expense_date', '<', $criteria->endsAt->toDateString())
+            ->when($criteria->currency, fn ($query, $currency) => $query->where('e.currency', $currency));
+        $expenses = (clone $expensesQuery)->whereIn(DB::raw($vehicleExpression), $ids)
+            ->selectRaw($vehicleExpression.' AS vehicle_id, e.currency, SUM(e.amount) AS amount')
+            ->groupByRaw($vehicleExpression.', e.currency')->get();
+        $unallocated = (clone $expensesQuery)->whereNull(DB::raw($vehicleExpression))->selectRaw('e.currency, SUM(e.amount) AS amount')->groupBy('e.currency')->get();
+        $downtime = $this->scoped('vehicle_blocks', 'b', $criteria)->whereIn('b.vehicle_id', $ids)
+            ->whereIn('b.status', ['active', 'released'])->whereIn('b.block_type', ['maintenance', 'manual'])
+            ->where('b.starts_at', '<', $criteria->endsAt)->where('b.ends_at', '>', $criteria->startsAt)
+            ->selectRaw('b.vehicle_id, SUM(GREATEST(0, EXTRACT(EPOCH FROM (LEAST(b.ends_at, COALESCE(b.released_at, b.ends_at), ?::timestamptz) - GREATEST(b.starts_at, ?::timestamptz)))))::bigint AS seconds', [$criteria->endsAt, $criteria->startsAt])
+            ->groupBy('b.vehicle_id')->pluck('seconds', 'vehicle_id');
+        $amounts = [];
+        foreach (['invoiced' => $invoices, 'collected' => $collections, 'expenses' => $expenses] as $key => $entries) {
+            foreach ($entries as $entry) {
+                $amounts[$entry->vehicle_id][$entry->currency] ??= ['invoiced' => '0.00', 'collected' => '0.00', 'expenses' => '0.00'];
+                $amounts[$entry->vehicle_id][$entry->currency][$key] = (string) $entry->amount;
+            }
+        }
+        foreach ($amounts as &$currencies) {
+            ksort($currencies);
+            foreach ($currencies as &$values) {
+                $values['margin'] = DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits($values['invoiced']) - DecimalMoney::toMinorUnits($values['expenses']));
+            }
+            unset($values);
+        }
+        unset($currencies);
+
+        return compact('vehicles', 'amounts', 'downtime', 'unallocated');
     }
 
     private function scoped(string $table, string $alias, ReportCriteria $criteria): Builder

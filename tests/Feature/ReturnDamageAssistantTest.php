@@ -518,7 +518,7 @@ class ReturnDamageAssistantTest extends TestCase
             $routes->get('contracts.return-damage-assistant.store')->gatherMiddleware(),
         );
 
-        $fixture['contract']->forceFill(['status' => 'accepted'])->save();
+        app(TenantContext::class)->run($fixture['tenant'], fn () => $fixture['contract']->forceFill(['status' => 'accepted'])->save());
         config(['intelligence.vehicle_damage_v1.enabled' => true]);
         $this->actingAs($fixture['user'])
             ->get(route('contracts.show', $fixture['contract']))

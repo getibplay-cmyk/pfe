@@ -8,12 +8,15 @@ use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\CmiCallbackController;
 use App\Http\Controllers\CmiReturnController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerPortalAccessController;
+use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\DamageReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemandForecastController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\FleetPlanningController;
 use App\Http\Controllers\FleetReallocationPlanningController;
 use App\Http\Controllers\FleetReallocationProposalController;
 use App\Http\Controllers\InsuranceController;
@@ -26,6 +29,7 @@ use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\OnboardingImportController;
 use App\Http\Controllers\PlatformAuditLogController;
 use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlatformIntelligenceController;
@@ -63,6 +67,7 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleDamagePredictionController;
 use App\Http\Controllers\VehicleInspectionController;
 use App\Http\Controllers\VehiclePlatePredictionController;
+use App\Http\Controllers\VehicleProfitabilityController;
 use App\Http\Controllers\VehicleRegistrationAssistantController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +75,18 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PublicSiteController::class, 'home'])->name('home');
 Route::get('/tarifs', [PublicSiteController::class, 'pricing'])->name('pricing');
 Route::get('/abonnement', [PublicSiteController::class, 'subscription'])->name('subscription.public');
+Route::get('/locataire/acces/{access}', [CustomerPortalAccessController::class, 'enter'])
+    ->whereUuid('access')->middleware(['signed', 'throttle:20,1,portal-entry'])->name('portal.enter');
+Route::post('/locataire/acces/{access}', [CustomerPortalAccessController::class, 'exchange'])
+    ->whereUuid('access')->middleware(['signed', 'throttle:10,1,portal-exchange'])->name('portal.exchange');
+Route::prefix('locataire')->middleware(['customer.portal', 'throttle:60,1,portal'])->group(function () {
+    Route::get('/', [CustomerPortalController::class, 'index'])->name('portal.home');
+    Route::get('/factures/{invoice}', [CustomerPortalController::class, 'invoice'])->whereNumber('invoice')->name('portal.invoice');
+    Route::get('/contrats/{contract}', [CustomerPortalController::class, 'contract'])->whereNumber('contract')->name('portal.contract');
+    Route::get('/documents/{document}', [CustomerPortalController::class, 'document'])->whereNumber('document')->name('portal.document');
+    Route::post('/documents', [CustomerPortalController::class, 'upload'])->middleware('throttle:10,1,portal-upload')->name('portal.upload');
+    Route::post('/quitter', [CustomerPortalAccessController::class, 'logout'])->name('portal.logout');
+});
 Route::get('/commencer/{invitation}', [TenantOnboardingInvitationController::class, 'show'])
     ->whereUuid('invitation')
     ->middleware(['guest', 'signed', 'throttle:20,1,onboarding-show'])
@@ -114,6 +131,16 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
 Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(function () {
     Route::get('/onboarding', OnboardingController::class)->name('onboarding.index');
+    Route::get('/onboarding/import', [OnboardingImportController::class, 'index'])->name('onboarding.import.index');
+    Route::get('/onboarding/import/template/{kind}', [OnboardingImportController::class, 'template'])->name('onboarding.import.template');
+    Route::post('/onboarding/import', [OnboardingImportController::class, 'store'])->middleware('throttle:10,1,onboarding-import')->name('onboarding.import.store');
+    Route::get('/onboarding/import/{import}', [OnboardingImportController::class, 'show'])->whereUuid('import')->name('onboarding.import.show');
+    Route::post('/onboarding/import/{import}', [OnboardingImportController::class, 'commit'])->whereUuid('import')->middleware('throttle:10,1,onboarding-confirm')->name('onboarding.import.commit');
+    Route::get('/fleet/planning', FleetPlanningController::class)->name('fleet.planning.index');
+    Route::get('/reports/vehicle-profitability', VehicleProfitabilityController::class)->name('vehicle-profitability.index');
+    Route::get('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'show'])->name('customers.portal-access.show');
+    Route::post('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'store'])->middleware(['password.confirm', 'throttle:10,1,portal-issue'])->name('customers.portal-access.store');
+    Route::delete('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'revoke'])->name('customers.portal-access.revoke');
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
     Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
     Route::get('/tenant/saas-account', TenantSaasAccountController::class)->name('tenant-saas-account.show');

@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Agency;
+use App\Models\Vehicle;
+use App\Support\Tenancy\AgencyAccess;
+use App\Support\Tenancy\TenantContext;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+
+class FleetPlanningController extends Controller
+{
+    public function __invoke(Request $request, TenantContext $context, AgencyAccess $access): View
+    {
+        $this->authorize('viewAny', Vehicle::class);
+        $filters = $request->validate([
+            'tenant_id' => ['prohibited'],
+            'agency_id' => ['nullable', 'integer', 'min:1'],
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'days' => ['nullable', 'integer', Rule::in([7, 14, 28])],
+            'q' => ['nullable', 'string', 'max:50'],
+        ]);
+        $agencyId = $request->filled('agency_id') ? $access->required($filters['agency_id']) : $context->agencyId();
+        $timezone = (string) ($request->user()->tenant->settings['timezone'] ?? config('app.timezone'));
+        $start = CarbonImmutable::parse($filters['date'] ?? 'today', $timezone)->startOfDay();
+        $days = (int) ($filters['days'] ?? 7);
+        $end = $start->addDays($days);
+        $vehicles = Vehicle::query()->with('agency:id,name')
+            ->when($agencyId, fn ($query) => $query->where('agency_id', $agencyId))
+            ->when($filters['q'] ?? null, fn ($query, $search) => $query->where('registration_number', 'ilike', '%'.str_replace(['%', '_'], ['\\%', '\\_'], $search).'%'))
+            ->with(['blocks' => fn ($query) => $query->where('status', 'active')
+                ->when($agencyId, fn ($query) => $query->where('agency_id', $agencyId))
+                ->where('starts_at', '<', $end)->where('ends_at', '>', $start)->orderBy('starts_at')])
+            ->orderBy('registration_number')->paginate(20)->withQueryString();
+
+        return view('fleet.planning', [
+            'vehicles' => $vehicles, 'start' => $start, 'end' => $end, 'days' => $days,
+            'agencyId' => $agencyId,
+            'agencies' => Agency::query()->when($context->agencyId(), fn ($query, $id) => $query->whereKey($id))->orderBy('name')->get(['id', 'name']),
+            'dates' => collect(range(0, $days - 1))->map(fn ($offset) => $start->addDays($offset)),
+        ]);
+    }
+}

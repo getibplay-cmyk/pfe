@@ -23,7 +23,7 @@
 
         <x-form-errors />
 
-        <form method="POST" action="{{ $reservation->exists ? route('reservations.update', $reservation) : route('reservations.store') }}" class="grid gap-4 rounded-xl bg-white p-6 shadow-sm md:grid-cols-2">
+        <form data-unsaved-warning data-loading-form method="POST" action="{{ $reservation->exists ? route('reservations.update', $reservation) : route('reservations.store') }}" class="grid gap-4 rounded-xl bg-white p-6 shadow-sm md:grid-cols-2">
             @csrf
             @if ($reservation->exists) @method('PUT') @endif
             <input type="hidden" name="agency_id" value="{{ $selectedAgencyId }}">

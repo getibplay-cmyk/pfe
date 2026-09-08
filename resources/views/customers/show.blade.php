@@ -7,6 +7,7 @@
                 @can('archive', $customer)<form method="POST" action="{{ route('customers.destroy', $customer) }}" x-belkhir-space-confirm data-confirm-title="Archiver ce client" data-confirm-resource="Fiche client sélectionnée" data-confirm-consequence="Le client sera archivé sans suppression de son historique." data-confirm-label="Archiver">@csrf @method('DELETE')<button class="rf-button-danger">Archiver</button></form>@endcan
             </x-slot:actions>
         </x-page-header>
+        @can('update', $customer)<a href="{{ route('customers.portal-access.show', $customer) }}" class="rf-button-secondary">Gérer l’accès au portail locataire</a>@endcan
         <x-form-errors />
 
         <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

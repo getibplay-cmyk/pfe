@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -48,3 +49,10 @@ Schedule::command('notifications:generate-operational')
     ->timezone(config('app.timezone'))
     ->withoutOverlapping(10)
     ->onOneServer();
+
+Artisan::command('rentfleet:onboarding:purge', function () {
+    $count = DB::table('onboarding_imports')->where('expires_at', '<=', now())->whereNotNull('payload')->update(['payload' => null, 'updated_at' => now()]);
+    $this->info($count.' aperçus expirés purgés.');
+})->purpose('Effacer les données temporaires des imports expirés.');
+
+Schedule::command('rentfleet:onboarding:purge')->hourly()->timezone(config('app.timezone'))->withoutOverlapping(10)->onOneServer();

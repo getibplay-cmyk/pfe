@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureTenantIntelligenceAccess;
 use App\Http\Middleware\RequestCorrelation;
+use App\Http\Middleware\ResolveCustomerPortal;
 use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'active.account' => EnsureActiveAccount::class,
             'tenant' => ResolveTenantContext::class,
+            'customer.portal' => ResolveCustomerPortal::class,
             'platform' => EnsurePlatformAdmin::class,
             'password.changed' => EnsurePasswordChanged::class,
             'intelligence.contract-demo' => EnsureJ11ContractDemoEnabled::class,

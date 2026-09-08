@@ -14,7 +14,7 @@
             'storeUrl' => $registrationAssistantEnabled ? route('vehicles.registration-assistant.store') : '',
         ];
     @endphp
-    <form
+    <form data-unsaved-warning
         class="mx-auto max-w-4xl space-y-5 rounded-2xl border border-belkhir-space-border bg-white p-5 shadow-panel sm:p-6"
         method="POST"
         action="{{ $vehicle->exists ? route('vehicles.update', $vehicle) : route('vehicles.store') }}"

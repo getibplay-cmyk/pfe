@@ -323,7 +323,7 @@ class AgencyDistanceFoundationTest extends TestCase
         $this->assertSame('96.750', $complete->matrix[$fixture['agency_b']->id][$fixture['agency_a']->id]);
         $this->assertSame($complete->fingerprint, $sameComplete->fingerprint);
 
-        $reverse->update(['active' => false]);
+        $this->inTenant($fixture, fn () => $reverse->update(['active' => false]));
         $inactive = $this->inTenant($fixture, fn () => $builder->build(collect([
             $fixture['agency_a'], $fixture['agency_b'],
         ])));
@@ -430,7 +430,7 @@ class AgencyDistanceFoundationTest extends TestCase
         }
         $this->assertContains('throttle:30,1', app('router')->getRoutes()
             ->getByName('agency-distances.store')->gatherMiddleware());
-        $this->assertSame(96, DB::table('migrations')->count());
+        $this->assertSame(97, DB::table('migrations')->count());
     }
 
     /** @return array{tenant:Tenant,agency_a:Agency,agency_b:Agency,owner:User} */

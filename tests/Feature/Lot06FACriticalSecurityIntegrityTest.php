@@ -206,10 +206,10 @@ class Lot06FACriticalSecurityIntegrityTest extends TestCase
         $this->actingAs($f['manager'])->put(route('password.update'), [])->assertForbidden();
 
         $f['tenant']->forceFill(['status' => TenantStatus::Active])->save();
-        $f['agency']->forceFill(['is_active' => false])->save();
+        app(TenantContext::class)->run($f['tenant'], fn () => $f['agency']->forceFill(['is_active' => false])->save());
         $this->actingAs($f['manager'])->get(route('profile.edit'))->assertForbidden();
 
-        $f['agency']->forceFill(['is_active' => true])->save();
+        app(TenantContext::class)->run($f['tenant'], fn () => $f['agency']->forceFill(['is_active' => true])->save());
         $f['manager']->forceFill(['is_active' => false])->save();
         $this->actingAs($f['manager'])->get(route('profile.edit'))->assertForbidden();
 

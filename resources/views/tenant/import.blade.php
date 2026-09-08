@@ -1,0 +1,11 @@
+<x-app-layout><div class="rf-page"><x-page-header title="Importer mes données" eyebrow="Démarrage guidé" description="Importez vos véhicules ou clients avec un aperçu et une vérification avant enregistrement." /><x-form-errors />
+    <x-section-card title="1. Préparer le fichier" description="CSV UTF-8, séparateur point-virgule ou virgule, 200 lignes et 1 Mo maximum. Les en-têtes sont recherchés dans les 20 premières lignes.">
+        <div class="flex flex-wrap gap-3"><a class="rf-button-secondary" data-no-global-loading="true" href="{{ route('onboarding.import.template', 'vehicles') }}">Modèle véhicules</a><a class="rf-button-secondary" data-no-global-loading="true" href="{{ route('onboarding.import.template', 'customers') }}">Modèle clients</a></div>
+        <p class="mt-3 text-sm text-slate-600">Pour les véhicules, indiquez le code d’une catégorie existante, le carburant (essence, diesel, hybride, électrique, autre) et la transmission (manuelle, automatique). Les doublons doivent être retirés du fichier.</p>
+    </x-section-card>
+    <x-section-card title="2. Prévisualiser l’import"><form method="POST" action="{{ route('onboarding.import.store') }}" enctype="multipart/form-data" class="grid gap-4 sm:grid-cols-2" data-loading-form>@csrf
+        <div><label for="import-kind" class="rf-field-label">Données à importer</label><select id="import-kind" name="kind" class="mt-1 w-full"><option value="vehicles">Véhicules</option><option value="customers" @selected(old('kind') === 'customers')>Clients particuliers</option></select></div>
+        <div><label for="import-agency" class="rf-field-label">Agence de destination</label><select id="import-agency" name="agency_id" class="mt-1 w-full" required>@foreach($agencies as $agency)<option value="{{ $agency->id }}" @selected(old('agency_id') == $agency->id)>{{ $agency->name }}</option>@endforeach</select></div>
+        <div class="sm:col-span-2"><label for="import-file" class="rf-field-label">Fichier CSV</label><input id="import-file" type="file" name="file" accept=".csv,text/csv" required class="mt-1 w-full"><p class="rf-field-help">Après une erreur, sélectionnez à nouveau le fichier.</p></div><div><x-primary-button>Vérifier et afficher l’aperçu</x-primary-button></div>
+    </form></x-section-card>
+</div></x-app-layout>

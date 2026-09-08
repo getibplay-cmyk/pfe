@@ -52,6 +52,7 @@ class NavigationBuilder
                 $this->when($user, 'pricing.view', $this->item('pricing', 'Tarification', 'pricing-rules.index', 'pricing-rules.*')),
             ]),
             $this->section('Parc automobile', [
+                $this->when($user, 'vehicle.view', $this->item('fleet-planning', 'Planning de flotte', 'fleet.planning.index', 'fleet.planning.*')),
                 $this->when($user, 'vehicle.view', $this->item('vehicles', 'Véhicules', 'vehicles.index', 'vehicles.*')),
                 $this->when($user, 'vehicle.view', $this->item('vehicle-categories', 'Catégories', 'vehicle-categories.index', 'vehicle-categories.*')),
                 $this->when($user, 'vehicle_block.manage', $this->item('vehicle-blocks', 'Blocs véhicules', 'vehicle-blocks.index', 'vehicle-blocks.*')),
@@ -59,6 +60,8 @@ class NavigationBuilder
                 $this->when($user, 'insurance.view', $this->item('insurance', 'Assurance', 'insurance.index', 'insurance.*')),
             ]),
             $this->section('Finance', [
+                $user->hasPermission('report.view') && $user->hasPermission('invoice.view') && $user->hasPermission('expense.view')
+                    ? $this->item('vehicle-profitability', 'Rentabilité des véhicules', 'vehicle-profitability.index', 'vehicle-profitability.*') : null,
                 $this->whenAny($user, ['invoice.view', 'payment.view', 'deposit.view', 'expense.view'], $this->item('finance', 'Finance', 'finance.index', 'finance.*')),
             ]),
             $this->section('Aide à la décision', [

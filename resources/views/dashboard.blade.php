@@ -17,6 +17,8 @@
             </div>
         </section>
 
+        <x-dashboard-actions :groups="$actionGroups" :billing-state="$billingState" />
+
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             @foreach ($kpis as $label => $value)<x-stat-card :label="$label" :value="is_int($value) ? App\Support\Ui\BusinessNumber::integer($value) : $value" icon="chart" />@endforeach
         </div>

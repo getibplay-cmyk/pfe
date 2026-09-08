@@ -11,6 +11,7 @@ import { initializeTenantStatistics } from './tenant-statistics';
 import { initializeBelkhirSpaceLoading, initializeLoadingForms } from './form-enhancements';
 import { registerBelkhirSpaceUi } from './belkhir-space-ui';
 import { initializeCmiCheckout } from './cmi-checkout';
+import { initializeUnsavedForms } from './unsaved-form';
 
 window.Alpine = Alpine;
 
@@ -61,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const belkhirSpaceLoading = initializeBelkhirSpaceLoading();
     initializeLoadingForms(document, window, belkhirSpaceLoading);
     initializeCmiCheckout();
+    initializeUnsavedForms();
 
     const invalidField = document.querySelector('[aria-invalid="true"]');
 

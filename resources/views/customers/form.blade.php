@@ -1,5 +1,5 @@
 <x-app-layout>
-    <form class="mx-auto max-w-4xl space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm" method="POST" action="{{ $customer->exists ? route('customers.update', $customer) : route('customers.store') }}">
+    <form data-unsaved-warning class="mx-auto max-w-4xl space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm" method="POST" action="{{ $customer->exists ? route('customers.update', $customer) : route('customers.store') }}">
         @csrf
         @if ($customer->exists) @method('PUT') @endif
         <h1 class="text-2xl font-bold">{{ $customer->exists ? 'Modifier le client' : 'Nouveau client' }}</h1>
