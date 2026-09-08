@@ -30,13 +30,14 @@
                                 <td class="border-b border-l p-2 align-top {{ $blocks->isEmpty() ? 'bg-emerald-50/40' : 'bg-blue-50/40' }}">
                                     @if($blocks->isEmpty())<span class="text-xs text-slate-500">Sans bloc</span>@else
                                         <details class="rounded-lg border border-blue-200 bg-white p-2">
-                                            <summary class="cursor-pointer font-semibold text-blue-900">{{ $blocks->count() }} occupation(s)</summary>
+                                            <summary class="cursor-pointer font-semibold text-blue-900">{{ $blocks->count() === 1 ? App\Support\Ui\UiLabel::blockType($blocks->first()->block_type) : $blocks->count().' occupations' }}</summary>
                                             <ul class="mt-2 space-y-3">@foreach($blocks as $block)
                                                 <li><span class="block font-medium">{{ App\Support\Ui\UiLabel::blockType($block->block_type) }}</span><span class="block text-xs text-slate-600">{{ App\Support\Ui\UiLabel::dateTime($block->starts_at) }} → {{ App\Support\Ui\UiLabel::dateTime($block->ends_at) }}</span>
                                                 @if($block->rental_contract_id && auth()->user()->hasPermission('contract.view'))<a class="rf-button-link" href="{{ route('contracts.show', $block->rental_contract_id) }}">Ouvrir le contrat</a>
                                                 @elseif($block->reservation_id && auth()->user()->hasPermission('reservation.view'))<a class="rf-button-link" href="{{ route('reservations.show', $block->reservation_id) }}">Ouvrir la réservation</a>
                                                 @elseif($block->maintenance_order_id && auth()->user()->hasPermission('maintenance.view'))<a class="rf-button-link" href="{{ route('maintenance.show', $block->maintenance_order_id) }}">Ouvrir la maintenance</a>@endif</li>
                                             @endforeach</ul>
+                                            @if(auth()->user()->hasPermission('reservation.view'))<a class="rf-button-link mt-2 text-xs" href="{{ route('availability.index', ['agency_id' => $vehicle->agency_id, 'category_id' => $vehicle->vehicle_category_id, 'starts_at' => $day->toIso8601String(), 'ends_at' => $day->addDay()->toIso8601String()]) }}">Chercher une alternative</a>@endif
                                         </details>
                                     @endif
                                 </td>

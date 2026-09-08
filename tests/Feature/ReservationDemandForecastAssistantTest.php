@@ -151,7 +151,7 @@ class ReservationDemandForecastAssistantTest extends TestCase
             'message' => 'Préparation des prévisions en cours…',
         ]);
 
-        $run->forceFill(['status' => 'running', 'started_at' => now()])->save();
+        app(TenantContext::class)->run($fixture['tenant'], fn () => $run->forceFill(['status' => 'running', 'started_at' => now()])->save());
         $this->actingAs($fixture['user'])->getJson($url)->assertExactJson([
             'status' => 'running',
             'generated_at' => null,
@@ -160,11 +160,11 @@ class ReservationDemandForecastAssistantTest extends TestCase
             'message' => 'Préparation des prévisions en cours…',
         ]);
 
-        $run->forceFill([
+        app(TenantContext::class)->run($fixture['tenant'], fn () => $run->forceFill([
             'status' => 'failed',
             'failure_code' => 'HGB_PROCESS_FAILED',
             'finished_at' => now(),
-        ])->save();
+        ])->save());
         $response = $this->actingAs($fixture['user'])->getJson($url)->assertExactJson([
             'status' => 'failed',
             'generated_at' => null,

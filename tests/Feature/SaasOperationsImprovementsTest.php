@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\PlatformBilling\AssignSaasSubscription;
 use App\Actions\PlatformBilling\CreateSaasPlan;
 use App\Actions\Vehicles\CreateVehicle;
+use App\Exceptions\MissingTenantContextException;
 use App\Models\Agency;
 use App\Models\Customer;
 use App\Models\CustomerPortalAccess;
@@ -64,6 +65,22 @@ class SaasOperationsImprovementsTest extends TestCase
         $b = $this->fixture();
         $this->expectException(AuthorizationException::class);
         app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->forceFill(['tenant_id' => $b['tenant']->id])->save());
+    }
+
+    public function test_loaded_model_cannot_be_updated_without_a_tenant_context(): void
+    {
+        $a = $this->fixture();
+        app(TenantContext::class)->clear();
+        $this->expectException(MissingTenantContextException::class);
+        $a['customer']->update(['first_name' => 'Interdit']);
+    }
+
+    public function test_loaded_model_cannot_be_deleted_without_a_tenant_context(): void
+    {
+        $a = $this->fixture();
+        app(TenantContext::class)->clear();
+        $this->expectException(MissingTenantContextException::class);
+        $a['customer']->delete();
     }
 
     public function test_loaded_model_cannot_be_deleted_under_another_tenant(): void

@@ -62,7 +62,7 @@ class FleetReallocationPlanningIntegrationTest extends TestCase
     {
         $fixture = $this->readyFixture();
         $maintenanceVehicle = $fixture['vehicles_a'][0];
-        $maintenanceVehicle->forceFill(['operational_status' => VehicleOperationalStatus::Maintenance])->save();
+        $this->inTenant($fixture, fn () => $maintenanceVehicle->forceFill(['operational_status' => VehicleOperationalStatus::Maintenance])->save());
 
         $snapshot = $this->inTenant($fixture, fn () => app(BuildOperationalFleetReallocationSnapshot::class)->build());
 
