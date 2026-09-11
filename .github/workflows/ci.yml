@@ -54,7 +54,8 @@ jobs:
           python -m py_compile scripts/intelligence/color_v8/sanitize_vehicle_image.py
           python -m unittest -v \
             tests/Python/test_color_v8_runtime.py \
-            tests/Python/test_color_v8_image_sanitizer.py
+            tests/Python/test_color_v8_image_sanitizer.py \
+            tests.Python.test_training_workbench.TrainingVisionPreparationTest
 
   science-vehicle-damage-runtime:
     runs-on: ubuntu-24.04
@@ -404,7 +405,8 @@ jobs:
           "$RUNNER_TEMP/demand-forecast-venv/bin/python" \
             -m unittest \
             tests/Python/test_demand_forecast_adapter.py \
-            tests/Python/test_demand_forecast_authentic_artifact.py
+            tests/Python/test_demand_forecast_authentic_artifact.py \
+            tests/Python/test_training_workbench.py
 
       - name: Build frontend assets
         run: npm run build

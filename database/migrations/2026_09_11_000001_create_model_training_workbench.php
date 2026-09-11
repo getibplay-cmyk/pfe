@@ -21,10 +21,13 @@ return new class extends Migration
             $table->char('sha256', 64);
             $table->unsignedInteger('row_count');
             $table->boolean('shared')->default(false);
+            $table->unsignedBigInteger('shared_by')->nullable();
+            $table->timestampTz('shared_at')->nullable();
             $table->timestampTz('revoked_at')->nullable();
             $table->timestampTz('created_at')->useCurrent();
             $table->unique(['tenant_id', 'id']);
             $table->foreign(['tenant_id', 'created_by'])->references(['tenant_id', 'id'])->on('users')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'shared_by'])->references(['tenant_id', 'id'])->on('users')->restrictOnDelete();
             $table->index(['tenant_id', 'created_at']);
             $table->index(['family', 'shared', 'revoked_at']);
         });
@@ -53,6 +56,7 @@ return new class extends Migration
             $table->string('candidate_version', 100);
             $table->char('artifact_sha256', 64);
             $table->char('report_sha256', 64);
+            $table->string('stored_path');
             $table->jsonb('metrics');
             $table->boolean('eligible');
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
@@ -68,20 +72,28 @@ return new class extends Migration
         });
         DB::unprepared(<<<'SQL'
             ALTER TABLE model_training_datasets ADD CONSTRAINT training_dataset_rows CHECK (row_count BETWEEN 1 AND 20000);
+            ALTER TABLE model_training_datasets ADD CONSTRAINT training_dataset_consent CHECK ((shared AND shared_at IS NOT NULL AND shared_by IS NOT NULL) OR (NOT shared AND shared_at IS NULL AND shared_by IS NULL));
             ALTER TABLE model_training_reviews ADD CONSTRAINT training_review_decision CHECK (decision IN ('qualified', 'rejected'));
-            CREATE FUNCTION rentfleet_training_immutable() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_training_immutable() RETURNS trigger AS $$
             BEGIN
                 RAISE EXCEPTION 'Training records are immutable; create a new attempt' USING ERRCODE = '23514';
             END;
             $$ LANGUAGE plpgsql;
-            CREATE FUNCTION rentfleet_training_dataset_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_training_dataset_guard() RETURNS trigger AS $$
             BEGIN
                 IF TG_OP = 'DELETE' THEN
                     RAISE EXCEPTION 'Training dataset records cannot be deleted' USING ERRCODE = '23514';
                 END IF;
-                IF (to_jsonb(NEW) - 'revoked_at') IS DISTINCT FROM (to_jsonb(OLD) - 'revoked_at')
-                   OR OLD.revoked_at IS NOT NULL OR NEW.revoked_at IS NULL THEN
-                    RAISE EXCEPTION 'Only first revocation is allowed' USING ERRCODE = '23514';
+                IF OLD.revoked_at IS NOT NULL THEN
+                    RAISE EXCEPTION 'Revocation is final' USING ERRCODE = '23514';
+                END IF;
+                IF NEW.revoked_at IS NOT NULL THEN
+                    IF (to_jsonb(NEW) - 'revoked_at') IS DISTINCT FROM (to_jsonb(OLD) - 'revoked_at') THEN
+                        RAISE EXCEPTION 'Only revocation may change' USING ERRCODE = '23514';
+                    END IF;
+                ELSIF OLD.shared OR NOT NEW.shared OR NEW.shared_at IS NULL OR NEW.shared_by IS NULL
+                    OR (to_jsonb(NEW) - ARRAY['shared','shared_at','shared_by']) IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['shared','shared_at','shared_by']) THEN
+                    RAISE EXCEPTION 'Only first explicit sharing is allowed' USING ERRCODE = '23514';
                 END IF;
                 RETURN NEW;
             END;

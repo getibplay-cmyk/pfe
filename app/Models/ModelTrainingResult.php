@@ -11,6 +11,8 @@ class ModelTrainingResult extends Model
 
     protected $guarded = ['id'];
 
+    protected $hidden = ['stored_path'];
+
     protected function casts(): array
     {
         return ['metrics' => 'array', 'eligible' => 'boolean', 'created_at' => 'immutable_datetime'];

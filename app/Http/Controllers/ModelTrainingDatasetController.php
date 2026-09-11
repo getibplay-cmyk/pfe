@@ -76,6 +76,15 @@ class ModelTrainingDatasetController extends Controller
         return back()->with('status', 'Contribution révoquée. Les nouveaux téléchargements et validations de ses campagnes sont bloqués.');
     }
 
+    public function share(Request $request, ModelTrainingDataset $dataset, TrainingWorkbench $workbench)
+    {
+        TrainingWorkbench::owner($request->user());
+        $request->validate(['share_confirmed' => ['accepted'], 'tenant_id' => ['prohibited']]);
+        $workbench->share($request->user(), $dataset);
+
+        return back()->with('status', 'Le partage pour les campagnes est autorisé. Vous pouvez le révoquer depuis cette page.');
+    }
+
     public function template(Request $request, string $family)
     {
         TrainingWorkbench::owner($request->user());

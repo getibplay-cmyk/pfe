@@ -55,6 +55,7 @@ final class TrainingWorkbench
                     'family' => $normalized['family'], 'stored_path' => $path,
                     'sha256' => hash('sha256', $encoded), 'row_count' => count($normalized['rows']),
                     'shared' => (bool) ($attributes['shared'] ?? false), 'created_by' => $user->id,
+                    'shared_at' => ! empty($attributes['shared']) ? now() : null, 'shared_by' => ! empty($attributes['shared']) ? $user->id : null,
                 ]);
                 $this->audit->record('training.dataset.created', $dataset, [], [
                     'family' => $dataset->family, 'row_count' => $dataset->row_count,
@@ -102,6 +103,21 @@ final class TrainingWorkbench
             }
             $locked->update(['revoked_at' => now()]);
             $this->audit->record('training.dataset.revoked', $locked);
+        }, 3);
+    }
+
+    public function share(User $user, ModelTrainingDataset $dataset): ModelTrainingDataset
+    {
+        self::owner($user);
+
+        return DB::transaction(function () use ($user, $dataset): ModelTrainingDataset {
+            $locked = ModelTrainingDataset::query()->whereKey($dataset->id)->lockForUpdate()->firstOrFail();
+            abort_if($locked->revoked_at !== null || $locked->shared, 409, 'Ce jeu ne peut plus être proposé au partage.');
+            $this->read($locked->stored_path, $locked->sha256);
+            $locked->update(['shared' => true, 'shared_at' => now(), 'shared_by' => $user->id]);
+            $this->audit->record('training.dataset.share_authorized', $locked, [], ['shared' => true]);
+
+            return $locked;
         }, 3);
     }
 
@@ -179,21 +195,29 @@ final class TrainingWorkbench
     {
         self::platform($user);
 
-        return DB::transaction(function () use ($user, $campaign, $report): ModelTrainingResult {
-            $locked = ModelTrainingCampaign::query()->whereKey($campaign->id)->lockForUpdate()->firstOrFail();
-            $this->assertContributions($locked, true);
-            abort_if($locked->result()->exists(), 409, 'Cette tentative a déjà un résultat. Créez une nouvelle tentative.');
-            $manifest = $this->read($locked->stored_path, $locked->sha256);
-            $evaluation = app(TrainingEvaluation::class)->evaluate($manifest, $locked->sha256, $report);
-            $result = ModelTrainingResult::create([
-                'campaign_id' => $locked->id, 'candidate_version' => $report['candidate_version'],
-                'artifact_sha256' => $report['artifact_sha256'], 'report_sha256' => hash('sha256', $this->encode($report)),
-                'metrics' => $evaluation['metrics'], 'eligible' => $evaluation['eligible'], 'created_by' => $user->id,
-            ]);
-            $this->audit->record('platform.training.result.imported', $result, [], ['eligible' => $result->eligible, 'candidate_version' => $result->candidate_version]);
+        $path = 'intelligence/training/reports/'.Str::uuid().'.json';
+        try {
+            return DB::transaction(function () use ($user, $campaign, $report, $path): ModelTrainingResult {
+                $locked = ModelTrainingCampaign::query()->whereKey($campaign->id)->lockForUpdate()->firstOrFail();
+                $this->assertContributions($locked, true);
+                abort_if($locked->result()->exists(), 409, 'Cette tentative a déjà un résultat. Créez une nouvelle tentative.');
+                $manifest = $this->read($locked->stored_path, $locked->sha256);
+                $evaluation = app(TrainingEvaluation::class)->evaluate($manifest, $locked->sha256, $report);
+                $encoded = $this->encode($report);
+                IntelligencePrivateStorage::disk('model_training.disk')->put($path, $encoded);
+                $result = ModelTrainingResult::create([
+                    'campaign_id' => $locked->id, 'candidate_version' => $report['candidate_version'],
+                    'artifact_sha256' => $report['artifact_sha256'], 'report_sha256' => hash('sha256', $encoded), 'stored_path' => $path,
+                    'metrics' => $evaluation['metrics'], 'eligible' => $evaluation['eligible'], 'created_by' => $user->id,
+                ]);
+                $this->audit->record('platform.training.result.imported', $result, [], ['eligible' => $result->eligible, 'candidate_version' => $result->candidate_version]);
 
-            return $result;
-        }, 3);
+                return $result;
+            }, 3);
+        } catch (Throwable $e) {
+            IntelligencePrivateStorage::deleteAfterFailure('model_training.disk', $path);
+            throw $e;
+        }
     }
 
     public function review(User $user, ModelTrainingCampaign $campaign, string $decision, string $note): void
@@ -206,6 +230,7 @@ final class TrainingWorkbench
             abort_if($result->review()->exists(), 409, 'La décision est déjà enregistrée.');
             if ($decision === 'qualified') {
                 $this->assertContributions($locked, true);
+                abort_unless($locked->baseline_version === TrainingCatalog::get($locked->family)['baseline'], 409, 'La référence a changé. Préparez une nouvelle comparaison.');
                 abort_unless($result->eligible, 422, 'Le candidat ne franchit pas les critères de comparaison.');
             }
             $review = ModelTrainingReview::create(['result_id' => $result->id, 'decision' => $decision, 'note' => $note, 'created_by' => $user->id]);

@@ -354,6 +354,7 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::get('/model-training/{dataset}/download', [ModelTrainingDatasetController::class, 'download'])->middleware('throttle:20,1')->name('model-training.download');
     Route::post('/model-training', [ModelTrainingDatasetController::class, 'store'])->middleware(['password.confirm', 'throttle:5,1'])->name('model-training.store');
     Route::post('/model-training/{dataset}/revoke', [ModelTrainingDatasetController::class, 'revoke'])->middleware(['password.confirm', 'throttle:10,1'])->name('model-training.revoke');
+    Route::post('/model-training/{dataset}/share', [ModelTrainingDatasetController::class, 'share'])->middleware(['password.confirm', 'throttle:5,1'])->name('model-training.share');
     Route::get('/intelligence/export', IntelligenceDatasetExportController::class)->name('intelligence.export');
     Route::get('/intelligence/exports/{exportRun}/manifest', IntelligenceDatasetExportManifestController::class)
         ->name('intelligence.exports.manifest');

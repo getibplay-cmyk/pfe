@@ -83,6 +83,7 @@ final class TrainingDatasetSchema
             }
             $row['group'] = hash('sha256', $tenantKey.'|training-group|'.$row['group']);
             $row['key'] = hash('sha256', $tenantKey.'|training-row|'.$row['key']);
+            $row['provider'] = $tenantKey;
             $rows[] = $row;
         }
 

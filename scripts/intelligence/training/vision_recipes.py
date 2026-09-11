@@ -124,7 +124,12 @@ def export_damage(upstream, training_config, validation_checkpoint, output_onnx)
     root = checked_source(upstream, "068dfde65f2667ad6555883c69d73de886518cad") / "rtdetrv2_pytorch"
     output = Path(output_onnx).resolve()
     require(not output.exists(), "Refusing to overwrite a candidate export")
-    subprocess.run([sys.executable, str(root / "tools/export_onnx.py"), "--config", str(Path(training_config).resolve()), "--resume", str(Path(validation_checkpoint).resolve()), "--output_file", str(output), "--input_size", "640", "--check"], cwd=root, check=True)
+    raw = output.with_name("candidate-raw.onnx")
+    require(not raw.exists(), "Refusing to overwrite a raw export")
+    subprocess.run([sys.executable, str(root / "tools/export_onnx.py"), "--config", str(Path(training_config).resolve()), "--resume", str(Path(validation_checkpoint).resolve()), "--output_file", str(raw), "--input_size", "640", "--check"], cwd=root, check=True)
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "vehicle_damage"))
+    from export_rtdetrv2_s_onnx import materialize_single_file_onnx
+    materialize_single_file_onnx(raw, output)
     return output
 
 
@@ -132,6 +137,8 @@ def damage_predictions(manifest, paths, onnx_path, threshold):
     import numpy as np
     import onnxruntime as ort
     from PIL import Image
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "vehicle_damage"))
+    from run_vehicle_damage_rtdetrv2_onnx import box_iou
     require(0 < threshold <= 1, "Threshold must be chosen on validation")
     session = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
     output = {}
@@ -143,13 +150,20 @@ def damage_predictions(manifest, paths, onnx_path, threshold):
             tensor = np.asarray(image.convert("RGB").resize((640, 640), Image.Resampling.BILINEAR), dtype=np.float32).transpose(2, 0, 1)[None] / np.float32(255)
         labels, boxes, scores = session.run(["labels", "boxes", "scores"], {"images": tensor, "orig_target_sizes": np.asarray([[width, height]], dtype=np.int64)})
         predictions = []
-        for label, box, score in zip(np.asarray(labels).reshape(-1), np.asarray(boxes).reshape(-1, 4), np.asarray(scores).reshape(-1)):
+        retained = []
+        ranked = sorted(zip(np.asarray(labels).reshape(-1), np.asarray(boxes).reshape(-1, 4), np.asarray(scores).reshape(-1)), key=lambda item: -float(item[2]))
+        for label, box, score in ranked:
             require(np.isfinite(box).all() and np.isfinite(score), "Non-finite detection")
             if score < threshold or label != 0:
                 continue
+            if any(box_iou(box, previous) > .72 for previous in retained):
+                continue
             x1, y1, x2, y2 = float(np.clip(box[0] / width, 0, 1)), float(np.clip(box[1] / height, 0, 1)), float(np.clip(box[2] / width, 0, 1)), float(np.clip(box[3] / height, 0, 1))
             if x2 > x1 and y2 > y1:
+                retained.append(box)
                 predictions.append({"x": x1, "y": y1, "w": x2 - x1, "h": y2 - y1})
+                if len(predictions) == 12:
+                    break
         require(len(predictions) <= 100, "Too many detections; qualify NMS/threshold on validation")
         output[row["key"]] = predictions
     return output
@@ -169,7 +183,7 @@ def train_plate(manifest, prepared, upstream, approved_commit, approved_config, 
     if not dictionary.is_absolute():
         dictionary = root / dictionary
     characters = set(dictionary.read_text(encoding="utf-8").splitlines())
-    require(all(set(row["label"]) <= characters for row in manifest["rows"]), "Approved dictionary does not cover canonical labels; qualify the dictionary/head before retraining")
+    require(all(set(row["label"].replace('|', '')) <= characters for row in manifest["rows"]), "Approved dictionary does not cover transcripts; qualify the dictionary/head before retraining")
     for key, split in (("Train", "train"), ("Eval", "validation")):
         config[key]["dataset"].update({"data_dir": str(prepared), "label_file_list": [str(prepared / f"{split}.txt")], "ratio_list": [1.0]})
     config_path = output / "training.yml"

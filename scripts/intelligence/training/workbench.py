@@ -124,6 +124,7 @@ def prepare_vision(manifest, image_root, output):
             # For boxes, annotations refer to the EXIF-oriented displayed image.
             rgb = ImageOps.exif_transpose(image).convert("RGB")
             width, height = rgb.size
+            rgb.info.clear()
             rgb.save(destination, "PNG")  # Strip EXIF/GPS, preserve pixels (lossless).
         os.chmod(destination, 0o600)
         paths[row["key"]] = str(destination)
@@ -136,8 +137,8 @@ def prepare_vision(manifest, image_root, output):
             split["annotations"].append({"id": len(split["annotations"]) + 1, "image_id": index, "category_id": 0, "bbox": [box["x"] * width, box["y"] * height, box["w"] * width, box["h"] * height], "area": box["w"] * width * box["h"] * height, "iscrowd": 0})
         if manifest["family"] == "plate":
             require("\n" not in row["label"] and "\t" not in row["label"], "Invalid OCR label")
-            # The whole canonical transcript (including separators) belongs in the approved dictionary.
-            ocr[row["split"]].append(f"{destination.relative_to(output).as_posix()}\t{row['label']}")
+            # Canonical separators are formatting, not characters the OCR must learn.
+            ocr[row["split"]].append(f"{destination.relative_to(output).as_posix()}\t{row['label'].replace('|', '')}")
     for split, payload in coco.items():
         if manifest["family"] == "damage":
             write_json(output / split / "annotations.json", payload)
@@ -152,7 +153,7 @@ def demand_examples(manifest, make_feature_row):
     examples = {h: {s: [] for s in ("train", "validation", "test")} for h in range(1, 8)}
     for group, rows in grouped(manifest["rows"]).items():
         rows = sorted(rows, key=lambda row: row["date"])
-        frame = pd.DataFrame({"date_local": pd.to_datetime([r["date"] for r in rows]), "observed_departures": [r["value"] for r in rows], "series_id": group, "tenant_key": group})
+        frame = pd.DataFrame({"date_local": pd.to_datetime([r["date"] for r in rows]), "observed_departures": [r["value"] for r in rows], "series_id": group, "tenant_key": rows[0].get("provider", group)})
         for target_index, row in enumerate(rows):
             for horizon in range(1, 8):
                 cutoff = target_index - horizon
@@ -183,7 +184,8 @@ def train_demand(manifest, baseline_path, output, version):
     numeric = [name for name in columns if name not in categorical]
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
-    trained = {**baseline, "version": version, "ready_for_saas": False, "point_models": {}, "quantile_models": {}}
+    trained = {key: baseline[key] for key in ("module", "model_name", "horizons", "quantiles", "semantics", "feature_columns")}
+    trained.update({"version": version, "ready_for_saas": False, "point_models": {}, "quantile_models": {}, "campaign_id": manifest["campaign_id"], "manifest_sha256": manifest["manifest_sha256"]})
     before, after = defaultdict(lambda: [None] * 7), defaultdict(lambda: [None] * 7)
     selection = {}
     for horizon, partitions in examples.items():
