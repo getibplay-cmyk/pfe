@@ -33,6 +33,7 @@ class NavigationBuilder
                     'label' => 'Fonctionnalités intelligentes',
                     'items' => [
                         $this->item('platform-intelligence', 'Fonctionnalités et accès', 'platform.intelligence.index', 'platform.intelligence.*'),
+                        $this->item('platform-training', 'Réentraînement des modèles', 'platform.training.index', 'platform.training.*'),
                     ],
                 ],
             ];
@@ -68,6 +69,7 @@ class NavigationBuilder
                 $this->when($user, 'fleet.distance.view', $this->item('agency-distances', 'Distances inter-agences', 'agency-distances.index', 'agency-distances.*')),
                 $this->whenOperationalPlanner($user, $this->item('fleet-reallocation-planning', 'Planification des réallocations', 'fleet.reallocation-planning.index', 'fleet.reallocation-planning.*')),
                 $this->when($user, 'prediction.view', $this->item('intelligence', 'Analyses et prévisions', 'intelligence.index', 'intelligence.*')),
+                $user->isTenantOwner() && $user->hasPermission('prediction.export') ? $this->item('model-training', 'Données d’apprentissage', 'model-training.index', 'model-training.*') : null,
                 $this->when($user, 'report.view', $this->item('reports', 'Rapports', 'reports.index', 'reports.*')),
             ]),
             $this->section('Administration', [

@@ -28,12 +28,14 @@ use App\Http\Controllers\IntelligenceDatasetSnapshotDownloadController;
 use App\Http\Controllers\IntelligenceResultBatchController;
 use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\ModelTrainingDatasetController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OnboardingImportController;
 use App\Http\Controllers\PlatformAuditLogController;
 use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlatformIntelligenceController;
+use App\Http\Controllers\PlatformModelTrainingController;
 use App\Http\Controllers\PlatformOnboardingInvitationController;
 use App\Http\Controllers\PlatformOperationsController;
 use App\Http\Controllers\PlatformPlanController;
@@ -347,6 +349,11 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/reports/export', ReportExportController::class)->name('reports.export');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/model-training', [ModelTrainingDatasetController::class, 'index'])->name('model-training.index');
+    Route::get('/model-training/formats/{family}', [ModelTrainingDatasetController::class, 'template'])->name('model-training.template');
+    Route::get('/model-training/{dataset}/download', [ModelTrainingDatasetController::class, 'download'])->middleware('throttle:20,1')->name('model-training.download');
+    Route::post('/model-training', [ModelTrainingDatasetController::class, 'store'])->middleware(['password.confirm', 'throttle:5,1'])->name('model-training.store');
+    Route::post('/model-training/{dataset}/revoke', [ModelTrainingDatasetController::class, 'revoke'])->middleware(['password.confirm', 'throttle:10,1'])->name('model-training.revoke');
     Route::get('/intelligence/export', IntelligenceDatasetExportController::class)->name('intelligence.export');
     Route::get('/intelligence/exports/{exportRun}/manifest', IntelligenceDatasetExportManifestController::class)
         ->name('intelligence.exports.manifest');
@@ -456,6 +463,15 @@ Route::prefix('platform')->name('platform.')->middleware(['auth', 'active.accoun
     Route::get('/saas-payments', [PlatformSaasPaymentController::class, 'index'])->name('saas-payments.index');
     Route::get('/tenants/{tenant}/saas-payments/create', [PlatformSaasPaymentController::class, 'create'])->name('tenants.saas-payments.create');
     Route::get('/intelligence', [PlatformIntelligenceController::class, 'index'])->name('intelligence.index');
+    Route::get('/model-training', [PlatformModelTrainingController::class, 'index'])->name('training.index');
+    Route::get('/model-training/{campaign}', [PlatformModelTrainingController::class, 'show'])->name('training.show');
+    Route::get('/model-training/{campaign}/download', [PlatformModelTrainingController::class, 'download'])->middleware(['password.confirm', 'throttle:10,1'])->name('training.download');
+    Route::middleware(['password.confirm', 'throttle:10,1'])->group(function () {
+        Route::post('/model-training', [PlatformModelTrainingController::class, 'store'])->name('training.store');
+        Route::post('/model-training/{campaign}/result', [PlatformModelTrainingController::class, 'result'])->name('training.result');
+        Route::post('/model-training/{campaign}/review', [PlatformModelTrainingController::class, 'review'])->name('training.review');
+        Route::post('/model-training/{campaign}/retry', [PlatformModelTrainingController::class, 'retry'])->name('training.retry');
+    });
 
     Route::middleware('throttle:30,1')->group(function () {
         Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
