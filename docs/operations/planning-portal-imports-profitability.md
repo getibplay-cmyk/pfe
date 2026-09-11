@@ -29,7 +29,7 @@ Le scheduler existant exécute la purge des aperçus d'import expirés.
 
 La rentabilité exige les permissions `report.view`, `invoice.view` et `expense.view`.
 Les menus desktop et mobile utilisent le même constructeur de navigation.
-L'export exige aussi `report.export` et se limite à 5 000 véhicules ; sélectionner
+L'export exige les mêmes permissions et se limite à 5 000 véhicules ; sélectionner
 une agence pour réduire le périmètre. Les devises et frais non affectés restent distincts.
 
 ## Import
@@ -53,8 +53,8 @@ lien une fois, puis conserve sa session pendant 30 minutes. Demander un nouveau 
 après expiration. Les fichiers sont limités à 5 Mo et 10 dépôts par client sur 24 heures.
 La réception d'un justificatif ne remplace pas sa vérification par l'agence.
 
-L'émetteur doit disposer de `customer.update`, `customer.identity.view`,
-`contract.view`, `invoice.view` et `document.download`. Un retrait de ces droits
+L'émetteur doit disposer de `customer.view`, `customer.update`, `customer.identity.view`,
+`reservation.view`, `contract.view`, `invoice.view` et `document.download`. Un retrait de ces droits
 rend les liens et sessions existants inutilisables. Le client voit les coordonnées
 de son agence, son échéance de session et le détail de ses factures imprimables.
 

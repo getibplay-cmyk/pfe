@@ -49,7 +49,7 @@ class CustomerPortalAccessController extends Controller
                 'issued_by' => $request->user()->id, 'expires_at' => now()->addHours(48)]);
             app(AuditRecorder::class)->record('customer.portal_access_created', $customer);
             if ($request->boolean('send_email')) {
-                SendCustomerPortalLink::dispatch($access->id, hash('sha256', mb_strtolower(trim($customer->email))));
+                SendCustomerPortalLink::dispatch($access->id, hash('sha256', trim($customer->email)));
             }
 
             return $access;

@@ -12,7 +12,7 @@ final class CustomerPortalContext
     public function canManage(User $user): bool
     {
         return $user->is_active && ! $user->is_platform_admin
-            && collect(['customer.update', 'customer.identity.view', 'contract.view', 'invoice.view', 'document.download'])
+            && collect(['customer.view', 'customer.update', 'customer.identity.view', 'reservation.view', 'contract.view', 'invoice.view', 'document.download'])
                 ->every(fn (string $permission) => $user->hasPermission($permission));
     }
 

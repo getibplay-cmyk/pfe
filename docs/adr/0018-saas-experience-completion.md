@@ -33,8 +33,8 @@ les fondations. Aucun package, schéma financier ou migration n'est ajouté.
 ## Accès locataire et e-mail
 
 Créer un droit d'accès exige désormais toutes les permissions correspondant aux
-informations exposées : `customer.update`, `customer.identity.view`,
-`contract.view`, `invoice.view`, `document.download`. La policy sur le client,
+informations exposées : `customer.view`, `customer.update`, `customer.identity.view`,
+`reservation.view`, `contract.view`, `invoice.view`, `document.download`. La policy sur le client,
 l'agence, l'état de l'acteur et la confirmation du mot de passe s'appliquent aussi.
 Ces droits sont revalidés pour les sessions et pour l'envoi. Leur retrait invalide
 donc aussi les anciens accès. La révocation reste possible avec `customer.update`.
@@ -56,8 +56,8 @@ retentée trois fois et une remise multiple du même lien à usage unique reste 
 
 ## Export de rentabilité
 
-L'export exige `report.export` en plus des permissions de lecture du rapport et
-des pièces financières. Il reprend `ReportCriteria` et `BuildMinimalReport`, toutes
+L'export exige les mêmes permissions `report.view`, `invoice.view` et `expense.view`
+que le rapport. Il reprend `ReportCriteria` et `BuildMinimalReport`, toutes
 les pages du périmètre (limite 5 000 véhicules), les devises distinctes et les frais
 non affectés, sans identité client. Les montants restent des chaînes décimales.
 Les résultats sont matérialisés avant la fin du contexte tenant puis streamés en

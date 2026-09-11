@@ -1,7 +1,7 @@
 <x-app-layout><div class="rf-page">
     <x-page-header title="Rentabilité par véhicule" eyebrow="Pilotage financier" description="Recettes et coûts enregistrés pour les véhicules actuellement rattachés à votre périmètre, y compris les véhicules archivés." />
     <x-form-errors />
-    @if(auth()->user()->hasPermission('report.export'))<a class="rf-button-secondary w-fit" data-no-global-loading="true" href="{{ route('vehicle-profitability.export', request()->only(['date_from', 'date_to', 'agency_id', 'currency'])) }}">Exporter la rentabilité en CSV</a>@endif
+    <a class="rf-button-secondary w-fit" data-no-global-loading="true" href="{{ route('vehicle-profitability.export', request()->only(['date_from', 'date_to', 'agency_id', 'currency'])) }}">Exporter la rentabilité en CSV</a>
     <x-filter-panel><form method="GET" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-loading-form>
         <div><label for="profit-from" class="rf-field-label">Du</label><input id="profit-from" name="date_from" type="date" value="{{ $criteria->dateFrom() }}" class="mt-1 w-full" required></div><div><label for="profit-to" class="rf-field-label">Au</label><input id="profit-to" name="date_to" type="date" value="{{ $criteria->dateTo() }}" class="mt-1 w-full" required></div>
         <div><label for="profit-agency" class="rf-field-label">Agence</label><select id="profit-agency" name="agency_id" class="mt-1 w-full">@if(auth()->user()->agency_id === null)<option value="">Toutes mes agences</option>@endif @foreach($agencies as $agency)<option value="{{ $agency->id }}" @selected(request('agency_id', auth()->user()->agency_id) == $agency->id)>{{ $agency->name }}</option>@endforeach</select></div>

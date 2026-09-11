@@ -46,6 +46,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SaasOperationsImprovementsTest extends TestCase
@@ -439,19 +440,29 @@ class SaasOperationsImprovementsTest extends TestCase
         $this->assertStringContainsString(';MAD;1000.10;0.00;50.01;950.09;', $csv);
         $this->assertStringNotContainsString($b['vehicle']->registration_number, $csv);
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
-        $a['user']->role->permissions()->detach(Permission::where('slug', 'report.export')->value('id'));
+        $a['user']->role->permissions()->detach(Permission::where('slug', 'report.view')->value('id'));
         $this->actingAs($a['user']->fresh())->get(route('vehicle-profitability.export'))->assertForbidden();
     }
 
-    public function test_portal_requires_permissions_for_every_exposed_document_and_revokes_the_session_on_loss(): void
+    #[DataProvider('portalExposurePermissions')]
+    public function test_portal_requires_permissions_for_every_exposed_document_and_revokes_the_session_on_loss(string $permission): void
     {
         $a = $this->fixture();
         $this->enter($this->grant($a));
-        $a['user']->role->permissions()->detach(Permission::where('slug', 'invoice.view')->value('id'));
+        $a['user']->role->permissions()->detach(Permission::where('slug', $permission)->value('id'));
         $this->get(route('portal.home'))->assertForbidden()->assertSee('Demandez un nouveau lien')->assertSessionMissing('customer_portal');
         $this->actingAs($a['user']->fresh())->post(route('customers.portal-access.store', $a['customer']))->assertForbidden();
-        $this->get(route('customers.show', $a['customer']))->assertOk()->assertDontSee('Gérer l’accès au portail locataire');
+        if ($permission === 'customer.view') {
+            $this->get(route('customers.show', $a['customer']))->assertForbidden();
+        } else {
+            $this->get(route('customers.show', $a['customer']))->assertOk()->assertDontSee('Gérer l’accès au portail locataire');
+        }
         $this->assertFalse(app(TenantContext::class)->hasTenant());
+    }
+
+    public static function portalExposurePermissions(): array
+    {
+        return array_combine($permissions = ['customer.view', 'customer.update', 'customer.identity.view', 'reservation.view', 'contract.view', 'invoice.view', 'document.download'], array_map(fn ($permission) => [$permission], $permissions));
     }
 
     public function test_portal_email_queues_an_encrypted_job_for_the_saved_address_only(): void
@@ -521,7 +532,7 @@ class SaasOperationsImprovementsTest extends TestCase
     {
         $this->configurePortalMail();
         Notification::fake();
-        foreach (['revoked', 'expired', 'disabled', 'changed_email', 'consumed'] as $case) {
+        foreach (['revoked', 'expired', 'disabled', 'changed_email', 'changed_email_case', 'consumed'] as $case) {
             $a = $this->fixture();
             app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->update(['email' => 'saved@example.test']));
             $grant = $this->grant($a);
@@ -529,8 +540,9 @@ class SaasOperationsImprovementsTest extends TestCase
                 match ($case) {
                     'revoked' => $grant->update(['revoked_at' => now()]),
                     'expired' => $grant->update(['expires_at' => now()->subSecond()]),
-                    'disabled' => $a['user']->update(['is_active' => false]),
+                    'disabled' => $a['user']->forceFill(['is_active' => false])->save(),
                     'changed_email' => $a['customer']->update(['email' => 'changed@example.test']),
+                    'changed_email_case' => $a['customer']->update(['email' => 'Saved@example.test']),
                     'consumed' => $grant->update(['consumed_at' => now()]),
                 };
             });
@@ -546,7 +558,7 @@ class SaasOperationsImprovementsTest extends TestCase
         app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->update(['email' => 'saved@example.test']));
         $grant = $this->grant($a);
         $this->configurePortalMail();
-        Notification::shouldReceive('route')->once()->andThrow(new \RuntimeException('SMTP secret: synthetic-secret; signature=synthetic-token'));
+        Notification::shouldReceive('send')->once()->andThrow(new \RuntimeException('SMTP secret: synthetic-secret; signature=synthetic-token'));
         try {
             (new SendCustomerPortalLink($grant->id, hash('sha256', 'saved@example.test')))->handle(app(CustomerPortalContext::class), app(CustomerPortalMail::class));
             $this->fail('A failed transport must be retried.');

@@ -43,7 +43,7 @@ class SendCustomerPortalLink implements ShouldBeEncrypted, ShouldQueue
             return;
         }
         if (! filter_var($customer->email, FILTER_VALIDATE_EMAIL)
-            || ! hash_equals($this->emailFingerprint, hash('sha256', mb_strtolower(trim($customer->email))))) {
+            || ! hash_equals($this->emailFingerprint, hash('sha256', trim($customer->email)))) {
             return;
         }
         if (! $mail->ready()) {

@@ -15,7 +15,7 @@ class VehicleProfitabilityExportController extends Controller
 {
     public function __invoke(ReportFilterRequest $request, ResolveReportCriteria $resolver, BuildMinimalReport $reports, AuditRecorder $audit): StreamedResponse
     {
-        abort_unless($request->user()->hasPermission('report.export') && $request->user()->hasPermission('invoice.view') && $request->user()->hasPermission('expense.view'), 403);
+        abort_unless($request->user()->hasPermission('invoice.view') && $request->user()->hasPermission('expense.view'), 403);
         $criteria = $resolver->handle($request->validated());
         // Materialize bounded results while the request's tenant context is active.
         $report = $reports->vehicleProfitability($criteria, 5001, 1);
