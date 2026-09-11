@@ -34,7 +34,7 @@ OR-Tools résout un problème d’optimisation : il faut le requalifier sur de n
 
 Le **Tenant Owner disposant de `prediction.export`** ouvre **Données d’apprentissage**. Un responsable limité à une agence ne peut pas contribuer au nom de l’entreprise.
 
-Pour la demande, choisir une agence autorisée et une période terminée de **120 à 731 jours**. Le SaaS reprend son export canonique de départs réels, vérifie son empreinte et inclut les jours sans départ. Les noms, contrats et identités des clients ne sont pas exportés. Préférer un historique assez long pour observer plusieurs situations ; 120 jours permettent un premier entraînement, mais ne suffisent pas nécessairement aux critères de revue.
+Pour la demande, choisir une agence autorisée et une période terminée de **120 à 731 jours**. Le SaaS reprend la sélection canonique des départs réels, inclut les jours sans départ et fige le résultat dans un jeu privé avec son empreinte. Les noms, contrats et identités des clients ne sont pas exportés. Préférer un historique assez long pour observer plusieurs situations ; 120 jours permettent un premier entraînement, mais ne suffisent pas nécessairement aux critères de revue.
 
 Pour les autres données, importer un index JSON de **5 Mo et 20 000 observations maximum**. Les formats sont téléchargeables dans l’interface. Décrire l’origine et la vérification, puis confirmer les droits d’usage et les annotations. Les suggestions d’un modèle ne deviennent jamais automatiquement la vérité terrain : une acceptation de couleur ne remplace pas une étiquette corrigée ; une revue « zone candidate confirmée » ne fournit pas à elle seule toutes les boîtes d’un détecteur.
 

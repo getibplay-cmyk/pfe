@@ -84,6 +84,15 @@ class SaasModelTrainingTest extends TestCase
         $dataset = ModelTrainingDataset::withoutGlobalScopes()->sole();
         $this->assertSame(240, $dataset->row_count);
         $this->assertSame($f['tenant']->id, $dataset->tenant_id);
+        $first = app(TrainingWorkbench::class)->read($dataset->stored_path, $dataset->sha256);
+        $this->assertSame(0, array_sum(array_column($first['rows'], 'value')));
+        $secondAgency = app(TenantContext::class)->run($f['tenant'], fn () => Agency::factory()->create());
+        $input['agency_id'] = $secondAgency->id;
+        $this->post(route('model-training.store'), $input)->assertRedirect()->assertSessionHasNoErrors();
+        $second = ModelTrainingDataset::withoutGlobalScopes()->latest('id')->firstOrFail();
+        $secondData = app(TrainingWorkbench::class)->read($second->stored_path, $second->sha256);
+        $this->assertNotSame($first['rows'][0]['group'], $secondData['rows'][0]['group']);
+        $this->assertEmpty(array_intersect(array_column($first['rows'], 'key'), array_column($secondData['rows'], 'key')));
     }
 
     public function test_unexpected_sensitive_columns_and_binary_files_are_rejected(): void

@@ -2,7 +2,6 @@
 
 namespace App\Support\Intelligence\Training;
 
-use App\Models\DemandHistoryExportRun;
 use App\Models\ModelTrainingCampaign;
 use App\Models\ModelTrainingDataset;
 use App\Models\ModelTrainingResult;
@@ -66,29 +65,6 @@ final class TrainingWorkbench
         } catch (Throwable $e) {
             IntelligencePrivateStorage::deleteAfterFailure('model_training.disk', $path);
             throw $e;
-        }
-    }
-
-    public function demandData(User $user, DemandHistoryExportRun $run): array
-    {
-        self::owner($user);
-        abort_unless($run->tenant_id === $user->tenant_id, 404);
-        $path = IntelligencePrivateStorage::path('intelligence.demand_forecasting.disk', $run->stored_path);
-        abort_unless(hash_equals($run->content_sha256, hash_file('sha256', $path)), 409, 'Le fichier source a changé.');
-        $stream = fopen($path, 'rb');
-        try {
-            $headers = fgetcsv($stream, 4096, ';', '"', '');
-            $headers[0] = ltrim($headers[0], "\xEF\xBB\xBF");
-            $rows = [];
-            while (($line = fgetcsv($stream, 4096, ';', '"', '')) !== false) {
-                abort_unless(count($line) === count($headers) && count($rows) < 20000, 409);
-                $record = array_combine($headers, $line);
-                $rows[] = ['key' => hash('sha256', $record['series_id'].'|'.$record['date_local']), 'group' => $record['series_id'], 'date' => $record['date_local'], 'value' => (int) $record['observed_departures']];
-            }
-
-            return ['schema_version' => '1.0', 'family' => 'demand', 'rows' => $rows];
-        } finally {
-            fclose($stream);
         }
     }
 

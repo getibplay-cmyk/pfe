@@ -45,9 +45,7 @@ class ModelTrainingDatasetController extends Controller
             if ($days < 120 || $days > 731) {
                 throw ValidationException::withMessages(['date_from' => 'Choisissez entre 120 et 731 jours consécutifs terminés.']);
             }
-            Agency::query()->whereKey($data['agency_id'])->where('is_active', true)->firstOrFail();
-            $run = app(CreateDemandHistoryExport::class)->handle((int) $data['agency_id'], $data['date_from'], $data['date_to'], $request->user());
-            $input = $workbench->demandData($request->user(), $run);
+            $input = app(CreateDemandHistoryExport::class)->trainingData((int) $data['agency_id'], $data['date_from'], $data['date_to'], $request->user());
         } else {
             $input = $schema->decode($request->file('dataset')->get());
         }
