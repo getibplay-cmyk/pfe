@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\DB;
 
 final class CustomerPortalContext
 {
+    public function canManage(User $user): bool
+    {
+        return $user->is_active && ! $user->is_platform_admin
+            && collect(['customer.update', 'customer.identity.view', 'contract.view', 'invoice.view', 'document.download'])
+                ->every(fn (string $permission) => $user->hasPermission($permission));
+    }
+
     /** The UUID or browser parameters never provide a trusted tenant context. */
     public function customer(CustomerPortalAccess $access): Customer
     {
@@ -16,7 +23,7 @@ final class CustomerPortalContext
         abort_unless(DB::table('tenants')->where('id', $access->tenant_id)->where('status', 'active')->whereNull('deleted_at')->exists(), 403);
         abort_unless(DB::table('agencies')->where('tenant_id', $access->tenant_id)->where('id', $access->agency_id)->where('is_active', true)->whereNull('deleted_at')->exists(), 403);
         $issuer = User::with('role.permissions')->where('tenant_id', $access->tenant_id)->where('is_active', true)->find($access->issued_by);
-        abort_unless($issuer && ! $issuer->is_platform_admin && $issuer->hasPermission('customer.update')
+        abort_unless($issuer && $this->canManage($issuer)
             && ($issuer->agency_id === null || $issuer->agency_id === $access->agency_id), 403);
 
         return Customer::withoutGlobalScopes()->where('tenant_id', $access->tenant_id)->where('agency_id', $access->agency_id)

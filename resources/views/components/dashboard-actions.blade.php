@@ -16,6 +16,7 @@
             @foreach($groups as $group)
                 <article class="rf-panel p-4" data-action-group="{{ $group['key'] }}"><div class="flex items-center justify-between gap-2"><h3 class="font-semibold">{{ $group['title'] }}</h3><span class="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-900">{{ $group['count'] }}</span></div>
                     <ul class="mt-3 divide-y">@forelse($group['items'] as $item)<li class="py-3"><p class="font-medium">{{ $item['label'] }}</p><p class="mt-1 text-sm text-slate-500">{{ $item['detail'] }}</p><a class="rf-button-link mt-2 inline-flex" href="{{ $item['url'] }}">{{ $item['action'] }} →</a></li>@empty<li class="py-3 text-sm text-slate-500">Aucune action à traiter.</li>@endforelse</ul>
+                    <a class="rf-button-link mt-3 inline-flex" href="{{ $group['url'] }}">Voir tous les dossiers ({{ $group['count'] }}) →</a>
                 </article>
             @endforeach
         </div>

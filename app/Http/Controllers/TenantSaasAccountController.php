@@ -69,6 +69,12 @@ final class TenantSaasAccountController extends Controller
                 && $intelligenceAccess->status($capability, $tenantId)->usable())
             ->map(fn (IntelligenceCapability $capability): string => $catalog->definition($capability)['label'])
             ->values();
+        $planState = $planAccess->state($tenantId);
+        $activationSteps = [
+            ['label' => 'Compte vérifié', 'complete' => $request->user()->hasVerifiedEmail()],
+            ['label' => 'Formule attribuée', 'complete' => $currentSubscription !== null],
+            ['label' => 'Service accessible', 'complete' => $planState['available']],
+        ];
 
         return view('tenant.account-saas', [
             ...compact(
@@ -82,7 +88,8 @@ final class TenantSaasAccountController extends Controller
                 'currentCheckoutAvailable',
             ),
             'cmiReadiness' => $cmiConfiguration->readiness(),
-            'planState' => $planAccess->state($tenantId),
+            'planState' => $planState,
+            'activationSteps' => $activationSteps,
             'quotas' => $planAccess->quotaSummary($tenantId),
             'availablePlans' => SaasPlan::query()->where('is_active', true)
                 ->when($currentSubscription, fn ($query) => $query->where('currency', $currentSubscription->currency)

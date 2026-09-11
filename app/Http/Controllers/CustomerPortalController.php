@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Documents\DownloadPrivateDocument;
 use App\Actions\Documents\StorePrivateDocument;
 use App\Enums\DocumentType;
+use App\Models\Agency;
 use App\Models\Customer;
 use App\Models\CustomerPortalAccess;
 use App\Models\Document;
@@ -24,6 +25,7 @@ class CustomerPortalController extends Controller
 
         return view('portal.home', [
             'customer' => $customer,
+            'agency' => Agency::findOrFail($customer->agency_id),
             'reservations' => $customer->reservations()->where('agency_id', $customer->agency_id)->whereNotIn('status', ['draft', 'pending'])->with('vehicle:id,registration_number,brand,model')->latest('starts_at')->paginate(10, ['*'], 'reservations_page'),
             'contracts' => $customer->rentalContracts()->where('agency_id', $customer->agency_id)->whereNotNull('accepted_at')->with('currentVersion')->latest('expected_start_at')->paginate(10, ['*'], 'contracts_page'),
             'invoices' => Invoice::where('customer_id', $customer->id)->where('agency_id', $customer->agency_id)->whereNotNull('issued_at')->whereNotIn('status', ['draft', 'void'])->latest('issued_at')->paginate(10, ['*'], 'invoices_page'),

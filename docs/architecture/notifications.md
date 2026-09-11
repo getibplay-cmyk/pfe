@@ -2,9 +2,13 @@
 
 ## Périmètre
 
-RentFleet fournit uniquement des notifications internes. Aucun e-mail, SMS,
-push externe ou URL libre n’est stocké. La cloche du header, l’aperçu et la
+Ce centre fournit uniquement des notifications internes. Aucun e-mail, SMS,
+push externe ou URL libre n’y est stocké. La cloche du header, l’aperçu et la
 page paginée utilisent la même source `NotificationInbox`.
+
+L'envoi explicite du lien locataire par SMTP est un parcours distinct, décrit
+dans l'ADR 0018 et le guide `docs/operations/planning-portal-imports-profitability.md`.
+Il n'ajoute ni destinataire externe ni lien secret au centre de notifications.
 
 ## Stockage et isolation
 

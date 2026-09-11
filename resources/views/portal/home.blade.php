@@ -1,5 +1,7 @@
 <x-portal-layout>
     <p class="text-slate-600">Bienvenue {{ $customer->displayName() }}. Cet espace concerne uniquement vos dossiers auprès de cette agence.</p>
+    <x-section-card :title="$agency->name"><p class="text-sm text-slate-600">Votre agence reste votre interlocuteur pour modifier une réservation ou poser une question.</p>@if($agency->phone)<p class="mt-2 text-sm">Téléphone : {{ $agency->phone }}</p>@endif</x-section-card>
+    @if(request()->attributes->get('portal_expires_at'))<p role="status" class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm">Votre session se termine au plus tard le {{ App\Support\Ui\UiLabel::dateTime(request()->attributes->get('portal_expires_at')) }}. Transmettez vos justificatifs avant cette échéance.</p>@endif
     <x-section-card title="Mes réservations">
         <div class="grid gap-4 md:grid-cols-2">@forelse($reservations as $reservation)<article class="rounded-xl border p-4"><div class="flex flex-wrap justify-between gap-2"><h2 class="font-semibold">{{ $reservation->reservation_number }}</h2><x-status-badge :value="$reservation->status" /></div><p class="mt-2">{{ $reservation->vehicle?->brand }} {{ $reservation->vehicle?->model }}</p><p class="mt-1 text-sm text-slate-600">{{ App\Support\Ui\UiLabel::dateTime($reservation->starts_at) }} → {{ App\Support\Ui\UiLabel::dateTime($reservation->ends_at) }}</p></article>@empty<x-empty-state title="Aucune réservation confirmée" />@endforelse</div><div class="mt-4">{{ $reservations->withQueryString()->links() }}</div>
     </x-section-card>

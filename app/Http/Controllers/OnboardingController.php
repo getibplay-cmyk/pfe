@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OnboardingImport;
 use App\Models\PlatformBilling\SaasSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +82,8 @@ class OnboardingController extends Controller
             'completed' => $completed,
             'progress' => (int) round(($completed / max(1, $steps->count())) * 100),
             'subscription' => $subscription,
+            'nextStep' => $steps->firstWhere('complete', false),
+            'recentImports' => OnboardingImport::where('created_by', $user->id)->latest()->limit(5)->get(),
         ]);
     }
 }
