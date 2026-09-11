@@ -33,6 +33,26 @@ def save_envelope(folder, manifest):
 
 
 class TrainingWorkbenchTest(unittest.TestCase):
+    def test_reviewed_csv_is_converted_without_inventing_labels(self):
+        from prepare_dataset import convert
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.csv"
+            source.write_text("key;group;date;value\nrow_1;agency_1;2025-01-01;3\n", encoding="utf-8")
+            output = convert(source, "demand", root / "private-output")
+            self.assertEqual(json.loads(output.read_text())["rows"][0]["value"], 3)
+            self.assertEqual(json.loads((output.parent / "source-receipt.json").read_text())["csv_sha256"], workbench.sha256(source))
+
+    def test_csv_image_paths_cannot_escape_the_selected_private_root(self):
+        from prepare_dataset import convert
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "photos").mkdir()
+            source = root / "source.csv"
+            source.write_text("key;group;image;label\nrow_1;car_1;../private.png;red\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "relative"):
+                convert(source, "color", root / "output", root / "photos")
+
     def test_manifest_integrity_is_verified_before_processing(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = save_envelope(tmp, demand_manifest())

@@ -68,6 +68,7 @@ config = {
     'baseline_inventory': str(WORK / 'references' / 'ocr-sha256.json'),
     'checkpoint': str(WORK / 'sources' / 'POIDS_APPRENTISSAGE_A_SELECTIONNER'),
     'checkpoint_sha256': '',
+    'fine_tune_color': False,  # True pour réutiliser un checkpoint .pth approuvé avec classes et state_dict.
     'upstream': '/content/RT-DETR',  # Ou checkout PaddleOCR pour la reconnaissance.
     'source_commit': '',  # Révision complète approuvée du projet PaddleOCR.
     'approved_config': str(WORK / 'sources' / 'ocr_arabe_approuve.yml'),

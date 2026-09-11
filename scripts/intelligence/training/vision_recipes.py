@@ -14,7 +14,7 @@ from pathlib import Path
 from workbench import COLORS, report, require, sha256, write_json
 
 
-def train_color(manifest, paths, baseline_onnx, output, version, epochs=10):
+def train_color(manifest, paths, baseline_onnx, output, version, epochs=10, checkpoint=None, checkpoint_sha256=None):
     import numpy as np
     import onnxruntime as ort
     import torch
@@ -40,8 +40,13 @@ def train_color(manifest, paths, baseline_onnx, output, version, epochs=10):
             return tensor, COLORS.index(row["label"]), row["key"]
     training, validation = Samples("train"), Samples("validation")
     require({r["label"] for r in training.rows} == set(COLORS), "Training needs all eight colours and reject examples")
-    network = models.mobilenet_v3_large(weights=models.MobileNet_V3_Large_Weights.IMAGENET1K_V2)
+    network = models.mobilenet_v3_large(weights=None if checkpoint else models.MobileNet_V3_Large_Weights.IMAGENET1K_V2)
     network.classifier[3] = torch.nn.Linear(network.classifier[3].in_features, len(COLORS))
+    if checkpoint:
+        require(sha256(checkpoint) == checkpoint_sha256, "Approved colour checkpoint digest mismatch")
+        saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
+        require(saved.get("classes") == COLORS, "Colour checkpoint class order differs from the contract")
+        network.load_state_dict(saved["state_dict"], strict=True)
     network.to(device)
     optimizer = torch.optim.AdamW(network.parameters(), lr=3e-4, weight_decay=1e-4)
     criterion = torch.nn.CrossEntropyLoss()

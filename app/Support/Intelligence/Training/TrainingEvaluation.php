@@ -55,8 +55,8 @@ final class TrainingEvaluation
                 if ($family === 'demand') {
                     foreach ($p[$side] as $horizon => $value) {
                         $error = abs($row['value'] - $value);
-                        $totals[$side] += $error / 7;
-                        $segments['J+'.($horizon + 1)][$side] = ($segments['J+'.($horizon + 1)][$side] ?? 0) + $error / $test->count();
+                        $totals[$side] += $error;
+                        $segments['J+'.($horizon + 1)][$side] = ($segments['J+'.($horizon + 1)][$side] ?? 0) + $error;
                     }
                 } elseif ($family === 'damage') {
                     TrainingDatasetSchema::checkBoxes($p[$side]);
@@ -86,6 +86,11 @@ final class TrainingEvaluation
             $targetTotal += $row['value'] ?? 0;
         }
         foreach ($segments as &$segment) {
+            if ($family === 'demand') {
+                foreach (['baseline', 'candidate'] as $side) {
+                    $segment[$side] /= $test->count();
+                }
+            }
             if (isset($segment['count'])) {
                 foreach (['baseline', 'candidate'] as $side) {
                     $segment[$side] /= $segment['count'];
@@ -98,7 +103,7 @@ final class TrainingEvaluation
             [$tp, $fp, $fn] = $confusion[$side];
             $scores[$side] = in_array($family, ['anomaly', 'damage'], true)
                 ? 2 * $tp / max(1, 2 * $tp + $fp + $fn)
-                : $totals[$side] / $test->count();
+                : $totals[$side] / ($test->count() * ($family === 'demand' ? 7 : 1));
         }
         $reasons = [];
         if ($test->count() < 30) {
@@ -145,7 +150,7 @@ final class TrainingEvaluation
         return ['eligible' => $reasons === [], 'metrics' => [
             ...$scores, 'test_count' => $test->count(), 'metric_label' => TrainingCatalog::get($family)['metric'],
             'segments' => $segments, 'reasons' => array_values(array_unique($reasons)),
-            'wape' => $family === 'demand' && $targetTotal > 0 ? ['baseline' => $totals['baseline'] / $targetTotal, 'candidate' => $totals['candidate'] / $targetTotal] : null,
+            'wape' => $family === 'demand' && $targetTotal > 0 ? ['baseline' => $totals['baseline'] / ($targetTotal * 7), 'candidate' => $totals['candidate'] / ($targetTotal * 7)] : null,
             'provenance' => 'server_recomputed_from_declared_predictions',
         ]];
     }

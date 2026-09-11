@@ -31,11 +31,11 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def write_json(path, value):
+def write_json(path, value, compact=False):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with path.open("x", encoding="utf-8") as stream:
-        json.dump(value, stream, ensure_ascii=False, allow_nan=False, indent=2)
+        json.dump(value, stream, ensure_ascii=False, allow_nan=False, indent=None if compact else 2, separators=(",", ":") if compact else None)
     os.chmod(path, 0o600)
 
 
@@ -94,7 +94,7 @@ def report(manifest, baseline, candidate, artifact, version, output):
         "manifest_sha256": manifest["manifest_sha256"], "baseline_version": manifest["baseline_version"],
         "candidate_version": version, "artifact_sha256": sha256(artifact),
         "predictions": [{"key": key, "baseline": baseline[key], "candidate": candidate[key]} for key in sorted(expected)],
-    })
+    }, compact=True)
 
 
 def prepare_vision(manifest, image_root, output):

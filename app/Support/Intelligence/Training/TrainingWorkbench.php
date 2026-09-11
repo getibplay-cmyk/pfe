@@ -10,9 +10,9 @@ use App\Models\ModelTrainingReview;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
-use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -22,13 +22,12 @@ final class TrainingWorkbench
 
     public static function owner(User $user): void
     {
-        abort_unless($user->is_active && ! $user->is_platform_admin && $user->isTenantOwner()
-            && $user->hasPermission('prediction.export') && $user->tenant_id === app(TenantContext::class)->tenantId(), 403);
+        Gate::forUser($user)->authorize('create', ModelTrainingDataset::class);
     }
 
     public static function platform(User $user): void
     {
-        abort_unless($user->is_active && $user->is_platform_admin && $user->tenant_id === null, 403);
+        Gate::forUser($user)->authorize('create', ModelTrainingCampaign::class);
     }
 
     public static function shared(): Builder
@@ -95,7 +94,7 @@ final class TrainingWorkbench
 
     public function revoke(User $user, ModelTrainingDataset $dataset): void
     {
-        self::owner($user);
+        Gate::forUser($user)->authorize('revoke', $dataset);
         DB::transaction(function () use ($dataset): void {
             $locked = ModelTrainingDataset::query()->whereKey($dataset->id)->lockForUpdate()->firstOrFail();
             if ($locked->revoked_at !== null) {
@@ -108,7 +107,7 @@ final class TrainingWorkbench
 
     public function share(User $user, ModelTrainingDataset $dataset): ModelTrainingDataset
     {
-        self::owner($user);
+        Gate::forUser($user)->authorize('share', $dataset);
 
         return DB::transaction(function () use ($user, $dataset): ModelTrainingDataset {
             $locked = ModelTrainingDataset::query()->whereKey($dataset->id)->lockForUpdate()->firstOrFail();

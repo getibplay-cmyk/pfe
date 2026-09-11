@@ -28,7 +28,7 @@ def run(config, phase):
         return
     saved_config = json.loads((root / "session-config.json").read_text())
     # Tuning/export choices may be added later; data, reference and source selection remain frozen.
-    for key in ("version", "baseline_path", "baseline_sha256", "upstream", "source_commit", "checkpoint", "checkpoint_sha256", "approved_config"):
+    for key in ("version", "baseline_path", "baseline_sha256", "upstream", "source_commit", "checkpoint", "checkpoint_sha256", "approved_config", "fine_tune_color"):
         require(saved_config.get(key) == config.get(key), f"Frozen session parameter changed: {key}")
     artifact_dir = root / "artifacts"
     if phase == "train":
@@ -49,7 +49,7 @@ def run(config, phase):
             from vision_recipes import train_color, train_damage, train_plate
             paths = json.loads((root / "prepared/image-index.json").read_text())
             if family == "color":
-                train_color(manifest, paths, config["baseline_path"], artifact_dir, config["version"], config.get("epochs", 10))
+                train_color(manifest, paths, config["baseline_path"], artifact_dir, config["version"], config.get("epochs", 10), config["checkpoint"] if config.get("fine_tune_color") else None, config.get("checkpoint_sha256"))
             elif family == "damage":
                 train_damage(manifest, root / "prepared", config["upstream"], config["checkpoint"], config["checkpoint_sha256"], artifact_dir, config.get("epochs", 30))
             else:

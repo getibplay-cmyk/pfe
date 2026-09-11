@@ -11,6 +11,7 @@ use App\Support\Intelligence\Training\TrainingDatasetSchema;
 use App\Support\Intelligence\Training\TrainingWorkbench;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class ModelTrainingDatasetController extends Controller
@@ -57,8 +58,7 @@ class ModelTrainingDatasetController extends Controller
 
     public function download(Request $request, ModelTrainingDataset $dataset, TrainingWorkbench $workbench, AuditRecorder $audit)
     {
-        TrainingWorkbench::owner($request->user());
-        abort_unless($dataset->tenant_id === $request->user()->tenant_id, 404);
+        Gate::forUser($request->user())->authorize('view', $dataset);
         abort_if($dataset->revoked_at !== null, 410, 'Ce jeu de données a été révoqué.');
         $data = $workbench->read($dataset->stored_path, $dataset->sha256);
         $audit->record('training.dataset.downloaded', $dataset);

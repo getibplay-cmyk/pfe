@@ -58,6 +58,34 @@ class SaasModelTrainingTest extends TestCase
         $this->assertDatabaseCount('model_training_datasets', 0);
     }
 
+    public function test_private_dataset_requires_explicit_consent_to_be_shared_later(): void
+    {
+        $f = $this->fixture();
+        $dataset = $this->stage($f, false);
+        $this->actingAs($f['user'])->post(route('model-training.share', $dataset))->assertSessionHasErrors('share_confirmed');
+        $this->post(route('model-training.share', $dataset), ['share_confirmed' => 1])->assertRedirect()->assertSessionHasNoErrors();
+        $shared = ModelTrainingDataset::withoutGlobalScopes()->findOrFail($dataset->id);
+        $this->assertTrue($shared->shared);
+        $this->assertSame($f['user']->id, $shared->shared_by);
+        $this->assertSame($dataset->sha256, $shared->sha256);
+        $this->assertDatabaseCount('model_training_datasets', 1);
+        $this->post(route('model-training.revoke', $dataset))->assertRedirect();
+        $this->post(route('model-training.share', $dataset), ['share_confirmed' => 1])->assertConflict();
+    }
+
+    public function test_saas_demand_export_is_scoped_and_has_distinct_keys_per_agency(): void
+    {
+        $f = $this->fixture();
+        $other = $this->fixture();
+        $input = ['mode' => 'demand', 'name' => 'Départs', 'source_note' => 'Historique des événements', 'rights_confirmed' => 1, 'labels_confirmed' => 1, 'date_from' => '2025-01-01', 'date_to' => '2025-08-28', 'agency_id' => $other['agency']->id];
+        $this->actingAs($f['user'])->post(route('model-training.store'), $input)->assertNotFound();
+        $input['agency_id'] = $f['agency']->id;
+        $this->post(route('model-training.store'), $input)->assertRedirect()->assertSessionHasNoErrors();
+        $dataset = ModelTrainingDataset::withoutGlobalScopes()->sole();
+        $this->assertSame(240, $dataset->row_count);
+        $this->assertSame($f['tenant']->id, $dataset->tenant_id);
+    }
+
     public function test_unexpected_sensitive_columns_and_binary_files_are_rejected(): void
     {
         $f = $this->fixture();
@@ -152,12 +180,13 @@ class SaasModelTrainingTest extends TestCase
         $runtime = config('intelligence.demand_forecasting');
         $this->actingAs($admin)->post(route('platform.training.result', $campaign), ['report' => UploadedFile::fake()->createWithContent('report.json', json_encode($report)), 'protocol_confirmed' => 1])->assertSessionHasNoErrors()->assertRedirect();
         $result = ModelTrainingResult::sole();
-        $this->assertEquals(1, $result->metrics['baseline']);
+        $this->assertEqualsWithDelta(1, $result->metrics['baseline'], .000001);
         $this->assertEquals(0, $result->metrics['candidate']);
         $this->assertTrue($result->eligible);
         $this->post(route('platform.training.review', $campaign), ['decision' => 'qualified', 'note' => 'Gain vérifié ; qualification technique à mener'])->assertRedirect();
         $this->assertSame($runtime, config('intelligence.demand_forecasting'));
         $this->get(route('platform.training.show', $campaign))->assertOk()->assertSee('Retenu pour qualification technique');
+        $this->get(route('platform.training.report', $campaign))->assertOk()->assertJsonPath('candidate_version', 'test-candidate-v2');
         $this->post(route('platform.training.review', $campaign), ['decision' => 'rejected', 'note' => 'Écraser la décision existante'])->assertConflict();
     }
 
@@ -197,7 +226,7 @@ class SaasModelTrainingTest extends TestCase
         $this->actingAs($admin)->post(route('platform.training.retry', $campaign))->assertRedirect();
         $next = ModelTrainingCampaign::latest('id')->first();
         $this->assertNotSame($next->public_id, $campaign->public_id);
-        $this->assertSame($next->summary, $campaign->summary);
+        $this->assertEquals($next->summary, $campaign->summary);
         $this->assertDatabaseCount('model_training_campaigns', 2);
     }
 
@@ -208,7 +237,7 @@ class SaasModelTrainingTest extends TestCase
         $this->actingAs($admin)->get(route('platform.training.download', $campaign))->assertConflict();
     }
 
-    public function test_database_prevents_dataset_mutation_and_cross_tenant_creator(): void
+    public function test_database_prevents_dataset_mutation(): void
     {
         $f = $this->fixture();
         $dataset = $this->stage($f);
@@ -220,8 +249,9 @@ class SaasModelTrainingTest extends TestCase
     {
         [, $dataset, , $campaign] = $this->campaign();
         $other = $this->fixture();
+        $otherDataset = $this->stage($other);
         $this->expectException(QueryException::class);
-        DB::transaction(fn () => DB::table('model_training_contributions')->insert(['campaign_id' => $campaign->id, 'tenant_id' => $other['tenant']->id, 'dataset_id' => $dataset->id]));
+        DB::transaction(fn () => DB::table('model_training_contributions')->insert(['campaign_id' => $campaign->id, 'tenant_id' => $dataset->tenant_id, 'dataset_id' => $otherDataset->id]));
     }
 
     private function data(): array

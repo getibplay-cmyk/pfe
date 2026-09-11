@@ -70,6 +70,17 @@ class PlatformModelTrainingController extends Controller
         return back()->with('status', 'Comparaison recalculée sur les prédictions importées. Le candidat reste à examiner.');
     }
 
+    public function report(Request $request, ModelTrainingCampaign $campaign, TrainingWorkbench $workbench, AuditRecorder $audit)
+    {
+        TrainingWorkbench::platform($request->user());
+        $workbench->assertContributions($campaign);
+        $result = $campaign->result()->firstOrFail();
+        $data = $workbench->read($result->stored_path, $result->report_sha256);
+        $audit->record('platform.training.report.downloaded', $result);
+
+        return response()->json($data)->withHeaders(['Content-Disposition' => 'attachment; filename="report-'.$campaign->public_id.'.json"', 'Cache-Control' => 'no-store, private', 'X-Content-Type-Options' => 'nosniff']);
+    }
+
     public function review(Request $request, ModelTrainingCampaign $campaign, TrainingWorkbench $workbench)
     {
         TrainingWorkbench::platform($request->user());

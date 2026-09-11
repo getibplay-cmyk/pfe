@@ -816,3 +816,14 @@ Le projet est soutenable si, meme sans modele avance, il prouve :
 - au moins une experience ML documentee et, idealement, integree.
 
 La qualite de ces preuves est prioritaire sur le nombre de modules ou de modeles annonces.
+
+
+## 20. Évolution autorisée — atelier de réentraînement (septembre 2026)
+
+Le plan de contrôle du réentraînement reste dans Laravel/PostgreSQL. Les Tenant Owners préparent des jeux privés et autorisent explicitement leur partage ; les routes `/platform/model-training` préparent les campagnes et enregistrent les comparaisons et revues. Le calcul reste dans Colab, avec données et poids sur Drive privé.
+
+Les observations sont figées, pseudonymisées et contrôlées par empreinte. Les clés étrangères composites protègent les auteurs et contributions entre entreprises. Le premier partage et la révocation sont tracés ; campagnes, résultats et décisions sont immuables. Les partitions temporelles ou par groupe sont fixées avant apprentissage. Seules des prédictions JSON sont importées, avec métriques recalculées ; aucun poids transmis par un utilisateur n’est chargé par le serveur web.
+
+Un candidat retenu exige encore une qualification technique et un déploiement versionné avec retour arrière. Il ne peut déclencher aucun effet financier, contractuel, de disponibilité ou de responsabilité. OR-Tools se requalifie sur des scénarios, et la piste CatBoost rejetée reste exclue.
+
+Références : [ADR 0019](docs/adr/0019-model-retraining-workbench.md) et [guide de réentraînement](docs/intelligence/model-retraining-workbench.md).

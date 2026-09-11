@@ -467,6 +467,7 @@ Route::prefix('platform')->name('platform.')->middleware(['auth', 'active.accoun
     Route::get('/model-training', [PlatformModelTrainingController::class, 'index'])->name('training.index');
     Route::get('/model-training/{campaign}', [PlatformModelTrainingController::class, 'show'])->name('training.show');
     Route::get('/model-training/{campaign}/download', [PlatformModelTrainingController::class, 'download'])->middleware(['password.confirm', 'throttle:10,1'])->name('training.download');
+    Route::get('/model-training/{campaign}/report', [PlatformModelTrainingController::class, 'report'])->middleware(['password.confirm', 'throttle:10,1'])->name('training.report');
     Route::middleware(['password.confirm', 'throttle:10,1'])->group(function () {
         Route::post('/model-training', [PlatformModelTrainingController::class, 'store'])->name('training.store');
         Route::post('/model-training/{campaign}/result', [PlatformModelTrainingController::class, 'result'])->name('training.result');

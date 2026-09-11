@@ -75,11 +75,20 @@ final class TrainingDatasetSchema
         $tenantKey = app(IntelligencePseudonymizer::class)->tenantKey($tenantId);
         $rows = [];
         foreach ($input['rows'] as $row) {
+            if ($family === 'demand') {
+                $row['value'] = (int) $row['value'];
+            } elseif ($family === 'anomaly') {
+                $row['label'] = (int) $row['label'];
+                foreach (['late_hours', 'km_per_day', 'fuel_drop_pct'] as $feature) {
+                    $row[$feature] = (float) $row[$feature];
+                }
+            }
             if ($family === 'plate' && ! VehiclePlateHybridContract::isCanonical($row['label'])) {
                 self::fail('Chaque plaque doit être une transcription canonique vérifiée.');
             }
             if ($family === 'damage') {
                 self::checkBoxes($row['boxes']);
+                $row['boxes'] = array_map(fn ($box) => array_map(fn ($value) => (float) $value, $box), $row['boxes']);
             }
             $row['group'] = hash('sha256', $tenantKey.'|training-group|'.$row['group']);
             $row['key'] = hash('sha256', $tenantKey.'|training-row|'.$row['key']);
@@ -137,6 +146,9 @@ final class TrainingDatasetSchema
         if (count($rows) < 60 || count($rows) > 20000) {
             self::fail('Une campagne exige entre 60 et 20 000 observations distinctes.');
         }
+        if ($family === 'damage' && count($rows) > 5000) {
+            self::fail('Limitez une campagne de dommages à 5 000 images pour conserver un rapport de comparaison borné.');
+        }
         if (collect($rows)->pluck('key')->unique()->count() !== count($rows)) {
             self::fail('Une clé d’observation désigne plusieurs données. Utilisez des clés stables et distinctes dans chaque source.');
         }
@@ -163,6 +175,14 @@ final class TrainingDatasetSchema
         unset($row);
         if (min($counts) < 10) {
             self::fail('Il faut au moins 10 observations dans chaque partition. Ajoutez des groupes indépendants.');
+        }
+        if ($family === 'demand') {
+            foreach (collect($rows)->groupBy('group') as $series) {
+                $bySplit = $series->countBy('split');
+                if (($bySplit['train'] ?? 0) < 60 || ($bySplit['validation'] ?? 0) < 10 || ($bySplit['test'] ?? 0) < 10) {
+                    self::fail('Les agences doivent couvrir des périodes compatibles : au moins 60 jours d’apprentissage, 10 de validation et 10 de test par série.');
+                }
+            }
         }
 
         return ['rows' => array_values($rows), 'counts' => $counts];
