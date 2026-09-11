@@ -1,5 +1,7 @@
 # ADR 0017 — Planning, portail locataire et import initial
 
+Les parcours et l'envoi explicite du lien par e-mail sont complétés par l'ADR 0018.
+
 ## Demande et décisions
 
 Le lot demandé complète huit axes : isolation tenant, abonnements, planning de flotte,

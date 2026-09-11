@@ -6,6 +6,7 @@ use App\Actions\PlatformBilling\AssignSaasSubscription;
 use App\Actions\PlatformBilling\CreateSaasPlan;
 use App\Actions\Vehicles\CreateVehicle;
 use App\Exceptions\MissingTenantContextException;
+use App\Jobs\SendCustomerPortalLink;
 use App\Models\Agency;
 use App\Models\Customer;
 use App\Models\CustomerPortalAccess;
@@ -15,6 +16,7 @@ use App\Models\Invoice;
 use App\Models\OnboardingImport;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
+use App\Models\Permission;
 use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\Role;
@@ -23,19 +25,28 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleBlock;
 use App\Models\VehicleCategory;
+use App\Notifications\CustomerPortalLinkNotification;
 use App\Support\Reporting\BuildMinimalReport;
 use App\Support\Reporting\ReportCriteria;
+use App\Support\Tenancy\CustomerPortalContext;
+use App\Support\Tenancy\CustomerPortalMail;
 use App\Support\Tenancy\OnboardingCsvImport;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Queue\SyncQueue;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SaasOperationsImprovementsTest extends TestCase
@@ -372,6 +383,244 @@ class SaasOperationsImprovementsTest extends TestCase
         $this->actingAs($a['user'])->get(route('vehicle-profitability.index'))->assertForbidden();
         $this->expectException(AuthorizationException::class);
         app(TenantContext::class)->run($a['tenant'], fn () => app(BuildMinimalReport::class)->vehicleProfitability(ReportCriteria::fromInclusiveDates($b['tenant']->id, [$b['agency']->id], '2026-09-08', '2026-09-08', 'Africa/Casablanca')));
+    }
+
+    public function test_action_detail_exposes_the_whole_priority_with_the_same_tenant_scope(): void
+    {
+        $a = $this->fixture();
+        $b = $this->fixture();
+        $contracts = collect(range(1, 6))->map(fn () => $this->contract($a));
+        $foreign = $this->contract($b);
+        $dashboard = $this->actingAs($a['user'])->get(route('dashboard'))->assertOk();
+        $summary = collect($dashboard->viewData('actionGroups'))->firstWhere('key', 'departures');
+        $this->assertSame(6, $summary['count']);
+        $this->assertCount(5, $summary['items']);
+        $detail = $this->get(route('dashboard.actions', 'departures'))->assertOk()->assertDontSee($foreign->contract_number);
+        $this->assertSame(6, $detail->viewData('group')['items']->total());
+        foreach ($contracts as $contract) {
+            $detail->assertSee($contract->contract_number);
+        }
+        $this->get(route('dashboard.actions', 'unknown'))->assertNotFound();
+        $this->getJson(route('dashboard.actions', ['group' => 'departures', 'tenant_id' => $b['tenant']->id]))->assertUnprocessable();
+        $a['user']->role->permissions()->detach(Permission::where('slug', 'contract.view')->value('id'));
+        $this->actingAs($a['user']->fresh())->get(route('dashboard.actions', 'departures'))->assertNotFound();
+    }
+
+    public function test_planning_category_and_status_filters_cannot_cross_tenants(): void
+    {
+        $a = $this->fixture();
+        $b = $this->fixture();
+        $this->actingAs($a['user'])->get(route('fleet.planning.index', ['category_id' => $a['category']->id, 'status' => 'active']))
+            ->assertOk()->assertSee($a['vehicle']->registration_number)->assertDontSee($b['vehicle']->registration_number);
+        $this->get(route('fleet.planning.index', ['status' => 'out_of_service']))->assertOk()->assertDontSee($a['vehicle']->registration_number);
+        $this->getJson(route('fleet.planning.index', ['category_id' => $b['category']->id]))->assertUnprocessable();
+        $this->getJson(route('fleet.planning.index', ['status' => 'invented']))->assertUnprocessable();
+    }
+
+    public function test_profitability_csv_includes_all_pages_and_neutralizes_formulas(): void
+    {
+        $a = $this->fixture();
+        $b = $this->fixture();
+        $this->invoice($a, '1000.10');
+        $this->expense($a, '50.01');
+        app(TenantContext::class)->run($a['tenant'], function () use ($a) {
+            $a['vehicle']->update(['brand' => '=HYPERLINK("https://example.test")']);
+            foreach (range(1, 20) as $index) {
+                app(CreateVehicle::class)->handle(['agency_id' => $a['agency']->id, 'vehicle_category_id' => $a['category']->id,
+                    'registration_number' => 'EXPORT-'.str_pad((string) $index, 2, '0', STR_PAD_LEFT), 'brand' => 'Dacia', 'model' => 'Logan',
+                    'fuel_type' => 'diesel', 'transmission' => 'manual', 'current_mileage' => 100], $a['user']->id);
+            }
+        });
+        $response = $this->actingAs($a['user'])->get(route('vehicle-profitability.export', ['date_from' => '2026-09-08', 'date_to' => '2026-09-08', 'page' => 2]))->assertOk();
+        $this->assertFalse(app(TenantContext::class)->hasTenant());
+        $csv = $response->streamedContent();
+        $this->assertStringContainsString('EXPORT-01', $csv);
+        $this->assertStringContainsString('EXPORT-20', $csv);
+        $this->assertStringContainsString("'=HYPERLINK", $csv);
+        $this->assertStringContainsString(';MAD;1000.10;0.00;50.01;950.09;', $csv);
+        $this->assertStringNotContainsString($b['vehicle']->registration_number, $csv);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $a['user']->role->permissions()->detach(Permission::where('slug', 'report.view')->value('id'));
+        $this->actingAs($a['user']->fresh())->get(route('vehicle-profitability.export'))->assertForbidden();
+    }
+
+    #[DataProvider('portalExposurePermissions')]
+    public function test_portal_requires_permissions_for_every_exposed_document_and_revokes_the_session_on_loss(string $permission): void
+    {
+        $a = $this->fixture();
+        $this->enter($this->grant($a));
+        $a['user']->role->permissions()->detach(Permission::where('slug', $permission)->value('id'));
+        $this->get(route('portal.home'))->assertForbidden()->assertSee('Demandez un nouveau lien')->assertSessionMissing('customer_portal');
+        $this->actingAs($a['user']->fresh())->post(route('customers.portal-access.store', $a['customer']))->assertForbidden();
+        if ($permission === 'customer.view') {
+            $this->get(route('customers.show', $a['customer']))->assertForbidden();
+        } else {
+            $this->get(route('customers.show', $a['customer']))->assertOk()->assertDontSee('Gérer l’accès au portail locataire');
+        }
+        $this->assertFalse(app(TenantContext::class)->hasTenant());
+    }
+
+    public static function portalExposurePermissions(): array
+    {
+        return array_combine($permissions = ['customer.view', 'customer.update', 'customer.identity.view', 'reservation.view', 'contract.view', 'invoice.view', 'document.download'], array_map(fn ($permission) => [$permission], $permissions));
+    }
+
+    public function test_portal_email_queues_an_encrypted_job_for_the_saved_address_only(): void
+    {
+        $a = $this->fixture();
+        app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->update(['email' => 'saved@example.test']));
+        $this->configurePortalMail();
+        Queue::fake();
+        $this->actingAs($a['user'])->post(route('customers.portal-access.store', $a['customer']), ['send_email' => 1])
+            ->assertRedirect()->assertSessionMissing('portal_url')->assertSessionHas('status');
+        $grant = CustomerPortalAccess::withoutGlobalScopes()->sole();
+        Queue::assertPushed(SendCustomerPortalLink::class, fn ($job) => $job->accessId === $grant->id && $job->afterCommit);
+        $this->postJson(route('customers.portal-access.store', $a['customer']), ['send_email' => 1, 'email' => 'foreign@example.test'])->assertUnprocessable();
+        Queue::assertPushed(SendCustomerPortalLink::class, 1);
+        $this->assertSame(1, CustomerPortalAccess::withoutGlobalScopes()->count());
+
+        $job = new SendCustomerPortalLink($grant->id, hash('sha256', 'saved@example.test'));
+        $payloadQueue = new SyncQueue;
+        $payloadQueue->setContainer(app());
+        $payload = json_decode((new \ReflectionMethod($payloadQueue, 'createPayload'))->invoke($payloadQueue, $job, 'default'), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString($grant->id, $payload['data']['command']);
+        $this->assertStringNotContainsString('saved@example.test', json_encode($payload));
+        $this->assertStringContainsString($grant->id, Crypt::decrypt($payload['data']['command']));
+    }
+
+    public function test_portal_email_refuses_logging_transports_and_missing_recipient(): void
+    {
+        $a = $this->fixture();
+        Queue::fake();
+        $this->configurePortalMail();
+        $this->actingAs($a['user'])->postJson(route('customers.portal-access.store', $a['customer']), ['send_email' => 1])->assertUnprocessable();
+        app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->update(['email' => 'saved@example.test']));
+        config(['mail.default' => 'log']);
+        $this->postJson(route('customers.portal-access.store', $a['customer']), ['send_email' => 1])->assertUnprocessable();
+        $this->configurePortalMail();
+        config(['mail.mailers.smtp.url' => 'log://default']);
+        $this->postJson(route('customers.portal-access.store', $a['customer']), ['send_email' => 1])->assertUnprocessable();
+        Queue::assertNothingPushed();
+        $this->assertSame(0, CustomerPortalAccess::withoutGlobalScopes()->count());
+    }
+
+    public function test_portal_worker_sends_a_signed_link_without_exposing_it_in_an_audit(): void
+    {
+        $a = $this->fixture();
+        app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->update(['email' => 'saved@example.test']));
+        $grant = $this->grant($a);
+        $this->configurePortalMail();
+        Notification::fake();
+        $job = new SendCustomerPortalLink($grant->id, hash('sha256', 'saved@example.test'));
+        $job->handle(app(CustomerPortalContext::class), app(CustomerPortalMail::class));
+        Notification::assertSentOnDemand(CustomerPortalLinkNotification::class, function ($notification, $channels, $notifiable) use ($grant) {
+            $mail = $notification->toMail($notifiable);
+            $this->assertTrue(URL::hasValidSignature(Request::create($mail->actionUrl)));
+            $this->assertStringContainsString($grant->id, $mail->actionUrl);
+
+            return $notifiable->routes['mail'] === 'saved@example.test' && $channels === ['mail'];
+        });
+        $auditRows = DB::table('audit_logs')->where('action', 'customer.portal_link_sent')->get();
+        $this->assertCount(1, $auditRows);
+        $audit = $auditRows->toJson();
+        $this->assertStringNotContainsString('signature', $audit);
+        $this->assertStringNotContainsString('saved@example.test', $audit);
+        $this->assertFalse(app(TenantContext::class)->hasTenant());
+    }
+
+    public function test_portal_worker_revalidates_revocation_issuer_expiry_and_recipient(): void
+    {
+        $this->configurePortalMail();
+        Notification::fake();
+        foreach (['revoked', 'expired', 'disabled', 'changed_email', 'changed_email_case', 'consumed'] as $case) {
+            $a = $this->fixture();
+            app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->update(['email' => 'saved@example.test']));
+            $grant = $this->grant($a);
+            app(TenantContext::class)->run($a['tenant'], function () use ($a, $grant, $case) {
+                match ($case) {
+                    'revoked' => $grant->update(['revoked_at' => now()]),
+                    'expired' => $grant->update(['expires_at' => now()->subSecond()]),
+                    'disabled' => $a['user']->forceFill(['is_active' => false])->save(),
+                    'changed_email' => $a['customer']->update(['email' => 'changed@example.test']),
+                    'changed_email_case' => $a['customer']->update(['email' => 'Saved@example.test']),
+                    'consumed' => $grant->update(['consumed_at' => now()]),
+                };
+            });
+            (new SendCustomerPortalLink($grant->id, hash('sha256', 'saved@example.test')))->handle(app(CustomerPortalContext::class), app(CustomerPortalMail::class));
+        }
+        Notification::assertNothingSent();
+        $this->assertFalse(app(TenantContext::class)->hasTenant());
+    }
+
+    public function test_portal_mail_failure_does_not_log_transport_secrets(): void
+    {
+        $a = $this->fixture();
+        app(TenantContext::class)->run($a['tenant'], fn () => $a['customer']->update(['email' => 'saved@example.test']));
+        $grant = $this->grant($a);
+        $this->configurePortalMail();
+        Notification::shouldReceive('send')->once()->andThrow(new \RuntimeException('SMTP secret: synthetic-secret; signature=synthetic-token'));
+        try {
+            (new SendCustomerPortalLink($grant->id, hash('sha256', 'saved@example.test')))->handle(app(CustomerPortalContext::class), app(CustomerPortalMail::class));
+            $this->fail('A failed transport must be retried.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringNotContainsString('synthetic-', $exception->getMessage());
+            $this->assertNull($exception->getPrevious());
+        }
+    }
+
+    public function test_import_error_report_is_private_scoped_and_can_be_discarded(): void
+    {
+        $a = $this->fixture();
+        $b = $this->fixture();
+        $import = app(TenantContext::class)->run($a['tenant'], fn () => app(OnboardingCsvImport::class)->preview(
+            UploadedFile::fake()->createWithContent('clients.csv', "prenom;nom;email;telephone\n=FORMULA;Test;invalid-email;\nSara;Test;sara@example.test;\n"), 'customers', $a['agency']->id, $a['user']));
+        $response = $this->actingAs($a['user'])->get(route('onboarding.import.errors', $import))->assertOk();
+        $csv = $response->streamedContent();
+        $this->assertStringContainsString("'=FORMULA", $csv);
+        $this->assertStringContainsString('invalid-email', $csv);
+        $this->assertStringNotContainsString('sara@example.test', $csv);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        $this->actingAs($b['user'])->get(route('onboarding.import.errors', $import))->assertNotFound();
+        $this->delete(route('onboarding.import.discard', $import))->assertNotFound();
+        $this->actingAs($a['user'])->delete(route('onboarding.import.discard', $import))->assertRedirect();
+        $this->assertNull($import->fresh()->payload);
+        $this->get(route('onboarding.import.errors', $import))->assertGone();
+        $this->post(route('onboarding.import.commit', $import))->assertGone();
+    }
+
+    public function test_setup_history_only_shows_the_owners_imports_and_completed_import_cannot_be_discarded(): void
+    {
+        $a = $this->fixture();
+        $b = $this->fixture();
+        $preview = fn ($f) => app(TenantContext::class)->run($f['tenant'], fn () => app(OnboardingCsvImport::class)->preview(
+            UploadedFile::fake()->createWithContent('clients.csv', "prenom;nom;email;telephone\nSara;Test;sara@example.test;\n"), 'customers', $f['agency']->id, $f['user']));
+        $own = $preview($a);
+        $preview($b);
+        $response = $this->actingAs($a['user'])->get(route('onboarding.index'))->assertOk();
+        $this->assertSame($own->id, $response->viewData('recentImports')->sole()->id);
+        $this->assertNotNull($response->viewData('nextStep'));
+        $this->post(route('onboarding.import.commit', $own))->assertRedirect();
+        $this->delete(route('onboarding.import.discard', $own))->assertConflict();
+        $this->assertNotNull($own->fresh()->completed_at);
+    }
+
+    public function test_free_subscription_activation_does_not_require_a_payment(): void
+    {
+        $a = $this->fixture();
+        $platform = User::factory()->create(['tenant_id' => null, 'agency_id' => null, 'role_id' => null, 'is_platform_admin' => true, 'is_active' => true]);
+        $plan = app(CreateSaasPlan::class)->handle(['code' => 'free-completion', 'name' => 'Offre gratuite', 'description' => 'Test', 'billing_interval' => 'monthly',
+            'price_amount' => '0.00', 'currency' => 'MAD', 'features' => ['Flotte'], 'is_active' => true, 'entitlements_configured' => true, 'max_vehicles' => 5], $platform->id);
+        app(AssignSaasSubscription::class)->handle($a['tenant'], $plan, ['status' => 'active', 'starts_at' => now()->subDay()->toIso8601String(),
+            'ends_at' => now()->addDays(3)->toIso8601String(), 'next_renewal_at' => now()->addDays(3)->toIso8601String(), 'admin_note' => 'Test activation gratuite.'], $platform->id);
+        $response = $this->actingAs($a['user'])->get(route('tenant-saas-account.show'))->assertOk();
+        $this->assertSame(3, collect($response->viewData('activationSteps'))->where('complete', true)->count());
+        $this->assertTrue($response->viewData('payments')->isEmpty());
+    }
+
+    private function configurePortalMail(): void
+    {
+        config(['mail.default' => 'smtp', 'mail.mailers.smtp.transport' => 'smtp', 'mail.mailers.smtp.host' => 'smtp.example.test',
+            'mail.mailers.smtp.url' => null, 'mail.from.address' => 'agency@example.test']);
     }
 
     private function fixture(string $role = 'tenant-owner'): array

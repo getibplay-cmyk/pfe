@@ -427,11 +427,11 @@ class BuildMinimalReport
     }
 
     /** Financial entries are aggregated separately to avoid multiplying invoice lines or expenses. */
-    public function vehicleProfitability(ReportCriteria $criteria): array
+    public function vehicleProfitability(ReportCriteria $criteria, int $perPage = 20, ?int $page = null): array
     {
         $this->assertCriteria($criteria);
         $vehicles = Vehicle::withTrashed()->whereIn('agency_id', $criteria->agencyIds)
-            ->orderBy('registration_number')->paginate(20)->withQueryString();
+            ->orderBy('registration_number')->orderBy('id')->paginate(min(5001, max(1, $perPage)), ['*'], 'page', $page)->withQueryString();
         $ids = $vehicles->pluck('id')->all();
         $joinContract = fn ($join) => $join->on('c.id', '=', 'i.rental_contract_id')->on('c.tenant_id', '=', 'i.tenant_id');
         $invoices = $this->scoped('invoices', 'i', $criteria)->join('rental_contracts as c', $joinContract)

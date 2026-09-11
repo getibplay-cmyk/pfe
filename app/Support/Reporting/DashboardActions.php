@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class DashboardActions
 {
-    public function for(User $user): array
+    public function for(User $user, ?string $only = null): array
     {
         $context = app(TenantContext::class);
         abort_unless((int) $user->tenant_id === $context->tenantId(), 403);
@@ -24,10 +24,17 @@ final class DashboardActions
         $tomorrow = $today->addDay();
         $scope = fn (Builder $query) => $query->when($context->agencyId(), fn ($query, $id) => $query->where('agency_id', $id));
         $groups = [];
-        $add = function (string $key, string $title, Builder $query, callable $row) use (&$groups): void {
+        $add = function (string $key, string $title, Builder $query, callable $row) use (&$groups, $only): void {
+            if ($only !== null && $only !== $key) {
+                return;
+            }
+            $count = (clone $query)->count();
+            $items = $only === null
+                ? $query->limit(5)->get()->map($row)
+                : $query->orderBy('id')->paginate(25)->withQueryString()->through($row);
             $groups[] = [
-                'key' => $key, 'title' => $title, 'count' => (clone $query)->count(),
-                'items' => $query->limit(5)->get()->map($row),
+                'key' => $key, 'title' => $title, 'count' => $count,
+                'items' => $items, 'url' => route('dashboard.actions', $key),
             ];
         };
         if ($user->hasPermission('contract.view')) {
@@ -55,6 +62,8 @@ final class DashboardActions
                 ->where('scheduled_start_at', '<', $tomorrow)->orderBy('scheduled_start_at'),
                 fn ($order) => ['label' => $order->maintenance_number, 'detail' => UiLabel::dateTime($order->scheduled_start_at), 'url' => route('maintenance.show', $order), 'action' => 'Ouvrir l’intervention']);
         }
+
+        abort_if($only !== null && $groups === [], 404);
 
         return $groups;
     }

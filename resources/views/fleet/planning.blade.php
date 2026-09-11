@@ -3,17 +3,20 @@
         <x-page-header title="Planning de flotte" eyebrow="Parc automobile" description="Réservations, locations et immobilisations. Ouvrez une journée pour consulter les horaires et le dossier associé." />
         <x-form-errors />
         <x-filter-panel>
-            <form method="GET" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" data-loading-form>
+            <form method="GET" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-loading-form>
                 <div><label for="planning-date" class="rf-field-label">Premier jour</label><input id="planning-date" name="date" type="date" value="{{ $start->toDateString() }}" class="mt-1 w-full" required></div>
                 <div><label for="planning-days" class="rf-field-label">Période</label><select id="planning-days" name="days" class="mt-1 w-full">@foreach([7, 14, 28] as $length)<option value="{{ $length }}" @selected($days === $length)>{{ $length }} jours</option>@endforeach</select></div>
                 <div><label for="planning-agency" class="rf-field-label">Agence</label><select id="planning-agency" name="agency_id" class="mt-1 w-full">@if(auth()->user()->agency_id === null)<option value="">Toutes mes agences</option>@endif @foreach($agencies as $agency)<option value="{{ $agency->id }}" @selected($agencyId === $agency->id)>{{ $agency->name }}</option>@endforeach</select></div>
                 <div><label for="planning-q" class="rf-field-label">Immatriculation</label><input id="planning-q" name="q" value="{{ request('q') }}" maxlength="50" class="mt-1 w-full" placeholder="Rechercher un véhicule"></div>
+                <div><label for="planning-category" class="rf-field-label">Catégorie</label><select id="planning-category" name="category_id" class="mt-1 w-full"><option value="">Toutes les catégories</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>{{ $category->name }}</option>@endforeach</select></div>
+                <div><label for="planning-status" class="rf-field-label">Statut du véhicule</label><select id="planning-status" name="status" class="mt-1 w-full"><option value="">Tous les statuts</option>@foreach($statuses as $status)<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ App\Support\Ui\UiLabel::get($status) }}</option>@endforeach</select></div>
+                <div class="flex items-end gap-3"><a class="rf-button-secondary" href="{{ route('fleet.planning.index') }}">Réinitialiser</a></div>
                 <div class="flex items-end"><x-primary-button>Afficher le planning</x-primary-button></div>
             </form>
         </x-filter-panel>
         <div class="flex flex-wrap items-center justify-between gap-3">
             <a class="rf-button-secondary" href="{{ route('fleet.planning.index', array_merge(request()->except('page'), ['date' => $start->subDays($days)->toDateString()])) }}">← Période précédente</a>
-            <a class="rf-button-link" href="{{ route('fleet.planning.index', array_merge(request()->except('page'), ['date' => today()->toDateString()])) }}">Aujourd’hui</a>
+            <a class="rf-button-link" href="{{ route('fleet.planning.index', array_merge(request()->except('page'), ['date' => now($start->timezoneName)->toDateString()])) }}">Aujourd’hui</a>
             <a class="rf-button-secondary" href="{{ route('fleet.planning.index', array_merge(request()->except('page'), ['date' => $end->toDateString()])) }}">Période suivante →</a>
         </div>
         <p class="text-sm text-slate-600">« Sans bloc » indique l’absence de blocage planifié ; le statut du véhicule et les contrôles de réservation restent applicables. Horaires : {{ $start->timezoneName }}.</p>

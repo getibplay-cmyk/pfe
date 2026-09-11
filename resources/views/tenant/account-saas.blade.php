@@ -21,6 +21,7 @@
             </x-section-card>
         @elseif($currentSubscription && config('platform_billing.self_service_enabled'))
             <x-section-card title="Changer de formule">
+                <div class="mb-5 overflow-x-auto"><table class="rf-table"><caption class="sr-only">Comparer les formules disponibles</caption><thead><tr><th>Formule</th><th>Tarif</th><th>Véhicules</th><th>Agences</th><th>Utilisateurs</th></tr></thead><tbody>@foreach($availablePlans as $plan)@php($limits = app(App\Support\PlatformBilling\SaasPlanEntitlements::class)->normalize($plan->entitlements))<tr><th scope="row">{{ $plan->name }}</th><td>{{ App\Support\Ui\UiLabel::money($plan->price_amount, $plan->currency) }} / {{ $plan->billing_interval->value === 'annual' ? 'an' : 'mois' }}</td>@foreach(['max_vehicles', 'max_agencies', 'max_users'] as $key)<td>{{ $limits[$key] === null ? 'Sans limite contractuelle' : App\Support\Ui\BusinessNumber::integer($limits[$key]) }}</td>@endforeach</tr>@endforeach</tbody></table></div>
                 <form method="POST" action="{{ route('tenant-saas-plan-change.store') }}" class="grid gap-4" data-loading-form>@csrf
                     <div><x-input-label for="new-saas-plan" value="Nouvelle formule" required />
                         <select id="new-saas-plan" name="saas_plan_id" required class="mt-1 w-full">
@@ -59,9 +60,10 @@
             {{ $invoices->links() }}
         </x-section-card>
 
-        @php($subscriptionProgress = 1 + ($currentSubscription ? 1 : 0) + ($payments->contains(fn ($payment) => $payment->entry_type->value === 'payment') ? 1 : 0))
-        <x-section-card title="Activation du service" description="Progression fondée sur trois contrôles réels : e-mail vérifié, abonnement attribué et règlement enregistré.">
+        @php($subscriptionProgress = collect($activationSteps)->where('complete', true)->count())
+        <x-section-card title="Activation du service" description="Progression fondée sur votre compte vérifié, la formule attribuée et l’accès effectif au service. Un essai ou une offre gratuite ne nécessite pas de paiement.">
             <x-progress-bar label="Activation de l’abonnement" :value="$subscriptionProgress" :max="3" :value-text="$subscriptionProgress.' étapes sur 3'" />
+            <ul class="mt-4 space-y-2 text-sm">@foreach($activationSteps as $step)<li>{{ $step['complete'] ? '✓' : 'À compléter :' }} {{ $step['label'] }}</li>@endforeach</ul>
         </x-section-card>
 
         <div class="grid gap-6 lg:grid-cols-2">
