@@ -37,7 +37,7 @@ final class RecordVehicleColorPredictionReview
                 ->findOrFail($run->id);
             if ($locked->status !== VehicleColorPredictionStatus::Succeeded) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Seule une analyse terminée peut être revue.',
+                    'decision' => __('Seule une analyse terminée peut être revue.'),
                 ]);
             }
             if ($locked->review !== null) {
@@ -45,7 +45,7 @@ final class RecordVehicleColorPredictionReview
             }
             if ($decision === VehicleColorReviewDecision::Accepted && $locked->model_accepted !== true) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Une abstention du modèle ne peut pas être acceptée.',
+                    'decision' => __('Une abstention du modèle ne peut pas être acceptée.'),
                 ]);
             }
 

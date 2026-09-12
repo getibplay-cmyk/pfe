@@ -101,10 +101,10 @@ class PlatformTenantController extends Controller
         $verificationSent = $verificationSender->send($result['owner']);
 
         return response()->view('shared.temporary-password', [
-            'title' => 'Entreprise cliente créée',
+            'title' => __('Entreprise cliente créée'),
             'message' => $verificationSent
-                ? 'Le lien de vérification a été envoyé. Transmettez le mot de passe temporaire par un canal distinct et sûr.'
-                : 'Le compte est créé, mais le lien de vérification n’a pas pu être envoyé. Vérifiez la configuration e-mail puis demandez un nouvel envoi.',
+                ? __('Le lien de vérification a été envoyé. Transmettez le mot de passe temporaire par un canal distinct et sûr.')
+                : __('Le compte est créé, mais le lien de vérification n’a pas pu être envoyé. Vérifiez la configuration e-mail puis demandez un nouvel envoi.'),
             'loginEmail' => $request->validated('owner_email'),
             'temporaryPassword' => $result['temporary_password'],
             'continueUrl' => route('platform.tenants.show', $result['tenant']),
@@ -169,11 +169,11 @@ class PlatformTenantController extends Controller
             'agencies' => Agency::withoutGlobalScopes()->where('tenant_id', $tenant->id)->orderBy('name')->get(),
             'owner' => User::query()->where('tenant_id', $tenant->id)->where('role_id', $ownerRoleId)->where('is_active', true)->first(),
             'counts' => [
-                'Agences' => DB::table('agencies')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
-                'Utilisateurs actifs' => DB::table('users')->where('tenant_id', $tenant->id)->where('is_active', true)->count(),
-                'Véhicules' => DB::table('vehicles')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
-                'Réservations' => DB::table('reservations')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
-                'Contrats' => DB::table('rental_contracts')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
+                __('Agences') => DB::table('agencies')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
+                __('Utilisateurs actifs') => DB::table('users')->where('tenant_id', $tenant->id)->where('is_active', true)->count(),
+                __('Véhicules') => DB::table('vehicles')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
+                __('Réservations') => DB::table('reservations')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
+                __('Contrats') => DB::table('rental_contracts')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
             ],
             'currentSubscription' => $currentSubscription,
             'hasActivePlans' => SaasPlan::query()->where('is_active', true)->exists(),
@@ -207,20 +207,20 @@ class PlatformTenantController extends Controller
         ]);
         $audit->record('platform.tenant.updated', $tenant, $old, $tenant->only(array_keys($old)));
 
-        return redirect()->route('platform.tenants.show', $tenant)->with('status', 'Entreprise cliente mise à jour.');
+        return redirect()->route('platform.tenants.show', $tenant)->with('status', __('Entreprise cliente mise à jour.'));
     }
 
     public function suspend(SuspendTenantRequest $request, Tenant $tenant, SuspendTenant $action): RedirectResponse
     {
         $action->handle($tenant, $request->validated('reason'), $request->user()->id);
 
-        return back()->with('status', 'Entreprise cliente suspendue et sessions révoquées.');
+        return back()->with('status', __('Entreprise cliente suspendue et sessions révoquées.'));
     }
 
     public function reactivate(Tenant $tenant, ReactivateTenant $action): RedirectResponse
     {
         $action->handle($tenant);
 
-        return back()->with('status', 'Entreprise cliente réactivée.');
+        return back()->with('status', __('Entreprise cliente réactivée.'));
     }
 }

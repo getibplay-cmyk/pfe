@@ -2,14 +2,16 @@
 
 namespace App\Support\Intelligence;
 
+use App\Support\Ui\UiText;
+
 final class RuleBasedScoringService implements PredictionScoringService
 {
     public function score(PredictionInput $input): PredictionResult
     {
         $definitions = [
-            'late_hours' => ['label' => 'Retard au retour', 'value' => $input->lateHours],
-            'km_per_day' => ['label' => 'Kilométrage journalier', 'value' => $input->kmPerDay],
-            'fuel_drop_pct' => ['label' => 'Baisse du niveau de carburant', 'value' => $input->fuelDropPct],
+            'late_hours' => ['label' => UiText::t('Retard au retour'), 'value' => $input->lateHours],
+            'km_per_day' => ['label' => UiText::t('Kilométrage journalier'), 'value' => $input->kmPerDay],
+            'fuel_drop_pct' => ['label' => UiText::t('Baisse du niveau de carburant'), 'value' => $input->fuelDropPct],
         ];
         $factors = [];
         $maximumRatio = 0.0;
@@ -24,19 +26,19 @@ final class RuleBasedScoringService implements PredictionScoringService
                 'label' => $definition['label'],
                 'value' => number_format($value, 6, '.', ''),
                 'threshold' => number_format($threshold, 6, '.', ''),
-                'impact' => $ratio >= 1.0 ? 'à examiner' : 'dans le seuil',
+                'impact' => $ratio >= 1.0 ? UiText::t('à examiner') : 'dans le seuil',
             ];
         }
 
         $score = min(1.0, $maximumRatio / 2.0);
         $label = match (true) {
-            $maximumRatio >= 2.0 => 'priorité élevée',
-            $maximumRatio >= 1.0 => 'revue recommandée',
+            $maximumRatio >= 2.0 => UiText::t('priorité élevée'),
+            $maximumRatio >= 1.0 => UiText::t('revue recommandée'),
             default => 'niveau habituel',
         };
         $recommendation = $maximumRatio >= 1.0
-            ? 'Une revue humaine est recommandée avant toute décision.'
-            : 'Aucune priorité particulière ; une revue humaine reste possible.';
+            ? UiText::t('Une revue humaine est recommandée avant toute décision.')
+            : UiText::t('Aucune priorité particulière ; une revue humaine reste possible.');
 
         return new PredictionResult(
             schemaVersion: '1.0',

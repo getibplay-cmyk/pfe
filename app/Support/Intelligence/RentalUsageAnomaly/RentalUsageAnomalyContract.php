@@ -2,6 +2,8 @@
 
 namespace App\Support\Intelligence\RentalUsageAnomaly;
 
+use App\Support\Ui\UiText;
+
 final class RentalUsageAnomalyContract
 {
     public const CHALLENGER_MODEL = 'isolation_forest';
@@ -31,10 +33,10 @@ final class RentalUsageAnomalyContract
     public static function featureLabel(string $feature): string
     {
         return match ($feature) {
-            'late_hours' => 'Retard au retour',
-            'km_per_day' => 'Kilomètres par jour',
-            'fuel_drop_pct' => 'Baisse de carburant',
-            default => 'Facteur non documenté',
+            'late_hours' => UiText::t('Retard au retour'),
+            'km_per_day' => UiText::t('Kilomètres par jour'),
+            'fuel_drop_pct' => UiText::t('Baisse de carburant'),
+            default => UiText::t('Facteur non documenté'),
         };
     }
 

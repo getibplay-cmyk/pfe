@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\DocumentType;
 use App\Models\Document;
 use App\Models\User;
 
@@ -14,7 +15,8 @@ class DocumentPolicy
 
     public function upload(User $user, ?Document $document = null): bool
     {
-        return $user->hasPermission('document.upload') && (! $document || $this->sameScope($user, $document));
+        return $user->hasPermission('document.upload') && (! $document || ($this->sameScope($user, $document)
+            && ! ($document->document_type === DocumentType::ContractAcceptance && $document->current_version_id !== null)));
     }
 
     public function download(User $user, Document $document): bool

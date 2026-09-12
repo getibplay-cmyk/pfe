@@ -26,14 +26,14 @@ class RecordPayment
         $context = app(TenantContext::class);
         $agencyId = $context->agencyId();
         if ($agencyId !== null && $agencyId !== (int) $data['agency_id']) {
-            throw ValidationException::withMessages(['agency_id' => 'Cette agence ne fait pas partie du contexte actif.']);
+            throw ValidationException::withMessages(['agency_id' => __('Cette agence ne fait pas partie du contexte actif.')]);
         }
 
         $customer = Customer::findOrFail($data['customer_id']);
         $contract = isset($data['rental_contract_id']) ? RentalContract::findOrFail($data['rental_contract_id']) : null;
         foreach (['card_number', 'pan', 'cvv', 'cvc'] as $forbidden) {
             if (array_key_exists($forbidden, $data)) {
-                throw ValidationException::withMessages([$forbidden => 'Les données de carte ne doivent jamais être stockées.']);
+                throw ValidationException::withMessages([$forbidden => __('Les données de carte ne doivent jamais être stockées.')]);
             }
         }
 
@@ -62,11 +62,11 @@ class RecordPayment
             }
 
             if (($customer->agency_id && $customer->agency_id !== (int) $data['agency_id']) || ($contract && ($contract->agency_id !== (int) $data['agency_id'] || $contract->customer_id !== $customer->id))) {
-                throw ValidationException::withMessages(['payment' => 'Le client, le contrat et l’agence sont incompatibles.']);
+                throw ValidationException::withMessages(['payment' => __('Le client, le contrat et l’agence sont incompatibles.')]);
             }
 
             if ($contract && trim($contract->currency) !== $currency) {
-                throw ValidationException::withMessages(['currency' => 'La devise doit correspondre à celle du contrat.']);
+                throw ValidationException::withMessages(['currency' => __('La devise doit correspondre à celle du contrat.')]);
             }
 
             $payment = Payment::create([

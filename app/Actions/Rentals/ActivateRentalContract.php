@@ -24,25 +24,25 @@ class ActivateRentalContract
         return DB::transaction(function () use ($contract, $actorId) {
             $locked = RentalContract::with(['vehicle', 'drivers.driver', 'vehicleBlock'])->whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::Accepted) {
-                throw ValidationException::withMessages(['status' => 'Le contrat doit être accepté avant activation.']);
+                throw ValidationException::withMessages(['status' => __('Le contrat doit être accepté avant activation.')]);
             }
             $inspection = $locked->inspections()->where('inspection_type', InspectionType::Departure)->where('status', InspectionStatus::Completed)->first();
             if (! $inspection) {
-                throw ValidationException::withMessages(['inspection' => 'Une inspection de départ terminée est requise.']);
+                throw ValidationException::withMessages(['inspection' => __('Une inspection de départ terminée est requise.')]);
             }
             if ($locked->vehicle->operational_status !== VehicleOperationalStatus::Active) {
-                throw ValidationException::withMessages(['vehicle' => 'Le véhicule n’est pas opérationnel.']);
+                throw ValidationException::withMessages(['vehicle' => __('Le véhicule n’est pas opérationnel.')]);
             }
             $driver = $locked->drivers->firstWhere('is_primary', true)?->driver;
             if (! $driver || $driver->licence_expires_at->endOfDay()->lt($locked->expected_return_at)) {
-                throw ValidationException::withMessages(['driver' => 'Le permis principal n’est pas valide.']);
+                throw ValidationException::withMessages(['driver' => __('Le permis principal n’est pas valide.')]);
             }
             if (! $locked->vehicleBlock || $locked->vehicleBlock->status !== VehicleBlockStatus::Active || $locked->vehicleBlock->rental_contract_id !== $locked->id) {
-                throw ValidationException::withMessages(['vehicle_block' => 'Le bloc contractuel actif est requis.']);
+                throw ValidationException::withMessages(['vehicle_block' => __('Le bloc contractuel actif est requis.')]);
             }
             $requiredDeposit = DecimalMoney::toMinorUnits($locked->deposit_required);
             if ($requiredDeposit > 0 && $this->deposits->totals($locked)['balance'] < $requiredDeposit) {
-                throw ValidationException::withMessages(['deposit' => 'La caution requise doit être entièrement reçue ou autorisée avant activation.']);
+                throw ValidationException::withMessages(['deposit' => __('La caution requise doit être entièrement reçue ou autorisée avant activation.')]);
             }
             $locked->forceFill(['status' => RentalContractStatus::Active, 'actual_start_at' => $inspection->inspected_at, 'start_mileage' => $inspection->mileage, 'start_fuel_level' => $inspection->fuel_level, 'activated_at' => now()])->save();
             if ($inspection->mileage > $locked->vehicle->current_mileage) {

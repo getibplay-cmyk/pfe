@@ -52,7 +52,7 @@ class ReservationExportController extends Controller
             if ($output === false) {
                 return;
             }
-            fputcsv($output, ['Numéro', 'Agence', 'Statut', 'Début', 'Fin', 'Catégorie', 'Véhicule', 'Client', 'Montant', 'Devise'], ';');
+            fputcsv($output, [__('Numéro'), __('Agence'), 'Statut', __('Début'), 'Fin', __('Catégorie'), __('Véhicule'), __('Client'), __('Montant'), 'Devise'], ';');
 
             $context->run($criteria->tenantId, function () use ($query, $output, $criteria): void {
                 $rows = 0;
@@ -67,7 +67,7 @@ class ReservationExportController extends Controller
                         $reservation->starts_at->timezone($criteria->timezone)->format('Y-m-d H:i:sP'),
                         $reservation->ends_at->timezone($criteria->timezone)->format('Y-m-d H:i:sP'),
                         $reservation->vehicleCategory->name,
-                        $reservation->vehicle?->registration_number ?? 'Non affecté',
+                        $reservation->vehicle?->registration_number ?? __('Non affecté'),
                         $reservation->customer->displayName(),
                         $reservation->total_amount,
                         $reservation->currency,

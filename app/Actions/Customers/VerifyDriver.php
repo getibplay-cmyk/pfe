@@ -28,10 +28,10 @@ class VerifyDriver
                 return $locked;
             }
             if ($locked->licence_expires_at->isBefore(today())) {
-                throw ValidationException::withMessages(['licence_expires_at' => 'Le permis doit être en cours de validité.']);
+                throw ValidationException::withMessages(['licence_expires_at' => __('Le permis doit être en cours de validité.')]);
             }
             if ($locked->licence_issued_at?->isAfter($locked->licence_expires_at)) {
-                throw ValidationException::withMessages(['licence_issued_at' => 'La date de délivrance doit précéder l’expiration.']);
+                throw ValidationException::withMessages(['licence_issued_at' => __('La date de délivrance doit précéder l’expiration.')]);
             }
 
             $document = $this->documents->handle($locked, DocumentType::DrivingLicence, 'verification');

@@ -25,11 +25,11 @@ class CancelManualVehicleBlock
             $locked = VehicleBlock::query()->whereKey($block)->lockForUpdate()->firstOrFail();
 
             if ($locked->block_type !== VehicleBlockType::Manual || $locked->status !== VehicleBlockStatus::Active) {
-                throw ValidationException::withMessages(['vehicle_block' => 'Seul un bloc manuel actif peut être annulé.']);
+                throw ValidationException::withMessages(['vehicle_block' => __('Seul un bloc manuel actif peut être annulé.')]);
             }
 
             if (! $locked->starts_at->isFuture()) {
-                throw ValidationException::withMessages(['vehicle_block' => 'Un bloc déjà commencé doit être libéré et non annulé.']);
+                throw ValidationException::withMessages(['vehicle_block' => __('Un bloc déjà commencé doit être libéré et non annulé.')]);
             }
 
             $locked->forceFill([

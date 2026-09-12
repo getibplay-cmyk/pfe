@@ -23,7 +23,7 @@ class EnsureRequiredContractDocuments
             || $contractDocument->documentable_type !== $contract->getMorphClass()
             || (int) $contractDocument->documentable_id !== (int) $contract->id
             || $contractDocument->document_type !== DocumentType::ContractAcceptance) {
-            throw ValidationException::withMessages(['documents' => 'La version contractuelle doit posséder son propre document privé.']);
+            throw ValidationException::withMessages(['documents' => __('La version contractuelle doit posséder son propre document privé.')]);
         }
         $this->validateStoredVersion($contract, $contractDocument);
     }
@@ -39,7 +39,7 @@ class EnsureRequiredContractDocuments
             ->first();
 
         if (! $document) {
-            throw ValidationException::withMessages(['documents' => 'Les documents requis doivent appartenir à l’entreprise et à l’agence du contrat.']);
+            throw ValidationException::withMessages(['documents' => __('Les documents requis doivent appartenir à l’entreprise et à l’agence du contrat.')]);
         }
 
         $this->validateStoredVersion($contract, $document);
@@ -48,26 +48,26 @@ class EnsureRequiredContractDocuments
     private function validateStoredVersion(RentalContract $contract, Document $document): void
     {
         if ((int) $document->tenant_id !== (int) $contract->tenant_id || (int) $document->agency_id !== (int) $contract->agency_id) {
-            throw ValidationException::withMessages(['documents' => 'Un document requis ne correspond pas à l’entreprise et à l’agence du contrat.']);
+            throw ValidationException::withMessages(['documents' => __('Un document requis ne correspond pas à l’entreprise et à l’agence du contrat.')]);
         }
         if ($document->trashed() || $document->retention_until?->isPast()) {
-            throw ValidationException::withMessages(['documents' => 'Un document requis est obsolète.']);
+            throw ValidationException::withMessages(['documents' => __('Un document requis est obsolète.')]);
         }
 
         $version = $document->currentVersion()->first();
         $latestVersionNumber = $document->versions()->max('version_number');
         if (! $version || $version->document_id !== $document->id || (int) $version->version_number !== (int) $latestVersionNumber) {
-            throw ValidationException::withMessages(['documents' => 'Chaque document requis doit posséder une version courante non remplacée.']);
+            throw ValidationException::withMessages(['documents' => __('Chaque document requis doit posséder une version courante non remplacée.')]);
         }
 
         $disk = Storage::disk(config('documents.disk'));
         if (! $disk->exists($version->stored_path)) {
-            throw ValidationException::withMessages(['documents' => 'Le fichier privé d’un document requis est introuvable.']);
+            throw ValidationException::withMessages(['documents' => __('Le fichier privé d’un document requis est introuvable.')]);
         }
 
         $actualHash = hash('sha256', $disk->get($version->stored_path));
         if (! hash_equals($version->sha256, $actualHash)) {
-            throw ValidationException::withMessages(['documents' => 'L’empreinte d’un document requis est incohérente.']);
+            throw ValidationException::withMessages(['documents' => __('L’empreinte d’un document requis est incohérente.')]);
         }
     }
 }

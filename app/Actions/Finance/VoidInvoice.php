@@ -17,7 +17,7 @@ class VoidInvoice
         return DB::transaction(function () use ($invoice, $reason) {
             $locked = Invoice::whereKey($invoice)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'issued' || $locked->paid_amount !== '0.00' || $locked->allocations()->exists()) {
-                throw ValidationException::withMessages(['invoice' => 'Seule une facture émise sans allocation peut être annulée.']);
+                throw ValidationException::withMessages(['invoice' => __('Seule une facture émise sans allocation peut être annulée.')]);
             }
             $contract = RentalContract::whereKey($locked->rental_contract_id)->lockForUpdate()->firstOrFail();
             $locked->forceFill(['status' => 'void'])->save();

@@ -24,16 +24,16 @@
         @csrf
         @if ($vehicle->exists) @method('PUT') @endif
         <x-page-header
-            :title="$vehicle->exists ? 'Modifier le véhicule' : 'Nouveau véhicule'"
-            eyebrow="Parc automobile"
-            :breadcrumbs="[['label' => 'Véhicules', 'url' => route('vehicles.index')], ['label' => $vehicle->exists ? $vehicle->registration_number : 'Nouveau véhicule']]"
+            :title="$vehicle->exists ? __('Modifier le véhicule') : __('Nouveau véhicule')"
+            :eyebrow="__('Parc automobile')"
+            :breadcrumbs="[['label' => __('Véhicules'), 'url' => route('vehicles.index')], ['label' => $vehicle->exists ? $vehicle->registration_number : __('Nouveau véhicule')]]"
         >
-            <x-slot:actions><a href="{{ $vehicle->exists ? route('vehicles.show', $vehicle) : route('vehicles.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />Retour</a></x-slot:actions>
+            <x-slot:actions><a href="{{ $vehicle->exists ? route('vehicles.show', $vehicle) : route('vehicles.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />{{ __('Retour') }}</a></x-slot:actions>
         </x-page-header>
         <x-form-errors />
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm">
-                Agence *
+                {{ __('Agence *') }}
                 <select class="mt-1 w-full" name="agency_id" x-ref="agencyField">
                     @foreach ($agencies as $agency)
                         <option value="{{ $agency->id }}" @selected(old('agency_id', $vehicle->agency_id) == $agency->id)>{{ $agency->name }}</option>
@@ -42,7 +42,7 @@
                 <x-input-error :messages="$errors->get('agency_id')" />
             </label>
             <label class="text-sm">
-                Catégorie *
+                {{ __('Catégorie *') }}
                 <select class="mt-1 w-full" name="vehicle_category_id">
                     @foreach ($categories as $category)
                         <option value="{{ $category->id }}" @selected(old('vehicle_category_id', $vehicle->vehicle_category_id) == $category->id)>{{ $category->name }}</option>
@@ -55,7 +55,7 @@
                 x-data='vehicleRegistrationAssistant(@json($registrationAssistantConfiguration))'
             >
                 <label class="text-sm">
-                    Immatriculation *
+                    {{ __('Immatriculation *') }}
                     <input
                         class="mt-1 w-full"
                         name="registration_number"
@@ -64,18 +64,18 @@
                         @input="markRegistrationEdited($event.target.value)"
                         aria-describedby="vehicle-registration-help"
                     >
-                    <span id="vehicle-registration-help" class="mt-1 block text-xs text-slate-500">Vérifiez toujours la valeur avant l’enregistrement.</span>
+                    <span id="vehicle-registration-help" class="mt-1 block text-xs text-slate-500">{{ __('Vérifiez toujours la valeur avant l’enregistrement.') }}</span>
                     <x-input-error :messages="$errors->get('registration_number')" />
                 </label>
 
                 @if ($registrationAssistantEnabled)
                     <section class="sm:col-span-2 rounded-xl border border-orange-200 bg-orange-50/60 p-4" aria-labelledby="vehicle-registration-assistant-title">
-                        <h2 id="vehicle-registration-assistant-title" class="font-semibold text-slate-950">Photo pour lire l’immatriculation <span class="font-normal text-slate-600">(optionnelle)</span></h2>
-                        <p class="mt-1 text-sm text-slate-600">La proposition reste consultative et ne bloque jamais la saisie manuelle.</p>
+                        <h2 id="vehicle-registration-assistant-title" class="font-semibold text-slate-950">{{ __('Photo pour lire l’immatriculation') }} <span class="font-normal text-slate-600">{{ __('(optionnelle)') }}</span></h2>
+                        <p class="mt-1 text-sm text-slate-600">{{ __('La proposition reste consultative et ne bloque jamais la saisie manuelle.') }}</p>
 
                         <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
                             <label class="min-w-0 flex-1 text-sm font-medium text-slate-800">
-                                Photo complète du véhicule
+                                {{ __('Photo complète du véhicule') }}
                                 <input
                                     id="vehicle-registration-full-photo"
                                     x-ref="fullPhoto"
@@ -93,23 +93,23 @@
                                 @click="analyze($refs.fullPhoto.files[0], $el.closest('form').elements.agency_id.value, 'full_vehicle_image')"
                             >
                                 <span x-cloak x-show="busy && activeMode === 'full_vehicle_image'" class="me-2 size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
-                                <span x-text="busy && activeMode === 'full_vehicle_image' ? 'Lecture en cours…' : 'Lire l’immatriculation'">Lire l’immatriculation</span>
+                                <span x-text="busy && activeMode === 'full_vehicle_image' ? 'Lecture en cours…' : 'Lire l’immatriculation'">{{ __('Lire l’immatriculation') }}</span>
                             </button>
                         </div>
 
                         <div x-cloak x-show="fullPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
-                            <img :src="fullPreviewUrl" alt="Aperçu local de la photo complète du véhicule" class="h-full w-full object-contain">
+                            <img :src="fullPreviewUrl" alt="{{ __('Aperçu local de la photo complète du véhicule') }}" class="h-full w-full object-contain">
                         </div>
 
                         @unless ($registrationAssistantFullReady || $registrationAssistantCloseUpReady)
-                            <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">La lecture de photo est momentanément indisponible. Saisissez l’immatriculation manuellement.</p>
+                            <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">{{ __('La lecture de photo est momentanément indisponible. Saisissez l’immatriculation manuellement.') }}</p>
                         @endunless
 
                         <div class="mt-3" aria-live="polite" role="status">
-                            <p x-cloak x-show="busy" class="text-sm font-medium text-orange-950">Lecture de la photo en cours…</p>
+                            <p x-cloak x-show="busy" class="text-sm font-medium text-orange-950">{{ __('Lecture de la photo en cours…') }}</p>
                             <div x-cloak x-show="phase === 'succeeded' && suggestion" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
-                                <p><span class="font-semibold">Immatriculation détectée :</span> <span dir="auto" x-text="suggestion?.label"></span></p>
-                                <p><span class="font-semibold">Confiance indicative :</span> <span x-text="confidenceText()"></span></p>
+                                <p><span class="font-semibold">{{ __('Immatriculation détectée :') }}</span> <span dir="auto" x-text="suggestion?.label"></span></p>
+                                <p><span class="font-semibold">{{ __('Confiance indicative :') }}</span> <span x-text="confidenceText()"></span></p>
                                 <p class="mt-1" x-text="message"></p>
                                 <button
                                     x-cloak
@@ -117,7 +117,7 @@
                                     type="button"
                                     class="mt-3 rounded-lg border border-emerald-700 px-3 py-2 font-semibold text-emerald-900 hover:bg-emerald-100"
                                     @click="useSuggestion()"
-                                >Utiliser cette suggestion</button>
+                                >{{ __('Utiliser cette suggestion') }}</button>
                             </div>
                             <p x-cloak x-show="phase === 'failed' || phase === 'fallback'" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950" x-text="message"></p>
                         </div>
@@ -128,12 +128,12 @@
                             type="button"
                             class="mt-3 text-sm font-semibold text-orange-800 underline decoration-orange-300 underline-offset-4 hover:text-orange-950"
                             @click="openCloseUp()"
-                        >Utiliser une photo rapprochée</button>
+                        >{{ __('Utiliser une photo rapprochée') }}</button>
 
                         <div x-cloak x-show="showCloseUp" class="mt-4 rounded-lg border border-orange-200 bg-white p-3">
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
                                 <label class="min-w-0 flex-1 text-sm font-medium text-slate-800">
-                                    Photo rapprochée de la plaque
+                                    {{ __('Photo rapprochée de la plaque') }}
                                     <input
                                         id="vehicle-registration-close-up-photo"
                                         x-ref="closeUpPhoto"
@@ -151,11 +151,11 @@
                                     @click="analyze($refs.closeUpPhoto.files[0], $el.closest('form').elements.agency_id.value, 'plate_crop')"
                                 >
                                     <span x-cloak x-show="busy && activeMode === 'plate_crop'" class="me-2 size-4 animate-spin rounded-full border-2 border-orange-300 border-t-orange-700" aria-hidden="true"></span>
-                                    <span x-text="busy && activeMode === 'plate_crop' ? 'Lecture en cours…' : 'Lire la photo rapprochée'">Lire la photo rapprochée</span>
+                                    <span x-text="busy && activeMode === 'plate_crop' ? 'Lecture en cours…' : 'Lire la photo rapprochée'">{{ __('Lire la photo rapprochée') }}</span>
                                 </button>
                             </div>
                             <div x-cloak x-show="closeUpPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
-                                <img :src="closeUpPreviewUrl" alt="Aperçu local de la photo rapprochée de la plaque" class="h-full w-full object-contain">
+                                <img :src="closeUpPreviewUrl" alt="{{ __('Aperçu local de la photo rapprochée de la plaque') }}" class="h-full w-full object-contain">
                             </div>
                         </div>
                     </section>
@@ -166,13 +166,13 @@
 
             @foreach (['vin' => 'VIN', 'brand' => 'Marque *', 'model' => 'Modèle *', 'production_year' => 'Année', 'current_mileage' => 'Kilométrage *'] as $name => $label)
                 <label class="text-sm">
-                    {{ $label }}
+                    {{ __($label) }}
                     <input class="mt-1 w-full" name="{{ $name }}" value="{{ old($name, $vehicle->$name) }}">
                     <x-input-error :messages="$errors->get($name)" />
                 </label>
             @endforeach
             <label class="text-sm">
-                Couleur
+                {{ __('Couleur') }}
                 <input
                     class="mt-1 w-full"
                     name="color"
@@ -181,11 +181,11 @@
                     @input="markColorEdited($event.target.value)"
                     aria-describedby="vehicle-color-help"
                 >
-                <span id="vehicle-color-help" class="mt-1 block text-xs text-slate-500">La valeur finale reste toujours modifiable.</span>
+                <span id="vehicle-color-help" class="mt-1 block text-xs text-slate-500">{{ __('La valeur finale reste toujours modifiable.') }}</span>
                 <x-input-error :messages="$errors->get('color')" />
             </label>
             <label class="text-sm">
-                Carburant *
+                {{ __('Carburant *') }}
                 <select class="mt-1 w-full" name="fuel_type">
                     @foreach (['petrol', 'diesel', 'hybrid', 'electric', 'other'] as $value)
                         <option value="{{ $value }}" @selected(old('fuel_type', $vehicle->fuel_type) === $value)>{{ App\Support\Ui\UiLabel::get($value) }}</option>
@@ -193,7 +193,7 @@
                 </select>
             </label>
             <label class="text-sm">
-                Transmission *
+                {{ __('Transmission *') }}
                 <select class="mt-1 w-full" name="transmission">
                     @foreach (['manual', 'automatic'] as $value)
                         <option value="{{ $value }}" @selected(old('transmission', $vehicle->transmission) === $value)>{{ App\Support\Ui\UiLabel::get($value) }}</option>
@@ -203,11 +203,11 @@
 
             @if ($colorAssistantEnabled)
                 <section class="sm:col-span-2 rounded-xl border border-blue-200 bg-blue-50/60 p-4" aria-labelledby="vehicle-color-assistant-title">
-                    <h2 id="vehicle-color-assistant-title" class="font-semibold text-slate-950">Photo du véhicule <span class="font-normal text-slate-600">(optionnelle)</span></h2>
-                    <p class="mt-1 text-sm text-slate-600">Une suggestion peut compléter le champ Couleur sans bloquer la création du véhicule.</p>
+                    <h2 id="vehicle-color-assistant-title" class="font-semibold text-slate-950">{{ __('Photo du véhicule') }} <span class="font-normal text-slate-600">{{ __('(optionnelle)') }}</span></h2>
+                    <p class="mt-1 text-sm text-slate-600">{{ __('Une suggestion peut compléter le champ Couleur sans bloquer la création du véhicule.') }}</p>
                     <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
                         <label class="min-w-0 flex-1 text-sm font-medium text-slate-800">
-                            Choisir une photo
+                            {{ __('Choisir une photo') }}
                             <input
                                 x-ref="colorPhoto"
                                 type="file"
@@ -225,32 +225,32 @@
                         >
                             <span x-cloak x-show="busy" class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
                             <x-icon name="analysis" size="xs" x-show="!busy" />
-                            <span x-text="busy ? 'Analyse en cours…' : 'Analyser la couleur'">Analyser la couleur</span>
+                            <span x-text="busy ? 'Analyse en cours…' : 'Analyser la couleur'">{{ __('Analyser la couleur') }}</span>
                         </button>
                     </div>
 
                     <div x-cloak x-show="previewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
-                        <img :src="previewUrl" alt="Aperçu local de la photo utilisée pour suggérer la couleur" class="h-full w-full object-contain">
+                        <img :src="previewUrl" alt="{{ __('Aperçu local de la photo utilisée pour suggérer la couleur') }}" class="h-full w-full object-contain">
                     </div>
 
                     @unless ($colorAssistantReady)
-                        <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">L’analyse de photo est momentanément indisponible. Sélectionnez la couleur manuellement.</p>
+                        <p class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">{{ __('L’analyse de photo est momentanément indisponible. Sélectionnez la couleur manuellement.') }}</p>
                     @endunless
 
                     <div class="mt-3" aria-live="polite" role="status">
-                        <p x-cloak x-show="busy" class="text-sm font-medium text-blue-900">Analyse de la photo en cours…</p>
+                        <p x-cloak x-show="busy" class="text-sm font-medium text-blue-900">{{ __('Analyse de la photo en cours…') }}</p>
                         <div x-cloak x-show="phase === 'succeeded' && suggestion" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
-                            <p><span class="font-semibold">Couleur suggérée :</span> <span x-text="suggestion?.label"></span></p>
-                            <p><span class="font-semibold">Confiance indicative :</span> <span x-text="confidenceText()"></span></p>
+                            <p><span class="font-semibold">{{ __('Couleur suggérée :') }}</span> <span x-text="suggestion?.label"></span></p>
+                            <p><span class="font-semibold">{{ __('Confiance indicative :') }}</span> <span x-text="confidenceText()"></span></p>
                             <p class="mt-1" x-text="message"></p>
-                            <p class="mt-1">Vous pouvez modifier cette couleur avant l’enregistrement.</p>
+                            <p class="mt-1">{{ __('Vous pouvez modifier cette couleur avant l’enregistrement.') }}</p>
                             <button
                                 x-cloak
                                 x-show="showUseSuggestion"
                                 type="button"
                                 class="mt-3 rounded-lg border border-emerald-700 px-3 py-2 font-semibold text-emerald-900 hover:bg-emerald-100"
                                 @click="useSuggestion()"
-                            >Utiliser cette suggestion</button>
+                            >{{ __('Utiliser cette suggestion') }}</button>
                         </div>
                         <p x-cloak x-show="phase === 'failed'" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950" x-text="message"></p>
                     </div>
@@ -259,6 +259,6 @@
                 <x-input-error :messages="$errors->get('color_prediction_run')" class="sm:col-span-2" />
             @endif
         </div>
-        <x-submit-button label="Enregistrer" loading-label="Enregistrement…" />
+        <x-submit-button :label="__('Enregistrer')" loading-label="{{ __('Enregistrement…') }}" />
     </form>
 </x-app-layout>

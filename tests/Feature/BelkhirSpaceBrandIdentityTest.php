@@ -94,8 +94,8 @@ class BelkhirSpaceBrandIdentityTest extends TestCase
         $this->assertGreaterThanOrEqual(8, substr_count($intelligence, '<x-icon name="launch" size="xs" />'));
         $this->assertStringContainsString('<x-icon name="logout" size="xs" />', $applicationLayout);
         $this->assertStringContainsString('<x-icon name="view" size="xs" />', $applicationLayout);
-        $this->assertStringContainsString('<x-icon name="close" size="xs" />Retirer', $plans);
-        $this->assertStringContainsString('<x-icon name="add" size="xs" />Ajouter', $plans);
+        $this->assertStringContainsString('<x-icon name="close" size="xs" />'."{{ __('Retirer') }}", $plans);
+        $this->assertStringContainsString('<x-icon name="add" size="xs" />'."{{ __('Ajouter') }}", $plans);
     }
 
     public function test_guest_brand_accent_uses_solid_segments_instead_of_a_multicolor_gradient(): void

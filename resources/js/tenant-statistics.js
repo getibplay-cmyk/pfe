@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { belkhirSpaceChartColors } from './belkhir-space-chart-theme.js';
 import { renderPlatformBar, renderPlatformDoughnut } from './platform-statistics.js';
 
@@ -26,7 +27,7 @@ export function initializeTenantStatistics(rootDocument = document) {
             payload.charts?.reservations?.values ?? [],
             colors.blue,
             undefined,
-            { label: 'Réservations' },
+            { label: t('Réservations') },
         );
         renderPlatformBar(
             root.querySelector('[data-tenant-chart="contracts"]'),
@@ -34,7 +35,7 @@ export function initializeTenantStatistics(rootDocument = document) {
             payload.charts?.contracts?.values ?? [],
             colors.orange,
             undefined,
-            { label: 'Contrats' },
+            { label: t('Contrats') },
         );
         renderPlatformDoughnut(
             root.querySelector('[data-tenant-chart="fleet"]'),

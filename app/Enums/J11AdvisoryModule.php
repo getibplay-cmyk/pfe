@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum J11AdvisoryModule: string
 {
     case DemandForecast = 'demand_forecast';
@@ -76,11 +78,11 @@ enum J11AdvisoryModule: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::DemandForecast => 'Prévision de la demande',
-            self::FleetOptimization => 'Optimisation de flotte',
-            self::PredictiveMaintenance => 'Maintenance prédictive',
-            self::RentalUsageAnomaly => 'Usages atypiques',
-        };
+        return UiText::t(match ($this) {
+            self::DemandForecast => UiText::t('Prévision de la demande'),
+            self::FleetOptimization => UiText::t('Optimisation de flotte'),
+            self::PredictiveMaintenance => UiText::t('Maintenance prédictive'),
+            self::RentalUsageAnomaly => UiText::t('Usages atypiques'),
+        });
     }
 }

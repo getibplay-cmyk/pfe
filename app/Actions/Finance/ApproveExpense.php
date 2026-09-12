@@ -22,7 +22,7 @@ class ApproveExpense
         return DB::transaction(function () use ($expense, $actorId) {
             $locked = Expense::whereKey($expense)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'draft') {
-                throw ValidationException::withMessages(['expense' => 'Seule une dépense brouillon peut être approuvée.']);
+                throw ValidationException::withMessages(['expense' => __('Seule une dépense brouillon peut être approuvée.')]);
             }
             $locked->forceFill(['status' => 'approved', 'approved_by' => $actorId])->save();
             $this->audit->record('expense.approved', $locked, ['status' => 'draft'], ['status' => 'approved']);

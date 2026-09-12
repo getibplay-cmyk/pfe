@@ -42,13 +42,13 @@ class CreateVehicle
             VehicleStatusHistory::create(['vehicle_id' => $vehicle->id, 'from_status' => null, 'to_status' => VehicleOperationalStatus::Active, 'changed_by' => $actorId]);
             if ($colorPredictionRunId !== null) {
                 if ($actorId === null) {
-                    throw new \LogicException('A vehicle color preparation requires an authenticated actor.');
+                    throw new \LogicException(__('A vehicle color preparation requires an authenticated actor.'));
                 }
                 $this->attachColorPrediction->handle($vehicle, $colorPredictionRunId, $actorId);
             }
             if ($platePredictionRunId !== null) {
                 if ($actorId === null) {
-                    throw new \LogicException('A vehicle plate preparation requires an authenticated actor.');
+                    throw new \LogicException(__('A vehicle plate preparation requires an authenticated actor.'));
                 }
                 $this->attachPlatePrediction->handle($vehicle, $platePredictionRunId, $actorId);
             }

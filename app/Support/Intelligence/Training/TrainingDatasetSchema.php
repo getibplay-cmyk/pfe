@@ -5,6 +5,7 @@ namespace App\Support\Intelligence\Training;
 use App\Support\Intelligence\IntelligencePseudonymizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
+use App\Support\Ui\UiText;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -20,15 +21,15 @@ final class TrainingDatasetSchema
     public function decode(string $contents): array
     {
         if (strlen($contents) > 5 * 1024 * 1024) {
-            self::fail('Le fichier dépasse 5 Mo.');
+            self::fail(UiText::t('Le fichier dépasse 5 Mo.'));
         }
         try {
             $value = json_decode($contents, true, 16, JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
-            self::fail('Le fichier JSON est invalide.');
+            self::fail(UiText::t('Le fichier JSON est invalide.'));
         }
         if (! is_array($value)) {
-            self::fail('Un objet JSON est requis.');
+            self::fail(UiText::t('Un objet JSON est requis.'));
         }
 
         return $value;
@@ -84,7 +85,7 @@ final class TrainingDatasetSchema
                 }
             }
             if ($family === 'plate' && ! VehiclePlateHybridContract::isCanonical($row['label'])) {
-                self::fail('Chaque plaque doit être une transcription canonique vérifiée.');
+                self::fail(UiText::t('Chaque plaque doit être une transcription canonique vérifiée.'));
             }
             if ($family === 'damage') {
                 self::checkBoxes($row['boxes']);
@@ -115,7 +116,7 @@ final class TrainingDatasetSchema
     {
         foreach ($boxes as $box) {
             if ($box['x'] + $box['w'] > 1.000001 || $box['y'] + $box['h'] > 1.000001) {
-                self::fail('Une annotation dépasse les limites de l’image.');
+                self::fail(UiText::t('Une annotation dépasse les limites de l’image.'));
             }
         }
     }
@@ -125,7 +126,7 @@ final class TrainingDatasetSchema
         $rows = [];
         foreach ($datasets as $data) {
             if ($data['family'] !== $family) {
-                self::fail('Les contributions doivent concerner le même modèle.');
+                self::fail(UiText::t('Les contributions doivent concerner le même modèle.'));
             }
             foreach ($data['rows'] as $row) {
                 $identity = $row['image_sha256'] ?? ($family === 'demand' ? $row['group'].'|'.$row['date'] : $row['key']);
@@ -135,7 +136,7 @@ final class TrainingDatasetSchema
                     $compare = $row;
                     unset($compare['key']);
                     if ($previous !== $compare) {
-                        self::fail('Des observations identiques ont des groupes ou annotations contradictoires.');
+                        self::fail(UiText::t('Des observations identiques ont des groupes ou annotations contradictoires.'));
                     }
 
                     continue;
@@ -144,19 +145,19 @@ final class TrainingDatasetSchema
             }
         }
         if (count($rows) < 60 || count($rows) > 20000) {
-            self::fail('Une campagne exige entre 60 et 20 000 observations distinctes.');
+            self::fail(UiText::t('Une campagne exige entre 60 et 20 000 observations distinctes.'));
         }
         if ($family === 'damage' && count($rows) > 5000) {
-            self::fail('Limitez une campagne de dommages à 5 000 images pour conserver un rapport de comparaison borné.');
+            self::fail(UiText::t('Limitez une campagne de dommages à 5 000 images pour conserver un rapport de comparaison borné.'));
         }
         if (collect($rows)->pluck('key')->unique()->count() !== count($rows)) {
-            self::fail('Une clé d’observation désigne plusieurs données. Utilisez des clés stables et distinctes dans chaque source.');
+            self::fail(UiText::t('Une clé d’observation désigne plusieurs données. Utilisez des clés stables et distinctes dans chaque source.'));
         }
         if ($family === 'demand') {
             foreach (collect($rows)->groupBy('group') as $series) {
                 $dates = $series->pluck('date')->sort()->values();
                 if ($dates->count() < 120 || CarbonImmutable::parse($dates->first())->diffInDays(CarbonImmutable::parse($dates->last())) + 1 !== (float) $dates->count()) {
-                    self::fail('Chaque série de demande exige au moins 120 jours consécutifs, sans date manquante.');
+                    self::fail(UiText::t('Chaque série de demande exige au moins 120 jours consécutifs, sans date manquante.'));
                 }
             }
             $dates = collect($rows)->pluck('date')->unique()->sort()->values();
@@ -174,13 +175,13 @@ final class TrainingDatasetSchema
         }
         unset($row);
         if (min($counts) < 10) {
-            self::fail('Il faut au moins 10 observations dans chaque partition. Ajoutez des groupes indépendants.');
+            self::fail(UiText::t('Il faut au moins 10 observations dans chaque partition. Ajoutez des groupes indépendants.'));
         }
         if ($family === 'demand') {
             foreach (collect($rows)->groupBy('group') as $series) {
                 $bySplit = $series->countBy('split');
                 if (($bySplit['train'] ?? 0) < 60 || ($bySplit['validation'] ?? 0) < 10 || ($bySplit['test'] ?? 0) < 10) {
-                    self::fail('Les agences doivent couvrir des périodes compatibles : au moins 60 jours d’apprentissage, 10 de validation et 10 de test par série.');
+                    self::fail(UiText::t('Les agences doivent couvrir des périodes compatibles : au moins 60 jours d’apprentissage, 10 de validation et 10 de test par série.'));
                 }
             }
         }

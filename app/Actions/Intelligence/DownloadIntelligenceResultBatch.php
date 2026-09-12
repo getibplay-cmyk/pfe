@@ -20,7 +20,7 @@ final class DownloadIntelligenceResultBatch
         try {
             $content = $this->verifier->read($batch);
         } catch (RuntimeException $exception) {
-            abort($exception->getMessage() === 'Le lot de résultats privé est indisponible.' ? 410 : 409, $exception->getMessage());
+            abort($exception->getMessage() === __('Le lot de résultats privé est indisponible.') ? 410 : 409, $exception->getMessage());
         }
 
         $this->audit->record('prediction.result_batch.downloaded', $batch, [], [

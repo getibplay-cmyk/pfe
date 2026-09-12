@@ -2,6 +2,8 @@
 
 namespace App\Support\Intelligence\VehicleColor;
 
+use App\Support\Ui\UiText;
+
 final class VehicleColorContract
 {
     public const MODEL_FILENAME = 'S7_COLOR_V8_FINAL.onnx';
@@ -63,7 +65,7 @@ final class VehicleColorContract
             'red' => 'Rouge',
             'white' => 'Blanc',
             'yellow' => 'Jaune',
-            default => 'Aucune couleur fiable',
+            default => UiText::t('Aucune couleur fiable'),
         };
     }
 }

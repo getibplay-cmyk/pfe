@@ -39,7 +39,7 @@ class ManageAgencyDistance
                     ->where('to_agency_id', $destination)
                     ->exists()) {
                     throw ValidationException::withMessages([
-                        'from_agency_id' => 'Cette distance directionnelle existe déjà. Corrigez la ligne existante.',
+                        'from_agency_id' => __('Cette distance directionnelle existe déjà. Corrigez la ligne existante.'),
                     ]);
                 }
             }
@@ -164,7 +164,7 @@ class ManageAgencyDistance
     {
         if ($fromId === $toId) {
             throw ValidationException::withMessages([
-                'to_agency_id' => 'Les agences de départ et d’arrivée doivent être différentes.',
+                'to_agency_id' => __('Les agences de départ et d’arrivée doivent être différentes.'),
             ]);
         }
 
@@ -176,7 +176,7 @@ class ManageAgencyDistance
             ->get();
         if ($agencies->count() !== 2) {
             throw ValidationException::withMessages([
-                'from_agency_id' => 'Les deux agences doivent être actives et appartenir à votre entreprise.',
+                'from_agency_id' => __('Les deux agences doivent être actives et appartenir à votre entreprise.'),
             ]);
         }
     }

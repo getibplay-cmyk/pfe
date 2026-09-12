@@ -17,10 +17,10 @@ class RenewInsurancePolicy
         return DB::transaction(function () use ($policy, $data, $actorId): InsurancePolicy {
             $locked = InsurancePolicy::whereKey($policy)->lockForUpdate()->firstOrFail();
             if ($locked->status === InsurancePolicyStatus::Draft) {
-                throw ValidationException::withMessages(['policy' => 'Une police brouillon doit être modifiée, pas renouvelée.']);
+                throw ValidationException::withMessages(['policy' => __('Une police brouillon doit être modifiée, pas renouvelée.')]);
             }
             if (! isset($data['policy_number'], $data['starts_at'], $data['ends_at'])) {
-                throw ValidationException::withMessages(['renewal' => 'Un nouveau numéro et une nouvelle période sont obligatoires.']);
+                throw ValidationException::withMessages(['renewal' => __('Un nouveau numéro et une nouvelle période sont obligatoires.')]);
             }
             $new = $this->createPolicy->handle([
                 'agency_id' => $locked->agency_id,

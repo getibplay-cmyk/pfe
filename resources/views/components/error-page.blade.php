@@ -11,11 +11,11 @@
     <main class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-xl items-center">
         <section class="rf-panel w-full p-8 text-center sm:p-10">
             <x-brand-logo class="justify-center" />
-            <p class="mt-8 text-xs font-bold uppercase tracking-[0.18em] text-brand-700">Erreur {{ $code }}</p>
+            <p class="mt-8 text-xs font-bold uppercase tracking-[0.18em] text-brand-700">{{ __('Erreur') }} {{ $code }}</p>
             <h1 class="mt-2 text-3xl font-bold tracking-tight">{{ $title }}</h1>
             <p class="mt-3 leading-7 text-slate-600">{{ $message }}</p>
-            @if(request()->attributes->get('correlation_id'))<p class="mt-5 break-all rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-500">Référence : {{ request()->attributes->get('correlation_id') }}</p>@endif
-            <a class="rf-button-primary mt-7" href="{{ $href }}"><x-icon name="next" size="xs" />Continuer</a>
+            @if(request()->attributes->get('correlation_id'))<p class="mt-5 break-all rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-500">{{ __('Référence :') }} {{ request()->attributes->get('correlation_id') }}</p>@endif
+            <a class="rf-button-primary mt-7" href="{{ $href }}"><x-icon name="next" size="xs" />{{ __('Continuer') }}</a>
         </section>
     </main>
 </body>

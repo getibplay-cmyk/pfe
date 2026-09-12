@@ -27,22 +27,22 @@ final class RequestSaasPlanChange
             $current = SaasSubscription::query()->where('tenant_id', $actor->tenant_id)
                 ->whereIn('status', collect(TenantSubscriptionStatus::current())->pluck('value'))->lockForUpdate()->first();
             if ($current === null || $current->status === TenantSubscriptionStatus::Suspended) {
-                throw ValidationException::withMessages(['subscription' => 'Un abonnement courant non suspendu est nécessaire.']);
+                throw ValidationException::withMessages(['subscription' => __('Un abonnement courant non suspendu est nécessaire.')]);
             }
             $pending = SaasSubscription::query()->where('tenant_id', $actor->tenant_id)->where('status', 'pending_payment')->first();
             if ($pending !== null) {
                 if ($pending->saas_plan_id === $plan->getKey() && $pending->change_expires_at->isFuture()) {
                     return $pending;
                 }
-                throw ValidationException::withMessages(['saas_plan_id' => 'Annulez la demande en cours avant de changer de formule.']);
+                throw ValidationException::withMessages(['saas_plan_id' => __('Annulez la demande en cours avant de changer de formule.')]);
             }
             $plan = SaasPlan::query()->whereKey($plan)->lockForUpdate()->firstOrFail();
             if (! $plan->is_active || $plan->currency !== $current->currency || $plan->getKey() === $current->saas_plan_id) {
-                throw ValidationException::withMessages(['saas_plan_id' => 'Choisissez une autre formule active dans la même devise.']);
+                throw ValidationException::withMessages(['saas_plan_id' => __('Choisissez une autre formule active dans la même devise.')]);
             }
             $locks->ensureNoCheckout($current->getKey());
             if ($current->invoices()->where('status', 'open')->exists()) {
-                throw ValidationException::withMessages(['subscription' => 'Réglez les factures ouvertes avant de changer de formule.']);
+                throw ValidationException::withMessages(['subscription' => __('Réglez les factures ouvertes avant de changer de formule.')]);
             }
             app(TenantPlanAccess::class)->ensureEntitlementsFit($actor->tenant_id, $plan->entitlements);
             $now = CarbonImmutable::now();

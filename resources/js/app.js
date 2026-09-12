@@ -1,4 +1,8 @@
 import './bootstrap';
+import { initializeFleetPlanningDrag } from './fleet-planning-drag';
+import { initializeAnnotationEditor } from './annotation-editor';
+import { initializeGuidedInspection } from './guided-inspection';
+import { initializeWorkspaceSearch } from './workspace-search';
 
 import Alpine from 'alpinejs';
 import { createVehicleColorAssistant } from './vehicle-color-assistant';
@@ -57,6 +61,10 @@ document.addEventListener('alpine:init', () => {
 Alpine.start();
 
 document.addEventListener('DOMContentLoaded', () => {
+    initializeFleetPlanningDrag();
+    initializeAnnotationEditor();
+    initializeGuidedInspection();
+    initializeWorkspaceSearch();
     initializePlatformStatistics();
     initializeTenantStatistics();
     const belkhirSpaceLoading = initializeBelkhirSpaceLoading();

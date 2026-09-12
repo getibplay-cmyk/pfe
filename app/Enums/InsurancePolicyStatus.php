@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum InsurancePolicyStatus: string
 {
     case Draft = 'draft';
@@ -11,11 +13,11 @@ enum InsurancePolicyStatus: string
 
     public function label(): string
     {
-        return match ($this) {
+        return UiText::t(match ($this) {
             self::Draft => 'Brouillon',
             self::Active => 'Active',
-            self::Expired => 'Expirée',
-            self::Cancelled => 'Annulée',
-        };
+            self::Expired => UiText::t('Expirée'),
+            self::Cancelled => UiText::t('Annulée'),
+        });
     }
 }

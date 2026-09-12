@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum FleetReallocationRunStatus: string
 {
     case Queued = 'queued';
@@ -11,11 +13,11 @@ enum FleetReallocationRunStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Queued => 'En attente de traitement',
-            self::Running => 'Calcul en cours',
-            self::Succeeded => 'Calcul terminé',
-            self::Failed => 'Calcul non abouti',
-        };
+        return UiText::t(match ($this) {
+            self::Queued => UiText::t('En attente de traitement'),
+            self::Running => UiText::t('Calcul en cours'),
+            self::Succeeded => UiText::t('Calcul terminé'),
+            self::Failed => UiText::t('Calcul non abouti'),
+        });
     }
 }

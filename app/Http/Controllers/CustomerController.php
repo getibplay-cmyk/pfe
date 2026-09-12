@@ -53,7 +53,7 @@ class CustomerController extends Controller
         $this->authorize('create', Customer::class);
         $customer = $action->handle($request->validated());
 
-        return redirect()->route('customers.show', $customer)->with('status', 'Client créé avec le statut en attente.');
+        return redirect()->route('customers.show', $customer)->with('status', __('Client créé avec le statut en attente.'));
     }
 
     public function show(Customer $customer, IdentityProtector $protector): View
@@ -79,7 +79,7 @@ class CustomerController extends Controller
         $this->authorize('update', $customer);
         $action->handle($customer, $request->validated());
 
-        return redirect()->route('customers.show', $customer)->with('status', 'Client mis à jour.');
+        return redirect()->route('customers.show', $customer)->with('status', __('Client mis à jour.'));
     }
 
     public function verify(Customer $customer, VerifyCustomer $action): RedirectResponse
@@ -87,7 +87,7 @@ class CustomerController extends Controller
         $this->authorize('verify', $customer);
         $action->handle($customer, request()->user()->id);
 
-        return back()->with('status', 'Client vérifié.');
+        return back()->with('status', __('Client vérifié.'));
     }
 
     public function reject(RejectVerificationRequest $request, Customer $customer, RejectCustomerVerification $action): RedirectResponse
@@ -95,7 +95,7 @@ class CustomerController extends Controller
         $this->authorize('verify', $customer);
         $action->handle($customer, $request->validated('reason'));
 
-        return back()->with('status', 'Vérification du client rejetée.');
+        return back()->with('status', __('Vérification du client rejetée.'));
     }
 
     public function destroy(Customer $customer, ArchiveCustomer $action): RedirectResponse
@@ -103,7 +103,7 @@ class CustomerController extends Controller
         $this->authorize('archive', $customer);
         $action->handle($customer);
 
-        return redirect()->route('customers.index')->with('status', 'Client archivé sans suppression de son historique.');
+        return redirect()->route('customers.index')->with('status', __('Client archivé sans suppression de son historique.'));
     }
 
     public function restore(int $customerId, RestoreCustomer $action): RedirectResponse
@@ -112,7 +112,7 @@ class CustomerController extends Controller
         $this->authorize('restore', $customer);
         $action->handle($customer);
 
-        return redirect()->route('customers.show', $customerId)->with('status', 'Client restauré.');
+        return redirect()->route('customers.show', $customerId)->with('status', __('Client restauré.'));
     }
 
     public function identity(Customer $customer, IdentityProtector $protector, AuditRecorder $audit): Response

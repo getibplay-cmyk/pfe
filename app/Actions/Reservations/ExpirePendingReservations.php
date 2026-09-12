@@ -26,7 +26,7 @@ class ExpirePendingReservations
                         return;
                     }
                     $locked->forceFill(['status' => ReservationStatus::Expired])->save();
-                    ReservationStatusHistory::create(['reservation_id' => $locked->id, 'from_status' => ReservationStatus::Pending, 'to_status' => ReservationStatus::Expired, 'reason' => 'Expiration automatique', 'changed_by' => null]);
+                    ReservationStatusHistory::create(['reservation_id' => $locked->id, 'from_status' => ReservationStatus::Pending, 'to_status' => ReservationStatus::Expired, 'reason' => __('Expiration automatique'), 'changed_by' => null]);
                     $expired++;
                 });
             });

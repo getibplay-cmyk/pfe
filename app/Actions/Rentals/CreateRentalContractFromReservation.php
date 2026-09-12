@@ -24,17 +24,17 @@ class CreateRentalContractFromReservation
         return DB::transaction(function () use ($reservation, $actorId) {
             $locked = Reservation::with(['customer', 'driver', 'vehicle', 'activeVehicleBlock'])->whereKey($reservation)->lockForUpdate()->firstOrFail();
             if ($locked->status !== ReservationStatus::Confirmed) {
-                throw ValidationException::withMessages(['reservation' => 'Un contrat exige une réservation confirmée.']);
+                throw ValidationException::withMessages(['reservation' => __('Un contrat exige une réservation confirmée.')]);
             }
             if (! $locked->driver || ! $locked->vehicle || empty($locked->pricing_snapshot)) {
-                throw ValidationException::withMessages(['reservation' => 'La réservation confirmée est incomplète.']);
+                throw ValidationException::withMessages(['reservation' => __('La réservation confirmée est incomplète.')]);
             }
             if ($locked->rentalContract()->where('status', '!=', 'cancelled')->exists()) {
-                throw ValidationException::withMessages(['reservation' => 'Cette réservation possède déjà un contrat actif.']);
+                throw ValidationException::withMessages(['reservation' => __('Cette réservation possède déjà un contrat actif.')]);
             }
             $block = $locked->activeVehicleBlock;
             if (! $block || $block->block_type !== VehicleBlockType::Reservation || $block->status !== VehicleBlockStatus::Active) {
-                throw ValidationException::withMessages(['vehicle_block' => 'Le bloc actif de la réservation est introuvable.']);
+                throw ValidationException::withMessages(['vehicle_block' => __('Le bloc actif de la réservation est introuvable.')]);
             }
 
             $contract = RentalContract::create([
@@ -45,10 +45,10 @@ class CreateRentalContractFromReservation
                 'deposit_required' => $locked->deposit_amount, 'currency' => $locked->currency, 'created_by' => $actorId,
             ]);
             ContractDriver::create(['rental_contract_id' => $contract->id, 'customer_id' => $locked->customer_id, 'driver_id' => $locked->driver_id, 'is_primary' => true, 'authorization_snapshot' => ['driver_id' => $locked->driver_id, 'licence_expires_at' => $locked->driver->licence_expires_at->toDateString()]]);
-            $this->versions->handle($contract, $actorId, 'Version initiale depuis réservation confirmée');
+            $this->versions->handle($contract, $actorId, __('Version initiale depuis réservation confirmée'));
             $block->update(['rental_contract_id' => $contract->id, 'block_type' => VehicleBlockType::Contract]);
             $locked->forceFill(['status' => ReservationStatus::Converted])->save();
-            ReservationStatusHistory::create(['reservation_id' => $locked->id, 'from_status' => ReservationStatus::Confirmed, 'to_status' => ReservationStatus::Converted, 'reason' => 'Contrat '.$contract->contract_number, 'changed_by' => $actorId]);
+            ReservationStatusHistory::create(['reservation_id' => $locked->id, 'from_status' => ReservationStatus::Confirmed, 'to_status' => ReservationStatus::Converted, 'reason' => __('Contrat ').$contract->contract_number, 'changed_by' => $actorId]);
             ContractStatusHistory::create(['rental_contract_id' => $contract->id, 'from_status' => null, 'to_status' => RentalContractStatus::Draft, 'changed_by' => $actorId]);
             $this->audit->record('contract.created', $contract, [], ['contract_number' => $contract->contract_number, 'reservation_id' => $locked->id, 'version_id' => $contract->current_version_id]);
 

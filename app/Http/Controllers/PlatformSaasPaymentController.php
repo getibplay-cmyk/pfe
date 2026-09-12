@@ -88,7 +88,7 @@ class PlatformSaasPaymentController extends Controller
         $record->handle($subscription, $request->validated(), $request->user()->getKey());
 
         return redirect()->route('platform.saas-payments.index')
-            ->with('status', 'Paiement SaaS manuel enregistré. Aucune passerelle bancaire n’a été appelée.');
+            ->with('status', __('Paiement SaaS manuel enregistré. Aucune passerelle bancaire n’a été appelée.'));
     }
 
     public function reverse(
@@ -98,6 +98,6 @@ class PlatformSaasPaymentController extends Controller
     ): RedirectResponse {
         $reverse->handle($payment, $request->validated(), $request->user()->getKey());
 
-        return back()->with('status', 'Contrepassation SaaS enregistrée sans modifier le paiement original.');
+        return back()->with('status', __('Contrepassation SaaS enregistrée sans modifier le paiement original.'));
     }
 }

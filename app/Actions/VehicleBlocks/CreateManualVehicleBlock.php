@@ -32,7 +32,7 @@ class CreateManualVehicleBlock
 
         if (! $vehicle) {
             throw ValidationException::withMessages([
-                'vehicle_id' => 'Le véhicule doit être actif et appartenir à l’agence sélectionnée.',
+                'vehicle_id' => __('Le véhicule doit être actif et appartenir à l’agence sélectionnée.'),
             ]);
         }
 
@@ -41,15 +41,15 @@ class CreateManualVehicleBlock
         $reason = trim((string) ($data['reason'] ?? ''));
 
         if (! $startsAt->lessThan($endsAt)) {
-            throw ValidationException::withMessages(['ends_at' => 'La fin doit être strictement postérieure au début.']);
+            throw ValidationException::withMessages(['ends_at' => __('La fin doit être strictement postérieure au début.')]);
         }
 
         if (! $endsAt->isFuture()) {
-            throw ValidationException::withMessages(['ends_at' => 'La fin du bloc doit être future.']);
+            throw ValidationException::withMessages(['ends_at' => __('La fin du bloc doit être future.')]);
         }
 
         if ($reason === '') {
-            throw ValidationException::withMessages(['reason' => 'Le motif du bloc manuel est obligatoire.']);
+            throw ValidationException::withMessages(['reason' => __('Le motif du bloc manuel est obligatoire.')]);
         }
 
         try {
@@ -80,13 +80,13 @@ class CreateManualVehicleBlock
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23P01') {
                 throw ValidationException::withMessages([
-                    'vehicle_id' => 'Ce véhicule est déjà bloqué sur tout ou partie de cette période.',
+                    'vehicle_id' => __('Ce véhicule est déjà bloqué sur tout ou partie de cette période.'),
                 ]);
             }
 
             if (str_starts_with((string) $exception->getCode(), '23')) {
                 throw ValidationException::withMessages([
-                    'vehicle_block' => 'Le bloc manuel ne respecte pas les contraintes de disponibilité.',
+                    'vehicle_block' => __('Le bloc manuel ne respecte pas les contraintes de disponibilité.'),
                 ]);
             }
 

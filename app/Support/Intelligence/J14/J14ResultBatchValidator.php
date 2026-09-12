@@ -4,6 +4,7 @@ namespace App\Support\Intelligence\J14;
 
 use App\Exceptions\J14ResultBatchValidationException;
 use App\Models\IntelligenceDatasetExportRun;
+use App\Support\Ui\UiText;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Support\Str;
@@ -35,7 +36,7 @@ final class J14ResultBatchValidator
         try {
             $decoded = json_decode($json, true, 128, JSON_THROW_ON_ERROR | JSON_BIGINT_AS_STRING);
         } catch (JsonException) {
-            throw J14ResultBatchValidationException::at('$', 'JSON UTF-8 invalide');
+            throw J14ResultBatchValidationException::at('$', UiText::t('JSON UTF-8 invalide'));
         }
 
         $payload = $this->closedObject($decoded, self::ROOT_KEYS, '$');
@@ -44,10 +45,10 @@ final class J14ResultBatchValidator
         $batchId = $this->uuid($payload['batch_id'], 'batch_id');
         $generatedAt = $this->utcDateTime($payload['generated_at'], 'generated_at');
         if ($generatedAt->getTimestamp() < $run->created_at->getTimestamp()) {
-            $this->fail('generated_at', 'doit être postérieur ou égal à la création de l’export');
+            $this->fail('generated_at', UiText::t('doit être postérieur ou égal à la création de l’export'));
         }
         if ($generatedAt->getTimestamp() > now('UTC')->addMinutes(5)->getTimestamp()) {
-            $this->fail('generated_at', 'ne peut pas être situé dans le futur');
+            $this->fail('generated_at', UiText::t('ne peut pas être situé dans le futur'));
         }
 
         $source = $this->closedObject($payload['source'], [
@@ -83,7 +84,7 @@ final class J14ResultBatchValidator
         $inspection = $this->snapshotInspector->inspect($run);
         $results = $this->closedList($payload['results'], 'results');
         if (count($results) !== count($inspection->rowKeys)) {
-            $this->fail('results', 'doit contenir exactement une sortie pour chaque ligne exportée');
+            $this->fail('results', UiText::t('doit contenir exactement une sortie pour chaque ligne exportée'));
         }
 
         $validatedRows = [];
@@ -114,7 +115,7 @@ final class J14ResultBatchValidator
                 $factor = $this->closedObject($factors[$factorPosition], ['name', 'level'], $factorPath);
                 $this->same($factor['name'], $factorName, $factorPath.'.name');
                 if (! in_array($factor['level'], ['normal', 'elevated'], true)) {
-                    $this->fail($factorPath.'.level', 'valeur qualitative non autorisée');
+                    $this->fail($factorPath.'.level', UiText::t('valeur qualitative non autorisée'));
                 }
                 $elevated += $factor['level'] === 'elevated' ? 1 : 0;
                 $validatedFactors[] = $factor;
@@ -199,7 +200,7 @@ final class J14ResultBatchValidator
         sort($actualKeys, SORT_STRING);
         sort($expectedKeys, SORT_STRING);
         if ($actualKeys !== $expectedKeys) {
-            $this->fail($path, 'clés JSON absentes ou inconnues');
+            $this->fail($path, UiText::t('clés JSON absentes ou inconnues'));
         }
 
         return $value;
@@ -225,7 +226,7 @@ final class J14ResultBatchValidator
     private function uuid(mixed $value, string $path): string
     {
         if (! is_string($value) || ! Str::isUuid($value) || $value !== strtolower($value)) {
-            $this->fail($path, 'UUID invalide');
+            $this->fail($path, UiText::t('UUID invalide'));
         }
 
         return strtolower($value);

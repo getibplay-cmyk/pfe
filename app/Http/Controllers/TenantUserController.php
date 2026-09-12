@@ -61,7 +61,7 @@ class TenantUserController extends Controller
         return $this->temporaryPasswordResponse(
             $result['user'],
             $result['temporary_password'],
-            'Utilisateur créé',
+            __('Utilisateur créé'),
             $verificationSent,
         );
     }
@@ -86,8 +86,8 @@ class TenantUserController extends Controller
         return redirect()->route('users.index')->with(
             'status',
             $verificationSent
-                ? 'Utilisateur mis à jour. Un lien de vérification a été envoyé si l’adresse a changé.'
-                : 'Utilisateur mis à jour, mais le lien de vérification n’a pas pu être envoyé.',
+                ? __('Utilisateur mis à jour. Un lien de vérification a été envoyé si l’adresse a changé.')
+                : __('Utilisateur mis à jour, mais le lien de vérification n’a pas pu être envoyé.'),
         );
     }
 
@@ -96,7 +96,7 @@ class TenantUserController extends Controller
         $this->authorize('update', $user);
         $temporaryPassword = $action->handle($user);
 
-        return $this->temporaryPasswordResponse($user, $temporaryPassword, 'Mot de passe réinitialisé');
+        return $this->temporaryPasswordResponse($user, $temporaryPassword, __('Mot de passe réinitialisé'));
     }
 
     private function scopedUsers(Request $request)
@@ -130,9 +130,9 @@ class TenantUserController extends Controller
         return response()->view('shared.temporary-password', [
             'title' => $title,
             'message' => match ($verificationSent) {
-                true => 'Le lien de vérification a été envoyé. Transmettez ce mot de passe temporaire par un canal distinct et sûr.',
-                false => 'Le compte est créé, mais le lien de vérification n’a pas pu être envoyé. Transmettez le mot de passe temporaire par un canal sûr puis réessayez l’envoi.',
-                null => 'Transmettez ce mot de passe par un canal sûr. Il ne sera plus affiché et devra être changé à la première connexion.',
+                true => __('Le lien de vérification a été envoyé. Transmettez ce mot de passe temporaire par un canal distinct et sûr.'),
+                false => __('Le compte est créé, mais le lien de vérification n’a pas pu être envoyé. Transmettez le mot de passe temporaire par un canal sûr puis réessayez l’envoi.'),
+                null => __('Transmettez ce mot de passe par un canal sûr. Il ne sera plus affiché et devra être changé à la première connexion.'),
             },
             'loginEmail' => $user->email,
             'temporaryPassword' => $temporaryPassword,

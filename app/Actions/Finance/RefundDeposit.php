@@ -47,7 +47,7 @@ class RefundDeposit
             }
 
             if ($minor === 0 || $minor > $this->ledger->totals($locked)['balance']) {
-                throw ValidationException::withMessages(['amount' => 'Le remboursement dépasse le solde de caution.']);
+                throw ValidationException::withMessages(['amount' => __('Le remboursement dépasse le solde de caution.')]);
             }
 
             $entry = DepositTransaction::create([

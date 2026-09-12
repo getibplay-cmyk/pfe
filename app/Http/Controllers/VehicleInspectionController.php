@@ -18,7 +18,7 @@ class VehicleInspectionController extends Controller
         abort_unless($request->user()->hasPermission('inspection.manage'), 403);
         $action->handle($contract, $this->validated($request, false), $request->user()->id);
 
-        return back()->with('status', 'Inspection de départ terminée.');
+        return back()->with('status', __('Inspection de départ terminée.'));
     }
 
     public function return(Request $request, RentalContract $contract, CompleteReturnInspection $action): RedirectResponse
@@ -27,7 +27,7 @@ class VehicleInspectionController extends Controller
         abort_unless($request->user()->hasPermission('inspection.manage'), 403);
         $action->handle($contract, $this->validated($request, true), $request->user()->id);
 
-        return back()->with('status', 'Inspection de retour terminée et comparaison calculée.');
+        return back()->with('status', __('Inspection de retour terminée et comparaison calculée.'));
     }
 
     private function validated(Request $request, bool $allowsDamagePredictions): array

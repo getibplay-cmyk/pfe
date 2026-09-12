@@ -26,21 +26,21 @@ class CreateExpense
         $currency = strtoupper($data['currency'] ?? 'MAD');
 
         if (! empty($data['vehicle_id']) && ! Vehicle::whereKey($data['vehicle_id'])->where('agency_id', $agencyId)->exists()) {
-            throw ValidationException::withMessages(['vehicle_id' => 'Le véhicule doit appartenir à l’agence de la dépense.']);
+            throw ValidationException::withMessages(['vehicle_id' => __('Le véhicule doit appartenir à l’agence de la dépense.')]);
         }
 
         if (! empty($data['rental_contract_id']) && ! RentalContract::whereKey($data['rental_contract_id'])->where('agency_id', $agencyId)->where('currency', $currency)->exists()) {
-            throw ValidationException::withMessages(['rental_contract_id' => 'Le contrat doit appartenir à cette agence et utiliser la même devise.']);
+            throw ValidationException::withMessages(['rental_contract_id' => __('Le contrat doit appartenir à cette agence et utiliser la même devise.')]);
         }
 
         if (! empty($data['maintenance_order_id']) && ! MaintenanceOrder::whereKey($data['maintenance_order_id'])->where('agency_id', $agencyId)->exists()) {
-            throw ValidationException::withMessages(['maintenance_order_id' => 'La maintenance doit appartenir à l’agence de la dépense.']);
+            throw ValidationException::withMessages(['maintenance_order_id' => __('La maintenance doit appartenir à l’agence de la dépense.')]);
         }
 
         $amount = DecimalMoney::toMinorUnits($data['amount']);
         $tax = DecimalMoney::toMinorUnits($data['tax_amount'] ?? '0.00');
         if ($amount === 0 || ! in_array($data['category'], ['maintenance', 'insurance', 'fuel', 'cleaning', 'administration', 'other'], true)) {
-            throw ValidationException::withMessages(['expense' => 'Dépense invalide.']);
+            throw ValidationException::withMessages(['expense' => __('Dépense invalide.')]);
         }
 
         $expense = Expense::create([

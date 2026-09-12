@@ -4,6 +4,7 @@ namespace App\Support\Intelligence\DemandForecasting;
 
 use App\Enums\DemandForecastExecutionStatus;
 use App\Models\DemandForecastExecutionRun;
+use App\Support\Ui\UiText;
 use Carbon\CarbonImmutable;
 use UnexpectedValueException;
 
@@ -38,17 +39,17 @@ final class DemandForecastPlanningPresenter
             || $run->agency === null
             || $run->forecastRun === null
             || $run->forecastRun->generated_at === null) {
-            throw new UnexpectedValueException('Forecast result is incomplete.');
+            throw new UnexpectedValueException(UiText::t('Forecast result is incomplete.'));
         }
 
         $asOfDate = $run->forecastRun->as_of_date;
         if ($asOfDate === null) {
-            throw new UnexpectedValueException('Forecast result is incomplete.');
+            throw new UnexpectedValueException(UiText::t('Forecast result is incomplete.'));
         }
 
         $rows = $run->forecastRun->forecasts->sortBy('horizon')->values();
         if ($rows->count() !== 7) {
-            throw new UnexpectedValueException('Forecast result count is invalid.');
+            throw new UnexpectedValueException(UiText::t('Forecast result count is invalid.'));
         }
 
         $forecasts = [];
@@ -59,7 +60,7 @@ final class DemandForecastPlanningPresenter
                 || $forecast->target_date?->toDateString() !== $asOfDate->addDays($horizon)->toDateString()
                 || preg_match('/^(?:0|[1-9][0-9]{0,7})\.[0-9]{6}$/D', $value) !== 1
                 || str_starts_with($value, '-')) {
-                throw new UnexpectedValueException('Forecast result values are invalid.');
+                throw new UnexpectedValueException(UiText::t('Forecast result values are invalid.'));
             }
 
             $this->planningUnits->convert($value);
@@ -77,7 +78,7 @@ final class DemandForecastPlanningPresenter
                 ->toIso8601String(),
             'scope' => ['agency' => (string) $run->agency->name],
             'forecasts' => $forecasts,
-            'message' => 'Les prévisions sont disponibles pour préparer le planning.',
+            'message' => UiText::t('Les prévisions sont disponibles pour préparer le planning.'),
         ];
     }
 
@@ -86,7 +87,7 @@ final class DemandForecastPlanningPresenter
     {
         $run->loadMissing('agency');
         if ($run->agency === null) {
-            throw new UnexpectedValueException('Forecast scope is incomplete.');
+            throw new UnexpectedValueException(UiText::t('Forecast scope is incomplete.'));
         }
 
         return [

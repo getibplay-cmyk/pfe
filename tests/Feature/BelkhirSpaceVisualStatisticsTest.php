@@ -58,8 +58,8 @@ class BelkhirSpaceVisualStatisticsTest extends TestCase
         $this->assertStringContainsString('<table', $component);
         $this->assertStringContainsString('<caption', $component);
         $this->assertStringContainsString('Aucune donnée sur cette période', $component);
-        $this->assertStringContainsString("Période du {{ \$period['from'] }} au {{ \$period['to'] }}", $component);
-        $this->assertStringContainsString('unité : {{ mb_strtolower($unit) }}', $component);
+        $this->assertStringContainsString("{{ __('Période du') }} {{ \$period['from'] }} {{ __('au') }} {{ \$period['to'] }}", $component);
+        $this->assertStringContainsString("{{ __('· unité :') }}".' {{ mb_strtolower($unit) }}', $component);
         $this->assertStringContainsString("\$fleetTotal = \$this->validatedCount(\$fleet['total'], 'fleet.total')", $presenter);
         $this->assertStringNotContainsString("(int) \$fleet['total']", $presenter);
         foreach (['DB::', '::query(', '->where(', '::where('] as $queryMarker) {

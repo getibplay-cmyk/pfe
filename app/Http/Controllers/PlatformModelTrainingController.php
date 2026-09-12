@@ -33,7 +33,7 @@ class PlatformModelTrainingController extends Controller
         ]);
         $campaign = $workbench->createCampaign($request->user(), $data['name'], $data['datasets']);
 
-        return to_route('platform.training.show', $campaign)->with('status', 'Campagne préparée. Téléchargez le manifeste et ouvrez le notebook Colab.');
+        return to_route('platform.training.show', $campaign)->with('status', __('Campagne préparée. Téléchargez le manifeste et ouvrez le notebook Colab.'));
     }
 
     public function show(Request $request, ModelTrainingCampaign $campaign)
@@ -41,7 +41,7 @@ class PlatformModelTrainingController extends Controller
         TrainingWorkbench::platform($request->user());
         $campaign->load('result.review');
         $notebookUrl = (string) config('model_training.notebook_url');
-        abort_unless(str_starts_with($notebookUrl, 'https://colab.research.google.com/'), 503, 'Le lien Colab de la plateforme doit être configuré.');
+        abort_unless(str_starts_with($notebookUrl, 'https://colab.research.google.com/'), 503, __('Le lien Colab de la plateforme doit être configuré.'));
         $count = DB::table('model_training_contributions')->where('campaign_id', $campaign->id)->count();
         $activeCount = TrainingWorkbench::shared()->join('model_training_contributions as c', 'c.dataset_id', '=', 'd.id')->where('c.campaign_id', $campaign->id)->count();
 
@@ -67,7 +67,7 @@ class PlatformModelTrainingController extends Controller
         ]);
         $workbench->importResult($request->user(), $campaign, $schema->decode($request->file('report')->get()));
 
-        return back()->with('status', 'Comparaison recalculée sur les prédictions importées. Le candidat reste à examiner.');
+        return back()->with('status', __('Comparaison recalculée sur les prédictions importées. Le candidat reste à examiner.'));
     }
 
     public function report(Request $request, ModelTrainingCampaign $campaign, TrainingWorkbench $workbench, AuditRecorder $audit)
@@ -87,7 +87,7 @@ class PlatformModelTrainingController extends Controller
         $data = $request->validate(['decision' => ['required', 'in:qualified,rejected'], 'note' => ['required', 'string', 'min:10', 'max:500']]);
         $workbench->review($request->user(), $campaign, $data['decision'], $data['note']);
 
-        return back()->with('status', 'Décision enregistrée. Un candidat retenu passe ensuite par la qualification technique et le déploiement versionné.');
+        return back()->with('status', __('Décision enregistrée. Un candidat retenu passe ensuite par la qualification technique et le déploiement versionné.'));
     }
 
     public function retry(Request $request, ModelTrainingCampaign $campaign, TrainingWorkbench $workbench)

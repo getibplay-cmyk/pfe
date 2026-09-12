@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import {
     ArcElement,
     BarController,
@@ -52,7 +53,7 @@ function belkhirSpaceTooltip() {
 
 export function platformChartConfiguration(labels, values, color, {
     horizontal = false,
-    label = 'Nombre',
+    label = t('Nombre'),
     maximum = null,
 } = {}) {
     return {
@@ -81,7 +82,7 @@ export function platformLineConfiguration(labels, values, color) {
         data: {
             labels,
             datasets: [{
-                label: 'Analyses',
+                label: t('Analyses'),
                 data: values,
                 borderColor: color,
                 backgroundColor: color,
@@ -109,7 +110,7 @@ export function platformDoughnutConfiguration(labels, values, colors) {
         type: 'doughnut',
         data: {
             labels,
-            datasets: [{ label: 'Nombre', data: values, backgroundColor: colors, borderWidth: 0 }],
+            datasets: [{ label: t('Nombre'), data: values, backgroundColor: colors, borderWidth: 0 }],
         },
         options: {
             responsive: true,
@@ -207,7 +208,7 @@ export function initializePlatformStatistics() {
             Chart,
             {
                 horizontal: true,
-                label: 'Entreprises autorisées',
+                label: t('Entreprises autorisées'),
                 maximum: payload.activations?.denominator > 0 ? payload.activations.denominator : null,
             },
         );

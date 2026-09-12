@@ -21,13 +21,13 @@ class CreateInvoiceFromReturnedContract
         return DB::transaction(function () use ($contract, $actorId, $taxMode, $taxRate) {
             $locked = RentalContract::with(['customer', 'charges'])->whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::Returned) {
-                throw ValidationException::withMessages(['status' => 'La facture finale exige un contrat retourné.']);
+                throw ValidationException::withMessages(['status' => __('La facture finale exige un contrat retourné.')]);
             }
             if ($locked->charges->contains(fn ($charge) => $charge->status === ContractChargeStatus::Proposed)) {
-                throw ValidationException::withMessages(['charges' => 'Tous les frais doivent être revus avant facturation.']);
+                throw ValidationException::withMessages(['charges' => __('Tous les frais doivent être revus avant facturation.')]);
             }
             if (! in_array($taxMode, ['none', 'inclusive', 'exclusive'], true)) {
-                throw ValidationException::withMessages(['tax_mode' => 'Mode de taxe invalide.']);
+                throw ValidationException::withMessages(['tax_mode' => __('Mode de taxe invalide.')]);
             }
             if ($taxMode === 'none') {
                 $taxRate = '0.0000';
@@ -35,7 +35,7 @@ class CreateInvoiceFromReturnedContract
 
             $sources = collect([[
                 'source_type' => 'contract', 'source_id' => $locked->id, 'line_type' => 'rental',
-                'description' => 'Location '.$locked->contract_number, 'quantity' => '1.00', 'amount' => $locked->rental_subtotal,
+                'description' => __('Location ').$locked->contract_number, 'quantity' => '1.00', 'amount' => $locked->rental_subtotal,
             ]])->merge($locked->charges->where('status', ContractChargeStatus::Approved)->values()->map(fn ($charge) => [
                 'source_type' => 'contract_charge', 'source_id' => $charge->id,
                 'line_type' => match ($charge->charge_type->value) {

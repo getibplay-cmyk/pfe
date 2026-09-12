@@ -26,22 +26,22 @@ class ArchiveCustomer
             $this->agencyAccess->required($locked->agency_id);
 
             if ($locked->reservations()->whereIn('status', ['draft', 'pending', 'confirmed'])->exists()) {
-                $this->blocked('Le client possède une réservation active.');
+                $this->blocked(__('Le client possède une réservation active.'));
             }
             if ($locked->rentalContracts()->whereNotIn('status', ['closed', 'cancelled'])->exists()) {
-                $this->blocked('Le client possède un contrat non terminal.');
+                $this->blocked(__('Le client possède un contrat non terminal.'));
             }
             if (DB::table('invoices')->where('tenant_id', $locked->tenant_id)->where('customer_id', $locked->id)
                 ->where(fn ($query) => $query->whereNotIn('status', ['paid', 'void'])->orWhere('balance_due', '>', 0))->exists()) {
-                $this->blocked('Le client possède une facture non soldée.');
+                $this->blocked(__('Le client possède une facture non soldée.'));
             }
             if (DB::table('payments')->where('tenant_id', $locked->tenant_id)->where('customer_id', $locked->id)->where('status', 'pending')->exists()) {
-                $this->blocked('Le client possède un paiement en attente.');
+                $this->blocked(__('Le client possède un paiement en attente.'));
             }
 
             $contracts = RentalContract::where('customer_id', $locked->id)->get();
             if ($contracts->contains(fn (RentalContract $contract): bool => $this->deposits->totals($contract)['balance'] > 0)) {
-                $this->blocked('Le client possède une caution encore détenue.');
+                $this->blocked(__('Le client possède une caution encore détenue.'));
             }
 
             $contractIds = $contracts->pluck('id');
@@ -49,7 +49,7 @@ class ArchiveCustomer
             if (InsuranceClaim::whereNotIn('status', ['rejected', 'closed'])
                 ->where(fn ($query) => $query->whereIn('rental_contract_id', $contractIds)->orWhereIn('damage_report_id', $damageIds))
                 ->exists()) {
-                $this->blocked('Le client possède un sinistre ouvert.');
+                $this->blocked(__('Le client possède un sinistre ouvert.'));
             }
 
             $locked->delete();

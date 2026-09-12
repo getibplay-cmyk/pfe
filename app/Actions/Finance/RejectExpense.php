@@ -21,14 +21,14 @@ class RejectExpense
         $reason = trim($reason);
 
         if ($reason === '') {
-            throw ValidationException::withMessages(['reason' => 'Le motif du rejet est obligatoire.']);
+            throw ValidationException::withMessages(['reason' => __('Le motif du rejet est obligatoire.')]);
         }
 
         return DB::transaction(function () use ($expense, $reason, $actorId) {
             $locked = Expense::query()->whereKey($expense)->lockForUpdate()->firstOrFail();
 
             if ($locked->status !== 'draft') {
-                throw ValidationException::withMessages(['expense' => 'Seule une dépense brouillon peut être rejetée.']);
+                throw ValidationException::withMessages(['expense' => __('Seule une dépense brouillon peut être rejetée.')]);
             }
 
             $locked->forceFill([

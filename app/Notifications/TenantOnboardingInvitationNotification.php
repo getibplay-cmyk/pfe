@@ -28,12 +28,12 @@ class TenantOnboardingInvitationNotification extends Notification
         );
 
         return (new MailMessage)
-            ->subject('Votre invitation — '.config('brand.name'))
-            ->greeting('Bonjour,')
-            ->line('Vous êtes invité à créer l’espace sécurisé de votre entreprise sur '.config('brand.name').'.')
-            ->line('L’offre '.$this->invitation->plan->name.' inclut une période d’essai de '.$this->invitation->trial_days.' jours.')
-            ->action('Créer mon espace', $url)
-            ->line('Ce lien personnel expire le '.$this->invitation->expires_at->timezone(config('app.timezone'))->format('d/m/Y à H:i').'.')
-            ->line('Si vous n’attendiez pas cette invitation, ignorez ce message.');
+            ->subject(__('Votre invitation — ').config('brand.name'))
+            ->greeting(__('Bonjour,'))
+            ->line(__('Vous êtes invité à créer l’espace sécurisé de votre entreprise sur ').config('brand.name').'.')
+            ->line('L’offre '.$this->invitation->plan->name.__(' inclut une période d’essai de ').$this->invitation->trial_days.__(' jours.'))
+            ->action(__('Créer mon espace'), $url)
+            ->line(__('Ce lien personnel expire le ').$this->invitation->expires_at->timezone(config('app.timezone'))->format('d/m/Y H:i').'.')
+            ->line(__('Si vous n’attendiez pas cette invitation, ignorez ce message.'));
     }
 }

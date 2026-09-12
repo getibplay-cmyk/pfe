@@ -162,7 +162,7 @@ class ProcessCmiCallback
                 if ($invoice !== null) {
                     app(SaasInvoiceLifecycle::class)->payable($invoice);
                 } elseif ($subscription->status === TenantSubscriptionStatus::PendingPayment || $subscription->invoices()->exists()) {
-                    throw ValidationException::withMessages(['payment' => 'Facture requise.']);
+                    throw ValidationException::withMessages(['payment' => __('Facture requise.')]);
                 }
             } catch (ValidationException) {
                 $lockedAttempt->gateway_transaction_id = $transactionId;
@@ -186,7 +186,7 @@ class ProcessCmiCallback
                 'occurred_at' => now(),
                 'reversal_of_id' => null,
                 'reason' => null,
-                'note' => 'Paiement confirmé par callback signé CMI.',
+                'note' => __('Paiement confirmé par callback signé CMI.'),
                 'created_by' => $lockedAttempt->initiated_by,
             ])->save();
 

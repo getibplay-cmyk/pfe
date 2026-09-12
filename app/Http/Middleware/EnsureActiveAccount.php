@@ -14,7 +14,7 @@ class EnsureActiveAccount
     {
         $user = $request->user();
 
-        abort_unless($user?->is_active, 403, 'Ce compte est inactif.');
+        abort_unless($user?->is_active, 403, __('Ce compte est inactif.'));
 
         if ($user->is_platform_admin) {
             return $next($request);
@@ -26,7 +26,7 @@ class EnsureActiveAccount
                 ->where('status', TenantStatus::Active->value)
                 ->whereNull('deleted_at')
                 ->exists();
-        abort_unless($tenantIsActive, 403, 'L’entreprise cliente associée à ce compte est indisponible.');
+        abort_unless($tenantIsActive, 403, __('L’entreprise cliente associée à ce compte est indisponible.'));
 
         $agencyIsActive = $user->agency_id === null
             || DB::table('agencies')
@@ -35,7 +35,7 @@ class EnsureActiveAccount
                 ->where('is_active', true)
                 ->whereNull('deleted_at')
                 ->exists();
-        abort_unless($agencyIsActive, 403, 'L’agence associée à ce compte est inactive.');
+        abort_unless($agencyIsActive, 403, __('L’agence associée à ce compte est inactive.'));
 
         return $next($request);
     }

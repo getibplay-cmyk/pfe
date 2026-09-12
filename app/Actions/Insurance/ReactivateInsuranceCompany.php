@@ -17,10 +17,10 @@ class ReactivateInsuranceCompany
         return DB::transaction(function () use ($company): InsuranceCompany {
             $locked = InsuranceCompany::whereKey($company)->lockForUpdate()->firstOrFail();
             if ($locked->is_active) {
-                throw ValidationException::withMessages(['company' => 'Cette compagnie est déjà active.']);
+                throw ValidationException::withMessages(['company' => __('Cette compagnie est déjà active.')]);
             }
             if (InsuranceCompany::query()->whereKeyNot($locked->id)->where('is_active', true)->whereRaw('lower(name) = lower(?)', [$locked->name])->exists()) {
-                throw ValidationException::withMessages(['name' => 'Une compagnie active porte déjà ce nom.']);
+                throw ValidationException::withMessages(['name' => __('Une compagnie active porte déjà ce nom.')]);
             }
             InsuranceCompanyTransition::allow(false, true);
             $locked->forceFill(['is_active' => true, 'deactivated_at' => null, 'deactivated_by' => null])->save();

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\VehicleDamagePredictionStatus;
 use App\Models\Concerns\BelongsToTenant;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
+use App\Support\Ui\UiText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -115,15 +116,15 @@ class VehicleDamagePredictionRun extends Model
     public function outcomeLabel(): string
     {
         if ($this->status !== VehicleDamagePredictionStatus::Succeeded) {
-            return 'Résultat indisponible';
+            return UiText::t('Résultat indisponible');
         }
         if ($this->quality_status === 'abstained') {
-            return 'Nouvelle photo recommandée';
+            return UiText::t('Nouvelle photo recommandée');
         }
 
         return $this->suggested_damage
-            ? 'Zone candidate à vérifier'
-            : 'Aucune zone candidate au seuil gelé';
+            ? UiText::t('Zone candidate à vérifier')
+            : UiText::t('Aucune zone candidate au seuil gelé');
     }
 
     public function qualityReasonLabels(): array
@@ -140,20 +141,20 @@ class VehicleDamagePredictionRun extends Model
         }
 
         return match ($this->failure_code) {
-            'RUN_STALE_RECOVERED' => 'L’analyse précédente a expiré et a été fermée.',
-            'RUN_ACTOR_NOT_AUTHORIZED' => 'L’utilisateur demandeur n’est plus autorisé.',
-            'RETURN_INSPECTION_UNAVAILABLE' => 'L’inspection de retour n’est plus disponible dans le périmètre autorisé.',
-            'MODEL_BACKEND_MISMATCH' => 'Le service d’analyse a changé. Relancez l’analyse de la photo.',
-            'MODEL_ARTIFACT_INVALID' => 'Le service d’analyse des dommages n’est pas correctement installé.',
-            'INPUT_ARTIFACT_INVALID' => 'La photo privée n’est plus disponible ou a été modifiée.',
-            'RUNTIME_CONFIGURATION_INVALID' => 'Le service d’analyse des dommages n’est pas correctement configuré.',
-            'QUEUE_DISPATCH_FAILED' => 'La demande d’analyse n’a pas pu être prise en charge.',
-            'DAMAGE_PROCESS_TIMEOUT' => 'L’analyse des dommages a dépassé le délai autorisé.',
-            'DAMAGE_PROCESS_FAILED', 'DAMAGE_PROCESS_START_FAILED' => 'Le service n’a pas terminé l’analyse des dommages.',
+            'RUN_STALE_RECOVERED' => UiText::t('L’analyse précédente a expiré et a été fermée.'),
+            'RUN_ACTOR_NOT_AUTHORIZED' => UiText::t('L’utilisateur demandeur n’est plus autorisé.'),
+            'RETURN_INSPECTION_UNAVAILABLE' => UiText::t('L’inspection de retour n’est plus disponible dans le périmètre autorisé.'),
+            'MODEL_BACKEND_MISMATCH' => UiText::t('Le service d’analyse a changé. Relancez l’analyse de la photo.'),
+            'MODEL_ARTIFACT_INVALID' => UiText::t('Le service d’analyse des dommages n’est pas correctement installé.'),
+            'INPUT_ARTIFACT_INVALID' => UiText::t('La photo privée n’est plus disponible ou a été modifiée.'),
+            'RUNTIME_CONFIGURATION_INVALID' => UiText::t('Le service d’analyse des dommages n’est pas correctement configuré.'),
+            'QUEUE_DISPATCH_FAILED' => UiText::t('La demande d’analyse n’a pas pu être prise en charge.'),
+            'DAMAGE_PROCESS_TIMEOUT' => UiText::t('L’analyse des dommages a dépassé le délai autorisé.'),
+            'DAMAGE_PROCESS_FAILED', 'DAMAGE_PROCESS_START_FAILED' => UiText::t('Le service n’a pas terminé l’analyse des dommages.'),
             'DAMAGE_OUTPUT_INVALID', 'DAMAGE_OUTPUT_JSON_INVALID', 'DAMAGE_OUTPUT_CONTRACT_INVALID',
             'DAMAGE_OUTPUT_QUALITY_INVALID', 'DAMAGE_OUTPUT_SCAN_INVALID',
-            'DAMAGE_OUTPUT_RESULT_INVALID', 'DAMAGE_OUTPUT_POLICY_MISMATCH' => 'Le résultat reçu n’a pas pu être vérifié.',
-            default => 'L’analyse des dommages n’a pas abouti. L’inspection et le véhicule restent inchangés.',
+            'DAMAGE_OUTPUT_RESULT_INVALID', 'DAMAGE_OUTPUT_POLICY_MISMATCH' => UiText::t('Le résultat reçu n’a pas pu être vérifié.'),
+            default => UiText::t('L’analyse des dommages n’a pas abouti. L’inspection et le véhicule restent inchangés.'),
         };
     }
 }

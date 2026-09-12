@@ -21,16 +21,16 @@ class StartMaintenanceOrder
         return DB::transaction(function () use ($order, $actorId) {
             $locked = MaintenanceOrder::with('vehicle')->whereKey($order)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'approved') {
-                throw ValidationException::withMessages(['maintenance' => 'Seule une maintenance approuvée peut démarrer.']);
+                throw ValidationException::withMessages(['maintenance' => __('Seule une maintenance approuvée peut démarrer.')]);
             }
             $blocks = VehicleBlock::query()->where('maintenance_order_id', $locked->id)->lockForUpdate()->get();
             $block = $blocks->first();
             if ($blocks->count() !== 1 || ! $block || ! $this->isCoherentBlock($block, $locked)) {
-                throw ValidationException::withMessages(['maintenance' => 'Le bloc actif de cette maintenance est absent ou incohérent.']);
+                throw ValidationException::withMessages(['maintenance' => __('Le bloc actif de cette maintenance est absent ou incohérent.')]);
             }
             MaintenanceTransition::allow('approved', 'in_progress');
             $locked->forceFill(['status' => 'in_progress', 'actual_start_at' => now(), 'mileage_at_opening' => $locked->mileage_at_opening ?? $locked->vehicle->current_mileage])->save();
-            $this->changeVehicleStatus->handle($locked->vehicle, VehicleOperationalStatus::Maintenance, 'Maintenance '.$locked->maintenance_number, $actorId);
+            $this->changeVehicleStatus->handle($locked->vehicle, VehicleOperationalStatus::Maintenance, __('Maintenance ').$locked->maintenance_number, $actorId);
             MaintenanceStatusHistory::create(['maintenance_order_id' => $locked->id, 'from_status' => 'approved', 'to_status' => 'in_progress', 'changed_by' => $actorId]);
             $this->audit->record('maintenance.started', $locked, ['status' => 'approved'], ['status' => 'in_progress']);
 

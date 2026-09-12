@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum RentalUsageAnomalyReviewDecision: string
 {
     case FollowUp = 'follow_up';
@@ -10,10 +12,10 @@ enum RentalUsageAnomalyReviewDecision: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::FollowUp => 'À suivre',
-            self::Dismissed => 'Vérifié et écarté',
-            self::NeedsInformation => 'Informations complémentaires',
-        };
+        return UiText::t(match ($this) {
+            self::FollowUp => UiText::t('À suivre'),
+            self::Dismissed => UiText::t('Vérifié et écarté'),
+            self::NeedsInformation => UiText::t('Informations complémentaires'),
+        });
     }
 }

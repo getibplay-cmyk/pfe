@@ -37,7 +37,7 @@ final class RecordVehicleDamagePredictionReview
                 ->findOrFail($run->id);
             if ($locked->status !== VehicleDamagePredictionStatus::Succeeded) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Seule une analyse terminée peut être revue.',
+                    'decision' => __('Seule une analyse terminée peut être revue.'),
                 ]);
             }
             if ($locked->review !== null) {
@@ -46,7 +46,7 @@ final class RecordVehicleDamagePredictionReview
             if ($decision === VehicleDamageReviewDecision::Confirmed
                 && ($locked->quality_status !== 'usable' || $locked->suggested_damage !== true)) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Seule une zone candidate exploitable peut être confirmée.',
+                    'decision' => __('Seule une zone candidate exploitable peut être confirmée.'),
                 ]);
             }
 

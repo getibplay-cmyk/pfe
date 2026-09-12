@@ -2,6 +2,7 @@
 
 namespace App\Support\Intelligence;
 
+use App\Support\Ui\UiText;
 use RuntimeException;
 
 final class IntelligencePseudonymizer
@@ -40,7 +41,7 @@ final class IntelligencePseudonymizer
     {
         $key = $this->key();
         if (strlen($key) < 32) {
-            throw new RuntimeException('La configuration Intelligence requise est indisponible.');
+            throw new RuntimeException(UiText::t('La configuration Intelligence requise est indisponible.'));
         }
 
         return $prefix.hash_hmac('sha256', $message, $key);

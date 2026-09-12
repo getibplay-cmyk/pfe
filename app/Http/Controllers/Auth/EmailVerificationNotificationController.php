@@ -23,7 +23,7 @@ class EmailVerificationNotificationController extends Controller
         }
 
         if (! $sender->send($request->user())) {
-            return back()->with('error', 'Le lien n’a pas pu être envoyé. Réessayez plus tard ou contactez l’administration.');
+            return back()->with('error', __('Le lien n’a pas pu être envoyé. Réessayez plus tard ou contactez l’administration.'));
         }
 
         return back()->with('status', 'verification-link-sent');

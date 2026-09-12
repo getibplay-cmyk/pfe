@@ -50,7 +50,7 @@ final class PlatformOperationsController extends Controller
         $summary = $refresh->handle();
 
         return back()->with('status', sprintf(
-            'Supervision actualisée : %d contrôle(s), %d incident(s) ouvert(s), %d résolu(s).',
+            __('Supervision actualisée : %d contrôle(s), %d incident(s) ouvert(s), %d résolu(s).'),
             $summary['checked'],
             $summary['open'],
             $summary['resolved'],

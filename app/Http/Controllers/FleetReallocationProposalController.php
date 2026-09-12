@@ -61,7 +61,7 @@ class FleetReallocationProposalController extends Controller
 
         return redirect()->route('intelligence.fleet-reallocation.index')->with(
             'status',
-            'Le calcul d’une suggestion de réallocation a été lancé.',
+            __('Le calcul d’une suggestion de réallocation a été lancé.'),
         );
     }
 
@@ -83,8 +83,8 @@ class FleetReallocationProposalController extends Controller
         return redirect()->route('intelligence.fleet-reallocation.index')->with(
             'status',
             $result->created
-                ? 'Suggestion de démonstration importée sans action automatique.'
-                : 'Cette suggestion est déjà présente et n’a pas été dupliquée.',
+                ? __('Suggestion de démonstration importée sans action automatique.')
+                : __('Cette suggestion est déjà présente et n’a pas été dupliquée.'),
         );
     }
 
@@ -102,7 +102,7 @@ class FleetReallocationProposalController extends Controller
         );
 
         return redirect()->route('intelligence.fleet-reallocation.index')
-            ->with('status', 'Décision humaine enregistrée sans action sur la flotte.');
+            ->with('status', __('Décision humaine enregistrée sans action sur la flotte.'));
     }
 
     public function download(

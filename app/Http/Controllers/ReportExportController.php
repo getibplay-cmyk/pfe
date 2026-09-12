@@ -43,7 +43,7 @@ class ReportExportController extends Controller
             $write = function (array $row) use ($output): void {
                 fputcsv($output, array_map(SpreadsheetSafeCsv::cell(...), $row), ';');
             };
-            $write(['Section', 'Indicateur', 'Valeur', 'Devise', 'Début', 'Fin exclusive', 'Fuseau horaire', 'Agences']);
+            $write(['Section', 'Indicateur', 'Valeur', 'Devise', __('Début'), __('Fin exclusive'), __('Fuseau horaire'), __('Agences')]);
             $meta = $report['meta'];
             $context = [$meta['period_start'], $meta['period_end_exclusive'], $meta['timezone'], implode(',', $meta['agency_ids'])];
 
@@ -51,7 +51,7 @@ class ReportExportController extends Controller
                 $write(['Exploitation', UiLabel::report('reservations.'.$key), $value, '', ...$context]);
             }
             foreach ($report['operational']['contracts'] as $key => $value) {
-                $write(['Contrats', UiLabel::report('contracts.'.$key), $value, '', ...$context]);
+                $write([__('Contrats'), UiLabel::report('contracts.'.$key), $value, '', ...$context]);
             }
             foreach (array_diff_key($report['operational']['fleet'], ['snapshot_at' => true]) as $key => $value) {
                 $write(['Flotte', UiLabel::report('fleet.'.$key), $value, '', ...$context]);
@@ -62,7 +62,7 @@ class ReportExportController extends Controller
                 $write(['Maintenance', UiLabel::report('maintenance.'.$key), $value, '', ...$context]);
             }
             $write(['Assurance', UiLabel::report('insurance.open_claims'), $report['operational']['insurance']['open_claims'], '', ...$context]);
-            $write(['Échéances', UiLabel::report('expirations.total'), $report['operational']['expirations']['total'], '', ...$context]);
+            $write([__('Échéances'), UiLabel::report('expirations.total'), $report['operational']['expirations']['total'], '', ...$context]);
 
             foreach ($report['financial']['currencies'] as $currency => $values) {
                 foreach (['invoiced_amount', 'collected_net', 'outstanding_balance', 'held_deposits', 'retained_deposits', 'refunded_deposits', 'approved_expenses'] as $key) {

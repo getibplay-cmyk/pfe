@@ -32,16 +32,16 @@ class ArchiveDocument
             $this->agencyAccess->required($locked->agency_id);
 
             if (DB::table('contract_versions')->where('tenant_id', $locked->tenant_id)->where('document_id', $locked->id)->exists()) {
-                $this->blocked('Ce document est référencé par une version contractuelle.');
+                $this->blocked(__('Ce document est référencé par une version contractuelle.'));
             }
             if ($this->isRequiredByNonTerminalContract($locked)) {
-                $this->blocked('Ce document est requis par un contrat non terminal.');
+                $this->blocked(__('Ce document est requis par un contrat non terminal.'));
             }
             if ($this->isLastRequiredVerificationDocument($locked)) {
-                $this->blocked('Ce document est la dernière pièce valide requise pour une personne vérifiée.');
+                $this->blocked(__('Ce document est la dernière pièce valide requise pour une personne vérifiée.'));
             }
             if ($this->isLastRequiredInsuranceProof($locked)) {
-                $this->blocked('Ce document est la dernière preuve privée requise par le cycle d’assurance.');
+                $this->blocked(__('Ce document est la dernière preuve privée requise par le cycle d’assurance.'));
             }
 
             $locked->delete();

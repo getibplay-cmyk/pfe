@@ -3,6 +3,7 @@
 namespace App\Support\Intelligence\FleetReallocation;
 
 use App\Models\FleetReallocationProposal;
+use App\Support\Ui\UiText;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
@@ -18,15 +19,15 @@ final class FleetReallocationArtifactVerifier
                 ? $disk->get($proposal->stored_path)
                 : null;
         } catch (Throwable) {
-            throw new RuntimeException('La proposition de réallocation privée est indisponible.');
+            throw new RuntimeException(UiText::t('La proposition de réallocation privée est indisponible.'));
         }
 
         if (! is_string($content)) {
-            throw new RuntimeException('La proposition de réallocation privée est indisponible.');
+            throw new RuntimeException(UiText::t('La proposition de réallocation privée est indisponible.'));
         }
         if (strlen($content) !== $proposal->byte_size
             || ! hash_equals($proposal->content_sha256, hash('sha256', $content))) {
-            throw new RuntimeException('Le contrôle d’intégrité de la proposition de réallocation a échoué.');
+            throw new RuntimeException(UiText::t('Le contrôle d’intégrité de la proposition de réallocation a échoué.'));
         }
 
         return $content;

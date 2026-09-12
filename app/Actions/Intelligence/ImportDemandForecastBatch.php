@@ -44,13 +44,13 @@ final class ImportDemandForecastBatch
         if (! is_int($uploadedBytes) || $uploadedBytes <= 0 || $uploadedBytes > $maximumBytes) {
             throw DemandForecastValidationException::at(
                 '$',
-                'taille du fichier JSON absente ou supérieure à la limite autorisée',
+                __('taille du fichier JSON absente ou supérieure à la limite autorisée'),
             );
         }
         $realPath = $file->getRealPath();
         $contents = is_string($realPath) ? file_get_contents($realPath) : false;
         if (! is_string($contents) || $contents === '') {
-            throw new RuntimeException('Le lot de prévisions téléversé est vide ou illisible.');
+            throw new RuntimeException(__('Le lot de prévisions téléversé est vide ou illisible.'));
         }
 
         return $this->handlePayload($history, $contents, $actor);
@@ -66,13 +66,13 @@ final class ImportDemandForecastBatch
         if ($contents === '' || strlen($contents) > $maximumBytes) {
             throw DemandForecastValidationException::at(
                 '$',
-                'taille du JSON absente ou supérieure à la limite autorisée',
+                __('taille du JSON absente ou supérieure à la limite autorisée'),
             );
         }
         if (! $this->artifactVerifier->validHistory($history)) {
             throw DemandForecastValidationException::at(
                 'dataset.content_sha256',
-                'le snapshot privé lié est absent ou altéré',
+                __('le snapshot privé lié est absent ou altéré'),
             );
         }
 
@@ -111,7 +111,7 @@ final class ImportDemandForecastBatch
 
                 $storedPath = $candidateStoredPath;
                 if (! $disk->put($storedPath, $validated->canonicalJson, ['visibility' => 'private'])) {
-                    throw new RuntimeException('Impossible de conserver le lot de prévisions privé.');
+                    throw new RuntimeException(__('Impossible de conserver le lot de prévisions privé.'));
                 }
 
                 $model = $validated->payload['model'];

@@ -17,7 +17,7 @@ class RejectDriverVerification
     {
         $reason = trim($reason);
         if ($reason === '') {
-            throw ValidationException::withMessages(['reason' => 'Le motif du rejet est obligatoire.']);
+            throw ValidationException::withMessages(['reason' => __('Le motif du rejet est obligatoire.')]);
         }
 
         return DB::transaction(function () use ($driver, $reason): Driver {

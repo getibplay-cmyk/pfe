@@ -2,6 +2,7 @@
 
 namespace App\Actions\Documents;
 
+use App\Enums\DocumentType;
 use App\Models\Document;
 use App\Models\DocumentAccessLog;
 use App\Models\DocumentVersion;
@@ -21,12 +22,15 @@ class AddDocumentVersion
         $path = 'tenants/'.$document->tenant_id.'/documents/'.$document->id.'/'.Str::uuid().'.'.$extension;
         $stored = $disk->putFileAs(dirname($path), $file, basename($path));
         if (! $stored) {
-            throw ValidationException::withMessages(['file' => 'Le document n’a pas pu être stocké.']);
+            throw ValidationException::withMessages(['file' => __('Le document n’a pas pu être stocké.')]);
         }
 
         try {
             return DB::transaction(function () use ($document, $file, $actorId, $stored, $disk) {
                 $locked = Document::whereKey($document)->lockForUpdate()->firstOrFail();
+                if ($locked->document_type === DocumentType::ContractAcceptance && $locked->current_version_id !== null) {
+                    throw ValidationException::withMessages(['file' => __('Le document de cette version ne peut pas être remplacé ; créez une nouvelle version contractuelle.')]);
+                }
                 $version = DocumentVersion::create([
                     'document_id' => $locked->id,
                     'version_number' => ((int) $locked->versions()->max('version_number')) + 1,
@@ -56,7 +60,7 @@ class AddDocumentVersion
         if ($dangerous || ! in_array($extension, config('documents.allowed_extensions'), true)
             || ! in_array($file->getMimeType(), config('documents.allowed_mime_types'), true)
             || $file->getSize() > config('documents.max_size_kb') * 1024) {
-            throw ValidationException::withMessages(['file' => 'Type, extension ou taille de document non autorisé.']);
+            throw ValidationException::withMessages(['file' => __('Type, extension ou taille de document non autorisé.')]);
         }
     }
 }

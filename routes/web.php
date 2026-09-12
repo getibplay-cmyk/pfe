@@ -1,12 +1,15 @@
 <?php
 
+use App\Http\Controllers\ActiveCustomerPortalController;
 use App\Http\Controllers\AgencyController;
 use App\Http\Controllers\AgencyDistanceController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\AvailabilityController;
+use App\Http\Controllers\BookingAdministrationController;
 use App\Http\Controllers\CmiCallbackController;
 use App\Http\Controllers\CmiReturnController;
+use App\Http\Controllers\ContractExtensionController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerPortalAccessController;
 use App\Http\Controllers\CustomerPortalController;
@@ -20,6 +23,7 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\FleetPlanningController;
 use App\Http\Controllers\FleetReallocationPlanningController;
 use App\Http\Controllers\FleetReallocationProposalController;
+use App\Http\Controllers\GuidedInspectionController;
 use App\Http\Controllers\InsuranceController;
 use App\Http\Controllers\IntelligenceController;
 use App\Http\Controllers\IntelligenceDatasetExportController;
@@ -28,6 +32,7 @@ use App\Http\Controllers\IntelligenceDatasetSnapshotDownloadController;
 use App\Http\Controllers\IntelligenceResultBatchController;
 use App\Http\Controllers\J11ContractDemoController;
 use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\ModelQualityController;
 use App\Http\Controllers\ModelTrainingDatasetController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
@@ -45,6 +50,7 @@ use App\Http\Controllers\PlatformSubscriptionController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PricingRuleController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\PublicSiteController;
 use App\Http\Controllers\RentalContractController;
 use App\Http\Controllers\RentalUsageAnomalyController;
@@ -53,6 +59,7 @@ use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\ReservationDemandForecastController;
 use App\Http\Controllers\ReservationExportController;
+use App\Http\Controllers\ReservationReplanController;
 use App\Http\Controllers\ReturnDamageAssistantController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaasInvoiceController;
@@ -68,17 +75,26 @@ use App\Http\Controllers\VehicleColorAssistantController;
 use App\Http\Controllers\VehicleColorPredictionController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleDamagePredictionController;
+use App\Http\Controllers\VehicleEconomicsController;
 use App\Http\Controllers\VehicleInspectionController;
 use App\Http\Controllers\VehiclePlatePredictionController;
 use App\Http\Controllers\VehicleProfitabilityController;
 use App\Http\Controllers\VehicleProfitabilityExportController;
 use App\Http\Controllers\VehicleRegistrationAssistantController;
+use App\Http\Controllers\VisionAnnotationController;
+use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicSiteController::class, 'home'])->name('home');
 Route::get('/tarifs', [PublicSiteController::class, 'pricing'])->name('pricing');
 Route::get('/abonnement', [PublicSiteController::class, 'subscription'])->name('subscription.public');
+Route::prefix('louer/{company}')->where(['company' => '[a-z0-9]+(?:-[a-z0-9]+)*'])->middleware(['public.booking', 'throttle:60,1,public-catalog'])->group(function () {
+    Route::get('/', [PublicBookingController::class, 'index'])->name('booking.catalog');
+    Route::get('/vehicules/{listing}', [PublicBookingController::class, 'show'])->whereUuid('listing')->name('booking.vehicle');
+    Route::post('/vehicules/{listing}', [PublicBookingController::class, 'store'])->whereUuid('listing')->middleware('throttle:5,1,public-booking')->name('booking.store');
+    Route::get('/demandes/{booking}', [PublicBookingController::class, 'receipt'])->whereUuid('booking')->name('booking.receipt');
+});
 Route::get('/locataire/acces/{access}', [CustomerPortalAccessController::class, 'enter'])
     ->whereUuid('access')->middleware(['signed', 'throttle:20,1,portal-entry'])->name('portal.enter');
 Route::post('/locataire/acces/{access}', [CustomerPortalAccessController::class, 'exchange'])
@@ -87,6 +103,13 @@ Route::prefix('locataire')->middleware(['customer.portal', 'throttle:60,1,portal
     Route::get('/', [CustomerPortalController::class, 'index'])->name('portal.home');
     Route::get('/factures/{invoice}', [CustomerPortalController::class, 'invoice'])->whereNumber('invoice')->name('portal.invoice');
     Route::get('/contrats/{contract}', [CustomerPortalController::class, 'contract'])->whereNumber('contract')->name('portal.contract');
+    Route::get('/dossiers/{contract}', [ActiveCustomerPortalController::class, 'show'])->whereNumber('contract')->name('portal.contract.show');
+    Route::get('/dossiers/{contract}/versions/{version}', [ActiveCustomerPortalController::class, 'document'])->whereNumber(['contract', 'version'])->name('portal.contract.version');
+    Route::post('/dossiers/{contract}/accepter', [ActiveCustomerPortalController::class, 'accept'])->whereNumber('contract')->middleware('throttle:5,1,portal-accept')->name('portal.contract.accept');
+    Route::post('/dossiers/{contract}/prolongations', [ActiveCustomerPortalController::class, 'requestExtension'])->whereNumber('contract')->middleware('throttle:5,1,portal-extension')->name('portal.extension.request');
+    Route::get('/dossiers/{contract}/prolongations/{extension}/document', [ActiveCustomerPortalController::class, 'extensionDocument'])->whereNumber(['contract', 'extension'])->name('portal.extension.document');
+    Route::post('/dossiers/{contract}/prolongations/{extension}/accepter', [ActiveCustomerPortalController::class, 'acceptExtension'])->whereNumber(['contract', 'extension'])->middleware('throttle:5,1,portal-extension-accept')->name('portal.extension.accept');
+    Route::post('/dossiers/{contract}/prolongations/{extension}/retirer', [ActiveCustomerPortalController::class, 'withdraw'])->whereNumber(['contract', 'extension'])->name('portal.extension.withdraw');
     Route::get('/documents/{document}', [CustomerPortalController::class, 'document'])->whereNumber('document')->name('portal.document');
     Route::post('/documents', [CustomerPortalController::class, 'upload'])->middleware('throttle:10,1,portal-upload')->name('portal.upload');
     Route::post('/quitter', [CustomerPortalAccessController::class, 'logout'])->name('portal.logout');
@@ -135,6 +158,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
 Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(function () {
     Route::get('/onboarding', OnboardingController::class)->name('onboarding.index');
+    Route::get('/workspace', [WorkspaceController::class, 'index'])->middleware('throttle:60,1,workspace-search')->name('workspace.index');
+    Route::post('/workspace/favorites', [WorkspaceController::class, 'favorite'])->name('workspace.favorite');
+    Route::delete('/workspace/favorites', [WorkspaceController::class, 'favorite'])->name('workspace.unfavorite');
+    Route::post('/workspace/filters', [WorkspaceController::class, 'saveFilter'])->name('workspace.filters.store');
+    Route::delete('/workspace/filters', [WorkspaceController::class, 'removeFilter'])->name('workspace.filters.destroy');
     Route::get('/onboarding/import', [OnboardingImportController::class, 'index'])->name('onboarding.import.index');
     Route::get('/onboarding/import/template/{kind}', [OnboardingImportController::class, 'template'])->name('onboarding.import.template');
     Route::post('/onboarding/import', [OnboardingImportController::class, 'store'])->middleware('throttle:10,1,onboarding-import')->name('onboarding.import.store');
@@ -145,7 +173,18 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::delete('/onboarding/import/{import}', [OnboardingImportController::class, 'discard'])->whereUuid('import')->name('onboarding.import.discard');
     Route::get('/reports/vehicle-profitability/export', VehicleProfitabilityExportController::class)->middleware('throttle:10,1,profitability-export')->name('vehicle-profitability.export');
     Route::get('/fleet/planning', FleetPlanningController::class)->name('fleet.planning.index');
+    Route::get('/booking-catalog', [BookingAdministrationController::class, 'settings'])->name('booking-admin.settings');
+    Route::post('/booking-catalog', [BookingAdministrationController::class, 'saveSettings'])->name('booking-admin.settings.save');
+    Route::get('/booking-requests', [BookingAdministrationController::class, 'index'])->name('booking-admin.index');
+    Route::get('/booking-requests/{booking}', [BookingAdministrationController::class, 'show'])->whereUuid('booking')->name('booking-admin.show');
+    Route::post('/booking-requests/{booking}/convert', [BookingAdministrationController::class, 'convert'])->whereUuid('booking')->name('booking-admin.convert');
+    Route::post('/booking-requests/{booking}/reject', [BookingAdministrationController::class, 'reject'])->whereUuid('booking')->name('booking-admin.reject');
+    Route::get('/fleet/planning/{reservation}/reschedule', [ReservationReplanController::class, 'edit'])->name('fleet.planning.edit');
+    Route::post('/fleet/planning/{reservation}/preview', [ReservationReplanController::class, 'preview'])->middleware('throttle:30,1,replan-preview')->name('fleet.planning.preview');
+    Route::post('/fleet/planning/{reservation}/confirm', [ReservationReplanController::class, 'confirm'])->name('fleet.planning.confirm');
     Route::get('/reports/vehicle-profitability', VehicleProfitabilityController::class)->name('vehicle-profitability.index');
+    Route::get('/vehicles/{vehicle}/economics', [VehicleEconomicsController::class, 'show'])->withTrashed()->name('vehicle-economics.show');
+    Route::post('/vehicles/{vehicle}/economics', [VehicleEconomicsController::class, 'store'])->name('vehicle-economics.store');
     Route::get('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'show'])->name('customers.portal-access.show');
     Route::post('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'store'])->middleware(['password.confirm', 'throttle:10,1,portal-issue'])->name('customers.portal-access.store');
     Route::delete('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'revoke'])->name('customers.portal-access.revoke');
@@ -240,6 +279,10 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::resource('reservations', ReservationController::class)->except('destroy');
     Route::post('/reservations/{reservation}/confirm', [ReservationController::class, 'confirm'])->name('reservations.confirm');
     Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
+    Route::get('/contract-extensions', [ContractExtensionController::class, 'index'])->name('contract-extensions.index');
+    Route::get('/contract-extensions/{extension}', [ContractExtensionController::class, 'show'])->name('contract-extensions.show');
+    Route::post('/contract-extensions/{extension}/offer', [ContractExtensionController::class, 'offer'])->middleware('throttle:10,1,extension-offer')->name('contract-extensions.offer');
+    Route::post('/contract-extensions/{extension}/reject', [ContractExtensionController::class, 'reject'])->name('contract-extensions.reject');
     Route::get('/contracts', [RentalContractController::class, 'index'])->name('contracts.index');
     Route::get('/contracts/{contract}', [RentalContractController::class, 'show'])->name('contracts.show');
     Route::post('/reservations/{reservation}/contract', [RentalContractController::class, 'store'])->name('contracts.store');
@@ -247,6 +290,13 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::post('/contracts/{contract}/version-document', [RentalContractController::class, 'versionDocument'])->name('contracts.version-document.store');
     Route::post('/contracts/{contract}/ready', [RentalContractController::class, 'ready'])->name('contracts.ready');
     Route::post('/contracts/{contract}/accept', [RentalContractController::class, 'accept'])->name('contracts.accept');
+    Route::prefix('/contracts/{contract}/inspection-guide/{kind}')->whereIn('kind', ['departure', 'return'])->name('inspections.guided.')->group(function () {
+        Route::get('/', [GuidedInspectionController::class, 'show'])->name('show');
+        Route::post('/', [GuidedInspectionController::class, 'save'])->middleware('throttle:60,1,inspection-draft')->name('save');
+        Route::post('/photos', [GuidedInspectionController::class, 'photo'])->middleware('throttle:12,1,inspection-photos')->name('photo');
+        Route::post('/complete', [GuidedInspectionController::class, 'complete'])->name('complete');
+        Route::get('/photos/{photo}', [GuidedInspectionController::class, 'image'])->whereNumber('photo')->name('image');
+    });
     Route::post('/contracts/{contract}/departure-inspection', [VehicleInspectionController::class, 'departure'])->name('contracts.departure-inspection');
     Route::post('/contracts/{contract}/activate', [RentalContractController::class, 'activate'])->name('contracts.activate');
     Route::post('/contracts/{contract}/return-inspection', [VehicleInspectionController::class, 'return'])->name('contracts.return-inspection');
@@ -349,6 +399,15 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/reports/export', ReportExportController::class)->name('reports.export');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/intelligence/quality', ModelQualityController::class)->name('model-quality.index');
+    Route::get('/intelligence/annotations', [VisionAnnotationController::class, 'index'])->name('annotations.index');
+    Route::post('/intelligence/annotations/export', [VisionAnnotationController::class, 'export'])->middleware(['password.confirm', 'throttle:3,1,annotation-export'])->name('annotations.export');
+    Route::get('/intelligence/annotations/bundles/{dataset}', [VisionAnnotationController::class, 'download'])->name('annotations.download');
+    Route::prefix('/intelligence/annotations/{family}/{run}')->whereIn('family', ['color', 'plate', 'damage'])->whereUuid('run')->group(function () {
+        Route::get('/', [VisionAnnotationController::class, 'edit'])->name('annotations.edit');
+        Route::post('/', [VisionAnnotationController::class, 'store'])->middleware('throttle:20,1,annotation-store')->name('annotations.store');
+        Route::get('/image', [VisionAnnotationController::class, 'image'])->name('annotations.image');
+    });
     Route::get('/model-training', [ModelTrainingDatasetController::class, 'index'])->name('model-training.index');
     Route::get('/model-training/formats/{family}', [ModelTrainingDatasetController::class, 'template'])->name('model-training.template');
     Route::get('/model-training/{dataset}/download', [ModelTrainingDatasetController::class, 'download'])->middleware('throttle:20,1')->name('model-training.download');

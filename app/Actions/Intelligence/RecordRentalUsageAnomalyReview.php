@@ -43,7 +43,7 @@ final class RecordRentalUsageAnomalyReview
                 || ! $locked->primary_selected_010
                 || $locked->operational_effect !== RentalUsageAnomalyContract::OPERATIONAL_EFFECT) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Seul un cas consultatif canonique terminé peut être revu.',
+                    'decision' => __('Seul un cas consultatif canonique terminé peut être revu.'),
                 ]);
             }
             $review = RentalUsageAnomalyReview::create([

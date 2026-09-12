@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum ReservationStatus: string
 {
     case Draft = 'draft';
@@ -13,14 +15,14 @@ enum ReservationStatus: string
 
     public function label(): string
     {
-        return match ($this) {
+        return UiText::t(match ($this) {
             self::Draft => 'Brouillon',
-            self::Pending => 'En attente',
-            self::Confirmed => 'Confirmée',
+            self::Pending => UiText::t('En attente'),
+            self::Confirmed => UiText::t('Confirmée'),
             self::Converted => 'Convertie',
-            self::Cancelled => 'Annulée',
-            self::Expired => 'Expirée',
-        };
+            self::Cancelled => UiText::t('Annulée'),
+            self::Expired => UiText::t('Expirée'),
+        });
     }
 
     public function canBeConfirmed(): bool

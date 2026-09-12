@@ -3,7 +3,7 @@
     'alt' => '',
     'kind' => 'evidence',
     'fit' => null,
-    'emptyLabel' => 'Aucune photo disponible',
+    'emptyLabel' => __('Aucune photo disponible'),
 ])
 @php
     $ratioClass = match ($kind) {
@@ -28,7 +28,7 @@
         @endif
         <div x-cloak x-show="failed" role="status" class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-belkhir-space-muted">
             <x-icon name="error" size="lg" class="text-belkhir-space-danger" />
-            <span>La photo ne peut pas être affichée.</span>
+            <span>{{ __('La photo ne peut pas être affichée.') }}</span>
         </div>
     @else
         <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-belkhir-space-muted">

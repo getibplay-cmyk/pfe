@@ -41,10 +41,10 @@ class FleetReallocationPlanningController extends Controller
             'assistant' => [
                 'ready' => $ready,
                 'readinessMessage' => $ready
-                    ? 'Les prévisions, disponibilités, distances et le moteur de calcul sont prêts.'
+                    ? __('Les prévisions, disponibilités, distances et le moteur de calcul sont prêts.')
                     : ($availability->tenantAuthorized
-                        ? 'Le plan ne peut pas être calculé tant que ses données nécessaires ne sont pas complètes.'
-                        : 'Cette assistance n’est pas disponible pour votre entreprise.'),
+                        ? __('Le plan ne peut pas être calculé tant que ses données nécessaires ne sont pas complètes.')
+                        : __('Cette assistance n’est pas disponible pour votre entreprise.')),
                 'referenceDate' => $referenceDate,
                 'storeUrl' => route('fleet.reallocation-planning.runs.store'),
                 'pollDelay' => 1500,
@@ -58,13 +58,13 @@ class FleetReallocationPlanningController extends Controller
         QueueOperationalFleetReallocationPlan $queue,
     ): JsonResponse {
         $this->authorize('create', FleetReallocationPlanningRun::class);
-        abort_if($request->all() !== [], 422, 'Aucune donnée de calcul ne doit être transmise.');
+        abort_if($request->all() !== [], 422, __('Aucune donnée de calcul ne doit être transmise.'));
 
         try {
             $run = $queue->handle($request->user());
         } catch (FleetReallocationPlanningException) {
             return response()->json([
-                'message' => 'Le plan ne peut pas être calculé avec les données disponibles.',
+                'message' => __('Le plan ne peut pas être calculé avec les données disponibles.'),
             ], 422);
         }
 
@@ -86,7 +86,7 @@ class FleetReallocationPlanningController extends Controller
         foreach ($snapshot['days'] ?? [] as $day) {
             foreach ($day['nodes'] ?? [] as $node) {
                 $agencies[] = [
-                    'name' => $names->get((int) $node['agency_id'], 'Agence'),
+                    'name' => $names->get((int) $node['agency_id'], __('Agence')),
                     'date' => $day['date'],
                     'available_vehicle_units' => (int) $node['available_vehicle_units'],
                     'predicted_departures' => (string) $node['conditional_mean'],
@@ -103,8 +103,8 @@ class FleetReallocationPlanningController extends Controller
             foreach ($run->recommendations as $recommendation) {
                 $recommendations[] = [
                     'date' => $recommendation->planning_date->toDateString(),
-                    'from_agency' => $names->get($recommendation->from_agency_id, 'Agence'),
-                    'to_agency' => $names->get($recommendation->to_agency_id, 'Agence'),
+                    'from_agency' => $names->get($recommendation->from_agency_id, __('Agence')),
+                    'to_agency' => $names->get($recommendation->to_agency_id, __('Agence')),
                     'vehicle_units' => $recommendation->vehicle_units,
                     'distance_km' => (string) $recommendation->distance_km,
                 ];
@@ -128,17 +128,17 @@ class FleetReallocationPlanningController extends Controller
     {
         if ($run->status === FleetReallocationPlanningRunStatus::Queued
             || $run->status === FleetReallocationPlanningRunStatus::Running) {
-            return 'Calcul du plan en cours…';
+            return __('Calcul du plan en cours…');
         }
         if ($run->status === FleetReallocationPlanningRunStatus::Failed) {
-            return 'Le plan n’a pas pu être calculé. Les données métier restent inchangées.';
+            return __('Le plan n’a pas pu être calculé. Les données métier restent inchangées.');
         }
 
         return match ($run->outcome) {
-            'transfers_recommended' => 'Des transferts sont proposés pour réduire les besoins non couverts.',
-            'balanced_without_transfer' => 'Aucun transfert nécessaire.',
-            'insufficient_transferable_surplus' => 'Aucun véhicule transférable malgré un besoin non couvert.',
-            default => 'Le plan est terminé sans action automatique.',
+            'transfers_recommended' => __('Des transferts sont proposés pour réduire les besoins non couverts.'),
+            'balanced_without_transfer' => __('Aucun transfert nécessaire.'),
+            'insufficient_transferable_surplus' => __('Aucun véhicule transférable malgré un besoin non couvert.'),
+            default => __('Le plan est terminé sans action automatique.'),
         };
     }
 }

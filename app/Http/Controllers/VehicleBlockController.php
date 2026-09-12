@@ -75,7 +75,7 @@ class VehicleBlockController extends Controller
     {
         $block = $action->handle($request->validated(), $request->user()->id);
 
-        return redirect()->route('vehicle-blocks.index', ['vehicle_id' => $block->vehicle_id])->with('status', 'Bloc manuel créé.');
+        return redirect()->route('vehicle-blocks.index', ['vehicle_id' => $block->vehicle_id])->with('status', __('Bloc manuel créé.'));
     }
 
     public function release(Request $request, VehicleBlock $block, ReleaseManualVehicleBlock $action): RedirectResponse
@@ -83,7 +83,7 @@ class VehicleBlockController extends Controller
         $this->authorize('update', $block);
         $action->handle($block);
 
-        return back()->with('status', 'Bloc manuel libéré.');
+        return back()->with('status', __('Bloc manuel libéré.'));
     }
 
     public function cancel(Request $request, VehicleBlock $block, CancelManualVehicleBlock $action): RedirectResponse
@@ -91,7 +91,7 @@ class VehicleBlockController extends Controller
         $this->authorize('update', $block);
         $action->handle($block);
 
-        return back()->with('status', 'Bloc manuel annulé.');
+        return back()->with('status', __('Bloc manuel annulé.'));
     }
 
     private function agencies(Request $request)

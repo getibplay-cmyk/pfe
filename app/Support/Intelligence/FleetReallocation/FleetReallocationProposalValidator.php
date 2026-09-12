@@ -3,6 +3,7 @@
 namespace App\Support\Intelligence\FleetReallocation;
 
 use App\Exceptions\FleetReallocationValidationException;
+use App\Support\Ui\UiText;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Support\Str;
@@ -30,7 +31,7 @@ final class FleetReallocationProposalValidator
         try {
             $decoded = json_decode($json, true, 128, JSON_THROW_ON_ERROR | JSON_BIGINT_AS_STRING);
         } catch (JsonException) {
-            $this->fail('$', 'JSON UTF-8 invalide');
+            $this->fail('$', UiText::t('JSON UTF-8 invalide'));
         }
 
         $payload = $this->closedObject($decoded, self::ROOT_KEYS, '$');
@@ -38,7 +39,7 @@ final class FleetReallocationProposalValidator
         $proposalId = $this->uuid($payload['proposal_id'], 'proposal_id');
         $generatedAt = $this->utcDateTime($payload['generated_at'], 'generated_at');
         if ($generatedAt->getTimestamp() > now('UTC')->addMinutes(5)->getTimestamp()) {
-            $this->fail('generated_at', 'ne peut pas être situé dans le futur');
+            $this->fail('generated_at', UiText::t('ne peut pas être situé dans le futur'));
         }
 
         $source = $this->closedObject($payload['source'], [
@@ -78,7 +79,7 @@ final class FleetReallocationProposalValidator
         $targetDate = $this->date($planning['target_date'], 'planning.target_date');
         $horizon = $this->integer($planning['forecast_horizon'], 1, 7, 'planning.forecast_horizon');
         if ($asOfDate->modify('+'.$horizon.' days')->format('Y-m-d') !== $targetDate->format('Y-m-d')) {
-            $this->fail('planning.target_date', 'doit correspondre exactement à l’horizon D+1 à D+7');
+            $this->fail('planning.target_date', UiText::t('doit correspondre exactement à l’horizon D+1 à D+7'));
         }
         $this->same($planning['distance_unit'], FleetReallocationContract::DISTANCE_UNIT, 'planning.distance_unit');
         $this->same($planning['data_status'], FleetReallocationContract::DATA_STATUS, 'planning.data_status');
@@ -111,7 +112,7 @@ final class FleetReallocationProposalValidator
 
         $nodes = $this->closedList($planning['nodes'], 'planning.nodes');
         if (count($nodes) < 2 || count($nodes) > 20) {
-            $this->fail('planning.nodes', 'doit contenir entre 2 et 20 nœuds synthétiques');
+            $this->fail('planning.nodes', UiText::t('doit contenir entre 2 et 20 nœuds synthétiques'));
         }
         $nodeRefs = [];
         $totalDemand = 0;
@@ -125,24 +126,24 @@ final class FleetReallocationProposalValidator
             ], $path);
             $nodeRef = $this->nodeRef($node['node_ref'], $path.'.node_ref');
             if (isset($nodeRefs[$nodeRef])) {
-                $this->fail($path.'.node_ref', 'nœud dupliqué');
+                $this->fail($path.'.node_ref', UiText::t('nœud dupliqué'));
             }
             $nodeRefs[$nodeRef] = true;
             $this->integer($node['available_vehicles'], 0, 1000, $path.'.available_vehicles');
             $forecastDemand = $this->integer($node['forecast_demand'], 0, 1000, $path.'.forecast_demand');
             $effectiveDemand = $this->integer($node['effective_demand'], 0, 1000, $path.'.effective_demand');
             if ($forecastDemand !== $effectiveDemand) {
-                $this->fail($path.'.effective_demand', 'doit rester identique à la prévision lorsque CatBoost s’abstient');
+                $this->fail($path.'.effective_demand', UiText::t('doit rester identique à la prévision lorsque CatBoost s’abstient'));
             }
             $totalDemand += $effectiveDemand;
         }
         if ($totalDemand <= 0) {
-            $this->fail('planning.nodes', 'la demande synthétique totale doit être strictement positive');
+            $this->fail('planning.nodes', UiText::t('la demande synthétique totale doit être strictement positive'));
         }
 
         $moves = $this->closedList($planning['moves'], 'planning.moves');
         if (count($moves) < 1 || count($moves) > 100) {
-            $this->fail('planning.moves', 'doit contenir entre 1 et 100 lignes de déplacement');
+            $this->fail('planning.moves', UiText::t('doit contenir entre 1 et 100 lignes de déplacement'));
         }
         $validatedMoves = [];
         $movePairs = [];
@@ -167,7 +168,7 @@ final class FleetReallocationProposalValidator
             }
             $pair = $from.'>'.$to;
             if (isset($movePairs[$pair])) {
-                $this->fail($path, 'une seule ligne est autorisée par paire origine/destination');
+                $this->fail($path, UiText::t('une seule ligne est autorisée par paire origine/destination'));
             }
             $movePairs[$pair] = true;
 
@@ -179,11 +180,11 @@ final class FleetReallocationProposalValidator
             );
             $unitCost = $this->integer($move['unit_cost_centimes'], 1, 10_000_000, $path.'.unit_cost_centimes');
             if ($unitCost !== $expectedUnitCost) {
-                $this->fail($path.'.unit_cost_centimes', 'coût incompatible avec 5,00 MAD par véhicule-km');
+                $this->fail($path.'.unit_cost_centimes', UiText::t('coût incompatible avec 5,00 MAD par véhicule-km'));
             }
             $totalCost = $this->integer($move['total_cost_centimes'], 1, 10_000_000_000, $path.'.total_cost_centimes');
             if ($totalCost !== $vehicles * $unitCost) {
-                $this->fail($path.'.total_cost_centimes', 'doit égaler véhicules × coût unitaire');
+                $this->fail($path.'.total_cost_centimes', UiText::t('doit égaler véhicules × coût unitaire'));
             }
             $this->same($move['reason_code'], FleetReallocationContract::MOVE_REASON, $path.'.reason_code');
             $this->same($move['operational_effect'], FleetReallocationContract::OPERATIONAL_EFFECT, $path.'.operational_effect');
@@ -212,21 +213,21 @@ final class FleetReallocationProposalValidator
         $served = $this->integer($summary['served_demand'], 0, $totalDemand, 'summary.served_demand');
         $unserved = $this->integer($summary['unserved_demand'], 0, $totalDemand, 'summary.unserved_demand');
         if ($served + $unserved !== $totalDemand) {
-            $this->fail('summary', 'demande servie et non servie incohérentes');
+            $this->fail('summary', UiText::t('demande servie et non servie incohérentes'));
         }
         $serviceRate = $this->fixedDecimal($summary['service_rate'], 6, 1, true, 'summary.service_rate');
         $expectedRate = intdiv($served * 1_000_000 + intdiv($totalDemand, 2), $totalDemand);
         if ($serviceRate !== $expectedRate || $serviceRate < 800_000) {
-            $this->fail('summary.service_rate', 'ratio incohérent ou inférieur au gate de 0,80');
+            $this->fail('summary.service_rate', UiText::t('ratio incohérent ou inférieur au gate de 0,80'));
         }
         $this->same($summary['relocation_cost_centimes'], $relocationCost, 'summary.relocation_cost_centimes');
         $decisionCost = $this->integer($summary['decision_cost_centimes'], 0, 10_000_000_000_000, 'summary.decision_cost_centimes');
         if ($decisionCost !== $relocationCost + $unserved * FleetReallocationContract::UNSERVED_PENALTY_CENTIMES) {
-            $this->fail('summary.decision_cost_centimes', 'objectif de décision incohérent');
+            $this->fail('summary.decision_cost_centimes', UiText::t('objectif de décision incohérent'));
         }
         $runtime = $this->fixedDecimal($summary['solver_runtime_ms'], 6, 4, true, 'summary.solver_runtime_ms');
         if ($runtime > 5_000_000_000) {
-            $this->fail('summary.solver_runtime_ms', 'dépasse le gate de 5 secondes');
+            $this->fail('summary.solver_runtime_ms', UiText::t('dépasse le gate de 5 secondes'));
         }
 
         $safety = $this->closedObject($payload['safety'], [
@@ -290,7 +291,7 @@ final class FleetReallocationProposalValidator
         sort($actualKeys, SORT_STRING);
         sort($expectedKeys, SORT_STRING);
         if ($actualKeys !== $expectedKeys) {
-            $this->fail($path, 'clés JSON absentes ou inconnues');
+            $this->fail($path, UiText::t('clés JSON absentes ou inconnues'));
         }
 
         return $value;
@@ -331,12 +332,12 @@ final class FleetReallocationProposalValidator
     ): int {
         $pattern = '/^(?:0|[1-9][0-9]{0,'.($maximumWholeDigits - 1).'})\.[0-9]{'.$scale.'}$/D';
         if (! is_string($value) || preg_match($pattern, $value) !== 1) {
-            $this->fail($path, 'décimal positif à échelle fixe attendu');
+            $this->fail($path, UiText::t('décimal positif à échelle fixe attendu'));
         }
         [$whole, $fraction] = explode('.', $value, 2);
         $scaled = (int) $whole * (10 ** $scale) + (int) $fraction;
         if (! $allowZero && $scaled === 0) {
-            $this->fail($path, 'doit être strictement positif');
+            $this->fail($path, UiText::t('doit être strictement positif'));
         }
 
         return $scaled;
@@ -345,7 +346,7 @@ final class FleetReallocationProposalValidator
     private function uuid(mixed $value, string $path): string
     {
         if (! is_string($value) || ! Str::isUuid($value) || $value !== strtolower($value)) {
-            $this->fail($path, 'UUID invalide');
+            $this->fail($path, UiText::t('UUID invalide'));
         }
 
         return strtolower($value);
@@ -363,7 +364,7 @@ final class FleetReallocationProposalValidator
     private function nodeRef(mixed $value, string $path): string
     {
         if (! is_string($value) || preg_match('/^SYNTH-NODE-[0-9]{3}$/D', $value) !== 1) {
-            $this->fail($path, 'référence de nœud synthétique invalide');
+            $this->fail($path, UiText::t('référence de nœud synthétique invalide'));
         }
 
         return $value;

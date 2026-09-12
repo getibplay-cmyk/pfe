@@ -16,7 +16,7 @@ class UpdateInsuranceCompany
         return DB::transaction(function () use ($company, $data): InsuranceCompany {
             $locked = InsuranceCompany::whereKey($company)->lockForUpdate()->firstOrFail();
             if ($locked->is_active && InsuranceCompany::query()->whereKeyNot($locked->id)->where('is_active', true)->whereRaw('lower(name) = lower(?)', [trim($data['name'])])->exists()) {
-                throw ValidationException::withMessages(['name' => 'Une compagnie active porte déjà ce nom.']);
+                throw ValidationException::withMessages(['name' => __('Une compagnie active porte déjà ce nom.')]);
             }
             $before = $this->values($locked);
             $locked->forceFill(['name' => trim($data['name']), 'email' => $data['email'] ?? null, 'phone' => $data['phone'] ?? null])->save();

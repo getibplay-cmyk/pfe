@@ -27,7 +27,7 @@ class CreateReservation
             $related = $this->relationships->resolve($data);
             $status = ReservationStatus::tryFrom($data['status'] ?? 'draft');
             if (! in_array($status, [ReservationStatus::Draft, ReservationStatus::Pending], true)) {
-                throw ValidationException::withMessages(['status' => 'Une réservation doit être créée en brouillon ou en attente.']);
+                throw ValidationException::withMessages(['status' => __('Une réservation doit être créée en brouillon ou en attente.')]);
             }
 
             $reservation = Reservation::create([

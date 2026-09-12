@@ -29,11 +29,11 @@ class ReverseSaasPayment
         ]);
         $reason = trim((string) ($data['reason'] ?? ''));
         if ($reason === '') {
-            throw ValidationException::withMessages(['reason' => 'Le motif de contrepassation est obligatoire.']);
+            throw ValidationException::withMessages(['reason' => __('Le motif de contrepassation est obligatoire.')]);
         }
         $idempotencyKey = trim((string) ($data['idempotency_key'] ?? ''));
         if ($idempotencyKey === '') {
-            throw ValidationException::withMessages(['idempotency_key' => 'La demande n’a pas pu être sécurisée. Rechargez la page puis réessayez.']);
+            throw ValidationException::withMessages(['idempotency_key' => __('La demande n’a pas pu être sécurisée. Rechargez la page puis réessayez.')]);
         }
         $reference = $this->nullableText($data['reference'] ?? null);
         $note = $this->nullableText($data['note'] ?? null);
@@ -56,16 +56,16 @@ class ReverseSaasPayment
                 app(SaasBillingLock::class)->tenant($payment->tenant_id);
                 $original = SaasPayment::query()->whereKey($payment)->lockForUpdate()->firstOrFail();
                 if ($original->entry_type !== SaasPaymentEntryType::Payment) {
-                    throw ValidationException::withMessages(['payment' => 'Seul un paiement SaaS original peut être contrepassé.']);
+                    throw ValidationException::withMessages(['payment' => __('Seul un paiement SaaS original peut être contrepassé.')]);
                 }
                 if ($original->payment_method === SaasPaymentMethod::Cmi && ! $cmiRefundConfirmed) {
                     throw ValidationException::withMessages([
-                        'cmi_refund_confirmed' => 'Confirmez que le remboursement a réussi dans le portail marchand CMI.',
+                        'cmi_refund_confirmed' => __('Confirmez que le remboursement a réussi dans le portail marchand CMI.'),
                     ]);
                 }
                 if ($original->payment_method === SaasPaymentMethod::Cmi && $reference === null) {
                     throw ValidationException::withMessages([
-                        'reference' => 'La référence du remboursement confirmé par CMI est obligatoire.',
+                        'reference' => __('La référence du remboursement confirmé par CMI est obligatoire.'),
                     ]);
                 }
 
@@ -74,7 +74,7 @@ class ReverseSaasPayment
                     : CarbonImmutable::now();
                 if ($occurredAt->lt($original->occurred_at)) {
                     throw ValidationException::withMessages([
-                        'occurred_at' => 'La date de contrepassation ne peut pas précéder celle du paiement original.',
+                        'occurred_at' => __('La date de contrepassation ne peut pas précéder celle du paiement original.'),
                     ]);
                 }
 
@@ -99,11 +99,11 @@ class ReverseSaasPayment
                 if ($reference !== null && SaasPayment::query()
                     ->whereRaw('lower(reference) = lower(?)', [$reference])
                     ->exists()) {
-                    throw ValidationException::withMessages(['reference' => 'Cette référence administrative est déjà utilisée.']);
+                    throw ValidationException::withMessages(['reference' => __('Cette référence administrative est déjà utilisée.')]);
                 }
 
                 if (SaasPayment::query()->where('reversal_of_id', $original->getKey())->lockForUpdate()->exists()) {
-                    throw ValidationException::withMessages(['payment' => 'Ce paiement SaaS a déjà été contrepassé.']);
+                    throw ValidationException::withMessages(['payment' => __('Ce paiement SaaS a déjà été contrepassé.')]);
                 }
 
                 $reversal = new SaasPayment;
@@ -145,15 +145,15 @@ class ReverseSaasPayment
             });
         } catch (QueryException $exception) {
             if ((string) $exception->getCode() === '23514'
-                && str_contains($exception->getMessage(), 'A SaaS payment reversal cannot predate its original')) {
+                && str_contains($exception->getMessage(), __('A SaaS payment reversal cannot predate its original'))) {
                 throw ValidationException::withMessages([
-                    'occurred_at' => 'La date de contrepassation ne peut pas précéder celle du paiement original.',
+                    'occurred_at' => __('La date de contrepassation ne peut pas précéder celle du paiement original.'),
                 ]);
             }
 
             if ((string) $exception->getCode() === '23505'
                 && str_contains($exception->getMessage(), 'saas_payments_reference_unique_idx')) {
-                throw ValidationException::withMessages(['reference' => 'Cette référence administrative est déjà utilisée.']);
+                throw ValidationException::withMessages(['reference' => __('Cette référence administrative est déjà utilisée.')]);
             }
 
             throw $exception;
@@ -180,7 +180,7 @@ class ReverseSaasPayment
 
         if (! $same) {
             throw ValidationException::withMessages([
-                'idempotency_key' => 'Cette demande a déjà été envoyée avec des informations différentes. Rechargez la page puis réessayez.',
+                'idempotency_key' => __('Cette demande a déjà été envoyée avec des informations différentes. Rechargez la page puis réessayez.'),
             ]);
         }
     }
@@ -204,7 +204,7 @@ class ReverseSaasPayment
     {
         $unexpected = array_values(array_diff(array_keys($data), $allowed));
         if ($unexpected !== []) {
-            throw ValidationException::withMessages([$unexpected[0] => 'Ce champ n’est pas autorisé.']);
+            throw ValidationException::withMessages([$unexpected[0] => __('Ce champ n’est pas autorisé.')]);
         }
     }
 }

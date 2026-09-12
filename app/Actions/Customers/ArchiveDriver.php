@@ -19,7 +19,7 @@ class ArchiveDriver
             $this->agencyAccess->required($locked->customer->agency_id);
 
             if ($locked->reservations()->whereIn('status', ['draft', 'pending', 'confirmed'])->exists()) {
-                $this->blocked('Le conducteur est utilisé par une réservation active.');
+                $this->blocked(__('Le conducteur est utilisé par une réservation active.'));
             }
 
             $activeContract = DB::table('contract_drivers as cd')
@@ -31,7 +31,7 @@ class ArchiveDriver
                 ->whereNotIn('rc.status', ['closed', 'cancelled'])
                 ->exists();
             if ($activeContract) {
-                $this->blocked('Le conducteur est utilisé par un contrat non terminal.');
+                $this->blocked(__('Le conducteur est utilisé par un contrat non terminal.'));
             }
 
             $ongoingInspection = DB::table('contract_drivers as cd')
@@ -43,7 +43,7 @@ class ArchiveDriver
                 ->where('vi.status', 'draft')
                 ->exists();
             if ($ongoingInspection) {
-                $this->blocked('Une inspection opérationnelle est encore en cours pour ce conducteur.');
+                $this->blocked(__('Une inspection opérationnelle est encore en cours pour ce conducteur.'));
             }
 
             $wasPrimary = $locked->is_primary;

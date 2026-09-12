@@ -52,7 +52,7 @@ class OnboardingImportController extends Controller
         $this->permit($request);
         abort_unless($import->created_by === $request->user()->id, 403);
         if ($import->completed_at) {
-            return redirect()->route('onboarding.index')->with('status', 'Cet import a déjà été confirmé.');
+            return redirect()->route('onboarding.index')->with('status', __('Cet import a déjà été confirmé.'));
         }
         abort_unless($import->expires_at->gt(now()) && $import->payload !== null, 410);
         $rows = $service->inspect($import);
@@ -65,7 +65,7 @@ class OnboardingImportController extends Controller
         $this->permit($request);
         $count = $service->commit($import, $request->user());
 
-        return redirect()->route('onboarding.index')->with('status', $count.' enregistrements importés.');
+        return redirect()->route('onboarding.index')->with('status', $count.__(' enregistrements importés.'));
     }
 
     public function errors(Request $request, OnboardingImport $import, OnboardingCsvImport $service)
@@ -81,7 +81,7 @@ class OnboardingImportController extends Controller
             $output = fopen('php://output', 'wb');
             fwrite($output, "\xEF\xBB\xBF");
             $write = fn (array $row) => fputcsv($output, array_map(SpreadsheetSafeCsv::cell(...), $row), ';', '"', '');
-            $write(['Ligne de données', ...$headers, 'Erreurs à corriger']);
+            $write([__('Ligne de données'), ...$headers, __('Erreurs à corriger')]);
             foreach ($rows as $row) {
                 $write([$row['line'], ...array_map(fn ($header) => $row['source'][$header], $headers), implode(' | ', $row['errors'])]);
             }
@@ -95,11 +95,11 @@ class OnboardingImportController extends Controller
         abort_unless($import->created_by === $request->user()->id, 403);
         DB::transaction(function () use ($import) {
             $locked = OnboardingImport::whereKey($import)->lockForUpdate()->firstOrFail();
-            abort_if($locked->completed_at, 409, 'Cet import a déjà été confirmé.');
+            abort_if($locked->completed_at, 409, __('Cet import a déjà été confirmé.'));
             $locked->forceFill(['payload' => null, 'expires_at' => now()])->save();
             app(AuditRecorder::class)->record('onboarding.import_discarded', Tenant::findOrFail($import->tenant_id), [], ['kind' => $import->kind, 'row_count' => $import->row_count]);
         });
 
-        return redirect()->route('onboarding.import.index')->with('status', 'Aperçu abandonné. Les données du fichier ont été effacées.');
+        return redirect()->route('onboarding.import.index')->with('status', __('Aperçu abandonné. Les données du fichier ont été effacées.'));
     }
 }

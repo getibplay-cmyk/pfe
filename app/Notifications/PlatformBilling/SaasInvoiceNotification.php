@@ -43,14 +43,14 @@ class SaasInvoiceNotification extends Notification implements ShouldQueue
         $invoice = SaasInvoice::query()->whereKey($this->invoiceId)->where('tenant_id', $notifiable->tenant_id)->firstOrFail();
 
         return (new MailMessage)
-            ->subject('BELKHIR SPACE — suivi de facturation')
-            ->line('Un événement de facturation a été enregistré : '.match ($this->eventType) {
-                'issued' => 'facture émise', 'paid' => 'règlement enregistré',
-                'overdue' => 'échéance dépassée', 'reversed' => 'règlement contrepassé',
-                default => 'facture annulée',
+            ->subject(__('BELKHIR SPACE — suivi de facturation'))
+            ->line(__('Un événement de facturation a été enregistré : ').match ($this->eventType) {
+                'issued' => __('facture émise'), 'paid' => __('règlement enregistré'),
+                'overdue' => __('échéance dépassée'), 'reversed' => __('règlement contrepassé'),
+                default => __('facture annulée'),
             }.'.')
-            ->line('Référence : '.$invoice->number)
-            ->line('Consultez le compte pour connaître son état actuel. Aucun prélèvement automatique n’est effectué.')
-            ->action('Consulter la facture', route('tenant-saas-invoices.show', $invoice));
+            ->line(__('Référence : ').$invoice->number)
+            ->line(__('Consultez le compte pour connaître son état actuel. Aucun prélèvement automatique n’est effectué.'))
+            ->action(__('Consulter la facture'), route('tenant-saas-invoices.show', $invoice));
     }
 }

@@ -32,16 +32,16 @@ class ReviewDamageResponsibility
                 return $locked->refresh();
             }
             if ($responsibility === DamageResponsibility::Pending || ! in_array($status, [DamageStatus::Resolved, DamageStatus::Dismissed], true)) {
-                throw ValidationException::withMessages(['responsibility' => 'La revue humaine doit produire une responsabilité explicite et une décision finale.']);
+                throw ValidationException::withMessages(['responsibility' => __('La revue humaine doit produire une responsabilité explicite et une décision finale.')]);
             }
             if ($responsibility === DamageResponsibility::Customer && empty($data['approved_cost'])) {
-                throw ValidationException::withMessages(['approved_cost' => 'Un coût approuvé est requis pour une responsabilité client.']);
+                throw ValidationException::withMessages(['approved_cost' => __('Un coût approuvé est requis pour une responsabilité client.')]);
             }
             $from = $locked->status;
             $locked->forceFill(['status' => $status, 'responsibility' => $responsibility, 'approved_cost' => $status === DamageStatus::Resolved ? ($data['approved_cost'] ?? '0.00') : null, 'reviewed_by' => $actorId, 'reviewed_at' => now()])->save();
             $locked->charges()->where('status', 'proposed')->update(['status' => ContractChargeStatus::Rejected->value, 'approved_by' => $actorId, 'approved_at' => now()]);
             if ($status === DamageStatus::Resolved && $responsibility === DamageResponsibility::Customer && $locked->approved_cost !== '0.00') {
-                ContractCharge::create(['rental_contract_id' => $locked->rental_contract_id, 'damage_report_id' => $locked->id, 'charge_type' => ContractChargeType::Damage, 'description' => 'Dommage '.$locked->damage_number.' après revue humaine', 'quantity' => '1.00', 'unit_amount' => $locked->approved_cost, 'total_amount' => $locked->approved_cost, 'status' => ContractChargeStatus::Proposed, 'calculation_details' => ['human_reviewed' => true, 'responsibility' => 'customer']]);
+                ContractCharge::create(['rental_contract_id' => $locked->rental_contract_id, 'damage_report_id' => $locked->id, 'charge_type' => ContractChargeType::Damage, 'description' => __('Dommage ').$locked->damage_number.__(' après revue humaine'), 'quantity' => '1.00', 'unit_amount' => $locked->approved_cost, 'total_amount' => $locked->approved_cost, 'status' => ContractChargeStatus::Proposed, 'calculation_details' => ['human_reviewed' => true, 'responsibility' => 'customer']]);
             }
             DamageStatusHistory::create(['damage_report_id' => $locked->id, 'from_status' => $from, 'to_status' => $status, 'responsibility' => $responsibility, 'reason' => $data['reason'] ?? null, 'changed_by' => $actorId]);
             $this->audit->record('damage.reviewed', $locked, ['status' => $from->value, 'responsibility' => 'pending'], ['status' => $status->value, 'responsibility' => $responsibility->value, 'approved_cost' => $locked->approved_cost]);

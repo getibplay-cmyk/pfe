@@ -6,6 +6,7 @@ use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
+use App\Support\Ui\UiText;
 
 final class TrainingCatalog
 {
@@ -22,7 +23,7 @@ final class TrainingCatalog
 
     public static function get(string $family): array
     {
-        abort_unless(isset(self::all()[$family]), 422, 'Famille de modèle inconnue.');
+        abort_unless(isset(self::all()[$family]), 422, UiText::t('Famille de modèle inconnue.'));
 
         return self::all()[$family];
     }

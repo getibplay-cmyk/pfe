@@ -34,7 +34,7 @@ class RoleController extends Controller
     {
         $governance->create($request->validated(), $request->user());
 
-        return redirect()->route('roles.index')->with('status', 'Rôle personnalisé créé.');
+        return redirect()->route('roles.index')->with('status', __('Rôle personnalisé créé.'));
     }
 
     public function edit(Role $role): View
@@ -48,7 +48,7 @@ class RoleController extends Controller
     {
         $governance->update($role, $request->validated(), $request->user());
 
-        return redirect()->route('roles.index')->with('status', 'Rôle personnalisé mis à jour.');
+        return redirect()->route('roles.index')->with('status', __('Rôle personnalisé mis à jour.'));
     }
 
     public function delegations(Request $request): View
@@ -69,7 +69,7 @@ class RoleController extends Controller
     {
         $governance->syncDelegations($agency, $request->validated('role_ids'), $request->user());
 
-        return back()->with('status', 'Délégation des rôles mise à jour pour '.$agency->name.'.');
+        return back()->with('status', __('Délégation des rôles mise à jour pour ').$agency->name.'.');
     }
 
     private function formData(Role $role): array

@@ -43,7 +43,7 @@ class ModelTrainingDatasetController extends Controller
         if ($data['mode'] === 'demand') {
             $days = CarbonImmutable::parse($data['date_from'])->diffInDays(CarbonImmutable::parse($data['date_to'])) + 1;
             if ($days < 120 || $days > 731) {
-                throw ValidationException::withMessages(['date_from' => 'Choisissez entre 120 et 731 jours consécutifs terminés.']);
+                throw ValidationException::withMessages(['date_from' => __('Choisissez entre 120 et 731 jours consécutifs terminés.')]);
             }
             $input = app(CreateDemandHistoryExport::class)->trainingData((int) $data['agency_id'], $data['date_from'], $data['date_to'], $request->user());
         } else {
@@ -51,13 +51,13 @@ class ModelTrainingDatasetController extends Controller
         }
         $workbench->stage($request->user(), $input, $data);
 
-        return back()->with('status', 'Jeu de données figé. Il est disponible pour vos prochaines campagnes selon le partage choisi.');
+        return back()->with('status', __('Jeu de données figé. Il est disponible pour vos prochaines campagnes selon le partage choisi.'));
     }
 
     public function download(Request $request, ModelTrainingDataset $dataset, TrainingWorkbench $workbench, AuditRecorder $audit)
     {
         Gate::forUser($request->user())->authorize('view', $dataset);
-        abort_if($dataset->revoked_at !== null, 410, 'Ce jeu de données a été révoqué.');
+        abort_if($dataset->revoked_at !== null, 410, __('Ce jeu de données a été révoqué.'));
         $data = $workbench->read($dataset->stored_path, $dataset->sha256);
         $audit->record('training.dataset.downloaded', $dataset);
 
@@ -71,7 +71,7 @@ class ModelTrainingDatasetController extends Controller
     {
         $workbench->revoke($request->user(), $dataset);
 
-        return back()->with('status', 'Contribution révoquée. Les nouveaux téléchargements et validations de ses campagnes sont bloqués.');
+        return back()->with('status', __('Contribution révoquée. Les nouveaux téléchargements et validations de ses campagnes sont bloqués.'));
     }
 
     public function share(Request $request, ModelTrainingDataset $dataset, TrainingWorkbench $workbench)
@@ -80,7 +80,7 @@ class ModelTrainingDatasetController extends Controller
         $request->validate(['share_confirmed' => ['accepted'], 'tenant_id' => ['prohibited']]);
         $workbench->share($request->user(), $dataset);
 
-        return back()->with('status', 'Le partage pour les campagnes est autorisé. Vous pouvez le révoquer depuis cette page.');
+        return back()->with('status', __('Le partage pour les campagnes est autorisé. Vous pouvez le révoquer depuis cette page.'));
     }
 
     public function template(Request $request, string $family)

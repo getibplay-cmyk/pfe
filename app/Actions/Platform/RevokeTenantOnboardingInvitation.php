@@ -23,7 +23,7 @@ class RevokeTenantOnboardingInvitation
         return DB::transaction(function () use ($invitation): TenantOnboardingInvitation {
             $locked = TenantOnboardingInvitation::query()->whereKey($invitation)->lockForUpdate()->firstOrFail();
             if ($locked->status !== TenantOnboardingInvitationStatus::Pending) {
-                throw ValidationException::withMessages(['invitation' => 'Cette invitation ne peut plus être révoquée.']);
+                throw ValidationException::withMessages(['invitation' => __('Cette invitation ne peut plus être révoquée.')]);
             }
 
             $locked->forceFill([

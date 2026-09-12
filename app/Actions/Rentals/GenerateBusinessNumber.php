@@ -19,7 +19,7 @@ class GenerateBusinessNumber
             'expense' => 'EXP',
             'maintenance' => 'MNT',
             'claim' => 'CLM',
-            default => throw ValidationException::withMessages(['number' => 'Type de numérotation inconnu.']),
+            default => throw ValidationException::withMessages(['number' => __('Type de numérotation inconnu.')]),
         };
         $year ??= now(config('reservations.display_timezone'))->year;
         $row = DB::selectOne('INSERT INTO business_number_counters (tenant_id, document_type, year, last_number) VALUES (?, ?, ?, 1) ON CONFLICT (tenant_id, document_type, year) DO UPDATE SET last_number = business_number_counters.last_number + 1 RETURNING last_number', [app(TenantContext::class)->tenantId(), $type, $year]);

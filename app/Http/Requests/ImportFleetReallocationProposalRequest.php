@@ -37,7 +37,7 @@ class ImportFleetReallocationProposalRequest extends FormRequest
         return [function (Validator $validator): void {
             $allowed = ['proposal', 'tenant_id', 'agency_id', 'stored_path', 'operational_effect'];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé par le contrat de réallocation.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé par le contrat de réallocation.'));
             }
         }];
     }

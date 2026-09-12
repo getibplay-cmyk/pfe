@@ -19,7 +19,7 @@ class PostPayment
                 return $locked;
             }
             if ($locked->status !== 'pending') {
-                throw ValidationException::withMessages(['payment' => 'Seul un paiement en attente peut être comptabilisé.']);
+                throw ValidationException::withMessages(['payment' => __('Seul un paiement en attente peut être comptabilisé.')]);
             }
             $locked->forceFill(['status' => 'posted', 'posted_at' => now(), 'posted_by' => $actorId])->save();
             foreach ($locked->allocations as $allocation) {

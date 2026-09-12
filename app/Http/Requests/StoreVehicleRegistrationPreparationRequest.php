@@ -80,7 +80,7 @@ class StoreVehicleRegistrationPreparationRequest extends FormRequest
                     || ! in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
                     $validator->errors()->add(
                         'image',
-                        'La photo doit être une image JPEG, PNG ou WebP valide et de dimensions autorisées.',
+                        __('La photo doit être une image JPEG, PNG ou WebP valide et de dimensions autorisées.'),
                     );
                 }
             }
@@ -96,7 +96,7 @@ class StoreVehicleRegistrationPreparationRequest extends FormRequest
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $declared) as $key) {
                 $validator->errors()->add(
                     $key,
-                    'Ce champ n’est pas autorisé pour la lecture de l’immatriculation.',
+                    __('Ce champ n’est pas autorisé pour la lecture de l’immatriculation.'),
                 );
             }
         }];

@@ -46,8 +46,8 @@ class AgencyDistanceController extends Controller
         return redirect()->route('agency-distances.index')->with(
             'status',
             $created->count() === 2
-                ? 'Les deux distances directionnelles ont été enregistrées et vérifiées.'
-                : 'La distance directionnelle a été enregistrée et vérifiée.',
+                ? __('Les deux distances directionnelles ont été enregistrées et vérifiées.')
+                : __('La distance directionnelle a été enregistrée et vérifiée.'),
         );
     }
 
@@ -59,7 +59,7 @@ class AgencyDistanceController extends Controller
         $manage->correct($agencyDistance, $request->validated(), $request->user());
 
         return redirect()->route('agency-distances.index')
-            ->with('status', 'La distance et sa provenance ont été vérifiées à nouveau.');
+            ->with('status', __('La distance et sa provenance ont été vérifiées à nouveau.'));
     }
 
     public function activate(
@@ -69,7 +69,7 @@ class AgencyDistanceController extends Controller
     ): RedirectResponse {
         $manage->setActive($agencyDistance, $request->user(), true);
 
-        return redirect()->route('agency-distances.index')->with('status', 'La distance a été activée.');
+        return redirect()->route('agency-distances.index')->with('status', __('La distance a été activée.'));
     }
 
     public function deactivate(
@@ -79,6 +79,6 @@ class AgencyDistanceController extends Controller
     ): RedirectResponse {
         $manage->setActive($agencyDistance, $request->user(), false);
 
-        return redirect()->route('agency-distances.index')->with('status', 'La distance a été désactivée.');
+        return redirect()->route('agency-distances.index')->with('status', __('La distance a été désactivée.'));
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Support\Intelligence\J11;
 
 use App\Enums\J11AdvisoryModule;
+use App\Support\Ui\UiText;
 use JsonException;
 use UnexpectedValueException;
 
@@ -27,12 +28,12 @@ final class J11SyntheticFixtureRepository
 
         $record = json_decode($fixtureBytes, true, 512, JSON_THROW_ON_ERROR);
         if (! is_array($record) || array_is_list($record)) {
-            throw new UnexpectedValueException('La fixture J11 doit être un objet JSON.');
+            throw new UnexpectedValueException(UiText::t('La fixture J11 doit être un objet JSON.'));
         }
 
         $validation = $this->validator->validate($module, $record);
         if (! $validation->passed()) {
-            throw new UnexpectedValueException('Fixture J11 invalide : '.implode(', ', $validation->failedChecks()));
+            throw new UnexpectedValueException(UiText::t('Fixture J11 invalide : ').implode(', ', $validation->failedChecks()));
         }
 
         $idempotency = $record['idempotency'];
@@ -50,7 +51,7 @@ final class J11SyntheticFixtureRepository
     {
         $bytes = @file_get_contents($path);
         if (! is_string($bytes) || hash('sha256', $bytes) !== $expectedSha256) {
-            throw new UnexpectedValueException('L’artefact J11 local est absent ou son empreinte est invalide.');
+            throw new UnexpectedValueException(UiText::t('L’artefact J11 local est absent ou son empreinte est invalide.'));
         }
 
         return $bytes;

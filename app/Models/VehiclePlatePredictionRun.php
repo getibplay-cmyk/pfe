@@ -6,6 +6,7 @@ use App\Enums\VehiclePlatePredictionStatus;
 use App\Models\Concerns\BelongsToTenant;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateDetectorContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
+use App\Support\Ui\UiText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -158,18 +159,18 @@ class VehiclePlatePredictionRun extends Model
 
     public function inputKindLabel(): string
     {
-        return $this->usesDetector() ? 'Photo complète + détection' : 'Crop manuel';
+        return $this->usesDetector() ? UiText::t('Photo complète + détection') : UiText::t('Crop manuel');
     }
 
     public function suggestionLabel(): string
     {
         return match ($this->suggestion_status) {
-            'complete_primary_suggestion' => 'Lecture complète du crop',
-            'complete_segmented_suggestion' => 'Lecture complète par zones',
-            'ambiguous_segmented_suggestion' => 'Lecture complète mais ambiguë',
-            'partial_segmented_suggestion' => 'Lecture partielle à corriger',
-            'empty_suggestion' => 'Aucun caractère exploitable',
-            default => 'Résultat indisponible',
+            'complete_primary_suggestion' => UiText::t('Lecture complète du crop'),
+            'complete_segmented_suggestion' => UiText::t('Lecture complète par zones'),
+            'ambiguous_segmented_suggestion' => UiText::t('Lecture complète mais ambiguë'),
+            'partial_segmented_suggestion' => UiText::t('Lecture partielle à corriger'),
+            'empty_suggestion' => UiText::t('Aucun caractère exploitable'),
+            default => UiText::t('Résultat indisponible'),
         };
     }
 
@@ -180,30 +181,30 @@ class VehiclePlatePredictionRun extends Model
         }
 
         return match ($this->failure_code) {
-            'RUN_STALE_RECOVERED' => 'L’analyse précédente a expiré et a été fermée.',
-            'RUN_ACTOR_NOT_AUTHORIZED' => 'L’utilisateur demandeur n’est plus autorisé.',
-            'VEHICLE_UNAVAILABLE' => 'Le véhicule n’est plus disponible dans le périmètre autorisé.',
-            'INPUT_ARTIFACT_INVALID' => 'La photo privée n’est plus disponible ou a été modifiée.',
-            'RUNTIME_CONFIGURATION_INVALID' => 'Le service de lecture de l’immatriculation n’est pas correctement configuré.',
-            'OCR_INPUT_BOUNDARY_INVALID' => 'La photo rapprochée n’a pas pu être utilisée.',
-            'DETECTOR_RUNTIME_CONFIGURATION_INVALID', 'DETECTOR_ARTIFACT_INVALID' => 'La lecture depuis une photo complète n’est pas disponible. Essayez une photo rapprochée de la plaque.',
-            'DETECTOR_PROCESS_TIMEOUT' => 'La recherche de la plaque a dépassé le délai autorisé.',
-            'DETECTOR_PROCESS_FAILED', 'DETECTOR_PROCESS_START_FAILED' => 'Le service n’a pas terminé la recherche de la plaque.',
-            'DETECTOR_CROP_STORE_FAILED' => 'L’image recadrée n’a pas pu être conservée dans le stockage privé.',
+            'RUN_STALE_RECOVERED' => UiText::t('L’analyse précédente a expiré et a été fermée.'),
+            'RUN_ACTOR_NOT_AUTHORIZED' => UiText::t('L’utilisateur demandeur n’est plus autorisé.'),
+            'VEHICLE_UNAVAILABLE' => UiText::t('Le véhicule n’est plus disponible dans le périmètre autorisé.'),
+            'INPUT_ARTIFACT_INVALID' => UiText::t('La photo privée n’est plus disponible ou a été modifiée.'),
+            'RUNTIME_CONFIGURATION_INVALID' => UiText::t('Le service de lecture de l’immatriculation n’est pas correctement configuré.'),
+            'OCR_INPUT_BOUNDARY_INVALID' => UiText::t('La photo rapprochée n’a pas pu être utilisée.'),
+            'DETECTOR_RUNTIME_CONFIGURATION_INVALID', 'DETECTOR_ARTIFACT_INVALID' => UiText::t('La lecture depuis une photo complète n’est pas disponible. Essayez une photo rapprochée de la plaque.'),
+            'DETECTOR_PROCESS_TIMEOUT' => UiText::t('La recherche de la plaque a dépassé le délai autorisé.'),
+            'DETECTOR_PROCESS_FAILED', 'DETECTOR_PROCESS_START_FAILED' => UiText::t('Le service n’a pas terminé la recherche de la plaque.'),
+            'DETECTOR_CROP_STORE_FAILED' => UiText::t('L’image recadrée n’a pas pu être conservée dans le stockage privé.'),
             'DETECTOR_OUTPUT_INVALID', 'DETECTOR_OUTPUT_JSON_INVALID',
             'DETECTOR_OUTPUT_CONTRACT_INVALID', 'DETECTOR_OUTPUT_POLICY_MISMATCH',
-            'DETECTOR_OUTPUT_BBOX_INVALID', 'DETECTOR_OUTPUT_CROP_INVALID' => 'La plaque détectée n’a pas pu être vérifiée.',
-            'PLATE_NOT_DETECTED' => 'Aucune plaque n’a été localisée. Essayez une photo rapprochée de la plaque.',
-            'PLATE_DETECTION_AMBIGUOUS' => 'Plusieurs plaques possibles ont été trouvées. Utilisez une photo rapprochée pour choisir la bonne.',
-            'QUEUE_DISPATCH_FAILED' => 'La demande de lecture n’a pas pu être prise en charge.',
-            'PLATE_PROCESS_TIMEOUT' => 'La lecture de l’immatriculation a dépassé le délai autorisé.',
-            'PLATE_PROCESS_FAILED', 'PLATE_PROCESS_START_FAILED' => 'Le service n’a pas terminé la lecture de l’immatriculation.',
-            'PLATE_TEMPORARY_CLEANUP_FAILED' => 'Le nettoyage du traitement local sécurisé n’a pas pu être confirmé.',
+            'DETECTOR_OUTPUT_BBOX_INVALID', 'DETECTOR_OUTPUT_CROP_INVALID' => UiText::t('La plaque détectée n’a pas pu être vérifiée.'),
+            'PLATE_NOT_DETECTED' => UiText::t('Aucune plaque n’a été localisée. Essayez une photo rapprochée de la plaque.'),
+            'PLATE_DETECTION_AMBIGUOUS' => UiText::t('Plusieurs plaques possibles ont été trouvées. Utilisez une photo rapprochée pour choisir la bonne.'),
+            'QUEUE_DISPATCH_FAILED' => UiText::t('La demande de lecture n’a pas pu être prise en charge.'),
+            'PLATE_PROCESS_TIMEOUT' => UiText::t('La lecture de l’immatriculation a dépassé le délai autorisé.'),
+            'PLATE_PROCESS_FAILED', 'PLATE_PROCESS_START_FAILED' => UiText::t('Le service n’a pas terminé la lecture de l’immatriculation.'),
+            'PLATE_TEMPORARY_CLEANUP_FAILED' => UiText::t('Le nettoyage du traitement local sécurisé n’a pas pu être confirmé.'),
             'PLATE_OUTPUT_INVALID', 'PLATE_OUTPUT_JSON_INVALID', 'PLATE_OUTPUT_CONTRACT_INVALID',
             'PLATE_OUTPUT_ROW_INVALID', 'PLATE_OUTPUT_SUGGESTION_INVALID',
             'PLATE_OUTPUT_POLICY_MISMATCH', 'PLATE_OUTPUT_COMPONENTS_INVALID',
-            'PLATE_OUTPUT_OBSERVATIONS_INVALID' => 'Le résultat reçu n’a pas pu être vérifié.',
-            default => 'La lecture de l’immatriculation n’a pas abouti. La fiche véhicule reste inchangée.',
+            'PLATE_OUTPUT_OBSERVATIONS_INVALID' => UiText::t('Le résultat reçu n’a pas pu être vérifié.'),
+            default => UiText::t('La lecture de l’immatriculation n’a pas abouti. La fiche véhicule reste inchangée.'),
         };
     }
 }

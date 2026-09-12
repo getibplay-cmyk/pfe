@@ -49,7 +49,7 @@ class AgencyController extends Controller
             $audit->record('agency.created', $agency, [], $agency->only(['code', 'name', 'is_active']));
         });
 
-        return redirect()->route('agencies.index')->with('status', 'Agence créée.');
+        return redirect()->route('agencies.index')->with('status', __('Agence créée.'));
     }
 
     public function show(Agency $agency): View
@@ -60,9 +60,9 @@ class AgencyController extends Controller
             'agency' => $agency,
             'users' => User::query()->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->with('role')->orderBy('name')->paginate(20, ['*'], 'users'),
             'counts' => [
-                'Véhicules' => DB::table('vehicles')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
-                'Réservations' => DB::table('reservations')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
-                'Contrats' => DB::table('rental_contracts')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
+                __('Véhicules') => DB::table('vehicles')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
+                __('Réservations') => DB::table('reservations')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
+                __('Contrats') => DB::table('rental_contracts')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
                 'Maintenances' => DB::table('maintenance_orders')->where('tenant_id', $agency->tenant_id)->where('agency_id', $agency->id)->whereNull('deleted_at')->count(),
             ],
         ]);
@@ -79,7 +79,7 @@ class AgencyController extends Controller
     {
         $action->handle($agency, $request->validated(), $request->user());
 
-        return redirect()->route('agencies.index')->with('status', 'Agence mise à jour.');
+        return redirect()->route('agencies.index')->with('status', __('Agence mise à jour.'));
     }
 
     /**
@@ -93,6 +93,6 @@ class AgencyController extends Controller
             'is_active' => false,
         ], $request->user());
 
-        return redirect()->route('agencies.index')->with('status', 'Agence désactivée.');
+        return redirect()->route('agencies.index')->with('status', __('Agence désactivée.'));
     }
 }

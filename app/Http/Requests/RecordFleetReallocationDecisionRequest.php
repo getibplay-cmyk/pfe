@@ -51,7 +51,7 @@ class RecordFleetReallocationDecisionRequest extends FormRequest
         return [function (Validator $validator): void {
             $allowed = ['decision', 'reason_code', 'tenant_id', 'agency_id', 'effect', 'note'];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé par la revue de réallocation.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé par la revue de réallocation.'));
             }
 
             $decision = $this->input('decision');
@@ -64,7 +64,7 @@ class RecordFleetReallocationDecisionRequest extends FormRequest
             if (($decision === IntelligenceResultBatchDecision::AcceptedForDemoReview->value) !== $acceptReason) {
                 $validator->errors()->add(
                     'reason_code',
-                    'Le motif doit correspondre à la décision humaine choisie.',
+                    __('Le motif doit correspondre à la décision humaine choisie.'),
                 );
             }
         }];

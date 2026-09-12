@@ -56,7 +56,7 @@ final class CreateDemandHistoryExport
         [$from, $to] = $this->period($dateFrom, $dateTo);
         if ($from->diffInDays($to) + 1 < 120
             || $to->greaterThanOrEqualTo(CarbonImmutable::now(DemandForecastContract::TIMEZONE)->startOfDay())) {
-            throw new RuntimeException('Choisissez entre 120 et 731 jours consécutifs terminés.');
+            throw new RuntimeException(__('Choisissez entre 120 et 731 jours consécutifs terminés.'));
         }
 
         $tenantId = $this->context->tenantId();
@@ -78,11 +78,11 @@ final class CreateDemandHistoryExport
         $to = CarbonImmutable::createFromFormat('!Y-m-d', $dateTo, DemandForecastContract::TIMEZONE);
         if ($from === false || $to === false || $from->format('Y-m-d') !== $dateFrom
             || $to->format('Y-m-d') !== $dateTo || $from->greaterThan($to)) {
-            throw new RuntimeException('La période de demande est invalide.');
+            throw new RuntimeException(__('La période de demande est invalide.'));
         }
         $days = (int) $from->diffInDays($to) + 1;
         if ($days < DemandForecastContract::MINIMUM_HISTORY_DAYS || $days > DemandForecastContract::MAXIMUM_HISTORY_DAYS) {
-            throw new RuntimeException('La période de demande doit contenir entre 35 et 731 jours.');
+            throw new RuntimeException(__('La période de demande doit contenir entre 35 et 731 jours.'));
         }
 
         return [$from, $to];
@@ -103,7 +103,7 @@ final class CreateDemandHistoryExport
         $originalName = 'rentfleet_demand_history_'.$runId.'.csv';
         $stream = tmpfile();
         if ($stream === false) {
-            throw new RuntimeException('Impossible de préparer le snapshot de demande privé.');
+            throw new RuntimeException(__('Impossible de préparer le snapshot de demande privé.'));
         }
 
         $disk = Storage::disk((string) config('intelligence.demand_forecasting.disk'));
@@ -127,7 +127,7 @@ final class CreateDemandHistoryExport
             rewind($stream);
 
             if (! $disk->writeStream($storedPath, $stream)) {
-                throw new RuntimeException('Impossible de conserver le snapshot de demande privé.');
+                throw new RuntimeException(__('Impossible de conserver le snapshot de demande privé.'));
             }
 
             return DB::transaction(function () use (
@@ -241,7 +241,7 @@ final class CreateDemandHistoryExport
     ): int {
         if (fwrite($stream, "\xEF\xBB\xBF") !== 3
             || fputcsv($stream, DemandForecastContract::snapshotHeaders(), ';', '"', '', "\n") === false) {
-            throw new RuntimeException('Impossible de générer le snapshot de demande.');
+            throw new RuntimeException(__('Impossible de générer le snapshot de demande.'));
         }
 
         $departuresTotal = 0;
@@ -264,7 +264,7 @@ final class CreateDemandHistoryExport
                 DemandForecastContract::DISTANCE_UNIT,
             ];
             if (fputcsv($stream, $row, ';', '"', '', "\n") === false) {
-                throw new RuntimeException('Impossible de générer une ligne du snapshot de demande.');
+                throw new RuntimeException(__('Impossible de générer une ligne du snapshot de demande.'));
             }
         }
 
@@ -277,7 +277,7 @@ final class CreateDemandHistoryExport
         fflush($stream);
         $stats = fstat($stream);
         if ($stats === false || ! isset($stats['size']) || $stats['size'] <= 0) {
-            throw new RuntimeException('Le snapshot de demande généré est vide.');
+            throw new RuntimeException(__('Le snapshot de demande généré est vide.'));
         }
 
         rewind($stream);

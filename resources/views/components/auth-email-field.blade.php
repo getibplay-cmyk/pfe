@@ -1,7 +1,7 @@
 @props([
     'id' => 'email',
     'name' => 'email',
-    'label' => 'Adresse e-mail',
+    'label' => __('Adresse e-mail'),
     'value' => null,
     'messages' => [],
     'autocomplete' => 'username',

@@ -33,7 +33,7 @@ class CreateContractVersion
                 'currentVersion',
             ])->whereKey($contract)->lockForUpdate()->firstOrFail();
             if (! in_array($locked->status, [RentalContractStatus::Draft, RentalContractStatus::Ready, RentalContractStatus::Accepted], true)) {
-                throw ValidationException::withMessages(['version' => 'Une nouvelle version est autorisée uniquement pendant la préparation ou comme avenant après acceptation.']);
+                throw ValidationException::withMessages(['version' => __('Une nouvelle version est autorisée uniquement pendant la préparation ou comme avenant après acceptation.')]);
             }
             $number = (int) $locked->versions()->max('version_number') + 1;
             $reservation = $locked->reservation;
@@ -70,7 +70,7 @@ class CreateContractVersion
             $locked->forceFill(['current_version_id' => $version->id])->save();
             if ($locked->status === RentalContractStatus::Accepted) {
                 $locked->forceFill(['status' => RentalContractStatus::Ready, 'accepted_at' => null])->save();
-                ContractStatusHistory::create(['rental_contract_id' => $locked->id, 'from_status' => RentalContractStatus::Accepted, 'to_status' => RentalContractStatus::Ready, 'reason' => 'Avenant à accepter : '.$reason, 'changed_by' => $actorId]);
+                ContractStatusHistory::create(['rental_contract_id' => $locked->id, 'from_status' => RentalContractStatus::Accepted, 'to_status' => RentalContractStatus::Ready, 'reason' => __('Avenant à accepter : ').$reason, 'changed_by' => $actorId]);
             }
             $this->audit->record('contract.version.created', $locked, [], ['version_id' => $version->id, 'version_number' => $number, 'content_hash' => $version->content_hash]);
 

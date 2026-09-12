@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -8,7 +9,10 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('locale', LocaleController::class)->middleware('throttle:60,1,locale')->name('locale.update');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
@@ -32,6 +36,15 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'active.account'])->group(function () {
+    Route::get('security/challenge', [AccountSecurityController::class, 'challenge'])->name('security.challenge');
+    Route::post('security/challenge', [AccountSecurityController::class, 'verify'])->middleware('throttle:5,1,mfa-challenge')->name('security.verify');
+    Route::get('profile/security', [AccountSecurityController::class, 'index'])->name('security.index');
+    Route::middleware(['password.confirm', 'throttle:5,1,mfa-management'])->group(function () {
+        Route::post('profile/security/prepare', [AccountSecurityController::class, 'prepare'])->name('security.prepare');
+        Route::post('profile/security/enable', [AccountSecurityController::class, 'enroll'])->name('security.enroll');
+        Route::delete('profile/security/mfa', [AccountSecurityController::class, 'disable'])->name('security.disable');
+        Route::delete('profile/security/session', [AccountSecurityController::class, 'revoke'])->name('security.revoke');
+    });
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 

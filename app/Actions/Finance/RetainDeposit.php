@@ -48,11 +48,11 @@ class RetainDeposit
             }
 
             if ($chargeId !== null && ! ContractCharge::where('rental_contract_id', $locked->id)->whereKey($chargeId)->exists()) {
-                throw ValidationException::withMessages(['related_charge_id' => 'Le frais associé ne fait pas partie de ce contrat.']);
+                throw ValidationException::withMessages(['related_charge_id' => __('Le frais associé ne fait pas partie de ce contrat.')]);
             }
 
             if ($minor === 0 || $minor > $this->ledger->totals($locked)['balance']) {
-                throw ValidationException::withMessages(['amount' => 'La retenue dépasse le solde de caution.']);
+                throw ValidationException::withMessages(['amount' => __('La retenue dépasse le solde de caution.')]);
             }
 
             $entry = DepositTransaction::create([

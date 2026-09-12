@@ -29,7 +29,7 @@ class VehicleCategoryController extends Controller
         $this->authorize('create', VehicleCategory::class);
         VehicleCategory::create($this->validated($request));
 
-        return redirect()->route('vehicle-categories.index')->with('status', 'Catégorie créée.');
+        return redirect()->route('vehicle-categories.index')->with('status', __('Catégorie créée.'));
     }
 
     public function edit(VehicleCategory $vehicleCategory): View
@@ -44,7 +44,7 @@ class VehicleCategoryController extends Controller
         $this->authorize('update', $vehicleCategory);
         $vehicleCategory->update($this->validated($request, $vehicleCategory));
 
-        return redirect()->route('vehicle-categories.index')->with('status', 'Catégorie mise à jour.');
+        return redirect()->route('vehicle-categories.index')->with('status', __('Catégorie mise à jour.'));
     }
 
     public function destroy(VehicleCategory $vehicleCategory): RedirectResponse
@@ -52,7 +52,7 @@ class VehicleCategoryController extends Controller
         $this->authorize('delete', $vehicleCategory);
         $vehicleCategory->delete();
 
-        return back()->with('status', 'Catégorie archivée.');
+        return back()->with('status', __('Catégorie archivée.'));
     }
 
     private function validated(Request $request, ?VehicleCategory $category = null): array

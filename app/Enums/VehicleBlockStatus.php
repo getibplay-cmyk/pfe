@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum VehicleBlockStatus: string
 {
     case Active = 'active';
@@ -10,10 +12,10 @@ enum VehicleBlockStatus: string
 
     public function label(): string
     {
-        return match ($this) {
+        return UiText::t(match ($this) {
             self::Active => 'Actif',
-            self::Released => 'Libéré',
-            self::Cancelled => 'Annulé',
-        };
+            self::Released => UiText::t('Libéré'),
+            self::Cancelled => UiText::t('Annulé'),
+        });
     }
 }

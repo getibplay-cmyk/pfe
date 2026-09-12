@@ -7,6 +7,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleColorPredictionRun;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\VehicleColor\VehicleColorContract;
+use App\Support\Ui\UiText;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -28,7 +29,7 @@ final class AttachPreparedVehicleColorPrediction
             || $run->status !== VehicleColorPredictionStatus::Succeeded
             || ! $run->hasDisplayableCandidate()) {
             throw ValidationException::withMessages([
-                'color_prediction_run' => 'Cette analyse couleur ne peut pas être associée à ce véhicule.',
+                'color_prediction_run' => __('Cette analyse couleur ne peut pas être associée à ce véhicule.'),
             ]);
         }
 
@@ -38,6 +39,7 @@ final class AttachPreparedVehicleColorPrediction
         $suggestedValues = [
             Str::lower((string) $run->suggested_color),
             Str::lower(VehicleColorContract::label($run->suggested_color)),
+            Str::lower(UiText::t(VehicleColorContract::label($run->suggested_color))),
         ];
         $this->audit->record('prediction.vehicle_color.preparation_linked', $run, [], [
             'run_id' => $run->run_id,

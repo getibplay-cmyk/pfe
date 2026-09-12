@@ -27,10 +27,10 @@ class CompleteReturnInspection
         return DB::transaction(function () use ($contract, $data, $actorId) {
             $locked = RentalContract::whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::Active) {
-                throw ValidationException::withMessages(['status' => 'L’inspection de retour exige un contrat actif.']);
+                throw ValidationException::withMessages(['status' => __('L’inspection de retour exige un contrat actif.')]);
             }
             if ($locked->start_mileage === null || (int) $data['mileage'] < $locked->start_mileage) {
-                throw ValidationException::withMessages(['mileage' => 'Le kilométrage retour ne peut être inférieur au départ.']);
+                throw ValidationException::withMessages(['mileage' => __('Le kilométrage retour ne peut être inférieur au départ.')]);
             }
             $departure = $locked->inspections()->where('inspection_type', InspectionType::Departure)->where('status', InspectionStatus::Completed)->with('items')->firstOrFail();
             $inspection = VehicleInspection::create(['agency_id' => $locked->agency_id, 'rental_contract_id' => $locked->id, 'vehicle_id' => $locked->vehicle_id, 'inspection_type' => InspectionType::Return, 'status' => InspectionStatus::Draft, 'inspected_at' => $data['inspected_at'] ?? now(), 'mileage' => $data['mileage'], 'fuel_level' => $data['fuel_level'], 'notes' => $data['notes'] ?? null, 'created_by' => $actorId]);
@@ -47,7 +47,7 @@ class CompleteReturnInspection
             $comparison = $this->compare->handle($departure, $inspection);
             $futureConflicts = $this->compare->futureConflicts($locked, $inspection);
             $locked->forceFill(['status' => RentalContractStatus::ReturnPending, 'return_mileage' => $inspection->mileage, 'return_fuel_level' => $inspection->fuel_level])->save();
-            ContractStatusHistory::create(['rental_contract_id' => $locked->id, 'from_status' => RentalContractStatus::Active, 'to_status' => RentalContractStatus::ReturnPending, 'reason' => count($comparison['damage_candidates']).' anomalie(s) visuelle(s) à revoir', 'changed_by' => $actorId]);
+            ContractStatusHistory::create(['rental_contract_id' => $locked->id, 'from_status' => RentalContractStatus::Active, 'to_status' => RentalContractStatus::ReturnPending, 'reason' => count($comparison['damage_candidates']).__(' anomalie(s) visuelle(s) à revoir'), 'changed_by' => $actorId]);
             $this->audit->record('inspection.return.completed', $inspection, [], ['contract_id' => $locked->id, 'mileage' => $inspection->mileage, 'fuel_level' => $inspection->fuel_level, 'damage_candidates_count' => count($comparison['damage_candidates'])]);
             if ($futureConflicts > 0) {
                 $this->audit->record('inspection.return.future_blocks_impacted', $inspection, [], ['contract_id' => $locked->id, 'future_block_conflicts' => $futureConflicts]);

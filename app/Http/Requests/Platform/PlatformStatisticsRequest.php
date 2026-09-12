@@ -36,7 +36,7 @@ final class PlatformStatisticsRequest extends FormRequest
         return [function (Validator $validator): void {
             $unknown = array_diff(array_keys($this->query->all()), self::ALLOWED_QUERY_KEYS);
             if ($unknown !== []) {
-                $validator->errors()->add('filters', 'Un filtre non pris en charge a été transmis.');
+                $validator->errors()->add('filters', __('Un filtre non pris en charge a été transmis.'));
             }
             if ($validator->errors()->hasAny(['date_from', 'date_to'])) {
                 return;
@@ -53,7 +53,7 @@ final class PlatformStatisticsRequest extends FormRequest
                 config('app.timezone'),
             )->addDay()->startOfDay();
             if ($startsAt->diffInDays($endsAt) > 366) {
-                $validator->errors()->add('date_to', 'La période ne peut pas dépasser 366 jours.');
+                $validator->errors()->add('date_to', __('La période ne peut pas dépasser 366 jours.'));
             }
         }];
     }

@@ -16,12 +16,12 @@ class ResolveTenantContext
     {
         $user = $request->user();
 
-        abort_unless($user?->is_active, 403, 'Ce compte est inactif.');
-        abort_if($user->is_platform_admin, 403, 'Utilisez les routes d’administration de plateforme.');
+        abort_unless($user?->is_active, 403, __('Ce compte est inactif.'));
+        abort_if($user->is_platform_admin, 403, __('Utilisez les routes d’administration de plateforme.'));
         $tenantIsActive = $user->tenant_id && DB::table('tenants')->where('id', $user->tenant_id)->where('status', 'active')->whereNull('deleted_at')->exists();
-        abort_unless($tenantIsActive, 403, 'Aucune entreprise cliente active n’est associée à ce compte.');
+        abort_unless($tenantIsActive, 403, __('Aucune entreprise cliente active n’est associée à ce compte.'));
         $agencyIsActive = $user->agency_id === null || DB::table('agencies')->where('id', $user->agency_id)->where('tenant_id', $user->tenant_id)->where('is_active', true)->whereNull('deleted_at')->exists();
-        abort_unless($agencyIsActive, 403, 'Cette agence est inactive.');
+        abort_unless($agencyIsActive, 403, __('Cette agence est inactive.'));
 
         $this->context->setFromUser($user);
 

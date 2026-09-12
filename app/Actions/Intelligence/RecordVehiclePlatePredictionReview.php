@@ -44,7 +44,7 @@ final class RecordVehiclePlatePredictionReview
                 ->findOrFail($run->id);
             if ($locked->status !== VehiclePlatePredictionStatus::Succeeded) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Seule une analyse terminée peut être revue.',
+                    'decision' => __('Seule une analyse terminée peut être revue.'),
                 ]);
             }
             if ($locked->review !== null) {
@@ -56,21 +56,21 @@ final class RecordVehiclePlatePredictionReview
             } elseif (! is_string($verifiedCanonical)
                 || ! VehiclePlateHybridContract::isCanonical($verifiedCanonical)) {
                 throw ValidationException::withMessages([
-                    'verified_canonical' => 'Saisissez une plaque marocaine complète au format 12345|أ|7.',
+                    'verified_canonical' => __('Saisissez une plaque marocaine complète au format 12345|أ|7.'),
                 ]);
             }
             if ($decision === VehiclePlateReviewDecision::Confirmed
                 && (! is_string($locked->suggested_canonical)
                     || ! hash_equals($locked->suggested_canonical, $verifiedCanonical ?? ''))) {
                 throw ValidationException::withMessages([
-                    'decision' => 'Une confirmation doit reprendre exactement la suggestion complète.',
+                    'decision' => __('Une confirmation doit reprendre exactement la suggestion complète.'),
                 ]);
             }
             if ($decision === VehiclePlateReviewDecision::Corrected
                 && is_string($locked->suggested_canonical)
                 && hash_equals($locked->suggested_canonical, $verifiedCanonical ?? '')) {
                 throw ValidationException::withMessages([
-                    'verified_canonical' => 'La correction doit être différente de la suggestion ; utilisez « Confirmée » sinon.',
+                    'verified_canonical' => __('La correction doit être différente de la suggestion ; utilisez « Confirmée » sinon.'),
                 ]);
             }
 

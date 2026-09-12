@@ -21,10 +21,10 @@ class ApproveMaintenanceOrder
             return DB::transaction(function () use ($order, $actorId) {
                 $locked = MaintenanceOrder::whereKey($order)->lockForUpdate()->firstOrFail();
                 if ($locked->status !== 'planned' || ! $locked->scheduled_start_at || ! $locked->scheduled_end_at) {
-                    throw ValidationException::withMessages(['maintenance' => 'Une maintenance planifiée avec une période valide est requise.']);
+                    throw ValidationException::withMessages(['maintenance' => __('Une maintenance planifiée avec une période valide est requise.')]);
                 }
                 if (VehicleBlock::query()->where('maintenance_order_id', $locked->id)->lockForUpdate()->exists()) {
-                    throw ValidationException::withMessages(['maintenance' => 'Cette maintenance possède déjà un bloc véhicule.']);
+                    throw ValidationException::withMessages(['maintenance' => __('Cette maintenance possède déjà un bloc véhicule.')]);
                 }
                 VehicleBlock::create([
                     'agency_id' => $locked->agency_id, 'vehicle_id' => $locked->vehicle_id, 'maintenance_order_id' => $locked->id,
@@ -40,7 +40,7 @@ class ApproveMaintenanceOrder
             });
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23P01') {
-                throw ValidationException::withMessages(['schedule' => 'Cette période chevauche une réservation ou un autre bloc actif.']);
+                throw ValidationException::withMessages(['schedule' => __('Cette période chevauche une réservation ou un autre bloc actif.')]);
             }
             throw $exception;
         }

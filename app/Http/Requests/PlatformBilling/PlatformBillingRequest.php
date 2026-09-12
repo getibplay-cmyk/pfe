@@ -26,7 +26,7 @@ abstract class PlatformBillingRequest extends FormRequest
             );
 
             foreach ($unknown as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé.'));
             }
         }];
     }

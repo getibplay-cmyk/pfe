@@ -49,7 +49,7 @@ class StoreAgencyDistanceRequest extends FormRequest
                 'source_reference', 'same_distance_both_ways',
             ];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour une distance inter-agences.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé pour une distance inter-agences.'));
             }
         }];
     }

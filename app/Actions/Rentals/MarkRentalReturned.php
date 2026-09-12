@@ -23,20 +23,20 @@ class MarkRentalReturned
         return DB::transaction(function () use ($contract, $decisions, $actorId) {
             $locked = RentalContract::with(['damages', 'charges', 'inspections'])->whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::ReturnPending) {
-                throw ValidationException::withMessages(['status' => 'Seul un retour en attente peut être finalisé.']);
+                throw ValidationException::withMessages(['status' => __('Seul un retour en attente peut être finalisé.')]);
             }
             if (! $locked->inspections->contains(fn ($inspection) => $inspection->inspection_type->value === 'return' && $inspection->status->value === 'completed')) {
-                throw ValidationException::withMessages(['inspection' => 'Une inspection de retour terminée est requise.']);
+                throw ValidationException::withMessages(['inspection' => __('Une inspection de retour terminée est requise.')]);
             }
             if ($locked->damages->contains(fn ($damage) => in_array($damage->status, [DamageStatus::Reported, DamageStatus::UnderReview], true) || $damage->responsibility === DamageResponsibility::Pending)) {
-                throw ValidationException::withMessages(['damages' => 'Chaque dommage doit faire l’objet d’une revue humaine finale.']);
+                throw ValidationException::withMessages(['damages' => __('Chaque dommage doit faire l’objet d’une revue humaine finale.')]);
             }
 
             $approved = collect($decisions['approved_charge_ids'] ?? [])->map(fn ($id) => (int) $id);
             $rejected = collect($decisions['rejected_charge_ids'] ?? [])->map(fn ($id) => (int) $id);
             $proposed = $locked->charges->where('status', ContractChargeStatus::Proposed)->pluck('id');
             if ($approved->intersect($rejected)->isNotEmpty() || $proposed->diff($approved->merge($rejected))->isNotEmpty()) {
-                throw ValidationException::withMessages(['charges' => 'Chaque frais proposé doit être explicitement approuvé ou rejeté.']);
+                throw ValidationException::withMessages(['charges' => __('Chaque frais proposé doit être explicitement approuvé ou rejeté.')]);
             }
 
             $locked->charges()->whereIn('id', $approved)->update(['status' => ContractChargeStatus::Approved->value, 'approved_by' => $actorId, 'approved_at' => now()]);

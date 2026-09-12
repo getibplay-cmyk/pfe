@@ -25,7 +25,7 @@ class ResolveCustomerPortal
         } catch (HttpExceptionInterface|ModelNotFoundException) {
             $request->session()->forget('customer_portal');
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Cet accès est indisponible. Demandez un nouveau lien à votre agence.'], 403);
+                return response()->json(['message' => __('Cet accès est indisponible. Demandez un nouveau lien à votre agence.')], 403);
             }
 
             return response()->view('portal.expired', [], 403);
@@ -34,6 +34,12 @@ class ResolveCustomerPortal
         $request->attributes->set('portal_access', $access);
         $request->attributes->set('portal_expires_at', $access->session_expires_at->min($access->expires_at));
 
-        return app(TenantContext::class)->run((int) $access->tenant_id, fn () => $next($request), (int) $access->agency_id);
+        $previousResolver = $request->getUserResolver();
+        $request->setUserResolver(fn () => null);
+        try {
+            return app(TenantContext::class)->run((int) $access->tenant_id, fn () => $next($request), (int) $access->agency_id);
+        } finally {
+            $request->setUserResolver($previousResolver);
+        }
     }
 }

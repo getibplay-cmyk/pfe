@@ -52,65 +52,65 @@ class DashboardController extends Controller
                     $timezone,
                 );
                 $canonicalReport = $reports->handle($criteria);
-                $kpis['Réservations confirmées (mois)'] = $canonicalReport['operational']['reservations']['confirmed'];
-                $kpis['Retours attendus (mois)'] = $canonicalReport['operational']['contracts']['expected_returns'];
-                $kpis['Taux d’utilisation (mois)'] = $canonicalReport['operational']['utilization']['rate'].' %';
+                $kpis[__('Réservations confirmées (mois)')] = $canonicalReport['operational']['reservations']['confirmed'];
+                $kpis[__('Retours attendus (mois)')] = $canonicalReport['operational']['contracts']['expected_returns'];
+                $kpis[__('Taux d’utilisation (mois)')] = $canonicalReport['operational']['utilization']['rate'].' %';
             }
         }
 
         if ($user->hasPermission('vehicle.view')) {
-            $kpis['Véhicules opérationnels'] = $scope(Vehicle::query())->where('operational_status', 'active')->count();
-            $kpis['Véhicules indisponibles'] = $scope(Vehicle::query())->whereIn('operational_status', ['maintenance', 'out_of_service'])->count();
+            $kpis[__('Véhicules opérationnels')] = $scope(Vehicle::query())->where('operational_status', 'active')->count();
+            $kpis[__('Véhicules indisponibles')] = $scope(Vehicle::query())->whereIn('operational_status', ['maintenance', 'out_of_service'])->count();
         }
         if ($user->hasPermission('reservation.view') && $canonicalReport === null) {
-            $kpis['Réservations confirmées'] = $scope(Reservation::query())->where('status', 'confirmed')->count();
-            $kpis['Départs dans les 7 jours'] = $scope(Reservation::query())->where('status', 'confirmed')->whereBetween('starts_at', [$now, $now->copy()->addDays(7)])->count();
+            $kpis[__('Réservations confirmées')] = $scope(Reservation::query())->where('status', 'confirmed')->count();
+            $kpis[__('Départs dans les 7 jours')] = $scope(Reservation::query())->where('status', 'confirmed')->whereBetween('starts_at', [$now, $now->copy()->addDays(7)])->count();
         }
         if ($user->hasPermission('contract.view') && $canonicalReport === null) {
-            $kpis['Retours à traiter'] = $scope(RentalContract::query())->whereIn('status', ['active', 'return_pending'])->where('expected_return_at', '<=', $now->copy()->addDays(7))->count();
+            $kpis[__('Retours à traiter')] = $scope(RentalContract::query())->whereIn('status', ['active', 'return_pending'])->where('expected_return_at', '<=', $now->copy()->addDays(7))->count();
         }
         if ($user->hasPermission('invoice.view')) {
             if ($canonicalReport !== null) {
                 foreach ($canonicalReport['financial']['currencies'] as $reportCurrency => $values) {
-                    $kpis['Factures émises ('.$reportCurrency.', mois)'] = $values['issued_invoices'];
-                    $kpis['Solde dû ('.$reportCurrency.', mois)'] = UiLabel::money($values['outstanding_balance'], $reportCurrency);
+                    $kpis[__('Factures émises (').$reportCurrency.', mois)'] = $values['issued_invoices'];
+                    $kpis[__('Solde dû (').$reportCurrency.', mois)'] = UiLabel::money($values['outstanding_balance'], $reportCurrency);
                 }
             } else {
                 $invoiceRows = $scope(Invoice::query())->whereIn('status', ['issued', 'partially_paid'])
                     ->selectRaw('currency, COUNT(*) AS aggregate, SUM(balance_due) AS balance')
                     ->groupBy('currency')->orderBy('currency')->get();
                 foreach ($invoiceRows as $row) {
-                    $kpis['Factures impayées ('.$row->currency.')'] = (int) $row->aggregate;
-                    $kpis['Solde client à recevoir ('.$row->currency.')'] = UiLabel::money((string) $row->balance, $row->currency);
+                    $kpis[__('Factures impayées (').$row->currency.')'] = (int) $row->aggregate;
+                    $kpis[__('Solde client à recevoir (').$row->currency.')'] = UiLabel::money((string) $row->balance, $row->currency);
                 }
             }
         }
         if ($user->hasPermission('maintenance.view')) {
             $maintenanceSummary = [
-                'Planifiées à venir' => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->whereBetween('scheduled_start_at', [$now, $soon])->count(),
-                'En retard' => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->where('scheduled_start_at', '<', $now)->count(),
-                'En cours' => $scope(MaintenanceOrder::query())->where('status', 'in_progress')->count(),
-                'Échéances kilométriques' => $scope(MaintenanceOrder::query())->whereNotNull('next_due_mileage')->whereHas('vehicle', fn (Builder $query) => $query->whereColumn('vehicles.current_mileage', '>=', 'maintenance_orders.next_due_mileage'))->count(),
-                'Échéances calendaires' => $scope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', $soon)->count(),
+                __('Planifiées à venir') => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->whereBetween('scheduled_start_at', [$now, $soon])->count(),
+                __('En retard') => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->where('scheduled_start_at', '<', $now)->count(),
+                __('En cours') => $scope(MaintenanceOrder::query())->where('status', 'in_progress')->count(),
+                __('Échéances kilométriques') => $scope(MaintenanceOrder::query())->whereNotNull('next_due_mileage')->whereHas('vehicle', fn (Builder $query) => $query->whereColumn('vehicles.current_mileage', '>=', 'maintenance_orders.next_due_mileage'))->count(),
+                __('Échéances calendaires') => $scope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', $soon)->count(),
             ];
         }
         if ($user->hasPermission('claim.view') && $canonicalReport === null) {
-            $kpis['Sinistres ouverts'] = $scope(InsuranceClaim::query())->whereNotIn('status', ['rejected', 'closed'])->count();
+            $kpis[__('Sinistres ouverts')] = $scope(InsuranceClaim::query())->whereNotIn('status', ['rejected', 'closed'])->count();
         } elseif ($user->hasPermission('claim.view')) {
-            $kpis['Sinistres ouverts'] = $canonicalReport['operational']['insurance']['open_claims'];
+            $kpis[__('Sinistres ouverts')] = $canonicalReport['operational']['insurance']['open_claims'];
         }
         if ($user->hasPermission('insurance.view')) {
             $insuranceSummary = [
-                'Polices expirant sous 30 jours' => $scope(InsurancePolicy::query())->where('status', 'active')->whereBetween('ends_at', [$now->toDateString(), $soon->toDateString()])->count(),
-                'Polices expirées non renouvelées' => $scope(InsurancePolicy::query())->where('status', 'expired')->whereDoesntHave('renewals')->count(),
-                'Véhicules actifs sans police' => $scope(Vehicle::query())->where('operational_status', 'active')->whereDoesntHave('insurancePolicies', fn (Builder $query) => $query->where('status', 'active'))->count(),
-                'Documents de police manquants ou expirants' => $scope(InsurancePolicy::query())->where('status', 'active')->where(function (Builder $query) use ($soon): void {
+                __('Polices expirant sous 30 jours') => $scope(InsurancePolicy::query())->where('status', 'active')->whereBetween('ends_at', [$now->toDateString(), $soon->toDateString()])->count(),
+                __('Polices expirées non renouvelées') => $scope(InsurancePolicy::query())->where('status', 'expired')->whereDoesntHave('renewals')->count(),
+                __('Véhicules actifs sans police') => $scope(Vehicle::query())->where('operational_status', 'active')->whereDoesntHave('insurancePolicies', fn (Builder $query) => $query->where('status', 'active'))->count(),
+                __('Documents de police manquants ou expirants') => $scope(InsurancePolicy::query())->where('status', 'active')->where(function (Builder $query) use ($soon): void {
                     $query->whereNull('document_id')->orWhereHas('currentDocument', fn (Builder $document) => $document->whereNotNull('retention_until')->whereDate('retention_until', '<=', $soon));
                 })->count(),
             ];
             if ($user->hasPermission('claim.view')) {
-                $insuranceSummary['Sinistres en revue'] = $scope(InsuranceClaim::query())->where('status', 'under_review')->count();
-                $insuranceSummary['Sinistres approuvés non réglés'] = $scope(InsuranceClaim::query())->where('status', 'approved')->count();
+                $insuranceSummary[__('Sinistres en revue')] = $scope(InsuranceClaim::query())->where('status', 'under_review')->count();
+                $insuranceSummary[__('Sinistres approuvés non réglés')] = $scope(InsuranceClaim::query())->where('status', 'approved')->count();
             }
         }
 

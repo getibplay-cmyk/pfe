@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum InsuranceClaimStatus: string
 {
     case Reported = 'reported';
@@ -14,15 +16,15 @@ enum InsuranceClaimStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Reported => 'Déclaré',
+        return UiText::t(match ($this) {
+            self::Reported => UiText::t('Déclaré'),
             self::Submitted => 'Soumis',
-            self::UnderReview => 'En revue',
-            self::Approved => 'Approuvé',
-            self::Rejected => 'Rejeté',
-            self::Settled => 'Réglé',
-            self::Closed => 'Clôturé',
-        };
+            self::UnderReview => UiText::t('En revue'),
+            self::Approved => UiText::t('Approuvé'),
+            self::Rejected => UiText::t('Rejeté'),
+            self::Settled => UiText::t('Réglé'),
+            self::Closed => UiText::t('Clôturé'),
+        });
     }
 
     public function canTransitionTo(self $target): bool

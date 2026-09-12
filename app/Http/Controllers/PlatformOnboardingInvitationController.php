@@ -58,7 +58,7 @@ class PlatformOnboardingInvitationController extends Controller
     ): RedirectResponse {
         if ($this->mailerWritesToLogs((string) config('mail.default'))) {
             return back()->withInput()->withErrors([
-                'email' => 'Configurez un transport e-mail réel avant l’envoi : le transport « log » exposerait le lien personnel dans les journaux.',
+                'email' => __('Configurez un transport e-mail réel avant l’envoi : le transport « log » exposerait le lien personnel dans les journaux.'),
             ]);
         }
 
@@ -75,12 +75,12 @@ class PlatformOnboardingInvitationController extends Controller
             ]);
 
             return back()->withInput()->withErrors([
-                'email' => 'L’invitation n’a pas pu être envoyée. Elle a été révoquée ; vérifiez la configuration e-mail puis recommencez.',
+                'email' => __('L’invitation n’a pas pu être envoyée. Elle a été révoquée ; vérifiez la configuration e-mail puis recommencez.'),
             ]);
         }
 
         return redirect()->route('platform.onboarding-invitations.index')
-            ->with('status', 'Invitation envoyée. Le lien personnel ne sera jamais affiché ni conservé en clair.');
+            ->with('status', __('Invitation envoyée. Le lien personnel ne sera jamais affiché ni conservé en clair.'));
     }
 
     public function revoke(
@@ -90,7 +90,7 @@ class PlatformOnboardingInvitationController extends Controller
     ): RedirectResponse {
         $revoke->handle($invitation, $request->user()->getKey());
 
-        return back()->with('status', 'Invitation révoquée. Son lien n’est plus utilisable.');
+        return back()->with('status', __('Invitation révoquée. Son lien n’est plus utilisable.'));
     }
 
     /** @param array<string, bool> $visited */

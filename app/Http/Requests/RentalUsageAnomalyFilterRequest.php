@@ -72,7 +72,7 @@ class RentalUsageAnomalyFilterRequest extends FormRequest
                 'tenant', 'tenant_id', 'model', 'budget', 'score', 'run',
             ];
             foreach (array_diff(array_keys($this->query()), $declared) as $key) {
-                $validator->errors()->add($key, 'Ce filtre n’est pas autorisé.');
+                $validator->errors()->add($key, __('Ce filtre n’est pas autorisé.'));
             }
 
             if ($validator->errors()->hasAny(['date_from', 'date_to'])) {
@@ -81,13 +81,13 @@ class RentalUsageAnomalyFilterRequest extends FormRequest
 
             [$from, $to] = $this->effectiveDates();
             if ($from->isAfter($to)) {
-                $validator->errors()->add('date_to', 'La date de fin doit être postérieure ou égale à la date de début.');
+                $validator->errors()->add('date_to', __('La date de fin doit être postérieure ou égale à la date de début.'));
 
                 return;
             }
 
             if ($from->diffInDays($to) > self::MAX_PERIOD_DAYS) {
-                $validator->errors()->add('date_to', 'La période de consultation ne peut pas dépasser 366 jours.');
+                $validator->errors()->add('date_to', __('La période de consultation ne peut pas dépasser 366 jours.'));
             }
         }];
     }

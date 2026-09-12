@@ -18,7 +18,7 @@ class CalculateReturnCharges
         return DB::transaction(function () use ($contract, $manual) {
             $locked = RentalContract::with('currentVersion')->whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::ReturnPending) {
-                throw ValidationException::withMessages(['status' => 'Les frais retour exigent un contrat en attente de retour.']);
+                throw ValidationException::withMessages(['status' => __('Les frais retour exigent un contrat en attente de retour.')]);
             }
             $locked->charges()->where('status', 'proposed')->whereIn('charge_type', ['late_fee', 'extra_kilometre', 'missing_fuel', 'cleaning'])->delete();
             $terms = $locked->currentVersion->terms_snapshot;
@@ -27,20 +27,21 @@ class CalculateReturnCharges
             $lateSeconds = max(0, $locked->expected_return_at->diffInSeconds($actualReturnAt, false));
             $lateHours = (int) ceil($lateSeconds / 3600);
             if ($lateHours > 0 && ! empty($terms['late_hour_rate'])) {
-                $details[] = $this->charge($locked, ContractChargeType::LateFee, 'Heures de retard', (string) $lateHours, $terms['late_hour_rate'], ['late_seconds' => $lateSeconds, 'rounding' => 'ceil_hour']);
+                $details[] = $this->charge($locked, ContractChargeType::LateFee, __('Heures de retard'), (string) $lateHours, $terms['late_hour_rate'], ['late_seconds' => $lateSeconds, 'rounding' => 'ceil_hour']);
             }
             $travelled = max(0, (int) $locked->return_mileage - (int) $locked->start_mileage);
             $included = (int) ($terms['included_km_per_day'] ?? 0) * (int) ($locked->reservation->billed_days ?? 1);
+            $included += array_sum(array_map(fn (array $extension) => (int) ($extension['included_km'] ?? 0), $locked->currentVersion->pricing_snapshot['extensions'] ?? []));
             $extra = max(0, $travelled - $included);
             if ($extra > 0 && ! empty($terms['extra_km_rate'])) {
-                $details[] = $this->charge($locked, ContractChargeType::ExtraKilometre, 'Kilomètres supplémentaires', (string) $extra, $terms['extra_km_rate'], ['travelled_km' => $travelled, 'included_km' => $included]);
+                $details[] = $this->charge($locked, ContractChargeType::ExtraKilometre, __('Kilomètres supplémentaires'), (string) $extra, $terms['extra_km_rate'], ['travelled_km' => $travelled, 'included_km' => $included]);
             }
             $missingFuel = max(0, $this->hundredths($locked->start_fuel_level) - $this->hundredths($locked->return_fuel_level));
             if ($missingFuel > 0) {
-                $details[] = $this->charge($locked, ContractChargeType::MissingFuel, 'Carburant manquant', $this->fromHundredths($missingFuel), $terms['fuel_policy']['missing_unit_rate'] ?? config('rentals.missing_fuel_unit_rate'), ['start_fuel' => $locked->start_fuel_level, 'return_fuel' => $locked->return_fuel_level]);
+                $details[] = $this->charge($locked, ContractChargeType::MissingFuel, __('Carburant manquant'), $this->fromHundredths($missingFuel), $terms['fuel_policy']['missing_unit_rate'] ?? config('rentals.missing_fuel_unit_rate'), ['start_fuel' => $locked->start_fuel_level, 'return_fuel' => $locked->return_fuel_level]);
             }
             if (($manual['cleaning_approved'] ?? false) && DecimalMoney::toMinorUnits($manual['cleaning_amount'] ?? '0.00') > 0) {
-                $details[] = $this->charge($locked, ContractChargeType::Cleaning, 'Nettoyage approuvé manuellement', '1.00', $manual['cleaning_amount'], ['manual_approval' => true]);
+                $details[] = $this->charge($locked, ContractChargeType::Cleaning, __('Nettoyage approuvé manuellement'), '1.00', $manual['cleaning_amount'], ['manual_approval' => true]);
             }
 
             return ['late_hours' => $lateHours, 'travelled_km' => $travelled, 'included_km' => $included, 'extra_km' => $extra, 'missing_fuel' => $this->fromHundredths($missingFuel), 'charges' => $details];
@@ -58,7 +59,7 @@ class CalculateReturnCharges
     {
         $normalized = trim((string) ($value ?? 0));
         if (! preg_match('/^(\d+)(?:\.(\d{1,2}))?$/', $normalized, $matches)) {
-            throw ValidationException::withMessages(['amount' => 'Valeur décimale invalide.']);
+            throw ValidationException::withMessages(['amount' => __('Valeur décimale invalide.')]);
         }
 
         return ((int) $matches[1] * 100) + (int) str_pad($matches[2] ?? '', 2, '0');

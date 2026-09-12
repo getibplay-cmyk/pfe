@@ -21,7 +21,7 @@ class TransitionInsuranceClaim
             $from = $locked->status;
 
             if (! $from->canTransitionTo($target)) {
-                throw ValidationException::withMessages(['status' => 'Cette transition de sinistre n’est pas autorisée.']);
+                throw ValidationException::withMessages(['status' => __('Cette transition de sinistre n’est pas autorisée.')]);
             }
 
             $updates = ['status' => $target];
@@ -34,7 +34,7 @@ class TransitionInsuranceClaim
             if ($target === InsuranceClaimStatus::Approved) {
                 $approved = $this->amount($data, 'approved_amount');
                 if ($approved > DecimalMoney::toMinorUnits($locked->claimed_amount)) {
-                    throw ValidationException::withMessages(['approved_amount' => 'Le montant approuvé ne peut pas dépasser le montant demandé.']);
+                    throw ValidationException::withMessages(['approved_amount' => __('Le montant approuvé ne peut pas dépasser le montant demandé.')]);
                 }
                 $updates['approved_amount'] = DecimalMoney::fromMinorUnits($approved);
                 $updates['reviewed_at'] = now();
@@ -45,7 +45,7 @@ class TransitionInsuranceClaim
             if ($target === InsuranceClaimStatus::Settled) {
                 $settled = $this->amount($data, 'settled_amount');
                 if ($settled > DecimalMoney::toMinorUnits($locked->approved_amount)) {
-                    throw ValidationException::withMessages(['settled_amount' => 'Le montant réglé ne peut pas dépasser le montant approuvé.']);
+                    throw ValidationException::withMessages(['settled_amount' => __('Le montant réglé ne peut pas dépasser le montant approuvé.')]);
                 }
                 $updates['settled_amount'] = DecimalMoney::fromMinorUnits($settled);
             }
@@ -69,12 +69,12 @@ class TransitionInsuranceClaim
     private function amount(array $data, string $field): int
     {
         if (! isset($data[$field]) || $data[$field] === '') {
-            throw ValidationException::withMessages([$field => 'Ce montant est requis pour cette transition.']);
+            throw ValidationException::withMessages([$field => __('Ce montant est requis pour cette transition.')]);
         }
 
         $amount = DecimalMoney::toMinorUnits($data[$field]);
         if ($amount <= 0) {
-            throw ValidationException::withMessages([$field => 'Ce montant doit être strictement positif.']);
+            throw ValidationException::withMessages([$field => __('Ce montant doit être strictement positif.')]);
         }
 
         return $amount;

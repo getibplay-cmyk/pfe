@@ -4,6 +4,7 @@ namespace App\Support\Intelligence\DemandForecasting;
 
 use App\Exceptions\DemandForecastValidationException;
 use App\Models\DemandHistoryExportRun;
+use App\Support\Ui\UiText;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Support\Str;
@@ -30,21 +31,21 @@ final class DemandForecastBatchValidator
         try {
             $decoded = json_decode($json, true, 128, JSON_THROW_ON_ERROR | JSON_BIGINT_AS_STRING);
         } catch (JsonException) {
-            throw DemandForecastValidationException::at('$', 'JSON UTF-8 invalide');
+            throw DemandForecastValidationException::at('$', UiText::t('JSON UTF-8 invalide'));
         }
 
         $payload = $this->closedObject($decoded, self::ROOT_KEYS, '$');
         $this->same($payload['schema_version'], DemandForecastContract::RESULT_SCHEMA_VERSION, 'schema_version');
         if ($history->observed_departures_count < 1) {
-            $this->fail('dataset', 'le snapshot ne contient aucun départ observé');
+            $this->fail('dataset', UiText::t('le snapshot ne contient aucun départ observé'));
         }
         $batchId = $this->uuid($payload['batch_id'], 'batch_id');
         $generatedAt = $this->utcDateTime($payload['generated_at'], 'generated_at');
         if ($generatedAt->getTimestamp() < $history->created_at->getTimestamp()) {
-            $this->fail('generated_at', 'doit être postérieur ou égal à la création du snapshot');
+            $this->fail('generated_at', UiText::t('doit être postérieur ou égal à la création du snapshot'));
         }
         if ($generatedAt->getTimestamp() > now('UTC')->addMinutes(5)->getTimestamp()) {
-            $this->fail('generated_at', 'ne peut pas être situé dans le futur');
+            $this->fail('generated_at', UiText::t('ne peut pas être situé dans le futur'));
         }
 
         $model = $this->closedObject($payload['model'], [
@@ -128,7 +129,7 @@ final class DemandForecastBatchValidator
 
         $values = $this->closedList($payload['forecasts'], 'forecasts');
         if (count($values) !== 7) {
-            $this->fail('forecasts', 'doit contenir exactement les horizons D+1 à D+7');
+            $this->fail('forecasts', UiText::t('doit contenir exactement les horizons D+1 à D+7'));
         }
 
         $forecasts = [];
@@ -178,7 +179,7 @@ final class DemandForecastBatchValidator
                 $this->fail($path, 'les quantiles doivent respecter P05 ≤ P50 ≤ P90 ≤ P95');
             }
             if (! is_bool($row['raw_any_crossing']) || ! is_bool($row['monotone_adjusted'])) {
-                $this->fail($path, 'les indicateurs de monotonie doivent être booléens');
+                $this->fail($path, UiText::t('les indicateurs de monotonie doivent être booléens'));
             }
 
             $row['explanations'] = $this->explanations($row['explanations'], $path.'.explanations');
@@ -251,10 +252,10 @@ final class DemandForecastBatchValidator
                 $itemPath,
             );
             if (! is_string($item['feature']) || ! in_array($item['feature'], $allowed, true)) {
-                $this->fail($itemPath.'.feature', 'facteur non autorisé');
+                $this->fail($itemPath.'.feature', UiText::t('facteur non autorisé'));
             }
             if (isset($seen[$item['feature']])) {
-                $this->fail($itemPath.'.feature', 'facteur dupliqué');
+                $this->fail($itemPath.'.feature', UiText::t('facteur dupliqué'));
             }
             $seen[$item['feature']] = true;
             $contribution = $this->signedDecimal(
@@ -280,7 +281,7 @@ final class DemandForecastBatchValidator
         sort($actualKeys, SORT_STRING);
         sort($expectedKeys, SORT_STRING);
         if ($actualKeys !== $expectedKeys) {
-            $this->fail($path, 'clés JSON absentes ou inconnues');
+            $this->fail($path, UiText::t('clés JSON absentes ou inconnues'));
         }
 
         return $value;
@@ -299,7 +300,7 @@ final class DemandForecastBatchValidator
     private function unsignedDecimal(mixed $value, string $path): float
     {
         if (! is_string($value) || preg_match('/^(?:0|[1-9][0-9]{0,7})\.[0-9]{6}$/D', $value) !== 1) {
-            $this->fail($path, 'décimal positif à six chiffres après la virgule attendu');
+            $this->fail($path, UiText::t('décimal positif à six chiffres après la virgule attendu'));
         }
 
         return (float) $value;
@@ -308,7 +309,7 @@ final class DemandForecastBatchValidator
     private function signedDecimal(mixed $value, string $path): float
     {
         if (! is_string($value) || preg_match('/^-?(?:0|[1-9][0-9]{0,7})\.[0-9]{6}$/D', $value) !== 1) {
-            $this->fail($path, 'contribution signée à six chiffres après la virgule attendue');
+            $this->fail($path, UiText::t('contribution signée à six chiffres après la virgule attendue'));
         }
 
         return (float) $value;
@@ -324,7 +325,7 @@ final class DemandForecastBatchValidator
     private function uuid(mixed $value, string $path): string
     {
         if (! is_string($value) || ! Str::isUuid($value) || $value !== strtolower($value)) {
-            $this->fail($path, 'UUID invalide');
+            $this->fail($path, UiText::t('UUID invalide'));
         }
 
         return strtolower($value);

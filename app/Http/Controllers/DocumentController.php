@@ -78,7 +78,7 @@ class DocumentController extends Controller
         ]);
         $action->handle($maintenance, $data, $request->file('file'), $request->user()->id);
 
-        return back()->with('status', 'Document privé de maintenance ajouté.');
+        return back()->with('status', __('Document privé de maintenance ajouté.'));
     }
 
     public function storeForInsurancePolicy(Request $request, InsurancePolicy $policy, StorePrivateDocument $action): RedirectResponse
@@ -86,7 +86,7 @@ class DocumentController extends Controller
         $this->authorize('uploadDocument', $policy);
         $this->storeInsuranceDocument($request, $policy, DocumentType::insurancePolicyTypes(), $action);
 
-        return back()->with('status', 'Document privé de police ajouté.');
+        return back()->with('status', __('Document privé de police ajouté.'));
     }
 
     public function storeForInsuranceClaim(Request $request, InsuranceClaim $claim, StorePrivateDocument $action): RedirectResponse
@@ -94,7 +94,7 @@ class DocumentController extends Controller
         $this->authorize('uploadDocument', $claim);
         $this->storeInsuranceDocument($request, $claim, DocumentType::insuranceClaimTypes(), $action);
 
-        return back()->with('status', 'Document privé de sinistre ajouté.');
+        return back()->with('status', __('Document privé de sinistre ajouté.'));
     }
 
     public function show(Request $request, Document $document): View
@@ -112,7 +112,7 @@ class DocumentController extends Controller
         $request->validate(['tenant_id' => ['prohibited'], 'stored_path' => ['prohibited'], 'file' => ['required', 'file', 'max:'.config('documents.max_size_kb')]]);
         $action->handle($document, $request->file('file'), $request->user()->id);
 
-        return back()->with('status', 'Nouvelle version ajoutée.');
+        return back()->with('status', __('Nouvelle version ajoutée.'));
     }
 
     public function download(Request $request, Document $document, DownloadPrivateDocument $action): StreamedResponse
@@ -137,7 +137,7 @@ class DocumentController extends Controller
             default => route('customers.index'),
         };
 
-        return redirect($redirect)->with('status', 'Document archivé ; le fichier privé et ses versions sont conservés.');
+        return redirect($redirect)->with('status', __('Document archivé ; le fichier privé et ses versions sont conservés.'));
     }
 
     private function store(Request $request, Model $documentable, StorePrivateDocument $action): RedirectResponse
@@ -146,7 +146,7 @@ class DocumentController extends Controller
         $data = $request->validate(['tenant_id' => ['prohibited'], 'stored_path' => ['prohibited'], 'documentable_type' => ['prohibited'], 'document_type' => ['required', Rule::enum(DocumentType::class)], 'title' => ['required', 'max:255'], 'retention_until' => ['nullable', 'date'], 'is_sensitive' => ['required', 'boolean'], 'file' => ['required', 'file', 'max:'.config('documents.max_size_kb')]]);
         $action->handle($documentable, $data, $request->file('file'), $request->user()->id);
 
-        return back()->with('status', 'Document privé ajouté.');
+        return back()->with('status', __('Document privé ajouté.'));
     }
 
     private function storeInsuranceDocument(Request $request, Model $owner, array $types, StorePrivateDocument $action): void

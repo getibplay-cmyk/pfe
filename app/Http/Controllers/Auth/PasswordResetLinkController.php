@@ -49,7 +49,7 @@ class PasswordResetLinkController extends Controller
             }
         }
 
-        return back()->with('status', 'Si un compte actif correspond à cette adresse, un lien de réinitialisation vient d’être envoyé.');
+        return back()->with('status', __('Si un compte actif correspond à cette adresse, un lien de réinitialisation vient d’être envoyé.'));
     }
 
     private function mayResetPassword(User $user): bool

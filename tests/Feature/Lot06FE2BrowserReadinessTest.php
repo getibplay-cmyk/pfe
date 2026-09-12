@@ -45,8 +45,8 @@ class Lot06FE2BrowserReadinessTest extends TestCase
         $this->assertStringContainsString('aria-controls="menu-utilisateur"', $layout);
         $this->assertStringContainsString('overflow-x: clip', $styles);
         $this->assertStringContainsString('overflow-x-auto', $styles);
-        $this->assertStringContainsString('<x-responsive-table label="Ordres de maintenance">', $maintenance);
-        $this->assertStringContainsString('<x-responsive-table label="Utilisateurs">', $users);
+        $this->assertStringContainsString("<x-responsive-table :label=\"__('Ordres de maintenance')\">", $maintenance);
+        $this->assertStringContainsString("<x-responsive-table :label=\"__('Utilisateurs')\">", $users);
     }
 
     public function test_observed_unlabelled_controls_now_have_accessible_names(): void

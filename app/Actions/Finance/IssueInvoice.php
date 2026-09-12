@@ -16,7 +16,7 @@ class IssueInvoice
         return DB::transaction(function () use ($invoice, $actorId, $dueAt) {
             $locked = Invoice::with('lines')->whereKey($invoice)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'draft' || $locked->lines->isEmpty()) {
-                throw ValidationException::withMessages(['invoice' => 'Seule une facture brouillon complète peut être émise.']);
+                throw ValidationException::withMessages(['invoice' => __('Seule une facture brouillon complète peut être émise.')]);
             }
             $locked->forceFill(['status' => 'issued', 'issued_at' => now(), 'due_at' => $dueAt, 'issued_by' => $actorId])->save();
             $this->audit->record('invoice.issued', $locked, ['status' => 'draft'], ['status' => 'issued']);

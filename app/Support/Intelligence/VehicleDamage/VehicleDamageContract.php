@@ -2,6 +2,8 @@
 
 namespace App\Support\Intelligence\VehicleDamage;
 
+use App\Support\Ui\UiText;
+
 final class VehicleDamageContract
 {
     public const BACKEND_RTDETRV2_S = 'rtdetrv2_s';
@@ -142,12 +144,12 @@ final class VehicleDamageContract
     public static function qualityReasonLabel(string $reason): string
     {
         return match ($reason) {
-            'TOO_SMALL' => 'Photo trop petite pour l’analyse.',
-            'TOO_DARK' => 'Photo trop sombre.',
-            'TOO_BRIGHT' => 'Photo surexposée.',
-            'LOW_CONTRAST' => 'Contraste insuffisant.',
-            'POSSIBLY_BLURRED' => 'Photo potentiellement floue.',
-            default => 'Qualité insuffisante.',
+            'TOO_SMALL' => UiText::t('Photo trop petite pour l’analyse.'),
+            'TOO_DARK' => UiText::t('Photo trop sombre.'),
+            'TOO_BRIGHT' => UiText::t('Photo surexposée.'),
+            'LOW_CONTRAST' => UiText::t('Contraste insuffisant.'),
+            'POSSIBLY_BLURRED' => UiText::t('Photo potentiellement floue.'),
+            default => UiText::t('Qualité insuffisante.'),
         };
     }
 }

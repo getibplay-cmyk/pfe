@@ -18,10 +18,10 @@ class UpdateDraftInsurancePolicy
         return DB::transaction(function () use ($policy, $data): InsurancePolicy {
             $locked = InsurancePolicy::whereKey($policy)->lockForUpdate()->firstOrFail();
             if ($locked->status !== InsurancePolicyStatus::Draft) {
-                throw ValidationException::withMessages(['policy' => 'Seule une police brouillon peut être modifiée.']);
+                throw ValidationException::withMessages(['policy' => __('Seule une police brouillon peut être modifiée.')]);
             }
             if (isset($data['status'])) {
-                throw ValidationException::withMessages(['status' => 'Le statut ne peut être modifié que par une action de transition.']);
+                throw ValidationException::withMessages(['status' => __('Le statut ne peut être modifié que par une action de transition.')]);
             }
             $normalized = $this->validator->normalize($data, $locked->agency_id);
             $before = $this->values($locked);

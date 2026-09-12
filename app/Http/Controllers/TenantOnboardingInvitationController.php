@@ -40,7 +40,7 @@ class TenantOnboardingInvitationController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('onboarding.index')
-            ->with('status', 'Votre espace est prêt. Suivez ces étapes pour démarrer votre activité.');
+            ->with('status', __('Votre espace est prêt. Suivez ces étapes pour démarrer votre activité.'));
     }
 
     private function ensureUsable(TenantOnboardingInvitation $invitation, string $token): void
@@ -57,7 +57,7 @@ class TenantOnboardingInvitationController extends Controller
                 || ! $invitation->creator?->is_platform_admin
                 || $invitation->creator?->tenant_id !== null,
             410,
-            'Cette invitation a expiré ou a déjà été utilisée.',
+            __('Cette invitation a expiré ou a déjà été utilisée.'),
         );
     }
 }

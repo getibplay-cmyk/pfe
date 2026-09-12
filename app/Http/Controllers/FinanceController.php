@@ -109,7 +109,7 @@ class FinanceController extends Controller
         $data = $request->validated();
         $invoice = $action->handle($contract, $request->user()->id, $data['tax_mode'] ?? 'none', $data['tax_rate'] ?? '0.0000');
 
-        return redirect()->route('finance.invoices.show', $invoice)->with('status', 'Facture brouillon créée.');
+        return redirect()->route('finance.invoices.show', $invoice)->with('status', __('Facture brouillon créée.'));
     }
 
     public function issue(Request $request, Invoice $invoice, IssueInvoice $action): RedirectResponse
@@ -118,7 +118,7 @@ class FinanceController extends Controller
         $data = $request->validate(['due_at' => ['nullable', 'date']]);
         $action->handle($invoice, $request->user()->id, $data['due_at'] ?? null);
 
-        return back()->with('status', 'Facture émise et figée.');
+        return back()->with('status', __('Facture émise et figée.'));
     }
 
     public function void(Request $request, Invoice $invoice, VoidInvoice $action): RedirectResponse
@@ -127,21 +127,21 @@ class FinanceController extends Controller
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
         $action->handle($invoice, $data['reason']);
 
-        return redirect()->route('finance.index')->with('status', 'Facture annulée sans suppression.');
+        return redirect()->route('finance.index')->with('status', __('Facture annulée sans suppression.'));
     }
 
     public function recordPayment(StorePaymentRequest $request, RecordPayment $action): RedirectResponse
     {
         $action->handle($request->validated(), $request->user()->id);
 
-        return back()->with('status', 'Paiement enregistré.');
+        return back()->with('status', __('Paiement enregistré.'));
     }
 
     public function allocate(AllocatePaymentRequest $request, Payment $payment, Invoice $invoice, AllocatePaymentToInvoice $action): RedirectResponse
     {
         $action->handle($payment, $invoice, $request->validated('amount'));
 
-        return back()->with('status', 'Paiement alloué.');
+        return back()->with('status', __('Paiement alloué.'));
     }
 
     public function post(Request $request, Payment $payment, PostPayment $action): RedirectResponse
@@ -149,7 +149,7 @@ class FinanceController extends Controller
         $this->permit($request, 'payment.post');
         $action->handle($payment, $request->user()->id);
 
-        return back()->with('status', 'Paiement comptabilisé.');
+        return back()->with('status', __('Paiement comptabilisé.'));
     }
 
     public function reverse(ReversePaymentRequest $request, Payment $payment, ReversePayment $action): RedirectResponse
@@ -157,7 +157,7 @@ class FinanceController extends Controller
         $data = $request->validated();
         $action->handle($payment, $data['idempotency_key'], $data['reason'], $request->user()->id);
 
-        return back()->with('status', 'Paiement contrepassé.');
+        return back()->with('status', __('Paiement contrepassé.'));
     }
 
     public function receiveDeposit(DepositMovementRequest $request, RentalContract $contract, RecordDepositReceipt $action): RedirectResponse
@@ -165,7 +165,7 @@ class FinanceController extends Controller
         $data = $request->validated();
         $action->handle($contract, $data['amount'], $data['idempotency_key'], $request->user()->id);
 
-        return back()->with('status', 'Caution reçue.');
+        return back()->with('status', __('Caution reçue.'));
     }
 
     public function retainDeposit(DepositMovementRequest $request, RentalContract $contract, RetainDeposit $action): RedirectResponse
@@ -173,7 +173,7 @@ class FinanceController extends Controller
         $data = $request->validated();
         $action->handle($contract, $data['amount'], $data['idempotency_key'], $data['reason'], $request->user()->id);
 
-        return back()->with('status', 'Retenue de caution enregistrée.');
+        return back()->with('status', __('Retenue de caution enregistrée.'));
     }
 
     public function refundDeposit(DepositMovementRequest $request, RentalContract $contract, RefundDeposit $action): RedirectResponse
@@ -181,7 +181,7 @@ class FinanceController extends Controller
         $data = $request->validated();
         $action->handle($contract, $data['amount'], $data['idempotency_key'], $request->user()->id, $data['reason'] ?? null);
 
-        return back()->with('status', 'Remboursement de caution enregistré.');
+        return back()->with('status', __('Remboursement de caution enregistré.'));
     }
 
     public function reverseDeposit(ReverseDepositRequest $request, DepositTransaction $deposit, ReverseDepositTransaction $action): RedirectResponse
@@ -189,14 +189,14 @@ class FinanceController extends Controller
         $data = $request->validated();
         $action->handle($deposit, $data['idempotency_key'], $data['reason'], $request->user()->id);
 
-        return back()->with('status', 'Mouvement de caution contrepassé sans réécriture de l’historique.');
+        return back()->with('status', __('Mouvement de caution contrepassé sans réécriture de l’historique.'));
     }
 
     public function storeExpense(StoreExpenseRequest $request, CreateExpense $action): RedirectResponse
     {
         $action->handle($request->validated(), $request->user()->id);
 
-        return back()->with('status', 'Dépense brouillon créée.');
+        return back()->with('status', __('Dépense brouillon créée.'));
     }
 
     public function approveExpense(Request $request, Expense $expense, ApproveExpense $action): RedirectResponse
@@ -204,14 +204,14 @@ class FinanceController extends Controller
         $this->permit($request, 'expense.approve');
         $action->handle($expense, $request->user()->id);
 
-        return back()->with('status', 'Dépense approuvée.');
+        return back()->with('status', __('Dépense approuvée.'));
     }
 
     public function rejectExpense(RejectExpenseRequest $request, Expense $expense, RejectExpense $action): RedirectResponse
     {
         $action->handle($expense, $request->validated('reason'), $request->user()->id);
 
-        return back()->with('status', 'Dépense rejetée sans suppression.');
+        return back()->with('status', __('Dépense rejetée sans suppression.'));
     }
 
     public function close(Request $request, RentalContract $contract, CloseRentalContract $action): RedirectResponse
@@ -219,7 +219,7 @@ class FinanceController extends Controller
         $this->permit($request, 'contract.close');
         $action->handle($contract, $request->user()->id);
 
-        return back()->with('status', 'Contrat clôturé financièrement.');
+        return back()->with('status', __('Contrat clôturé financièrement.'));
     }
 
     private function permit(Request $request, string $permission): void

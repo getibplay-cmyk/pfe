@@ -18,7 +18,7 @@ class MarkContractReady
         return DB::transaction(function () use ($contract, $actorId) {
             $locked = RentalContract::whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::Draft || ! $locked->current_version_id) {
-                throw ValidationException::withMessages(['status' => 'Seul un contrat brouillon versionné peut être préparé.']);
+                throw ValidationException::withMessages(['status' => __('Seul un contrat brouillon versionné peut être préparé.')]);
             }
             $locked->forceFill(['status' => RentalContractStatus::Ready])->save();
             ContractStatusHistory::create(['rental_contract_id' => $locked->id, 'from_status' => RentalContractStatus::Draft, 'to_status' => RentalContractStatus::Ready, 'changed_by' => $actorId]);

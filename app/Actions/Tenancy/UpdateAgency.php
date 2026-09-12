@@ -28,7 +28,7 @@ class UpdateAgency
             $reactivating = ! $locked->is_active && (bool) $data['is_active'];
 
             if ($actor->agency_id !== null && $locked->is_active !== $data['is_active']) {
-                throw ValidationException::withMessages(['is_active' => 'Seul le Tenant Owner peut changer l’état d’une agence.']);
+                throw ValidationException::withMessages(['is_active' => __('Seul le Tenant Owner peut changer l’état d’une agence.')]);
             }
             if ($deactivating) {
                 $this->ensureCanDeactivate($locked);
@@ -57,10 +57,10 @@ class UpdateAgency
             || VehicleBlock::query()->where('agency_id', $agency->id)->where('status', 'active')->exists();
 
         if ($hasDependencies) {
-            throw ValidationException::withMessages(['is_active' => 'Cette agence possède encore des réservations, contrats, maintenances ou blocs actifs.']);
+            throw ValidationException::withMessages(['is_active' => __('Cette agence possède encore des réservations, contrats, maintenances ou blocs actifs.')]);
         }
         if (Agency::query()->whereKeyNot($agency->id)->where('is_active', true)->doesntExist()) {
-            throw ValidationException::withMessages(['is_active' => 'L’entreprise doit conserver au moins une agence active.']);
+            throw ValidationException::withMessages(['is_active' => __('L’entreprise doit conserver au moins une agence active.')]);
         }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Support\Intelligence\VehicleDamage;
 
 use App\Enums\VehicleDamagePredictionStatus;
 use App\Models\VehicleDamagePredictionRun;
+use App\Support\Ui\UiText;
 use UnexpectedValueException;
 
 final class VehicleDamageSuggestionPresenter
@@ -21,14 +22,14 @@ final class VehicleDamageSuggestionPresenter
         if ($run->status !== VehicleDamagePredictionStatus::Succeeded
             || ! in_array($run->quality_status, VehicleDamageContract::QUALITY_STATUSES, true)
             || ! is_array($run->candidate_regions)) {
-            throw new UnexpectedValueException('Invalid damage suggestion state.');
+            throw new UnexpectedValueException(UiText::t('Invalid damage suggestion state.'));
         }
 
         if ($run->quality_status === 'abstained') {
             if ($run->suggested_damage !== null
                 || $run->max_probability_damage !== null
                 || $run->candidate_regions !== []) {
-                throw new UnexpectedValueException('Invalid abstained damage suggestion.');
+                throw new UnexpectedValueException(UiText::t('Invalid abstained damage suggestion.'));
             }
 
             return [];
@@ -36,19 +37,19 @@ final class VehicleDamageSuggestionPresenter
 
         $maximum = $this->finiteProbability($run->max_probability_damage);
         if (! is_bool($run->suggested_damage)) {
-            throw new UnexpectedValueException('Invalid damage decision.');
+            throw new UnexpectedValueException(UiText::t('Invalid damage decision.'));
         }
         if (! $run->suggested_damage) {
             if ($run->candidate_regions !== []
                 || $maximum >= (float) $run->decision_threshold) {
-                throw new UnexpectedValueException('Invalid empty damage suggestion.');
+                throw new UnexpectedValueException(UiText::t('Invalid empty damage suggestion.'));
             }
 
             return [];
         }
 
         if ($run->candidate_regions === []) {
-            throw new UnexpectedValueException('Missing damage regions.');
+            throw new UnexpectedValueException(UiText::t('Missing damage regions.'));
         }
 
         $detections = [];
@@ -68,15 +69,15 @@ final class VehicleDamageSuggestionPresenter
                 || $region['height'] < 1
                 || $run->input_width < $region['x'] + $region['width']
                 || $run->input_height < $region['y'] + $region['height']) {
-                throw new UnexpectedValueException('Invalid damage region.');
+                throw new UnexpectedValueException(UiText::t('Invalid damage region.'));
             }
             $confidence = $this->finiteProbability($region['probability'] ?? null);
             if ($confidence < (float) $run->decision_threshold) {
-                throw new UnexpectedValueException('Damage region below the frozen threshold.');
+                throw new UnexpectedValueException(UiText::t('Damage region below the frozen threshold.'));
             }
             $detections[] = [
                 'type' => 'possible_damage',
-                'label' => 'Zone de dommage possible',
+                'label' => UiText::t('Zone de dommage possible'),
                 'confidence' => round($confidence, 6),
                 'box' => [
                     'x' => $region['x'],
@@ -88,7 +89,7 @@ final class VehicleDamageSuggestionPresenter
         }
 
         if (abs($maximum - $detections[0]['confidence']) > 0.000001) {
-            throw new UnexpectedValueException('Damage confidence mismatch.');
+            throw new UnexpectedValueException(UiText::t('Damage confidence mismatch.'));
         }
 
         return $detections;
@@ -97,15 +98,15 @@ final class VehicleDamageSuggestionPresenter
     private function finiteProbability(mixed $value): float
     {
         if (! is_int($value) && ! is_float($value) && ! is_string($value)) {
-            throw new UnexpectedValueException('Invalid damage confidence.');
+            throw new UnexpectedValueException(UiText::t('Invalid damage confidence.'));
         }
         if (! is_numeric($value)) {
-            throw new UnexpectedValueException('Invalid damage confidence.');
+            throw new UnexpectedValueException(UiText::t('Invalid damage confidence.'));
         }
 
         $probability = (float) $value;
         if (! is_finite($probability) || $probability < 0 || $probability > 1) {
-            throw new UnexpectedValueException('Invalid damage confidence.');
+            throw new UnexpectedValueException(UiText::t('Invalid damage confidence.'));
         }
 
         return $probability;

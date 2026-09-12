@@ -43,14 +43,14 @@ final class ImportIntelligenceResultBatch
         if (! is_int($uploadedBytes) || $uploadedBytes <= 0 || $uploadedBytes > $maximumBytes) {
             throw J14ResultBatchValidationException::at(
                 '$',
-                'taille du fichier JSON absente ou supérieure à la limite autorisée',
+                __('taille du fichier JSON absente ou supérieure à la limite autorisée'),
             );
         }
 
         $realPath = $file->getRealPath();
         $contents = is_string($realPath) ? file_get_contents($realPath) : false;
         if (! is_string($contents) || $contents === '') {
-            throw new RuntimeException('Le lot de résultats téléversé est vide ou illisible.');
+            throw new RuntimeException(__('Le lot de résultats téléversé est vide ou illisible.'));
         }
 
         $validated = $this->validator->validate($contents, $run);
@@ -93,7 +93,7 @@ final class ImportIntelligenceResultBatch
 
                 $storedPath = $candidateStoredPath;
                 if (! $disk->put($storedPath, $validated->canonicalJson, ['visibility' => 'private'])) {
-                    throw new RuntimeException('Impossible de conserver le lot de résultats privé.');
+                    throw new RuntimeException(__('Impossible de conserver le lot de résultats privé.'));
                 }
 
                 $source = $validated->payload['source'];

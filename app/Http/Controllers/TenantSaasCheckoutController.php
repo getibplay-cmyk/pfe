@@ -41,7 +41,7 @@ class TenantSaasCheckoutController extends Controller
             && $attempt->tenant_id === $context->tenantId(), 404);
         if ($attempt->status !== SaasPaymentAttemptStatus::Pending || $attempt->expires_at->lessThanOrEqualTo(now())) {
             return redirect()->route('tenant-saas-account.show')
-                ->with('error', 'Cette tentative de paiement n’est plus disponible.');
+                ->with('error', __('Cette tentative de paiement n’est plus disponible.'));
         }
 
         $attempt->load('subscription.plan');

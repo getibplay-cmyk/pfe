@@ -38,7 +38,7 @@
                     </div>
                 </div>
                 <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button x-ref="cancel" type="button" class="rf-button-secondary" x-on:click="close()">Annuler</button>
+                    <button x-ref="cancel" type="button" class="rf-button-secondary" x-on:click="close()">{{ __('Annuler') }}</button>
                     <button type="button" class="rf-button border-red-700 bg-red-700 text-white hover:border-red-800 hover:bg-red-800" x-on:click="confirm()" x-text="confirmLabel"></button>
                 </div>
             </section>

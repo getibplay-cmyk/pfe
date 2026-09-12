@@ -43,7 +43,7 @@ final class CreateIntelligenceDatasetExport
         $stream = tmpfile();
 
         if ($stream === false) {
-            throw new RuntimeException('Impossible de préparer le snapshot Intelligence privé.');
+            throw new RuntimeException(__('Impossible de préparer le snapshot Intelligence privé.'));
         }
 
         $disk = Storage::disk((string) config('intelligence.dataset_exports.disk'));
@@ -54,7 +54,7 @@ final class CreateIntelligenceDatasetExport
             rewind($stream);
 
             if (! $disk->writeStream($storedPath, $stream)) {
-                throw new RuntimeException('Impossible de conserver le snapshot Intelligence privé.');
+                throw new RuntimeException(__('Impossible de conserver le snapshot Intelligence privé.'));
             }
 
             return DB::transaction(function () use (
@@ -123,7 +123,7 @@ final class CreateIntelligenceDatasetExport
     {
         if (fwrite($stream, "\xEF\xBB\xBF") !== 3
             || fputcsv($stream, PredictionInput::headers(), ';', '"', '', "\n") === false) {
-            throw new RuntimeException('Impossible de générer le snapshot Intelligence.');
+            throw new RuntimeException(__('Impossible de générer le snapshot Intelligence.'));
         }
 
         $maxRows = (int) config('intelligence.dataset_exports.max_rows');
@@ -144,7 +144,7 @@ final class CreateIntelligenceDatasetExport
 
                 $row = array_map(SpreadsheetSafeCsv::cell(...), array_values($input->toExportRow()));
                 if (fputcsv($stream, $row, ';', '"', '', "\n") === false) {
-                    throw new RuntimeException('Impossible de générer une ligne du snapshot Intelligence.');
+                    throw new RuntimeException(__('Impossible de générer une ligne du snapshot Intelligence.'));
                 }
 
                 $written++;
@@ -163,7 +163,7 @@ final class CreateIntelligenceDatasetExport
         fflush($stream);
         $stats = fstat($stream);
         if ($stats === false || ! isset($stats['size']) || $stats['size'] <= 0) {
-            throw new RuntimeException('Le snapshot Intelligence généré est vide.');
+            throw new RuntimeException(__('Le snapshot Intelligence généré est vide.'));
         }
 
         rewind($stream);

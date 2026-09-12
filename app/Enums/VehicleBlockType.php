@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum VehicleBlockType: string
 {
     case Reservation = 'reservation';
@@ -11,11 +13,11 @@ enum VehicleBlockType: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Reservation => 'Réservation',
-            self::Manual => 'Bloc manuel',
-            self::Contract => 'Contrat',
+        return UiText::t(match ($this) {
+            self::Reservation => UiText::t('Réservation'),
+            self::Manual => UiText::t('Bloc manuel'),
+            self::Contract => UiText::t('Contrat'),
             self::Maintenance => 'Maintenance',
-        };
+        });
     }
 }

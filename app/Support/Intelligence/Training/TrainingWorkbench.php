@@ -9,6 +9,7 @@ use App\Models\ModelTrainingReview;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\IntelligencePrivateStorage;
+use App\Support\Ui\UiText;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -87,7 +88,7 @@ final class TrainingWorkbench
 
         return DB::transaction(function () use ($user, $dataset): ModelTrainingDataset {
             $locked = ModelTrainingDataset::query()->whereKey($dataset->id)->lockForUpdate()->firstOrFail();
-            abort_if($locked->revoked_at !== null || $locked->shared, 409, 'Ce jeu ne peut plus être proposé au partage.');
+            abort_if($locked->revoked_at !== null || $locked->shared, 409, UiText::t('Ce jeu ne peut plus être proposé au partage.'));
             $this->read($locked->stored_path, $locked->sha256);
             $locked->update(['shared' => true, 'shared_at' => now(), 'shared_by' => $user->id]);
             $this->audit->record('training.dataset.share_authorized', $locked, [], ['shared' => true]);
@@ -104,7 +105,7 @@ final class TrainingWorkbench
             return DB::transaction(function () use ($user, $name, $ids, $path): ModelTrainingCampaign {
                 $datasets = self::shared()->whereIn('d.public_id', $ids)->orderBy('d.id')->lockForUpdate()->get('d.*');
                 if ($datasets->count() !== count($ids)) {
-                    TrainingDatasetSchema::fail('Une contribution n’est plus partagée ou son entreprise est inactive.');
+                    TrainingDatasetSchema::fail(UiText::t('Une contribution n’est plus partagée ou son entreprise est inactive.'));
                 }
                 $family = $datasets->first()->family;
                 $partition = $this->schema->partition($datasets->map(fn ($d) => $this->read($d->stored_path, $d->sha256))->all(), $family);
@@ -118,7 +119,7 @@ final class TrainingWorkbench
                     'operational_effect' => 'NO_OPERATIONAL_ACTION',
                 ];
                 $encoded = $this->encode($manifest);
-                abort_if(strlen($encoded) > 20 * 1024 * 1024, 422, 'Réduisez le nombre de contributions.');
+                abort_if(strlen($encoded) > 20 * 1024 * 1024, 422, UiText::t('Réduisez le nombre de contributions.'));
                 IntelligencePrivateStorage::disk('model_training.disk')->put($path, $encoded);
                 $campaign = ModelTrainingCampaign::create([
                     'public_id' => $id, 'name' => $name, 'family' => $family,
@@ -145,7 +146,7 @@ final class TrainingWorkbench
         if ($lock) {
             $query->lockForUpdate();
         }
-        abort_unless($ids->isNotEmpty() && $query->get('d.id')->count() === $ids->count(), 409, 'Une contribution a été révoquée ou suspendue. Préparez une nouvelle campagne.');
+        abort_unless($ids->isNotEmpty() && $query->get('d.id')->count() === $ids->count(), 409, UiText::t('Une contribution a été révoquée ou suspendue. Préparez une nouvelle campagne.'));
     }
 
     public function campaignData(User $user, ModelTrainingCampaign $campaign): array
@@ -171,7 +172,7 @@ final class TrainingWorkbench
         $resolved = IntelligencePrivateStorage::path('model_training.disk', $path);
         abort_if(filesize($resolved) > 20 * 1024 * 1024, 409);
         $contents = file_get_contents($resolved);
-        abort_unless(is_string($contents) && hash_equals($hash, hash('sha256', $contents)), 409, 'Le contrôle d’intégrité a échoué.');
+        abort_unless(is_string($contents) && hash_equals($hash, hash('sha256', $contents)), 409, UiText::t('Le contrôle d’intégrité a échoué.'));
 
         return $contents;
     }
@@ -185,7 +186,7 @@ final class TrainingWorkbench
             return DB::transaction(function () use ($user, $campaign, $report, $path): ModelTrainingResult {
                 $locked = ModelTrainingCampaign::query()->whereKey($campaign->id)->lockForUpdate()->firstOrFail();
                 $this->assertContributions($locked, true);
-                abort_if($locked->result()->exists(), 409, 'Cette tentative a déjà un résultat. Créez une nouvelle tentative.');
+                abort_if($locked->result()->exists(), 409, UiText::t('Cette tentative a déjà un résultat. Créez une nouvelle tentative.'));
                 $manifest = $this->read($locked->stored_path, $locked->sha256);
                 $evaluation = app(TrainingEvaluation::class)->evaluate($manifest, $locked->sha256, $report);
                 $encoded = $this->encode($report);
@@ -212,11 +213,11 @@ final class TrainingWorkbench
         DB::transaction(function () use ($user, $campaign, $decision, $note): void {
             $locked = ModelTrainingCampaign::query()->whereKey($campaign->id)->lockForUpdate()->firstOrFail();
             $result = $locked->result()->firstOrFail();
-            abort_if($result->review()->exists(), 409, 'La décision est déjà enregistrée.');
+            abort_if($result->review()->exists(), 409, UiText::t('La décision est déjà enregistrée.'));
             if ($decision === 'qualified') {
                 $this->assertContributions($locked, true);
-                abort_unless($locked->baseline_version === TrainingCatalog::get($locked->family)['baseline'], 409, 'La référence a changé. Préparez une nouvelle comparaison.');
-                abort_unless($result->eligible, 422, 'Le candidat ne franchit pas les critères de comparaison.');
+                abort_unless($locked->baseline_version === TrainingCatalog::get($locked->family)['baseline'], 409, UiText::t('La référence a changé. Préparez une nouvelle comparaison.'));
+                abort_unless($result->eligible, 422, UiText::t('Le candidat ne franchit pas les critères de comparaison.'));
             }
             $review = ModelTrainingReview::create(['result_id' => $result->id, 'decision' => $decision, 'note' => $note, 'created_by' => $user->id]);
             $this->audit->record('platform.training.candidate.reviewed', $review, [], ['decision' => $decision, 'operational_effect' => 'NO_OPERATIONAL_ACTION']);

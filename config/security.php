@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'mfa_require_admins' => env('SECURITY_MFA_REQUIRE_ADMINS', false),
     'headers' => [
         'X-Content-Type-Options' => 'nosniff',
         'X-Frame-Options' => 'SAMEORIGIN',

@@ -155,7 +155,7 @@ final class TrainingEvaluation
         ]];
     }
 
-    private function matchBoxes(array $truth, array $predicted): array
+    public function matchBoxes(array $truth, array $predicted): array
     {
         // Maximum bipartite matching avoids depending on the order supplied by a notebook.
         $edges = [];

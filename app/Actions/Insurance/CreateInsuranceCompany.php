@@ -30,7 +30,7 @@ class CreateInsuranceCompany
     private function ensureActiveNameAvailable(string $name): void
     {
         if (InsuranceCompany::query()->where('is_active', true)->whereRaw('lower(name) = lower(?)', [trim($name)])->lockForUpdate()->exists()) {
-            throw ValidationException::withMessages(['name' => 'Une compagnie active porte déjà ce nom.']);
+            throw ValidationException::withMessages(['name' => __('Une compagnie active porte déjà ce nom.')]);
         }
     }
 

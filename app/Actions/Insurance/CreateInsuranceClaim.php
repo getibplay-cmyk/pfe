@@ -30,11 +30,11 @@ class CreateInsuranceClaim
         $requestedStatus = $data['status'] ?? InsuranceClaimStatus::Reported->value;
         $requestedStatus = $requestedStatus instanceof InsuranceClaimStatus ? $requestedStatus : InsuranceClaimStatus::tryFrom((string) $requestedStatus);
         if ($requestedStatus !== InsuranceClaimStatus::Reported) {
-            throw ValidationException::withMessages(['status' => 'Un sinistre doit toujours être créé à l’état déclaré.']);
+            throw ValidationException::withMessages(['status' => __('Un sinistre doit toujours être créé à l’état déclaré.')]);
         }
         foreach (['approved_amount', 'settled_amount'] as $decisionAmount) {
             if (array_key_exists($decisionAmount, $data) && $data[$decisionAmount] !== null && $data[$decisionAmount] !== '') {
-                throw ValidationException::withMessages([$decisionAmount => 'Ce montant ne peut être renseigné qu’au cours de la transition correspondante.']);
+                throw ValidationException::withMessages([$decisionAmount => __('Ce montant ne peut être renseigné qu’au cours de la transition correspondante.')]);
             }
         }
 
@@ -42,29 +42,29 @@ class CreateInsuranceClaim
         $policy = InsurancePolicy::findOrFail($data['insurance_policy_id']);
 
         if ($policy->agency_id !== $data['agency_id']) {
-            throw ValidationException::withMessages(['insurance_policy_id' => 'Police incompatible avec cette agence.']);
+            throw ValidationException::withMessages(['insurance_policy_id' => __('Police incompatible avec cette agence.')]);
         }
         if ($policy->status === InsurancePolicyStatus::Draft) {
-            throw ValidationException::withMessages(['insurance_policy_id' => 'Un sinistre ne peut pas être rattaché à une police brouillon.']);
+            throw ValidationException::withMessages(['insurance_policy_id' => __('Un sinistre ne peut pas être rattaché à une police brouillon.')]);
         }
 
         if (! isset($data['incident_at'])) {
-            throw ValidationException::withMessages(['incident_at' => 'La date réelle de l’incident est obligatoire.']);
+            throw ValidationException::withMessages(['incident_at' => __('La date réelle de l’incident est obligatoire.')]);
         }
         try {
             $incidentAt = CarbonImmutable::parse($data['incident_at']);
             $reportedAt = isset($data['reported_at']) ? CarbonImmutable::parse($data['reported_at']) : CarbonImmutable::now();
         } catch (\Throwable) {
-            throw ValidationException::withMessages(['incident_at' => 'La date de l’incident est invalide.']);
+            throw ValidationException::withMessages(['incident_at' => __('La date de l’incident est invalide.')]);
         }
         if ($incidentAt->greaterThan($reportedAt)) {
-            throw ValidationException::withMessages(['incident_at' => 'L’incident ne peut pas être postérieur à sa déclaration.']);
+            throw ValidationException::withMessages(['incident_at' => __('L’incident ne peut pas être postérieur à sa déclaration.')]);
         }
         if ($incidentAt->toDateString() < $policy->starts_at->toDateString() || $incidentAt->toDateString() > $policy->ends_at->toDateString()) {
-            throw ValidationException::withMessages(['incident_at' => 'L’incident doit appartenir à la période de couverture.']);
+            throw ValidationException::withMessages(['incident_at' => __('L’incident doit appartenir à la période de couverture.')]);
         }
         if ($policy->status === InsurancePolicyStatus::Cancelled && $policy->cancelled_at && $incidentAt->greaterThan($policy->cancelled_at)) {
-            throw ValidationException::withMessages(['incident_at' => 'L’incident est postérieur à l’annulation de la police.']);
+            throw ValidationException::withMessages(['incident_at' => __('L’incident est postérieur à l’annulation de la police.')]);
         }
         $data['incident_at'] = $incidentAt;
         $data['reported_at'] = $reportedAt;
@@ -78,11 +78,11 @@ class CreateInsuranceClaim
         }
 
         if ($contract && ($contract->agency_id !== $data['agency_id'] || $contract->vehicle_id !== $policy->vehicle_id)) {
-            throw ValidationException::withMessages(['rental_contract_id' => 'Contrat incompatible avec la police et cette agence.']);
+            throw ValidationException::withMessages(['rental_contract_id' => __('Contrat incompatible avec la police et cette agence.')]);
         }
 
         if ($damage && ($damage->agency_id !== $data['agency_id'] || $damage->vehicle_id !== $policy->vehicle_id || $damage->rental_contract_id !== $contract?->id)) {
-            throw ValidationException::withMessages(['damage_report_id' => 'Dommage incompatible avec la police, le contrat ou cette agence.']);
+            throw ValidationException::withMessages(['damage_report_id' => __('Dommage incompatible avec la police, le contrat ou cette agence.')]);
         }
 
         foreach (['claimed_amount'] as $field) {
@@ -110,7 +110,7 @@ class CreateInsuranceClaim
                 'from_status' => null,
                 'to_status' => InsuranceClaimStatus::Reported,
                 'actor_id' => $actorId,
-                'note' => 'Déclaration initiale',
+                'note' => __('Déclaration initiale'),
                 'changed_at' => $claim->reported_at,
             ]);
             $this->audit->record('insurance_claim.reported', $claim, [], ['status' => InsuranceClaimStatus::Reported->value, 'claimed_amount' => $claim->claimed_amount]);
@@ -126,7 +126,7 @@ class CreateInsuranceClaim
         }
 
         return RentalContract::find($contractId)
-            ?? throw ValidationException::withMessages(['rental_contract_id' => 'Contrat introuvable dans l’entreprise active.']);
+            ?? throw ValidationException::withMessages(['rental_contract_id' => __('Contrat introuvable dans l’entreprise active.')]);
     }
 
     private function damage(mixed $damageId): ?DamageReport
@@ -136,6 +136,6 @@ class CreateInsuranceClaim
         }
 
         return DamageReport::find($damageId)
-            ?? throw ValidationException::withMessages(['damage_report_id' => 'Dommage introuvable dans l’entreprise active.']);
+            ?? throw ValidationException::withMessages(['damage_report_id' => __('Dommage introuvable dans l’entreprise active.')]);
     }
 }

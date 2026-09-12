@@ -15,12 +15,12 @@ final class BusinessNumber
     {
         $normalized = self::normalize($value);
         if ($normalized === null) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         [$whole, $fraction] = array_pad(explode('.', ltrim($normalized, '-'), 2), 2, '');
         if ($fraction !== '' && trim($fraction, '0') !== '') {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         $sign = str_starts_with($normalized, '-') && trim($whole, '0') !== '' ? '-' : '';
@@ -35,29 +35,29 @@ final class BusinessNumber
     ): string {
         $normalized = self::normalize($value);
         if ($normalized === null || str_starts_with($normalized, '-')) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         $formatted = self::integer($value);
-        if ($formatted === self::UNAVAILABLE) {
+        if ($formatted === UiText::t(self::UNAVAILABLE)) {
             return $formatted;
         }
 
         $unit = in_array($formatted, ['0', '1'], true) ? $singular : ($plural ?? $singular.'s');
 
-        return $formatted.' '.$unit;
+        return $formatted.' '.UiText::t($unit);
     }
 
     public static function planningVehicles(string|int|float|null $conditionalMean): string
     {
         if ($conditionalMean === null) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         try {
             $value = (new DemandForecastPlanningUnits)->convert($conditionalMean);
         } catch (InvalidArgumentException) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         return self::count($value->planningVehicleUnits, 'véhicule');
@@ -69,7 +69,7 @@ final class BusinessNumber
     ): string {
         $normalized = self::normalize($value);
         if ($normalized === null || ! self::between($normalized, '0', '100')) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         return self::decimal($normalized, 0, max(0, min(2, $maximumDecimals))).' %';
@@ -86,7 +86,7 @@ final class BusinessNumber
             || $normalizedTotal === null
             || str_starts_with($normalizedValue, '-')
             || str_starts_with($normalizedTotal, '-')) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         $numericValue = (float) $normalizedValue;
@@ -95,7 +95,7 @@ final class BusinessNumber
             || ! is_finite($numericTotal)
             || $numericTotal <= 0
             || $numericValue > $numericTotal) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         return self::percentage(($numericValue / $numericTotal) * 100, $maximumDecimals);
@@ -144,7 +144,7 @@ final class BusinessNumber
     ): string {
         $normalized = self::normalize($value);
         if ($normalized === null) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         $maximumDecimals = max(0, min(3, $maximumDecimals));
@@ -157,7 +157,7 @@ final class BusinessNumber
     {
         $normalized = self::normalize($ratio);
         if ($normalized === null || ! self::between($normalized, '0', '1')) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         return self::decimal(self::multiplyByHundred($normalized), 2, 2).' %';
@@ -167,7 +167,7 @@ final class BusinessNumber
     {
         $normalized = self::normalize($ratio);
         if ($normalized === null || ! self::between($normalized, '0', '1')) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         return self::confidence(self::complementRatio($normalized));
@@ -180,7 +180,7 @@ final class BusinessNumber
     ): string {
         $normalized = self::normalize($value);
         if ($normalized === null) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         $maximumDecimals = max(0, min(4, $maximumDecimals));
@@ -195,7 +195,7 @@ final class BusinessNumber
     ): string {
         $normalized = self::normalize($value);
         if ($normalized === null) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         $formatted = self::scientificDecimal($normalized, $maximumDecimals);
@@ -212,7 +212,7 @@ final class BusinessNumber
         if ($normalized === null
             || preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]{1,2})?$/D', $normalized) !== 1
             || preg_match('/^[A-Z]{3}$/D', strtoupper($currency)) !== 1) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         return self::decimal($normalized, 2, 2).' '.strtoupper($currency);
@@ -227,7 +227,7 @@ final class BusinessNumber
         if ($normalized === null
             || str_starts_with($normalized, '-')
             || preg_match('/^(?:0|[1-9][0-9]*)(?:\.[0-9]{1,3})?$/D', $normalized) !== 1) {
-            return self::UNAVAILABLE;
+            return UiText::t(self::UNAVAILABLE);
         }
 
         return self::decimal($normalized, 0, $maximumDecimals).' km';

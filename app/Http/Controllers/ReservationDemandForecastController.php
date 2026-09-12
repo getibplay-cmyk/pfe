@@ -67,13 +67,13 @@ class ReservationDemandForecastController extends Controller
         ], true)) {
             return response()->json($presenter->state(
                 $run,
-                'Préparation des prévisions en cours…',
+                __('Préparation des prévisions en cours…'),
             ));
         }
         if ($run->status === DemandForecastExecutionStatus::Failed) {
             return response()->json($presenter->state(
                 $run,
-                'Les prévisions ne sont pas disponibles. Le planning reste utilisable.',
+                __('Les prévisions ne sont pas disponibles. Le planning reste utilisable.'),
             ));
         }
 
@@ -85,7 +85,7 @@ class ReservationDemandForecastController extends Controller
                 'generated_at' => null,
                 'scope' => ['agency' => (string) $run->agency()->value('name')],
                 'forecasts' => [],
-                'message' => 'Les prévisions ne sont pas disponibles. Le planning reste utilisable.',
+                'message' => __('Les prévisions ne sont pas disponibles. Le planning reste utilisable.'),
             ], 422);
         }
     }
@@ -144,7 +144,7 @@ class ReservationDemandForecastController extends Controller
     private function unavailable(): JsonResponse
     {
         return response()->json([
-            'message' => 'Le service de prévision est momentanément indisponible. Le planning reste utilisable.',
+            'message' => __('Le service de prévision est momentanément indisponible. Le planning reste utilisable.'),
         ], 503);
     }
 }

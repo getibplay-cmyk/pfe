@@ -21,10 +21,10 @@ class CompleteDepartureInspection
         return DB::transaction(function () use ($contract, $data, $actorId) {
             $locked = RentalContract::with('vehicle')->whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::Accepted) {
-                throw ValidationException::withMessages(['status' => 'L’inspection de départ exige un contrat accepté.']);
+                throw ValidationException::withMessages(['status' => __('L’inspection de départ exige un contrat accepté.')]);
             }
             if ((int) $data['mileage'] < $locked->vehicle->current_mileage) {
-                throw ValidationException::withMessages(['mileage' => 'Le kilométrage de départ ne peut être inférieur au kilométrage courant.']);
+                throw ValidationException::withMessages(['mileage' => __('Le kilométrage de départ ne peut être inférieur au kilométrage courant.')]);
             }
             $inspection = VehicleInspection::create(['agency_id' => $locked->agency_id, 'rental_contract_id' => $locked->id, 'vehicle_id' => $locked->vehicle_id, 'inspection_type' => InspectionType::Departure, 'status' => InspectionStatus::Draft, 'inspected_at' => $data['inspected_at'] ?? now(), 'mileage' => $data['mileage'], 'fuel_level' => $data['fuel_level'], 'notes' => $data['notes'] ?? null, 'created_by' => $actorId]);
             foreach ($data['items'] ?? [] as $item) {

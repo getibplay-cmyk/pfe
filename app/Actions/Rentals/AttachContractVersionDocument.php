@@ -20,15 +20,15 @@ class AttachContractVersionDocument
             $locked = RentalContract::with('currentVersion')->whereKey($contract)->lockForUpdate()->firstOrFail();
             $version = $locked->currentVersion;
             if (! $version || $version->locked_at) {
-                throw ValidationException::withMessages(['document' => 'Une version contractuelle courante non verrouillée est requise.']);
+                throw ValidationException::withMessages(['document' => __('Une version contractuelle courante non verrouillée est requise.')]);
             }
             if ($version->document_id) {
-                throw ValidationException::withMessages(['document' => 'Le document de cette version ne peut pas être remplacé ; créez une nouvelle version contractuelle.']);
+                throw ValidationException::withMessages(['document' => __('Le document de cette version ne peut pas être remplacé ; créez une nouvelle version contractuelle.')]);
             }
 
             $document = $this->documents->handle($locked, [
                 'document_type' => DocumentType::ContractAcceptance,
-                'title' => 'Contrat '.$locked->contract_number.' — version '.$version->version_number,
+                'title' => __('Contrat ').$locked->contract_number.' — version '.$version->version_number,
                 'is_sensitive' => true,
             ], $file, $actorId);
             $version->forceFill(['document_id' => $document->id])->save();

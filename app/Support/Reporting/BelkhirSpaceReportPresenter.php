@@ -2,6 +2,7 @@
 
 namespace App\Support\Reporting;
 
+use App\Support\Ui\UiText;
 use LogicException;
 
 final class BelkhirSpaceReportPresenter
@@ -65,7 +66,7 @@ final class BelkhirSpaceReportPresenter
         }
 
         return [
-            'labels' => array_values($labels),
+            'labels' => array_map(UiText::t(...), array_values($labels)),
             'values' => $integers,
             'total' => array_sum($integers),
         ];

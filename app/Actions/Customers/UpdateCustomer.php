@@ -49,7 +49,7 @@ class UpdateCustomer
             });
         } catch (QueryException $exception) {
             if (in_array($exception->getCode(), ['23503', '23505', '23514'], true)) {
-                throw ValidationException::withMessages(['agency_id' => 'Le changement d’agence est incompatible avec les données historiques du client.']);
+                throw ValidationException::withMessages(['agency_id' => __('Le changement d’agence est incompatible avec les données historiques du client.')]);
             }
 
             throw $exception;
@@ -60,7 +60,7 @@ class UpdateCustomer
     {
         foreach (['reservations', 'rental_contracts', 'invoices', 'payments', 'payment_allocations'] as $table) {
             if (DB::table($table)->where('tenant_id', $customer->tenant_id)->where('customer_id', $customer->id)->where('agency_id', '<>', $newAgencyId)->exists()) {
-                throw ValidationException::withMessages(['agency_id' => 'Ce client possède des opérations dans une autre agence.']);
+                throw ValidationException::withMessages(['agency_id' => __('Ce client possède des opérations dans une autre agence.')]);
             }
         }
 
@@ -79,7 +79,7 @@ class UpdateCustomer
             ->exists();
 
         if ($customerDocumentConflict || $driverDocumentConflict) {
-            throw ValidationException::withMessages(['agency_id' => 'Les documents privés du client ou de ses conducteurs appartiennent à une autre agence.']);
+            throw ValidationException::withMessages(['agency_id' => __('Les documents privés du client ou de ses conducteurs appartiennent à une autre agence.')]);
         }
     }
 }

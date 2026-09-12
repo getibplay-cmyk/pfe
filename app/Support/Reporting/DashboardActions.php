@@ -2,8 +2,10 @@
 
 namespace App\Support\Reporting;
 
+use App\Models\ContractExtension;
 use App\Models\Invoice;
 use App\Models\MaintenanceOrder;
+use App\Models\PublicBookingRequest;
 use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\User;
@@ -33,34 +35,42 @@ final class DashboardActions
                 ? $query->limit(5)->get()->map($row)
                 : $query->orderBy('id')->paginate(25)->withQueryString()->through($row);
             $groups[] = [
-                'key' => $key, 'title' => $title, 'count' => $count,
+                'key' => $key, 'title' => __($title), 'count' => $count,
                 'items' => $items, 'url' => route('dashboard.actions', $key),
             ];
         };
         if ($user->hasPermission('contract.view')) {
             $query = $scope(RentalContract::query())->with('vehicle:id,registration_number')->whereIn('status', ['active', 'return_pending']);
             $row = fn ($contract) => ['label' => $contract->contract_number.' · '.$contract->vehicle?->registration_number,
-                'detail' => UiLabel::dateTime($contract->expected_return_at), 'url' => route('contracts.show', $contract), 'action' => 'Traiter le retour'];
+                'detail' => UiLabel::dateTime($contract->expected_return_at), 'url' => route('contracts.show', $contract), 'action' => __('Traiter le retour')];
             $add('overdue', 'Retours en retard', (clone $query)->where('expected_return_at', '<', $now)->orderBy('expected_return_at'), $row);
             $add('returns', 'Retours à venir aujourd’hui', (clone $query)->where('expected_return_at', '>=', $now)->where('expected_return_at', '<', $tomorrow)->orderBy('expected_return_at'), $row);
             $add('departures', 'Contrats à préparer aujourd’hui', $scope(RentalContract::query())->whereIn('status', ['draft', 'ready', 'accepted'])
                 ->where('expected_start_at', '>=', $today)->where('expected_start_at', '<', $tomorrow)->orderBy('expected_start_at'),
-                fn ($contract) => ['label' => $contract->contract_number, 'detail' => UiLabel::dateTime($contract->expected_start_at), 'url' => route('contracts.show', $contract), 'action' => 'Préparer le départ']);
+                fn ($contract) => ['label' => $contract->contract_number, 'detail' => UiLabel::dateTime($contract->expected_start_at), 'url' => route('contracts.show', $contract), 'action' => __('Préparer le départ')]);
         }
         if ($user->hasPermission('reservation.view')) {
             $add('reservations', 'Réservations à préparer aujourd’hui', $scope(Reservation::query())->where('status', 'confirmed')
                 ->where('starts_at', '>=', $today)->where('starts_at', '<', $tomorrow)->orderBy('starts_at'),
-                fn ($reservation) => ['label' => $reservation->reservation_number, 'detail' => UiLabel::dateTime($reservation->starts_at), 'url' => route('reservations.show', $reservation), 'action' => 'Ouvrir la réservation']);
+                fn ($reservation) => ['label' => $reservation->reservation_number, 'detail' => UiLabel::dateTime($reservation->starts_at), 'url' => route('reservations.show', $reservation), 'action' => __('Ouvrir la réservation')]);
+        }
+        if ($user->hasPermission('reservation.view') && $user->hasPermission('customer.view')) {
+            $add('booking-requests', 'Demandes publiques à examiner', $scope(PublicBookingRequest::query())->where('status', 'pending')->oldest(),
+                fn ($booking) => ['label' => __('Demande de réservation'), 'detail' => UiLabel::dateTime($booking->starts_at), 'url' => route('booking-admin.show', $booking), 'action' => __('Examiner')]);
+        }
+        if ($user->hasPermission('contract.view')) {
+            $add('extensions', 'Prolongations à examiner', $scope(ContractExtension::query())->with('rentalContract:id,contract_number')->where('status', 'requested')->oldest(),
+                fn ($extension) => ['label' => $extension->rentalContract->contract_number, 'detail' => UiLabel::dateTime($extension->requested_return_at), 'url' => route('contract-extensions.show', $extension), 'action' => __('Examiner')]);
         }
         if ($user->hasPermission('invoice.view')) {
             $add('invoices', 'Factures échues à encaisser', $scope(Invoice::query())->whereIn('status', ['issued', 'partially_paid'])
                 ->where('balance_due', '>', 0)->where('due_at', '<=', $now)->orderBy('due_at'),
-                fn ($invoice) => ['label' => $invoice->invoice_number, 'detail' => UiLabel::money($invoice->balance_due, $invoice->currency), 'url' => route('finance.invoices.show', $invoice), 'action' => 'Consulter le solde']);
+                fn ($invoice) => ['label' => $invoice->invoice_number, 'detail' => UiLabel::money($invoice->balance_due, $invoice->currency), 'url' => route('finance.invoices.show', $invoice), 'action' => __('Consulter le solde')]);
         }
         if ($user->hasPermission('maintenance.view')) {
             $add('maintenance', 'Interventions à démarrer', $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])
                 ->where('scheduled_start_at', '<', $tomorrow)->orderBy('scheduled_start_at'),
-                fn ($order) => ['label' => $order->maintenance_number, 'detail' => UiLabel::dateTime($order->scheduled_start_at), 'url' => route('maintenance.show', $order), 'action' => 'Ouvrir l’intervention']);
+                fn ($order) => ['label' => $order->maintenance_number, 'detail' => UiLabel::dateTime($order->scheduled_start_at), 'url' => route('maintenance.show', $order), 'action' => __('Ouvrir l’intervention')]);
         }
 
         abort_if($only !== null && $groups === [], 404);

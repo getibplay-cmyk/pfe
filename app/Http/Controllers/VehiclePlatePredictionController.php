@@ -111,7 +111,7 @@ class VehiclePlatePredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-plates.index')->with(
             'status',
-            'La lecture de l’immatriculation a été lancée.',
+            __('La lecture de l’immatriculation a été lancée.'),
         );
     }
 
@@ -182,7 +182,7 @@ class VehiclePlatePredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-plates.index')->with(
             'status',
-            'Correction humaine enregistrée sans modifier la fiche véhicule.',
+            __('Correction humaine enregistrée sans modifier la fiche véhicule.'),
         );
     }
 

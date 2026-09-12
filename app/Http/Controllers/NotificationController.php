@@ -32,7 +32,7 @@ class NotificationController extends Controller
         $this->authorize('update', $notification);
         $inbox->markRead($request->user(), $notification);
 
-        return back()->with('status', 'Notification marquée comme lue.');
+        return back()->with('status', __('Notification marquée comme lue.'));
     }
 
     public function unread(Request $request, InternalNotification $notification, NotificationInbox $inbox): RedirectResponse
@@ -40,7 +40,7 @@ class NotificationController extends Controller
         $this->authorize('update', $notification);
         $inbox->markUnread($request->user(), $notification);
 
-        return back()->with('status', 'Notification marquée comme non lue.');
+        return back()->with('status', __('Notification marquée comme non lue.'));
     }
 
     public function readAll(Request $request, NotificationInbox $inbox): RedirectResponse
@@ -48,7 +48,7 @@ class NotificationController extends Controller
         $this->authorize('viewAny', InternalNotification::class);
         $count = $inbox->markAllRead($request->user());
 
-        return back()->with('status', $count === 0 ? 'Aucune notification non lue.' : 'Toutes les notifications ont été marquées comme lues.');
+        return back()->with('status', $count === 0 ? __('Aucune notification non lue.') : __('Toutes les notifications ont été marquées comme lues.'));
     }
 
     public function open(Request $request, InternalNotification $notification, NotificationInbox $inbox, NotificationDestination $destination): RedirectResponse

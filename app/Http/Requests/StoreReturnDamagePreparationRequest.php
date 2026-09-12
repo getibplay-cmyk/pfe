@@ -65,7 +65,7 @@ class StoreReturnDamagePreparationRequest extends FormRequest
             foreach (array_diff(array_keys($this->except('_token')), $allowed) as $key) {
                 $validator->errors()->add(
                     $key,
-                    'Ce champ n’est pas autorisé pour l’analyse de retour.',
+                    __('Ce champ n’est pas autorisé pour l’analyse de retour.'),
                 );
             }
         }];

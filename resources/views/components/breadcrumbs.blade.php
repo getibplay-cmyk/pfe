@@ -1,7 +1,7 @@
 @props(['items' => []])
 
 @if (count($items) > 1)
-    <nav aria-label="Fil d’Ariane" {{ $attributes }}>
+    <nav aria-label="{{ __('Fil d’Ariane') }}" {{ $attributes }}>
         <ol class="flex flex-wrap items-center gap-2 text-sm text-belkhir-space-muted">
             @foreach ($items as $item)
                 <li class="flex min-w-0 items-center gap-2">

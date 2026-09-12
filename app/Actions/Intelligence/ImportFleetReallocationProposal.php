@@ -39,14 +39,14 @@ final class ImportFleetReallocationProposal
         if (! is_int($uploadedBytes) || $uploadedBytes <= 0 || $uploadedBytes > $maximumBytes) {
             throw FleetReallocationValidationException::at(
                 '$',
-                'taille du fichier JSON absente ou supérieure à la limite autorisée',
+                __('taille du fichier JSON absente ou supérieure à la limite autorisée'),
             );
         }
 
         $realPath = $file->getRealPath();
         $contents = is_string($realPath) ? file_get_contents($realPath) : false;
         if (! is_string($contents) || $contents === '') {
-            throw new RuntimeException('La proposition de réallocation téléversée est vide ou illisible.');
+            throw new RuntimeException(__('La proposition de réallocation téléversée est vide ou illisible.'));
         }
 
         return $this->handlePayload($contents, $actor);
@@ -59,7 +59,7 @@ final class ImportFleetReallocationProposal
         if ($contents === '' || strlen($contents) > $maximumBytes) {
             throw FleetReallocationValidationException::at(
                 '$',
-                'taille du JSON absente ou supérieure à la limite autorisée',
+                __('taille du JSON absente ou supérieure à la limite autorisée'),
             );
         }
 
@@ -92,7 +92,7 @@ final class ImportFleetReallocationProposal
 
                 $storedPath = $candidateStoredPath;
                 if (! $disk->put($storedPath, $validated->canonicalJson, ['visibility' => 'private'])) {
-                    throw new RuntimeException('Impossible de conserver la proposition de réallocation privée.');
+                    throw new RuntimeException(__('Impossible de conserver la proposition de réallocation privée.'));
                 }
 
                 $payload = $validated->payload;

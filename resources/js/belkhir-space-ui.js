@@ -1,8 +1,9 @@
+import { t } from './i18n.js';
 const DEFAULT_CONFIRMATION = Object.freeze({
-    title: 'Confirmer cette action',
-    resource: 'Élément sélectionné',
-    consequence: 'Cette action peut modifier durablement cet élément.',
-    confirmLabel: 'Confirmer',
+    title: t('Confirmer cette action'),
+    resource: t('Élément sélectionné'),
+    consequence: t('Cette action peut modifier durablement cet élément.'),
+    confirmLabel: t('Confirmer'),
 });
 
 function focusableElements(container) {
@@ -16,7 +17,7 @@ function focusableElements(container) {
 }
 
 export function trapDialogFocus(event, container) {
-    if (event.key !== 'Tab') {
+    if (event.key !== t('Tab')) {
         return;
     }
 
@@ -155,7 +156,7 @@ export function createBelkhirSpaceFileInput({
             }
 
             this.fileName = multiple && selectedFiles.length > 1
-                ? `${selectedFiles.length} fichiers sélectionnés`
+                ? t(":value1 fichiers sélectionnés", { value1: selectedFiles.length })
                 : first.name;
             this.fileSize = multiple && selectedFiles.length > 1
                 ? readableFileSize(selectedFiles.reduce((total, file) => total + Number(file.size || 0), 0))
@@ -216,7 +217,7 @@ export function createBelkhirSpaceFileInput({
 export function createBelkhirSpaceLightbox(images = []) {
     const safeImages = Array.from(images).map((image) => ({
         src: String(image?.src ?? ''),
-        alt: String(image?.alt ?? 'Photo agrandie'),
+        alt: String(image?.alt ?? t('Photo agrandie')),
     })).filter((image) => image.src !== '');
 
     return {

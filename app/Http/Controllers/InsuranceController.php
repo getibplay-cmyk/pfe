@@ -77,7 +77,7 @@ class InsuranceController extends Controller
         $this->authorize('create', InsuranceCompany::class);
         $company = $action->handle($request->validated());
 
-        return redirect()->route('insurance.companies.show', $company)->with('status', 'Compagnie créée.');
+        return redirect()->route('insurance.companies.show', $company)->with('status', __('Compagnie créée.'));
     }
 
     public function showCompany(Request $request, InsuranceCompany $company): View
@@ -101,7 +101,7 @@ class InsuranceController extends Controller
         $this->authorize('update', $company);
         $action->handle($company, $request->validated());
 
-        return redirect()->route('insurance.companies.show', $company)->with('status', 'Compagnie modifiée.');
+        return redirect()->route('insurance.companies.show', $company)->with('status', __('Compagnie modifiée.'));
     }
 
     public function deactivateCompany(Request $request, InsuranceCompany $company, DeactivateInsuranceCompany $action): RedirectResponse
@@ -109,7 +109,7 @@ class InsuranceController extends Controller
         $this->authorize('changeState', $company);
         $action->handle($company, $request->user()->id);
 
-        return back()->with('status', 'Compagnie désactivée.');
+        return back()->with('status', __('Compagnie désactivée.'));
     }
 
     public function reactivateCompany(Request $request, InsuranceCompany $company, ReactivateInsuranceCompany $action): RedirectResponse
@@ -117,7 +117,7 @@ class InsuranceController extends Controller
         $this->authorize('changeState', $company);
         $action->handle($company);
 
-        return back()->with('status', 'Compagnie réactivée.');
+        return back()->with('status', __('Compagnie réactivée.'));
     }
 
     public function createPolicy(Request $request): View
@@ -131,7 +131,7 @@ class InsuranceController extends Controller
     {
         $policy = $action->handle($request->validated(), $request->user()->id);
 
-        return redirect()->route('insurance.policies.show', $policy)->with('status', 'Police créée en brouillon avec numéro chiffré.');
+        return redirect()->route('insurance.policies.show', $policy)->with('status', __('Police créée en brouillon avec numéro chiffré.'));
     }
 
     public function showPolicy(Request $request, InsurancePolicy $policy): View
@@ -153,7 +153,7 @@ class InsuranceController extends Controller
     {
         $action->handle($policy, $request->validated());
 
-        return redirect()->route('insurance.policies.show', $policy)->with('status', 'Police brouillon modifiée.');
+        return redirect()->route('insurance.policies.show', $policy)->with('status', __('Police brouillon modifiée.'));
     }
 
     public function activatePolicy(Request $request, InsurancePolicy $policy, ActivateInsurancePolicy $action): RedirectResponse
@@ -161,14 +161,14 @@ class InsuranceController extends Controller
         $this->authorize('activate', $policy);
         $action->handle($policy, $request->user()->id);
 
-        return back()->with('status', 'Police activée après validation des garanties et du document privé.');
+        return back()->with('status', __('Police activée après validation des garanties et du document privé.'));
     }
 
     public function cancelPolicy(CancelInsurancePolicyRequest $request, InsurancePolicy $policy, CancelInsurancePolicy $action): RedirectResponse
     {
         $action->handle($policy, $request->validated('reason'), $request->user()->id);
 
-        return back()->with('status', 'Police annulée.');
+        return back()->with('status', __('Police annulée.'));
     }
 
     public function createRenewal(InsurancePolicy $policy): View
@@ -182,7 +182,7 @@ class InsuranceController extends Controller
     {
         $renewal = $action->handle($policy, [...$request->validated(), 'copy_coverages' => $request->boolean('copy_coverages')], $request->user()->id);
 
-        return redirect()->route('insurance.policies.show', $renewal)->with('status', 'Renouvellement créé en brouillon ; aucun fichier n’a été copié.');
+        return redirect()->route('insurance.policies.show', $renewal)->with('status', __('Renouvellement créé en brouillon ; aucun fichier n’a été copié.'));
     }
 
     public function storeCoverage(StoreInsuranceCoverageRequest $request, InsurancePolicy $policy, CreateInsuranceCoverage $action): RedirectResponse
@@ -190,7 +190,7 @@ class InsuranceController extends Controller
         $this->authorize('update', $policy);
         $action->handle($policy, $request->validated());
 
-        return back()->with('status', 'Garantie ajoutée.');
+        return back()->with('status', __('Garantie ajoutée.'));
     }
 
     public function editCoverage(InsurancePolicy $policy, InsurancePolicyCoverage $coverage): View
@@ -207,7 +207,7 @@ class InsuranceController extends Controller
         abort_unless($coverage->insurance_policy_id === $policy->id, 404);
         $action->handle($coverage, $request->validated());
 
-        return redirect()->route('insurance.policies.show', $policy)->with('status', 'Garantie modifiée.');
+        return redirect()->route('insurance.policies.show', $policy)->with('status', __('Garantie modifiée.'));
     }
 
     public function archiveCoverage(Request $request, InsurancePolicy $policy, InsurancePolicyCoverage $coverage, ArchiveInsuranceCoverage $action): RedirectResponse
@@ -216,7 +216,7 @@ class InsuranceController extends Controller
         abort_unless($coverage->insurance_policy_id === $policy->id, 404);
         $action->handle($coverage, $request->user()->id);
 
-        return back()->with('status', 'Garantie archivée logiquement.');
+        return back()->with('status', __('Garantie archivée logiquement.'));
     }
 
     public function createClaim(Request $request): View
@@ -245,7 +245,7 @@ class InsuranceController extends Controller
     {
         $claim = $action->handle($request->validated(), $request->user()->id);
 
-        return redirect()->route('insurance.claims.show', $claim)->with('status', 'Sinistre enregistré sans décision automatique de responsabilité.');
+        return redirect()->route('insurance.claims.show', $claim)->with('status', __('Sinistre enregistré sans décision automatique de responsabilité.'));
     }
 
     public function submit(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, SubmitInsuranceClaim $action): RedirectResponse
@@ -253,7 +253,7 @@ class InsuranceController extends Controller
         $this->authorize('manage', $claim);
         $action->handle($claim, $request->user()->id, $request->validated('note'));
 
-        return back()->with('status', 'Sinistre soumis pour instruction.');
+        return back()->with('status', __('Sinistre soumis pour instruction.'));
     }
 
     public function review(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, StartInsuranceClaimReview $action): RedirectResponse
@@ -261,7 +261,7 @@ class InsuranceController extends Controller
         $this->authorize('manage', $claim);
         $action->handle($claim, $request->user()->id, $request->validated('note'));
 
-        return back()->with('status', 'Revue humaine du sinistre démarrée.');
+        return back()->with('status', __('Revue humaine du sinistre démarrée.'));
     }
 
     public function approve(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, ApproveInsuranceClaim $action): RedirectResponse
@@ -269,7 +269,7 @@ class InsuranceController extends Controller
         $this->authorize('manage', $claim);
         $action->handle($claim, (string) $request->validated('approved_amount'), $request->user()->id, $request->validated('note'));
 
-        return back()->with('status', 'Sinistre approuvé par décision humaine.');
+        return back()->with('status', __('Sinistre approuvé par décision humaine.'));
     }
 
     public function reject(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, RejectInsuranceClaim $action): RedirectResponse
@@ -277,7 +277,7 @@ class InsuranceController extends Controller
         $this->authorize('manage', $claim);
         $action->handle($claim, $request->user()->id, $request->validated('note'));
 
-        return back()->with('status', 'Sinistre rejeté par décision humaine.');
+        return back()->with('status', __('Sinistre rejeté par décision humaine.'));
     }
 
     public function settle(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, SettleInsuranceClaim $action): RedirectResponse
@@ -285,7 +285,7 @@ class InsuranceController extends Controller
         $this->authorize('manage', $claim);
         $action->handle($claim, (string) $request->validated('settled_amount'), $request->user()->id, $request->validated('note'));
 
-        return back()->with('status', 'Règlement du sinistre enregistré.');
+        return back()->with('status', __('Règlement du sinistre enregistré.'));
     }
 
     public function close(InsuranceClaimTransitionRequest $request, InsuranceClaim $claim, CloseInsuranceClaim $action): RedirectResponse
@@ -293,7 +293,7 @@ class InsuranceController extends Controller
         $this->authorize('manage', $claim);
         $action->handle($claim, $request->user()->id, $request->validated('note'));
 
-        return back()->with('status', 'Sinistre clôturé.');
+        return back()->with('status', __('Sinistre clôturé.'));
     }
 
     private function policyFormData(Request $request, ?int $fixedAgencyId = null): array

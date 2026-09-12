@@ -24,7 +24,7 @@ class ResolvePricingRule
             ->first();
 
         if (! $rule) {
-            throw ValidationException::withMessages(['pricing_rule' => 'Aucune règle tarifaire active ne couvre cette agence, cette catégorie et cette date.']);
+            throw ValidationException::withMessages(['pricing_rule' => __('Aucune règle tarifaire active ne couvre cette agence, cette catégorie et cette date.')]);
         }
 
         return $rule;

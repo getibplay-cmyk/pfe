@@ -25,11 +25,11 @@ class ReleaseManualVehicleBlock
             $locked = VehicleBlock::query()->whereKey($block)->lockForUpdate()->firstOrFail();
 
             if ($locked->block_type !== VehicleBlockType::Manual) {
-                throw ValidationException::withMessages(['vehicle_block' => 'Seul un bloc manuel peut être libéré depuis ce module.']);
+                throw ValidationException::withMessages(['vehicle_block' => __('Seul un bloc manuel peut être libéré depuis ce module.')]);
             }
 
             if ($locked->status !== VehicleBlockStatus::Active) {
-                throw ValidationException::withMessages(['vehicle_block' => 'Seul un bloc manuel actif peut être libéré.']);
+                throw ValidationException::withMessages(['vehicle_block' => __('Seul un bloc manuel actif peut être libéré.')]);
             }
 
             $locked->forceFill([

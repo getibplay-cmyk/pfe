@@ -34,7 +34,7 @@ class StartCmiCheckout
 
         $idempotencyKey = trim($idempotencyKey);
         if ($idempotencyKey === '' || strlen($idempotencyKey) > 100) {
-            throw ValidationException::withMessages(['idempotency_key' => 'La clé de demande est invalide.']);
+            throw ValidationException::withMessages(['idempotency_key' => __('La clé de demande est invalide.')]);
         }
 
         return DB::transaction(function () use ($subscription, $actor, $idempotencyKey): SaasPaymentAttempt {
@@ -54,7 +54,7 @@ class StartCmiCheckout
             if ($existing !== null) {
                 if ($existing->saas_subscription_id !== $locked->getKey()) {
                     throw ValidationException::withMessages([
-                        'idempotency_key' => 'Cette demande a déjà été utilisée pour un autre abonnement.',
+                        'idempotency_key' => __('Cette demande a déjà été utilisée pour un autre abonnement.'),
                     ]);
                 }
 
@@ -64,16 +64,16 @@ class StartCmiCheckout
             if ((! in_array($locked->status, TenantSubscriptionStatus::current(), true)
                 && $locked->status !== TenantSubscriptionStatus::PendingPayment)
                 || ($locked->status === TenantSubscriptionStatus::Suspended && ! $locked->billing_suspended)) {
-                throw ValidationException::withMessages(['payment' => 'Cet abonnement ne peut plus être réglé.']);
+                throw ValidationException::withMessages(['payment' => __('Cet abonnement ne peut plus être réglé.')]);
             }
             if ($locked->currency !== config('platform_billing.cmi.currency')) {
-                throw ValidationException::withMessages(['payment' => 'CMI est actuellement configuré pour les paiements en MAD uniquement.']);
+                throw ValidationException::withMessages(['payment' => __('CMI est actuellement configuré pour les paiements en MAD uniquement.')]);
             }
             if (SaasSubscription::query()->where('previous_subscription_id', $locked->getKey())->where('status', 'pending_payment')->exists()) {
-                throw ValidationException::withMessages(['payment' => 'Réglez ou annulez le changement de formule en cours avant un autre paiement.']);
+                throw ValidationException::withMessages(['payment' => __('Réglez ou annulez le changement de formule en cours avant un autre paiement.')]);
             }
             if (DecimalMoney::toMinorUnits($locked->price_amount) <= 0) {
-                throw ValidationException::withMessages(['payment' => 'Aucun paiement n’est requis pour cette offre.']);
+                throw ValidationException::withMessages(['payment' => __('Aucun paiement n’est requis pour cette offre.')]);
             }
 
             $now = CarbonImmutable::now();
@@ -94,7 +94,7 @@ class StartCmiCheckout
             if ($invoice !== null) {
                 app(SaasInvoiceLifecycle::class)->payable($invoice);
             } elseif ($locked->invoices()->exists() || $locked->status === TenantSubscriptionStatus::PendingPayment) {
-                throw ValidationException::withMessages(['payment' => 'Aucune facture ouverte ne nécessite de paiement.']);
+                throw ValidationException::withMessages(['payment' => __('Aucune facture ouverte ne nécessite de paiement.')]);
             }
             $billingPeriodStartsAt = $invoice?->period_starts_at ?? $this->billingPeriodStartsAt($locked, $now);
             $alreadySettled = $invoice === null && SaasPayment::query()
@@ -106,7 +106,7 @@ class StartCmiCheckout
                 ->first(['id']) !== null;
             if ($alreadySettled) {
                 throw ValidationException::withMessages([
-                    'payment' => 'La période de facturation courante est déjà réglée.',
+                    'payment' => __('La période de facturation courante est déjà réglée.'),
                 ]);
             }
 
@@ -164,6 +164,6 @@ class StartCmiCheckout
             $periodStart = $nextPeriod;
         }
 
-        throw ValidationException::withMessages(['payment' => 'La période historique doit être régularisée par l’administrateur.']);
+        throw ValidationException::withMessages(['payment' => __('La période historique doit être régularisée par l’administrateur.')]);
     }
 }

@@ -22,7 +22,7 @@ class DamageReportController extends Controller
         $data = $request->validate(['tenant_id' => ['prohibited'], 'return_inspection_id' => ['required', 'integer'], 'description' => ['required', 'string', 'max:5000'], 'vehicle_area' => ['nullable', 'string', 'max:255'], 'severity' => ['required', Rule::enum(DamageSeverity::class)], 'estimated_cost' => ['nullable', 'decimal:0,2', 'min:0']]);
         $action->handle($contract, $data, $request->user()->id);
 
-        return back()->with('status', 'Dommage signalé. La responsabilité reste à décider humainement.');
+        return back()->with('status', __('Dommage signalé. La responsabilité reste à décider humainement.'));
     }
 
     public function review(Request $request, DamageReport $damage, ReviewDamageResponsibility $action): RedirectResponse
@@ -31,6 +31,6 @@ class DamageReportController extends Controller
         $data = $request->validate(['tenant_id' => ['prohibited'], 'responsibility' => ['required', Rule::enum(DamageResponsibility::class)], 'status' => ['required', Rule::enum(DamageStatus::class)], 'approved_cost' => ['nullable', 'decimal:0,2', 'min:0'], 'reason' => ['required', 'string', 'max:2000']]);
         $action->handle($damage, $data, $request->user()->id);
 
-        return back()->with('status', 'Responsabilité et traitement du dommage enregistrés.');
+        return back()->with('status', __('Responsabilité et traitement du dommage enregistrés.'));
     }
 }

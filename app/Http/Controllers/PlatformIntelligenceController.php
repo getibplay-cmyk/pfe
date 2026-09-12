@@ -62,8 +62,8 @@ class PlatformIntelligenceController extends Controller
                     ? CarbonImmutable::parse((string) $latestChanges[$key])
                     : null,
                 'message' => $globallyEnabled && $runtimeReady
-                    ? 'Disponible sous réserve de l’autorisation de l’entreprise.'
-                    : 'Configuration de la plateforme requise.',
+                    ? __('Disponible sous réserve de l’autorisation de l’entreprise.')
+                    : __('Configuration de la plateforme requise.'),
             ];
         })->values();
 
@@ -83,7 +83,7 @@ class PlatformIntelligenceController extends Controller
         $setAccess->handle($tenant, $resolved, $enabled, $request->user());
 
         return back()->with('status', $enabled
-            ? 'Fonctionnalité autorisée pour cette entreprise.'
-            : 'Fonctionnalité désactivée pour les nouveaux traitements de cette entreprise.');
+            ? __('Fonctionnalité autorisée pour cette entreprise.')
+            : __('Fonctionnalité désactivée pour les nouveaux traitements de cette entreprise.'));
     }
 }
