@@ -1,0 +1,13 @@
+# RT-DETRv2 itself is installed from the pinned official commit recorded in
+# scripts/intelligence/vehicle_damage_v2/protocol.py. These bounds cover only
+# the conversion, COCO evaluation and portable ONNX smoke verification layer.
+PyYAML>=6.0.2,<7
+faster-coco-eval>=1.6.6,<2
+pycocotools>=2.0.8,<3
+onnx>=1.17,<2
+onnxscript>=0.5,<1
+onnxruntime-gpu>=1.20,<2
+packaging>=24,<27
+# Colab's current Python 3.13 image ships IPython 7.34 without its declared
+# optional console dependency. Keep `pip check` strict and reproducible.
+jedi>=0.19.2,<1
