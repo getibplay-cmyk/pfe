@@ -26,6 +26,10 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'current_password' => [
+                Rule::excludeIf($this->input('email') === $this->user()->email),
+                'required', 'string', 'current_password',
+            ],
         ];
     }
 }

@@ -21,7 +21,7 @@
 @endphp
 <a href="#contenu" class="rf-skip-link">{{ __('Aller au contenu principal') }}</a>
 <div x-data="appShell" data-component="app-shell" class="min-h-screen lg:flex">
-    <aside class="sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-belkhir-space-ink px-5 py-6 text-white lg:flex" aria-label="{{ __('Barre latérale') }}">
+    <aside class="rf-sidebar sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-belkhir-space-ink px-5 py-6 text-white lg:flex" aria-label="{{ __('Barre latérale') }}">
         <a href="{{ $home }}" class="rounded-lg px-2" aria-label="{{ config('brand.name') }} — {{ __('Accueil') }}">
             <x-brand-logo surface="dark" />
         </a>
@@ -42,10 +42,10 @@
         </div>
     </aside>
 
-    <div class="min-w-0 flex-1">
-        <header class="sticky top-0 z-30 border-b border-belkhir-space-border bg-white px-4 py-3 sm:px-6" aria-label="{{ __('En-tête de l’application') }}">
-            <div class="flex items-center justify-between gap-4">
-                <div class="flex min-w-0 items-center gap-3">
+    <div class="min-w-0 flex-1" :inert="mobileMenu">
+        <header class="rf-topbar sticky top-0 z-30 border-b border-belkhir-space-border bg-white px-4 py-3 sm:px-6" aria-label="{{ __('En-tête de l’application') }}">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex min-w-0 flex-1 items-center gap-3">
                     <button x-ref="menuButton" type="button" @click="openMenu($el)" class="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-belkhir-space-border p-2 text-belkhir-space-text hover:bg-brand-50 lg:hidden" aria-label="{{ __('Ouvrir le menu principal') }}" :aria-expanded="mobileMenu.toString()" aria-controls="navigation-mobile">
                         <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
@@ -54,7 +54,7 @@
                         <p class="truncate text-xs text-slate-500">{{ $user->tenant?->name ?? __('Administration de la plateforme') }}@if($user->agency) · {{ $user->agency->name }}@endif</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
                 <x-locale-switcher />
                 @unless ($user->is_platform_admin)
                     <x-workspace-search />
@@ -88,6 +88,7 @@
                     </button>
                     <div id="menu-utilisateur" x-cloak x-show="open" x-transition role="menu" aria-label="{{ __('Menu utilisateur') }}" class="absolute end-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                         <a role="menuitem" href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="users" size="xs" />{{ __('Mon profil') }}</a>
+                        <a role="menuitem" href="{{ route('security.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="shield" size="xs" />{{ __('Sécurité du compte') }}</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf<button role="menuitem" type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="logout" size="xs" />{{ __('Déconnexion') }}</button></form>
                     </div>
                 </div>
@@ -95,6 +96,10 @@
             </div>
         </header>
 
+        @if ($statusMessage)<x-flash-message class="mx-4 mt-5 sm:mx-6" :message="$statusMessage" />@endif
+        @if (session('error'))<x-flash-message type="error" class="mx-4 mt-5 sm:mx-6" :message="session('error')" />@endif
+        <main id="contenu" tabindex="-1" class="p-4 sm:p-6 lg:p-8">{{ $slot }}@unless ($user->is_platform_admin)<x-workspace-shortcuts />@endunless</main>
+    </div>
         <div x-cloak x-show="mobileMenu" id="navigation-mobile" class="fixed inset-0 z-50 lg:hidden" @keydown.escape.window="if (mobileMenu) closeMenu()">
             <button type="button" aria-label="{{ __('Fermer le menu') }}" class="absolute inset-0 bg-slate-950/60" @click="closeMenu()"></button>
             <div x-show="mobileMenu" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="{{ app()->getLocale() === 'ar' ? 'translate-x-full' : '-translate-x-full' }}" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="{{ app()->getLocale() === 'ar' ? 'translate-x-full' : '-translate-x-full' }}" class="h-full">
@@ -102,10 +107,6 @@
             </div>
         </div>
 
-        @if ($statusMessage)<x-flash-message class="mx-4 mt-5 sm:mx-6" :message="$statusMessage" />@endif
-        @if (session('error'))<x-flash-message type="error" class="mx-4 mt-5 sm:mx-6" :message="session('error')" />@endif
-        <main id="contenu" tabindex="-1" class="p-4 sm:p-6 lg:p-8">{{ $slot }}@unless ($user->is_platform_admin)<x-workspace-shortcuts />@endunless</main>
-    </div>
 </div>
 <x-confirm-dialog />
 </body>

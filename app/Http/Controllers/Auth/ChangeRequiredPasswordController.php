@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ChangeRequiredPasswordRequest;
-use App\Support\Audit\AuditRecorder;
+use App\Support\Auth\AccountSecurity;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class ChangeRequiredPasswordController extends Controller
@@ -17,19 +15,11 @@ class ChangeRequiredPasswordController extends Controller
         return view('auth.change-required-password');
     }
 
-    public function update(ChangeRequiredPasswordRequest $request, AuditRecorder $audit): RedirectResponse
+    public function update(ChangeRequiredPasswordRequest $request, AccountSecurity $security): RedirectResponse
     {
-        $user = $request->user();
-        $user->forceFill([
-            'password' => Hash::make($request->validated('password')),
-            'must_change_password' => false,
-        ])->save();
-        DB::table('sessions')
-            ->where('user_id', $user->id)
-            ->where('id', '!=', $request->session()->getId())
-            ->delete();
-        $audit->record('user.initial_password_changed', $user, ['must_change_password' => true], ['must_change_password' => false]);
+        $security->changePassword($request, $request->validated('current_password'), $request->validated('password'), initial: true);
 
-        return redirect()->route('dashboard')->with('status', __('Mot de passe personnel enregistré.'));
+        return redirect()->route($request->user()->is_platform_admin ? 'platform.dashboard' : 'dashboard')
+            ->with('status', __('Mot de passe personnel enregistré.'));
     }
 }

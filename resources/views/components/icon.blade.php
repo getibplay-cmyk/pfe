@@ -42,6 +42,9 @@
         @case('warning') <path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v4m0 3h.01" /> @break
         @case('error') <circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /> @break
         @case('lock') <path d="M7 11V8a5 5 0 0 1 10 0v3m-11 0h12v10H6V11Z" /> @break
+        @case('shield') <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" /><path d="m8 12 3 3 5-6" /> @break
+        @case('device') <rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /> @break
+        @case('key') <circle cx="8" cy="9" r="4" /><path d="m11 12 8 8m-4-4 2-2m0 4 2-2" /> @break
         @case('mail') <rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /> @break
         @default <circle cx="12" cy="12" r="9" /><path d="M12 8v4m0 4h.01" />
     @endswitch

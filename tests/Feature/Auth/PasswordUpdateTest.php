@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -56,5 +57,22 @@ class PasswordUpdateTest extends TestCase
         $response
             ->assertSessionHasErrorsIn('updatePassword', 'current_password')
             ->assertRedirect('/profile');
+    }
+
+    public function test_password_change_invalidates_remembered_access_and_rotates_the_current_session(): void
+    {
+        $user = $this->createTenantOwner(['remember_token' => 'old-remember-token']);
+        $oldToken = $user->remember_token;
+        $this->actingAs($user)->get(route('profile.edit'))->assertOk();
+        $oldSession = session()->getId();
+        $provider = Auth::guard('web')->getProvider();
+        $this->assertNotNull($provider->retrieveByToken($user->id, $oldToken));
+        $this->put(route('password.update'), [
+            'current_password' => 'password', 'password' => 'UpdatedPassword2026!', 'password_confirmation' => 'UpdatedPassword2026!',
+        ])->assertSessionHasNoErrors();
+        $this->assertNull($provider->retrieveByToken($user->id, $oldToken));
+        $this->assertNotSame($oldSession, session()->getId());
+        $this->assertSame(1, $user->fresh()->security_version);
+        $this->assertAuthenticatedAs($user);
     }
 }

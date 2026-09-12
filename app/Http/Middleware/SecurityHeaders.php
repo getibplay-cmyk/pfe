@@ -24,12 +24,12 @@ class SecurityHeaders
             $response->headers->set($name, $value);
         }
 
-        if ($request->is('commencer/*', 'reset-password*', 'forgot-password*', 'verify-email*', 'locataire', 'locataire/*', 'customers/*/portal-access')) {
+        if ($request->is('commencer/*', 'reset-password*', 'forgot-password*', 'verify-email*', 'locataire', 'locataire/*', 'customers/*/portal-access', 'profile/security*', 'security/*')) {
             $response->headers->set('Referrer-Policy', 'no-referrer');
         }
 
         if ($request->user() !== null || $request->is('tenant/*', 'platform/*', 'billing/cmi/*',
-            'commencer/*', 'login', 'forgot-password*', 'reset-password*', 'verify-email*', 'confirm-password', 'locataire', 'locataire/*')) {
+            'commencer/*', 'login', 'forgot-password*', 'reset-password*', 'verify-email*', 'confirm-password', 'locataire', 'locataire/*', 'profile', 'profile/*', 'security/*')) {
             $explicitExpiry = $response->headers->hasCacheControlDirective('max-age');
             $response->headers->set('Cache-Control', $explicitExpiry ? 'no-store, private, max-age=0' : 'no-store, private');
         }

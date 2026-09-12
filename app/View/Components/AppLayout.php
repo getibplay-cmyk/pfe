@@ -25,6 +25,7 @@ class AppLayout extends Component
         $pageTitle = collect($sections)
             ->flatMap(fn (array $section) => $section['items'])
             ->first(fn (array $item) => request()->routeIs(...(array) $item['pattern']))['label'] ?? match (true) {
+                request()->routeIs('security.*') => __('Sécurité du compte'),
                 request()->routeIs('profile.*') => __('Mon profil'),
                 request()->routeIs('password.change-required*') => __('Sécurité du compte'),
                 default => __('Espace de travail'),

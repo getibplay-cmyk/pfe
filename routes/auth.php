@@ -44,6 +44,7 @@ Route::middleware(['auth', 'active.account'])->group(function () {
         Route::post('profile/security/enable', [AccountSecurityController::class, 'enroll'])->name('security.enroll');
         Route::delete('profile/security/mfa', [AccountSecurityController::class, 'disable'])->name('security.disable');
         Route::delete('profile/security/session', [AccountSecurityController::class, 'revoke'])->name('security.revoke');
+        Route::delete('profile/security/sessions', [AccountSecurityController::class, 'revokeOthers'])->name('security.revoke-others');
     });
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
@@ -60,9 +61,10 @@ Route::middleware(['auth', 'active.account'])->group(function () {
         ->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
-        ->middleware('throttle:5,1,password-confirm');
+        ->middleware('throttle:5,1,password-confirm')->name('password.confirm.store');
 
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    Route::put('password', [PasswordController::class, 'update'])
+        ->middleware('throttle:5,1,password-update')->name('password.update');
 
 });
 

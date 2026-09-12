@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Auth\AccountSecurity;
 use App\Support\Auth\Totp;
+use App\Support\Ui\SessionDevice;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ final class AccountSecurityController extends Controller
                     'current' => hash_equals($request->session()->getId(), $session->id),
                     'key' => Crypt::encryptString($session->id), 'ip' => $session->ip_address,
                     'device' => Str::limit((string) $session->user_agent, 180), 'at' => $session->last_activity,
+                    ...SessionDevice::describe((string) $session->user_agent),
                 ]) : collect();
 
         return view('profile.security', ['user' => $request->user(), 'sessions' => $sessions]);
@@ -105,5 +107,13 @@ final class AccountSecurityController extends Controller
         $audit->record('account.session_revoked', $request->user());
 
         return to_route('security.index')->with('status', __('Session révoquée.'));
+    }
+
+    public function revokeOthers(Request $request, AccountSecurity $security): RedirectResponse
+    {
+        abort_unless(config('session.driver') === 'database', 409);
+        $security->revokeOtherDevices($request);
+
+        return to_route('security.index')->with('status', __('Les autres appareils ont été déconnectés. Vous restez connecté sur cet appareil.'));
     }
 }

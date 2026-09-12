@@ -31,6 +31,14 @@ class SecurityHeadersTest extends TestCase
             array_search(SecurityHeaders::class, $middleware, true));
     }
 
+    public function test_security_pages_remain_private_after_session_expiry(): void
+    {
+        $this->get('/profile/security')->assertRedirect(route('login'))
+            ->assertHeader('Cache-Control', 'no-store, private')->assertHeader('Referrer-Policy', 'no-referrer');
+        $this->get('/security/challenge')->assertRedirect(route('login'))
+            ->assertHeader('Cache-Control', 'no-store, private')->assertHeader('Referrer-Policy', 'no-referrer');
+    }
+
     public function test_untrusted_hosts_are_rejected_in_production(): void
     {
         config(['app.url' => 'https://belkhir.example']);

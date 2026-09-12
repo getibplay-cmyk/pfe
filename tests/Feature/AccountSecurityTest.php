@@ -106,6 +106,73 @@ class AccountSecurityTest extends TestCase
         $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('security.prepare'))->assertRedirect(route('security.index'));
     }
 
+    public function test_required_mfa_allows_real_password_confirmation_for_both_admin_types(): void
+    {
+        config(['security.mfa_require_admins' => true]);
+        foreach ([$this->createTenantOwner(), User::factory()->create(['is_platform_admin' => true, 'tenant_id' => null])] as $user) {
+            session()->forget(['auth.password_confirmed_at', 'url.intended']);
+            $this->actingAs($user)->from(route('security.index'))->post(route('security.prepare'))
+                ->assertRedirect(route('password.confirm'));
+            $this->get(route('password.confirm'))->assertOk();
+            $this->post(route('password.confirm.store'), ['password' => 'password'])
+                ->assertSessionHasNoErrors()->assertRedirect(route('security.index'));
+            $this->post(route('security.prepare'))->assertRedirect(route('security.index'));
+            $this->assertNotNull($user->fresh()->mfa_pending_secret);
+        }
+    }
+
+    public function test_bulk_revocation_preserves_current_access_and_cannot_target_another_user(): void
+    {
+        config(['session.driver' => 'database']);
+        $user = $this->enabled();
+        $other = $this->createTenantOwner();
+        $user->forceFill(['remember_token' => 'previous-remembered-access'])->save();
+        DB::table('sessions')->insert([
+            ['id' => 'own-remote-session', 'user_id' => $user->id, 'payload' => '', 'last_activity' => now()->timestamp],
+            ['id' => 'other-tenant-session', 'user_id' => $other->id, 'payload' => '', 'last_activity' => now()->timestamp],
+        ]);
+        $proof = ['user_id' => $user->id, 'version' => $user->security_version];
+        $this->actingAs($user)->withSession(['mfa_verified' => $proof])->delete(route('security.revoke-others'))
+            ->assertRedirect(route('password.confirm'));
+        $this->assertDatabaseHas('sessions', ['id' => 'own-remote-session']);
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp])
+            ->delete(route('security.revoke-others'), ['user_id' => $other->id, 'tenant_id' => $other->tenant_id])
+            ->assertRedirect(route('security.index'));
+        $this->assertDatabaseMissing('sessions', ['id' => 'own-remote-session']);
+        $this->assertDatabaseHas('sessions', ['id' => 'other-tenant-session']);
+        $this->assertNotSame('previous-remembered-access', $user->fresh()->remember_token);
+        $this->assertSame($user->fresh()->security_version, session('mfa_verified.version'));
+        $this->actingAs($user->fresh())->get(route('security.index'))->assertOk();
+        $this->assertDatabaseHas('audit_logs', ['action' => 'account.other_sessions_revoked', 'user_id' => $user->id]);
+    }
+
+    public function test_password_change_preserves_verified_mfa_only_on_the_current_session(): void
+    {
+        $user = $this->enabled();
+        $version = $user->security_version;
+        $this->actingAs($user)->withSession(['mfa_verified' => ['user_id' => $user->id, 'version' => $version]])
+            ->put(route('password.update'), [
+                'current_password' => 'password', 'password' => 'NewProtectedPassword2026!', 'password_confirmation' => 'NewProtectedPassword2026!',
+            ])->assertSessionHasNoErrors();
+        $this->actingAs($user->fresh())->get(route('profile.edit'))->assertOk();
+        $this->withSession(['mfa_verified' => ['user_id' => $user->id, 'version' => $version]])
+            ->get(route('profile.edit'))->assertRedirect(route('security.challenge'));
+    }
+
+    public function test_sessions_are_readable_escaped_and_scoped_to_the_account(): void
+    {
+        config(['session.driver' => 'database']);
+        $user = $this->createTenantOwner();
+        $other = $this->createTenantOwner();
+        DB::table('sessions')->insert([
+            ['id' => 'own-device-description', 'user_id' => $user->id, 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36 <script>alert(1)</script>', 'payload' => '', 'last_activity' => now()->timestamp],
+            ['id' => 'other-device-description', 'user_id' => $other->id, 'user_agent' => 'PRIVATE-OTHER-TENANT-DEVICE', 'payload' => '', 'last_activity' => now()->timestamp],
+        ]);
+        $this->actingAs($user)->get(route('security.index'))->assertOk()->assertSee('Chrome')->assertSee('Windows')
+            ->assertDontSee('<script>alert(1)</script>', false)->assertDontSee('PRIVATE-OTHER-TENANT-DEVICE')
+            ->assertHeader('Referrer-Policy', 'no-referrer')->assertHeader('Cache-Control', 'no-store, private');
+    }
+
     private function enabled(): User
     {
         $user = $this->createTenantOwner();

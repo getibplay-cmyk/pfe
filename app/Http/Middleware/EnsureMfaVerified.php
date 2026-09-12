@@ -26,7 +26,7 @@ final class EnsureMfaVerified
             }
             if (config('security.mfa_require_admins', false) && ! $user->mfa_confirmed_at
                 && ($user->is_platform_admin || $user->isTenantOwner())
-                && ! $request->routeIs('security.*', 'password.confirm', 'password.change-required', 'password.change-required.update')) {
+                && ! $request->routeIs('security.*', 'password.confirm', 'password.confirm.store', 'password.change-required', 'password.change-required.update')) {
                 return $request->expectsJson()
                     ? response()->json(['message' => __('Activez la double authentification pour continuer.')], 403)
                     : redirect()->route('security.index')->with('status', __('Activez la double authentification pour continuer.'));

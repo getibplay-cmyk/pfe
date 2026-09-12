@@ -29,6 +29,7 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
+                'current_password' => 'password',
             ]);
 
         $response
@@ -58,6 +59,31 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
+    public function test_changing_email_requires_the_current_password_and_never_flashes_it(): void
+    {
+        $user = $this->createTenantOwner();
+        $email = $user->email;
+        foreach ([null, 'incorrect-private-password'] as $password) {
+            $this->actingAs($user)->patch(route('profile.update'), [
+                'name' => $user->name, 'email' => 'replacement@example.com', 'current_password' => $password,
+            ])->assertSessionHasErrors('current_password');
+            $this->assertSame($email, $user->fresh()->email);
+            $this->assertNull(session()->getOldInput('current_password'));
+            $this->assertNotNull($user->fresh()->email_verified_at);
+        }
+    }
+
+    public function test_name_only_change_does_not_require_or_persist_a_password(): void
+    {
+        $user = $this->createTenantOwner();
+        $passwordHash = $user->password;
+        $this->actingAs($user)->patch(route('profile.update'), [
+            'name' => 'Nouveau nom', 'email' => $user->email, 'current_password' => 'not-needed', 'password' => 'not-allowed',
+        ])->assertSessionHasNoErrors()->assertRedirect(route('profile.edit'));
+        $this->assertSame($passwordHash, $user->fresh()->password);
+        $this->assertSame('Nouveau nom', $user->fresh()->name);
     }
 
     public function test_profile_cannot_change_tenant_role_agency_or_status(): void

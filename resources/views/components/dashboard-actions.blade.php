@@ -14,9 +14,19 @@
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 id="actions-today" class="text-xl font-bold text-slate-900">{{ __('À traiter aujourd’hui') }}</h2><p class="text-sm text-slate-500">{{ __('Les cinq premières priorités de chaque catégorie, dans votre périmètre.') }}</p></div>@if(auth()->user()->hasPermission('vehicle.view'))<a class="rf-button-secondary" href="{{ route('fleet.planning.index') }}">{{ __('Ouvrir le planning') }}</a>@endif</div>
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             @foreach($groups as $group)
-                <article class="rf-panel p-4" data-action-group="{{ $group['key'] }}"><div class="flex items-center justify-between gap-2"><h3 class="font-semibold">{{ $group['title'] }}</h3><span class="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-900">{{ $group['count'] }}</span></div>
-                    <ul class="mt-3 divide-y">@forelse($group['items'] as $item)<li class="py-3"><p class="font-medium">{{ $item['label'] }}</p><p class="mt-1 text-sm text-slate-500">{{ $item['detail'] }}</p><a class="rf-button-link mt-2 inline-flex" href="{{ $item['url'] }}">{{ $item['action'] }} →</a></li>@empty<li class="py-3 text-sm text-slate-500">{{ __('Aucune action à traiter.') }}</li>@endforelse</ul>
-                    <a class="rf-button-link mt-3 inline-flex" href="{{ $group['url'] }}">{{ __('Voir tous les dossiers (') }}{{ $group['count'] }}) →</a>
+                <article class="rf-panel rf-action-card" data-action-group="{{ $group['key'] }}">
+                    <div class="rf-action-card-header">
+                        <span @class(['flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', 'bg-orange-50 text-orange-800' => $group['count'] > 0, 'bg-emerald-50 text-emerald-800' => $group['count'] === 0])><x-icon :name="$group['count'] > 0 ? 'calendar' : 'check'" /></span>
+                        <h3 class="min-w-0 flex-1 font-semibold text-slate-900">{{ $group['title'] }}</h3>
+                        <span class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-sm font-bold tabular-nums text-slate-900">{{ $group['count'] }}</span>
+                    </div>
+                    <ul class="divide-y divide-slate-100">
+                        @forelse($group['items'] as $item)
+                            <li class="py-4"><p class="font-semibold text-slate-900">{{ $item['label'] }}</p><p class="mt-1 text-sm leading-5 text-slate-600">{{ $item['detail'] }}</p><a class="rf-button-link mt-2 gap-2" href="{{ $item['url'] }}">{{ $item['action'] }}<x-icon name="next" size="xs" /></a></li>
+                        @empty<li class="flex items-center gap-2 py-6 text-sm text-slate-600"><x-icon name="check" class="text-emerald-700" />{{ __('Aucune action à traiter.') }}</li>@endforelse
+                    </ul>
+                    <div class="border-t border-slate-100 px-4 py-2"><a class="rf-button-link gap-2" href="{{ $group['url'] }}">{{ __('Voir tous les dossiers (') }}{{ $group['count'] }})<x-icon name="next" size="xs" /></a></div>
+                </article>
                 </article>
             @endforeach
         </div>

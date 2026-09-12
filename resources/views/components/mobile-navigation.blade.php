@@ -1,5 +1,5 @@
 @props(['sections', 'user'])
-<aside x-ref="mobilePanel" role="dialog" aria-modal="true" aria-label="{{ __('Menu principal') }}" class="relative flex h-full w-[min(88vw,22rem)] flex-col overflow-y-auto bg-belkhir-space-ink p-5 text-white shadow-2xl" @keydown="trapMenu($event)">
+<aside x-ref="mobilePanel" role="dialog" aria-modal="true" aria-label="{{ __('Menu principal') }}" class="rf-sidebar relative flex h-full max-h-dvh w-[min(88vw,22rem)] flex-col overflow-y-auto overscroll-contain bg-belkhir-space-ink p-5 text-white shadow-2xl" @keydown="trapMenu($event)">
     <div class="flex items-center justify-between gap-4">
         <x-brand-logo surface="dark" />
         <button type="button" @click="closeMenu()" class="rounded-lg p-2 text-slate-300 hover:bg-white/10 hover:text-white" aria-label="{{ __('Fermer le menu') }}">
@@ -22,5 +22,6 @@
         <p class="truncate text-sm font-semibold text-white">{{ $user->name }}</p>
         <p class="truncate text-xs text-slate-400">{{ App\Support\Ui\UiLabel::get($user->is_platform_admin ? 'platform-admin' : $user->role?->slug) }}</p>
         <a href="{{ route('profile.edit') }}" class="mt-2 inline-flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-300 hover:bg-white/10 hover:text-white"><x-icon name="users" size="xs" />{{ __('Mon profil') }}</a>
+        <a href="{{ route('security.index') }}" class="inline-flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-brand-300 hover:bg-white/10 hover:text-white"><x-icon name="shield" size="xs" />{{ __('Sécurité du compte') }}</a>
     </div>
 </aside>

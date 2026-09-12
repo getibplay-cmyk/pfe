@@ -41,7 +41,11 @@
     body {
         @apply min-w-0 bg-belkhir-space-canvas text-belkhir-space-text;
         overflow-x: clip;
+        -webkit-font-smoothing: antialiased;
     }
+
+    :where([id]) { scroll-margin-top: 7rem; }
+    ::selection { @apply bg-brand-100 text-brand-900; }
 
     :focus-visible {
         @apply outline-none ring-2 ring-belkhir-space-blue ring-offset-2;
@@ -85,10 +89,20 @@
     .rf-page { @apply mx-auto w-full max-w-7xl space-y-6; }
     .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-belkhir-space-border bg-belkhir-space-surface shadow-panel; }
     .rf-panel-body { @apply p-4 sm:p-6; }
-    .rf-panel-heading { @apply border-b border-belkhir-space-border px-4 py-4 sm:px-6; }
+    .rf-panel-heading { @apply border-b border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6; }
+    .rf-page-heading { @apply rounded-2xl border border-belkhir-space-border bg-white p-5 shadow-sm sm:p-6; }
+    .rf-sidebar { @apply border-e border-white/10; scrollbar-width: thin; scrollbar-color: #475569 transparent; }
+    .rf-topbar { box-shadow: 0 4px 18px rgb(15 23 42 / 0.035); }
+    .rf-stat-card { @apply flex flex-col; }
+    .rf-stat-card > p { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .rf-security-summary { @apply flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 bg-white p-4; }
+    .rf-security-icon { @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700; }
+    .rf-action-card { @apply flex min-w-0 flex-col overflow-hidden; }
+    .rf-action-card-header { @apply flex items-center gap-3 border-b border-slate-100 bg-slate-50/70 p-4; }
+    .rf-action-card ul { @apply flex-1 px-4; }
 
     .rf-button {
-        @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:transform-none;
+        @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:transform-none;
     }
     .rf-button-primary { @apply rf-button border-belkhir-space-blue bg-belkhir-space-blue text-white hover:border-belkhir-space-blue-hover hover:bg-belkhir-space-blue-hover; }
     .rf-button-secondary { @apply rf-button border-belkhir-space-border bg-belkhir-space-surface text-belkhir-space-text shadow-sm hover:border-slate-400 hover:bg-slate-50; }
@@ -135,10 +149,14 @@
     .rf-table-scroll thead { @apply bg-belkhir-space-canvas text-start text-xs font-semibold uppercase tracking-wide text-belkhir-space-muted; }
     .rf-table-scroll th { @apply whitespace-nowrap px-4 py-3; }
     .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-belkhir-space-surface; }
-    .rf-table-scroll tbody tr { @apply transition-colors hover:bg-brand-50/40; }
+    .rf-table-scroll tbody tr { @apply transition-colors hover:bg-brand-50/40 focus-within:bg-brand-50/60; }
     .rf-table-scroll td { @apply px-4 py-3 align-top text-slate-700; }
     .rf-mobile-scroll-hint { @apply border-b border-belkhir-space-border bg-belkhir-space-canvas px-4 py-2 text-xs text-belkhir-space-muted sm:hidden; }
     .rf-kbd { @apply rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-[0.7rem] text-slate-600; }
+
+    @media (pointer: coarse) {
+        .rf-button-link, .rf-button-quiet, [data-nav-key] { min-height: 44px; }
+    }
 
     main section[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
     main article[class~='rounded-xl'][class~='bg-white'][class~='shadow-sm'],
