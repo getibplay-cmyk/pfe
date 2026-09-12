@@ -49,7 +49,7 @@ return new class extends Migration
             ALTER TABLE inspection_drafts ADD CONSTRAINT inspection_draft_kind CHECK (kind IN ('departure', 'return'));
             ALTER TABLE inspection_drafts ADD CONSTRAINT inspection_draft_completion CHECK ((completed_at IS NULL AND vehicle_inspection_id IS NULL AND selected_photo_ids IS NULL) OR (completed_at IS NOT NULL AND vehicle_inspection_id IS NOT NULL AND selected_photo_ids IS NOT NULL));
             ALTER TABLE inspection_draft_photos ADD CONSTRAINT inspection_photo_angle CHECK (angle IN ('front','back','left','right','interior','odometer'));
-            CREATE FUNCTION rentfleet_inspection_draft_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_inspection_draft_guard() RETURNS trigger AS $$
             BEGIN
                 IF OLD.completed_at IS NOT NULL THEN
                     RAISE EXCEPTION 'Completed guided inspections are immutable' USING ERRCODE = '23514';
@@ -62,7 +62,7 @@ return new class extends Migration
             END;
             $$ LANGUAGE plpgsql;
             CREATE TRIGGER inspection_draft_guard BEFORE UPDATE OR DELETE ON inspection_drafts FOR EACH ROW EXECUTE FUNCTION rentfleet_inspection_draft_guard();
-            CREATE FUNCTION rentfleet_inspection_photo_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_inspection_photo_guard() RETURNS trigger AS $$
             DECLARE draft inspection_drafts%ROWTYPE;
             BEGIN
                 IF TG_OP <> 'INSERT' THEN

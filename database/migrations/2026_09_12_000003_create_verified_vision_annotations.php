@@ -61,7 +61,7 @@ return new class extends Migration
                 OR (family = 'damage' AND color_run_id IS NULL AND plate_run_id IS NULL AND damage_run_id IS NOT NULL)
             );
             ALTER TABLE vision_annotations ADD CONSTRAINT vision_annotation_dimensions CHECK (image_width > 0 AND image_height > 0 AND revision > 0);
-            CREATE FUNCTION rentfleet_vision_annotation_scope() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_vision_annotation_scope() RETURNS trigger AS $$
             DECLARE run_agency bigint; run_status varchar;
             BEGIN
                 IF NEW.family = 'color' THEN

@@ -71,7 +71,7 @@ return new class extends Migration
             ALTER TABLE public_booking_requests ADD CONSTRAINT booking_period_check CHECK (ends_at > starts_at);
             ALTER TABLE public_booking_requests ADD CONSTRAINT booking_status_check CHECK (status IN ('pending', 'converted', 'rejected'));
             ALTER TABLE public_booking_requests ADD CONSTRAINT booking_conversion_check CHECK ((status = 'converted') = (reservation_id IS NOT NULL));
-            CREATE FUNCTION rentfleet_booking_request_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_booking_request_guard() RETURNS trigger AS $$
             BEGIN
                 IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'Booking history cannot be deleted' USING ERRCODE = '23514'; END IF;
                 IF TG_OP = 'INSERT' THEN

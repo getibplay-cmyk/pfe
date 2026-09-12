@@ -26,7 +26,7 @@ return new class extends Migration
         });
         DB::unprepared(<<<'SQL'
             ALTER TABLE reservation_replans ADD CONSTRAINT reservation_replan_distinct CHECK (previous_reservation_id <> replacement_reservation_id);
-            CREATE FUNCTION rentfleet_reservation_replan_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_reservation_replan_guard() RETURNS trigger AS $$
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM reservations WHERE tenant_id = NEW.tenant_id AND agency_id = NEW.agency_id AND id = NEW.previous_reservation_id AND status = 'cancelled')
                     OR NOT EXISTS (SELECT 1 FROM reservations WHERE tenant_id = NEW.tenant_id AND agency_id = NEW.agency_id AND id = NEW.replacement_reservation_id AND status = 'confirmed') THEN

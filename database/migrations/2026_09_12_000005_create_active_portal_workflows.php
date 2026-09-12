@@ -67,7 +67,7 @@ return new class extends Migration
             ALTER TABLE contract_extensions ADD CONSTRAINT extension_amount_check CHECK (additional_amount IS NULL OR additional_amount >= 0);
             ALTER TABLE contract_extensions ADD CONSTRAINT extension_offer_check CHECK (status NOT IN ('offered', 'accepted') OR (base_version_id IS NOT NULL AND original_return_at IS NOT NULL AND requested_return_at > original_return_at AND additional_amount IS NOT NULL AND currency IS NOT NULL AND currency ~ '^[A-Z]{3}$' AND offer_snapshot IS NOT NULL AND offer_hash IS NOT NULL AND offer_hash ~ '^[0-9a-f]{64}$' AND document_id IS NOT NULL AND document_hash IS NOT NULL AND document_hash ~ '^[0-9a-f]{64}$' AND document_version_id IS NOT NULL AND reviewed_by IS NOT NULL AND expires_at IS NOT NULL));
             ALTER TABLE contract_extensions ADD CONSTRAINT extension_accepted_check CHECK ((status = 'accepted') = (accepted_version_id IS NOT NULL));
-            CREATE FUNCTION rentfleet_extension_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_extension_guard() RETURNS trigger AS $$
             BEGIN
                 IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'Extension history cannot be deleted' USING ERRCODE = '23514'; END IF;
                 IF TG_OP = 'INSERT' THEN
@@ -87,7 +87,7 @@ return new class extends Migration
             END;
             $$ LANGUAGE plpgsql;
             CREATE TRIGGER extension_guard BEFORE INSERT OR UPDATE OR DELETE ON contract_extensions FOR EACH ROW EXECUTE FUNCTION rentfleet_extension_guard();
-            CREATE FUNCTION rentfleet_portal_acceptance_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_portal_acceptance_guard() RETURNS trigger AS $$
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM customer_portal_accesses WHERE id = NEW.access_id AND tenant_id = NEW.tenant_id AND customer_id = NEW.customer_id)
                     OR NOT EXISTS (SELECT 1 FROM contract_acceptances WHERE tenant_id = NEW.tenant_id AND rental_contract_id = NEW.rental_contract_id AND contract_version_id = NEW.contract_version_id AND created_by IS NULL) THEN

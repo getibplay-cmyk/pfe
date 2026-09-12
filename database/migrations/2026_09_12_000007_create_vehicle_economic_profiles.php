@@ -35,7 +35,7 @@ return new class extends Migration
         });
         DB::unprepared(<<<'SQL'
             ALTER TABLE vehicle_economic_profiles ADD CONSTRAINT vehicle_economic_values CHECK (revision > 0 AND acquisition_cost >= 0 AND residual_value >= 0 AND residual_value <= acquisition_cost AND annual_insurance >= 0 AND monthly_unrecorded_costs >= 0 AND depreciation_months BETWEEN 1 AND 240 AND acquired_on <= effective_from AND currency ~ '^[A-Z]{3}$');
-            CREATE FUNCTION rentfleet_economic_profile_guard() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION rentfleet_economic_profile_guard() RETURNS trigger AS $$
             BEGIN
                 IF NEW.acquisition_expense_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM expenses WHERE id = NEW.acquisition_expense_id AND tenant_id = NEW.tenant_id AND agency_id = NEW.agency_id AND vehicle_id = NEW.vehicle_id AND status = 'approved' AND deleted_at IS NULL AND currency = NEW.currency AND category = 'other') THEN
                     RAISE EXCEPTION 'Invalid acquisition expense scope' USING ERRCODE = '23514';
