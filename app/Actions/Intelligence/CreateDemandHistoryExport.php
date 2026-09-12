@@ -2,6 +2,7 @@
 
 namespace App\Actions\Intelligence;
 
+use App\Models\Agency;
 use App\Models\DemandHistoryExportRun;
 use App\Models\User;
 use App\Support\Audit\AuditRecorder;
@@ -48,6 +49,45 @@ final class CreateDemandHistoryExport
         );
     }
 
+    public function trainingData(int $agencyId, string $dateFrom, string $dateTo, User $actor): array
+    {
+        $this->assertExportAuthorized($agencyId, $actor);
+        Agency::query()->whereKey($agencyId)->where('is_active', true)->firstOrFail();
+        [$from, $to] = $this->period($dateFrom, $dateTo);
+        if ($from->diffInDays($to) + 1 < 120
+            || $to->greaterThanOrEqualTo(CarbonImmutable::now(DemandForecastContract::TIMEZONE)->startOfDay())) {
+            throw new RuntimeException('Choisissez entre 120 et 731 jours consécutifs terminés.');
+        }
+
+        $tenantId = $this->context->tenantId();
+        $seriesKey = $this->pseudonymizer->demandSeriesKey($tenantId, $agencyId);
+        $counts = $this->departureCounts($tenantId, $agencyId, $from, $to);
+        $rows = [];
+        for ($date = $from; $date->lessThanOrEqualTo($to); $date = $date->addDay()) {
+            $day = $date->toDateString();
+            $rows[] = ['key' => hash('sha256', $seriesKey.'|'.$day), 'group' => $seriesKey, 'date' => $day, 'value' => $counts[$day] ?? 0];
+        }
+
+        return ['schema_version' => '1.0', 'family' => 'demand', 'rows' => $rows];
+    }
+
+    /** @return array{CarbonImmutable, CarbonImmutable} */
+    private function period(string $dateFrom, string $dateTo): array
+    {
+        $from = CarbonImmutable::createFromFormat('!Y-m-d', $dateFrom, DemandForecastContract::TIMEZONE);
+        $to = CarbonImmutable::createFromFormat('!Y-m-d', $dateTo, DemandForecastContract::TIMEZONE);
+        if ($from === false || $to === false || $from->format('Y-m-d') !== $dateFrom
+            || $to->format('Y-m-d') !== $dateTo || $from->greaterThan($to)) {
+            throw new RuntimeException('La période de demande est invalide.');
+        }
+        $days = (int) $from->diffInDays($to) + 1;
+        if ($days < DemandForecastContract::MINIMUM_HISTORY_DAYS || $days > DemandForecastContract::MAXIMUM_HISTORY_DAYS) {
+            throw new RuntimeException('La période de demande doit contenir entre 35 et 731 jours.');
+        }
+
+        return [$from, $to];
+    }
+
     private function create(
         int $agencyId,
         string $dateFrom,
@@ -55,21 +95,8 @@ final class CreateDemandHistoryExport
         User $actor,
     ): DemandHistoryExportRun {
 
-        $from = CarbonImmutable::createFromFormat('!Y-m-d', $dateFrom, DemandForecastContract::TIMEZONE);
-        $to = CarbonImmutable::createFromFormat('!Y-m-d', $dateTo, DemandForecastContract::TIMEZONE);
-        if ($from === false
-            || $to === false
-            || $from->format('Y-m-d') !== $dateFrom
-            || $to->format('Y-m-d') !== $dateTo
-            || $from->greaterThan($to)) {
-            throw new RuntimeException('La période de demande est invalide.');
-        }
-
+        [$from, $to] = $this->period($dateFrom, $dateTo);
         $rowCount = (int) $from->diffInDays($to) + 1;
-        if ($rowCount < DemandForecastContract::MINIMUM_HISTORY_DAYS
-            || $rowCount > DemandForecastContract::MAXIMUM_HISTORY_DAYS) {
-            throw new RuntimeException('La période de demande doit contenir entre 35 et 731 jours.');
-        }
 
         $runId = (string) Str::uuid();
         $storedPath = 'intelligence/demand-history/'.$runId.'.csv';
