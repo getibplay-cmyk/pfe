@@ -27,7 +27,7 @@
                 @unless (config('security.mfa_require_admins') && ($user->is_platform_admin || $user->isTenantOwner()))
                     <details class="mt-5 rounded-xl border border-slate-200 p-4" @if($errors->has('code')) open @endif>
                         <summary class="cursor-pointer text-sm font-semibold text-slate-700">{{ __('Désactiver la double authentification') }}</summary>
-                        <form method="POST" action="{{ route('security.disable') }}" class="mt-4 space-y-3" x-belkhir-space-confirm data-confirm-title="{{ __('Désactiver la double authentification') }}" data-confirm-consequence="{{ __('Les prochaines connexions ne demanderont plus de code temporaire.') }}" data-loading-form>
+                        <form method="POST" action="{{ route('security.disable') }}" class="mt-4 space-y-3" x-belkhir-space-confirm data-confirm-title="{{ __('Désactiver la double authentification') }}" data-confirm-resource="{{ __('Sécurité du compte') }}" data-confirm-label="{{ __('Désactiver la double authentification') }}" data-confirm-consequence="{{ __('Les prochaines connexions ne demanderont plus de code temporaire.') }}" data-loading-form>
                             @csrf @method('DELETE')
                             <x-input-label for="disable-code" :value="__('Code de vérification ou de secours')" required />
                             <x-text-input id="disable-code" name="code" dir="ltr" autocomplete="one-time-code" maxlength="40" required :invalid="$errors->has('code')" aria-describedby="disable-code-error" />
@@ -64,7 +64,7 @@
             @else
                 <div class="mb-5 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <p class="max-w-xl text-sm leading-6 text-slate-600">{{ __('Vous ne reconnaissez pas un appareil ? Déconnectez-le, puis changez votre mot de passe.') }}</p>
-                    <form method="POST" action="{{ route('security.revoke-others') }}" class="shrink-0" x-belkhir-space-confirm data-confirm-title="{{ __('Déconnecter les autres appareils') }}" data-confirm-consequence="{{ __('Les autres appareils devront se reconnecter. Votre session actuelle restera ouverte.') }}" data-loading-form>
+                    <form method="POST" action="{{ route('security.revoke-others') }}" class="shrink-0" x-belkhir-space-confirm data-confirm-title="{{ __('Déconnecter les autres appareils') }}" data-confirm-resource="{{ __('Sessions connectées') }}" data-confirm-label="{{ __('Déconnecter les autres appareils') }}" data-confirm-consequence="{{ __('Les autres appareils devront se reconnecter. Votre session actuelle restera ouverte.') }}" data-loading-form>
                         @csrf @method('DELETE')<x-secondary-button type="submit" data-loading-submit>{{ __('Déconnecter les autres appareils') }}</x-secondary-button>
                     </form>
                 </div>
@@ -79,7 +79,7 @@
                             </div>
                             @if ($session['current'])<span class="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">{{ __('Cet appareil') }}</span>
                             @else
-                                <form method="POST" action="{{ route('security.revoke') }}" x-belkhir-space-confirm data-confirm-title="{{ __('Révoquer cette session') }}" data-confirm-resource="{{ $session['browser'] }} · {{ $session['platform'] }}" data-confirm-consequence="{{ __('Cet appareil devra se reconnecter pour accéder au compte.') }}" data-loading-form>
+                                <form method="POST" action="{{ route('security.revoke') }}" x-belkhir-space-confirm data-confirm-title="{{ __('Révoquer cette session') }}" data-confirm-label="{{ __('Révoquer') }}" data-confirm-resource="{{ $session['browser'] }} · {{ $session['platform'] }}" data-confirm-consequence="{{ __('Cet appareil devra se reconnecter pour accéder au compte.') }}" data-loading-form>
                                     @csrf @method('DELETE')<input type="hidden" name="session_key" value="{{ $session['key'] }}"><x-secondary-button type="submit" data-loading-submit>{{ __('Révoquer') }}</x-secondary-button>
                                 </form>
                             @endif
