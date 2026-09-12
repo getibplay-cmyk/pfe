@@ -9,6 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::table('reservations', function (Blueprint $table) {
+            $table->unique(['tenant_id', 'agency_id', 'id'], 'reservations_booking_agency_unique');
+        });
         Schema::create('public_booking_profiles', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('tenant_id')->unique();
@@ -93,5 +96,8 @@ return new class extends Migration
         Schema::dropIfExists('public_vehicle_listings');
         Schema::dropIfExists('public_booking_profiles');
         DB::statement('DROP FUNCTION IF EXISTS rentfleet_booking_request_guard()');
+        Schema::table('reservations', function (Blueprint $table) {
+            $table->dropUnique('reservations_booking_agency_unique');
+        });
     }
 };
