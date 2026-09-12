@@ -2,7 +2,7 @@
     <div class="grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-4">
         @foreach(['identity' => 'Identité client', 'licence' => 'Permis conducteur', 'contract' => 'PDF de la version', 'valid' => 'Fichiers et empreintes'] as $key => $label)
             <div class="rounded-xl border border-slate-200 p-3">
-                <p class="text-slate-500">{{ $label }}</p>
+                <p class="text-slate-500">{{ __($label) }}</p>
                 <p class="mt-1 flex items-center gap-2 font-semibold {{ $documentStatus[$key] ? 'text-emerald-700' : 'text-amber-800' }}"><span aria-hidden="true">{{ $documentStatus[$key] ? '✓' : '!' }}</span>{{ $documentStatus[$key] ? __('Validé') : __('Manquant ou invalide') }}</p>
             </div>
         @endforeach

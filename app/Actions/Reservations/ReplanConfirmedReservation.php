@@ -68,7 +68,6 @@ final class ReplanConfirmedReservation
             abort(422, __('La proposition est invalide. Préparez un nouvel aperçu.'));
         }
         abort_unless(is_array($proposal) && ($proposal['tenant_id'] ?? null) === $user->tenant_id && ($proposal['user_id'] ?? null) === $user->id && ($proposal['reservation_id'] ?? null) === $reservation->id, 403);
-        abort_if(($proposal['expires_at'] ?? 0) < now()->timestamp, 409, __('La proposition a expiré. Préparez un nouvel aperçu.'));
 
         return DB::transaction(function () use ($user, $reservation, $proposal, $reason) {
             $locked = Reservation::whereKey($reservation)->lockForUpdate()->firstOrFail();
@@ -80,6 +79,7 @@ final class ReplanConfirmedReservation
 
                 return $replacement;
             }
+            abort_if(($proposal['expires_at'] ?? 0) < now()->timestamp, 409, __('La proposition a expiré. Préparez un nouvel aperçu.'));
             $this->authorize($user, $locked);
             abort_unless(hash_equals($proposal['state'], $this->state($locked)), 409, __('La réservation a changé depuis l’aperçu.'));
             $fresh = $this->preview($user, $locked, $proposal);

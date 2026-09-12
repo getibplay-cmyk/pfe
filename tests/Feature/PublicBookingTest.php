@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\PublicBookingProfile;
 use App\Models\PublicBookingRequest;
 use App\Models\PublicVehicleListing;
@@ -21,6 +22,7 @@ class PublicBookingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withCredentials();
         $this->seed(RolesPermissionsSeeder::class);
         $this->travelTo(CarbonImmutable::parse('2026-09-12 12:00 UTC'));
     }
@@ -52,6 +54,11 @@ class PublicBookingTest extends TestCase
             $this->assertStringNotContainsString('test@example.test', DB::table('public_booking_requests')->value('contact'));
             $this->assertSame(1, Reservation::count());
             $this->assertSame(1, VehicleBlock::where('status', 'active')->count());
+            $audit = AuditLog::where('action', 'public_booking.requested')->sole();
+            $this->assertNull($audit->auditable_id);
+            $this->assertSame($booking->id, $audit->auditable_uuid);
+            $this->assertNull($audit->user_id);
+            $this->assertStringNotContainsString('test@example.test', $audit->toJson());
         });
     }
 
@@ -67,6 +74,7 @@ class PublicBookingTest extends TestCase
             $this->assertSame('pending', $reservation->customer->verification_status->value);
             $this->assertNull($reservation->driver_id);
             $this->assertSame(1, VehicleBlock::where('status', 'active')->count());
+            $this->assertSame($booking->id, AuditLog::where('action', 'public_booking.converted')->sole()->auditable_uuid);
         });
         $other = $this->catalog();
         $this->actingAs($other['user'])->get(route('booking-admin.show', $booking))->assertNotFound();
@@ -92,6 +100,19 @@ class PublicBookingTest extends TestCase
         $this->assertSame(0, DB::table('public_booking_requests')->count());
     }
 
+    public function test_rejection_records_the_uuid_subject_without_losing_the_request(): void
+    {
+        $f = $this->catalog();
+        $this->post(route('booking.store', [$f['profile']->slug, $f['listing']->id]), ['proposal' => $this->proposal($f), ...$this->contact()])->assertRedirect();
+        $booking = $this->within($f, fn () => PublicBookingRequest::sole());
+        $this->actingAs($f['user'])->post(route('booking-admin.reject', $booking), ['review_note' => 'Dates à revoir avec le client.'])->assertRedirect();
+        $this->within($f, function () use ($booking) {
+            $this->assertSame('rejected', $booking->fresh()->status);
+            $this->assertSame($booking->id, AuditLog::where('action', 'public_booking.rejected')->sole()->auditable_uuid);
+            $this->assertSame(1, Reservation::count());
+        });
+    }
+
     public function test_action_dashboard_only_shows_requests_of_the_active_company(): void
     {
         $a = $this->catalog();
@@ -112,8 +133,9 @@ class PublicBookingTest extends TestCase
     {
         $f = $this->catalog();
         $proposal = $this->proposal($f);
-        $response = $this->post(route('booking.store', [$f['profile']->slug, $f['listing']->id]), ['proposal' => $proposal, ...$this->contact()]);
+        $response = $this->post(route('booking.store', [$f['profile']->slug, $f['listing']->id]), ['proposal' => $proposal, ...$this->contact()])->assertRedirect();
         $this->app['session']->invalidate();
+        $this->withCookie(config('session.cookie'), $this->app['session']->getId());
         $this->get($response->headers->get('Location'))->assertNotFound();
         $this->postJson(route('booking.store', [$f['profile']->slug, $f['listing']->id]), ['proposal' => $proposal, ...$this->contact()])->assertForbidden();
     }
@@ -133,6 +155,7 @@ class PublicBookingTest extends TestCase
     private function proposal(array $f): string
     {
         $response = $this->get(route('booking.vehicle', [$f['profile']->slug, $f['listing']->id, 'starts_at' => now()->addDays(10)->format('Y-m-d\TH:i'), 'ends_at' => now()->addDays(12)->format('Y-m-d\TH:i')]))->assertOk();
+        $this->withCookie(config('session.cookie'), $this->app['session']->getId());
 
         return $response->viewData('quote')['proposal'];
     }

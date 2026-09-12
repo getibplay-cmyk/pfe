@@ -35,7 +35,7 @@ class WorkspaceExperienceTest extends TestCase
         $this->post(route('workspace.favorite'), ['kind' => 'customers', 'id' => $foreign->id])->assertNotFound();
         $this->post(route('workspace.favorite'), ['kind' => 'customers', 'id' => $other->id])->assertNotFound();
         $this->post(route('workspace.favorite'), ['kind' => 'customers', 'id' => $customer->id])->assertRedirect();
-        $this->get(route('workspace.index'))->assertOk()->assertSee($customer->displayName())->assertDontSee($other->displayName());
+        $this->actingAs($agent->fresh())->get(route('workspace.index'))->assertOk()->assertSee($customer->displayName())->assertDontSee($other->displayName());
         $agent->forceFill(['agency_id' => $otherAgency->id])->save();
         $this->actingAs($agent->fresh())->get(route('workspace.index'))->assertDontSee($customer->displayName());
     }

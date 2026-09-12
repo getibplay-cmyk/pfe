@@ -38,7 +38,7 @@ class AccountSecurityTest extends TestCase
         $this->assertNotNull($user->fresh()->mfa_confirmed_at);
         $this->assertArrayNotHasKey('mfa_secret', $user->fresh()->toArray());
         $this->assertNull(session()->getOldInput('code'));
-        $this->get(route('profile.edit'))->assertOk();
+        $this->actingAs($user->fresh())->get(route('profile.edit'))->assertOk();
         $response->assertHeader('Cache-Control', 'no-store, private');
         $this->assertStringNotContainsString($secret, AuditLog::withoutGlobalScopes()->get()->toJson());
     }

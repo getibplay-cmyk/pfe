@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::table('audit_logs', function (Blueprint $table) {
+            $table->uuid('auditable_uuid')->nullable();
+            $table->index(['auditable_type', 'auditable_uuid'], 'audit_logs_uuid_subject_index');
+        });
         Schema::table('reservations', function (Blueprint $table) {
             $table->unique(['tenant_id', 'agency_id', 'id'], 'reservations_booking_agency_unique');
         });
@@ -98,6 +102,10 @@ return new class extends Migration
         DB::statement('DROP FUNCTION IF EXISTS rentfleet_booking_request_guard()');
         Schema::table('reservations', function (Blueprint $table) {
             $table->dropUnique('reservations_booking_agency_unique');
+        });
+        Schema::table('audit_logs', function (Blueprint $table) {
+            $table->dropIndex('audit_logs_uuid_subject_index');
+            $table->dropColumn('auditable_uuid');
         });
     }
 };

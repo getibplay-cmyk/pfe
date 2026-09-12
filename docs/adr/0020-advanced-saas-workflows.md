@@ -23,7 +23,7 @@ L'exploitation quotidienne doit relier les demandes des locataires, la disponibi
 
 Les nouveaux liens métier ont des clés étrangères composites tenant/agence. Le middleware public détermine le périmètre à partir du catalogue publié ; le portail détermine le client à partir d'un accès valide. Aucun de ces parcours ne réutilise l'identité d'un collaborateur connecté comme signataire client.
 
-La contrainte GiST reste l'autorité finale de disponibilité. Un déplacement remplace une réservation confirmée sans contrat ; une prolongation crée une nouvelle version acceptée et étend le bloc existant. Aucun tarif ou document déjà accepté n'est réécrit.
+La contrainte GiST reste l'autorité finale de disponibilité. Un déplacement remplace une réservation confirmée sans contrat ; une prolongation crée une nouvelle version acceptée et étend le bloc existant. Aucun tarif ou document déjà accepté n'est réécrit. Les documents contractuels conservent leur premier fichier ; policy, action et trigger PostgreSQL interdisent son remplacement. Toute correction crée une nouvelle version contractuelle. Les sujets d’audit UUID utilisent une colonne dédiée, sans modifier les identifiants numériques historiques.
 
 Une prolongation exige un PDF propre à la proposition, son empreinte, les nouvelles conditions, l'accord de l'agence puis celui du locataire. Prix, disponibilité, permis, version et document sont revérifiés à l'acceptation. Une facture existante interdit ce parcours.
 

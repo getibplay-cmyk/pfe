@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Documents\AddDocumentVersion;
 use App\Actions\Rentals\ActivateRentalContract;
 use App\Models\ContractExtension;
 use App\Models\CustomerPortalAccess;
@@ -10,10 +11,12 @@ use App\Support\Rentals\ActiveCustomerPortal;
 use App\Support\Rentals\GuidedInspection;
 use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\Concerns\BuildsRentalScenario;
 use Tests\TestCase;
 
@@ -109,6 +112,38 @@ class ActiveCustomerPortalTest extends TestCase
         $this->get(route('portal.contract.show', $contract->id))->assertNotFound();
         $this->within($a, fn () => $access->update(['revoked_at' => now()]));
         $this->get(route('portal.home'))->assertForbidden();
+    }
+
+    public function test_contract_download_keeps_its_file_and_replacement_is_blocked_at_every_write_boundary(): void
+    {
+        $f = $this->scenario();
+        $contract = $this->acceptedScenarioContract($f);
+        [$document, $file] = $this->within($f, function () use ($contract) {
+            $document = $contract->currentVersion->document;
+
+            return [$document, $document->currentVersion];
+        });
+        $original = Storage::disk(config('documents.disk'))->get($file->stored_path);
+        $this->actingAs($f['user'])->post(route('documents.versions.store', $document), ['file' => $this->pdf()])->assertForbidden();
+        $this->within($f, function () use ($f, $document, $file) {
+            try {
+                app(AddDocumentVersion::class)->handle($document, $this->pdf(), $f['user']->id);
+                $this->fail('A contract PDF was replaced.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('file', $exception->errors());
+            }
+            try {
+                DB::transaction(fn () => $document->forceFill(['current_version_id' => null])->save());
+                $this->fail('The database allowed replacing the contract file pointer.');
+            } catch (QueryException $exception) {
+                $this->assertSame('23514', $exception->getCode());
+            }
+            $this->assertSame($file->id, $document->fresh()->current_version_id);
+            $this->assertSame(1, $document->versions()->count());
+        });
+        $this->enter($f);
+        $this->get(route('portal.contract.version', [$contract->id, $contract->current_version_id]))->assertOk()->assertStreamedContent($original);
+        $this->get(route('portal.contract', $contract->id))->assertOk()->assertStreamedContent($original);
     }
 
     private function enter(array $f): CustomerPortalAccess

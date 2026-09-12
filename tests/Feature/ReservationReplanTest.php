@@ -41,6 +41,8 @@ class ReservationReplanTest extends TestCase
             $this->assertSame(ReservationStatus::Confirmed, $replacement->status);
             $this->assertSame($f['reservation']->starts_at->addDays(2)->timestamp, $replacement->starts_at->timestamp);
             $this->assertSame($replacement->id, $action->confirm($f['user'], $f['reservation'], $preview['token'], 'Même demande.')->id);
+            $this->travel(11)->minutes();
+            $this->assertSame($replacement->id, $action->confirm($f['user'], $f['reservation'], $preview['token'], 'Réponse initiale perdue.')->id);
             $this->assertSame(1, VehicleBlock::where('status', 'active')->count());
             $this->assertSame(1, DB::table('reservation_replans')->count());
         });

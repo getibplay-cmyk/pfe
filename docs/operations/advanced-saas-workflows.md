@@ -53,13 +53,13 @@ L’activation ou la désactivation de MFA incrémente la version de sécurité 
 
 ## Planning, portail et catalogue
 
-Un déplacement concerne une réservation confirmée sans contrat, dans la même agence et devise. L'aperçu expire après dix minutes. La confirmation revérifie dossier, prix et disponibilité ; un conflit conserve le dossier d'origine. Le nouveau tarif est figé et les deux dossiers restent liés.
+Un déplacement concerne une réservation confirmée sans contrat, dans la même agence et devise. L'aperçu expire après dix minutes. La confirmation revérifie dossier, prix et disponibilité ; un conflit conserve le dossier d'origine. Le nouveau tarif est figé et les deux dossiers restent liés. Une confirmation déjà enregistrée retrouve le dossier de remplacement même après expiration de l’aperçu ; une proposition non traitée reste soumise à son délai.
 
-Le locataire accepte une version prête après lecture de son document privé. Une demande de prolongation ne change aucune date. L'agence propose supplément, kilomètres supplémentaires et PDF d'avenant correspondant ; la proposition reste valable vingt-quatre heures. Le locataire doit l'accepter avant l'extension du planning et du contrat. Une demande ne peut dépasser trente jours après le retour prévu. Les contrats déjà facturés sont exclus.
+Le locataire accepte une version prête après lecture de son document privé. Le fichier d’un contrat ou d’un avenant ne peut pas recevoir une autre version de fichier ; toute correction passe par une nouvelle version contractuelle avec son propre PDF. Cette règle est vérifiée par la policy, l’action d’ajout et PostgreSQL. Une demande de prolongation ne change aucune date. L'agence propose supplément, kilomètres supplémentaires et PDF d'avenant correspondant ; la proposition reste valable vingt-quatre heures. Le locataire doit l'accepter avant l'extension du planning et du contrat. Une demande ne peut dépasser trente jours après le retour prévu. Les contrats déjà facturés sont exclus.
 
 Le catalogue est désactivé tant que le propriétaire ne publie pas explicitement ses informations. Seuls les véhicules actifs sélectionnés de l'agence choisie sont présentés, avec leurs caractéristiques publiques. Plaques, identités et documents restent privés. Le devis expire après vingt minutes.
 
-Une demande publique conserve les coordonnées chiffrées et ne crée aucun bloc. L'agence peut l'écarter ou créer une réservation brouillon avec un client existant autorisé ou un nouveau client à vérifier. La vérification du client, le conducteur, les documents et la confirmation canonique restent nécessaires. Demandes et prolongations à examiner apparaissent au tableau de bord.
+Une demande publique conserve les coordonnées chiffrées et ne crée aucun bloc. Son identifiant UUID est conservé dans la colonne dédiée de l’audit, sans coordonnées personnelles. L'agence peut l'écarter ou créer une réservation brouillon avec un client existant autorisé ou un nouveau client à vérifier. La vérification du client, le conducteur, les documents et la confirmation canonique restent nécessaires. Demandes et prolongations à examiner apparaissent au tableau de bord.
 
 ## Données et qualité IA
 

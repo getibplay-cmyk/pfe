@@ -166,7 +166,7 @@
 
             @foreach (['vin' => 'VIN', 'brand' => 'Marque *', 'model' => 'Modèle *', 'production_year' => 'Année', 'current_mileage' => 'Kilométrage *'] as $name => $label)
                 <label class="text-sm">
-                    {{ $label }}
+                    {{ __($label) }}
                     <input class="mt-1 w-full" name="{{ $name }}" value="{{ old($name, $vehicle->$name) }}">
                     <x-input-error :messages="$errors->get($name)" />
                 </label>

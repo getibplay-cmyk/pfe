@@ -13,7 +13,7 @@ Date : 2026-09-12. Branche : feature/saas-advanced-workflows.
 | Syntaxe PHP, incluant les vues compilées | 1 238 fichiers contrôlés, aucune erreur |
 | Build Vite | Réussi, 79 modules |
 | Diff Git | Aucun défaut signalé par diff --check |
-| Catalogue arabe | 4 278 entrées ; couverture des messages littéraux et parité des paramètres vérifiées |
+| Catalogue arabe | 4 293 entrées ; couverture des messages littéraux et parité des paramètres vérifiées |
 | Migrations découvertes | 105, dont sept nouvelles |
 
 Les tests autonomes couvrent notamment TOTP, les coûts calendaires en centimes, les
@@ -23,7 +23,7 @@ la sérialisation du brouillon, les dates du planning et les messages français/
 
 ## Validation restant nécessaire
 
-Les **36 nouveaux tests d'intégration PostgreSQL n'ont pas été exécutés dans cet
+Les **38 nouveaux tests d'intégration PostgreSQL n'ont pas été exécutés dans cet
 environnement**. Aucune instance de test utilisable n'était disponible. La base de
 développement et le garde PostgreSQL n'ont pas été contournés.
 

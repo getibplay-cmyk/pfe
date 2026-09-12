@@ -2,6 +2,7 @@
 
 namespace App\Actions\Documents;
 
+use App\Enums\DocumentType;
 use App\Models\Document;
 use App\Models\DocumentAccessLog;
 use App\Models\DocumentVersion;
@@ -27,6 +28,9 @@ class AddDocumentVersion
         try {
             return DB::transaction(function () use ($document, $file, $actorId, $stored, $disk) {
                 $locked = Document::whereKey($document)->lockForUpdate()->firstOrFail();
+                if ($locked->document_type === DocumentType::ContractAcceptance && $locked->current_version_id !== null) {
+                    throw ValidationException::withMessages(['file' => __('Le document de cette version ne peut pas être remplacé ; créez une nouvelle version contractuelle.')]);
+                }
                 $version = DocumentVersion::create([
                     'document_id' => $locked->id,
                     'version_number' => ((int) $locked->versions()->max('version_number')) + 1,

@@ -28,12 +28,12 @@
                 <x-input-error :messages="$errors->get('agency_id')" />
             </label>
             @foreach (['first_name' => 'Prénom', 'last_name' => 'Nom', 'company_name' => 'Société', 'email' => 'E-mail', 'phone' => 'Téléphone', 'city' => 'Ville', 'nationality' => 'Nationalité', 'birth_date' => 'Naissance', 'identity_type' => 'Type d’identité'] as $name => $label)
-                <label class="text-sm">{{ $label }}
+                <label class="text-sm">{{ __($label) }}
                     <input class="mt-1 w-full" type="{{ $name === 'birth_date' ? 'date' : ($name === 'email' ? 'email' : 'text') }}" name="{{ $name }}" value="{{ old($name, $customer->$name) }}">
                     <x-input-error :messages="$errors->get($name)" />
                 </label>
             @endforeach
-            <label class="text-sm">{{ __('Numéro d’identité') }} {{ $customer->exists ? '(laisser vide pour conserver)' : '' }}
+            <label class="text-sm">{{ __('Numéro d’identité') }} {{ $customer->exists ? __('(laisser vide pour conserver)') : '' }}
                 <input class="mt-1 w-full" type="text" name="identity_number" value="">
                 <x-input-error :messages="$errors->get('identity_number')" />
             </label>

@@ -4276,5 +4276,20 @@
     "Présentation de ": "التعريف بـ ",
     "Période affichée dans le fuseau ": "الفترة معروضة بالمنطقة الزمنية ",
     "Recherchez les véhicules opérationnels sans bloc actif sur l’intervalle demandé. Les horaires sont affichés dans le fuseau ": "ابحث عن المركبات التشغيلية دون حجز نشط خلال الفترة المطلوبة. الأوقات معروضة بالمنطقة الزمنية ",
-    "Zone candidate ": "المنطقة المرشحة "
+    "Zone candidate ": "المنطقة المرشحة ",
+    "(laisser vide pour conserver)": "(اتركه فارغاً للاحتفاظ بالقيمة الحالية)",
+    "annuelle": "سنوية",
+    "mensuelle": "شهرية",
+    "Responsabilité obligatoire": "المسؤولية الإلزامية",
+    "Tiers": "تأمين ضد الغير",
+    "Analyses/mois": "التحليلات شهرياً",
+    "Marque *": "العلامة التجارية *",
+    "Modèle *": "الطراز *",
+    "Kilométrage *": "عداد المسافة *",
+    "Société": "الشركة",
+    "Nationalité": "الجنسية",
+    "Type d’identité": "نوع وثيقة الهوية",
+    "Places": "المقاعد",
+    "Portes": "الأبواب",
+    "Bagages": "الأمتعة"
 }

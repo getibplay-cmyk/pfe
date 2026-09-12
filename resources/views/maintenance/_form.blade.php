@@ -16,11 +16,11 @@
     <x-input-error :messages="$errors->get('vehicle_id')" class="mt-1" />
 </label>
 <label class="text-sm">{{ __('Type') }}
-    <select name="maintenance_type" required class="mt-1 w-full rounded-lg border-slate-300">@foreach(['preventive'=>'Préventive','corrective'=>'Corrective','inspection'=>'Contrôle','repair'=>'Réparation'] as $value => $label)<option value="{{ $value }}" @selected(old('maintenance_type', $maintenance->maintenance_type ?: 'preventive') === $value)>{{ $label }}</option>@endforeach</select>
+    <select name="maintenance_type" required class="mt-1 w-full rounded-lg border-slate-300">@foreach(['preventive'=>'Préventive','corrective'=>'Corrective','inspection'=>'Contrôle','repair'=>'Réparation'] as $value => $label)<option value="{{ $value }}" @selected(old('maintenance_type', $maintenance->maintenance_type ?: 'preventive') === $value)>{{ __($label) }}</option>@endforeach</select>
     <x-input-error :messages="$errors->get('maintenance_type')" class="mt-1" />
 </label>
 <label class="text-sm">{{ __('Priorité') }}
-    <select name="priority" required class="mt-1 w-full rounded-lg border-slate-300">@foreach(['low'=>'Basse','normal'=>'Normale','high'=>'Haute','critical'=>'Critique'] as $value => $label)<option value="{{ $value }}" @selected(old('priority', $maintenance->priority ?: 'normal') === $value)>{{ $label }}</option>@endforeach</select>
+    <select name="priority" required class="mt-1 w-full rounded-lg border-slate-300">@foreach(['low'=>'Basse','normal'=>'Normale','high'=>'Haute','critical'=>'Critique'] as $value => $label)<option value="{{ $value }}" @selected(old('priority', $maintenance->priority ?: 'normal') === $value)>{{ __($label) }}</option>@endforeach</select>
     <x-input-error :messages="$errors->get('priority')" class="mt-1" />
 </label>
 <label class="text-sm md:col-span-2">{{ __('Objet') }}

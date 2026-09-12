@@ -25,6 +25,8 @@ class AuditRecorder
             ? $subject->getKey()
             : $subject->getAttribute('tenant_id');
         $tenantId ??= $context->hasTenant() ? $context->tenantId() : null;
+        $subjectKey = $subject->getKey();
+        $uuidSubject = is_string($subjectKey) && Str::isUuid($subjectKey);
 
         return AuditLog::withoutGlobalScopes()->create([
             'tenant_id' => $tenantId,
@@ -32,7 +34,8 @@ class AuditRecorder
             'user_id' => $request->user()?->getKey(),
             'action' => $action,
             'auditable_type' => $subject::class,
-            'auditable_id' => $subject->getKey(),
+            'auditable_id' => $uuidSubject ? null : $subjectKey,
+            ...($uuidSubject ? ['auditable_uuid' => $subjectKey] : []),
             'old_values' => $this->sanitize($oldValues),
             'new_values' => $this->sanitize($newValues),
             'ip_address' => $request->ip(),

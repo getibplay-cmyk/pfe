@@ -21,7 +21,7 @@
         @if($activeFilterCount > 0)
             <x-slot:tags>
                 @foreach(['date_from' => 'Début', 'date_to' => 'Fin', 'agency_id' => 'Agence', 'currency' => 'Devise'] as $key => $label)
-                    @if(request()->filled($key))<a class="rf-filter-tag" href="{{ route('reports.index', request()->except([$key, 'page'])) }}">{{ $label }} <span aria-hidden="true">{{ __('×') }}</span><span class="sr-only">{{ __('Retirer le filtre') }} {{ strtolower($label) }}</span></a>@endif
+                    @if(request()->filled($key))<a class="rf-filter-tag" href="{{ route('reports.index', request()->except([$key, 'page'])) }}">{{ __($label) }} <span aria-hidden="true">{{ __('×') }}</span><span class="sr-only">{{ __('Retirer le filtre') }} {{ __($label) }}</span></a>@endif
                 @endforeach
             </x-slot:tags>
         @endif

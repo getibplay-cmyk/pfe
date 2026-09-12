@@ -62,6 +62,16 @@ return new class extends Migration
             $table->foreign(['tenant_id', 'access_id'])->references(['tenant_id', 'id'])->on('customer_portal_accesses');
         });
         DB::unprepared(<<<'SQL'
+            CREATE OR REPLACE FUNCTION rentfleet_contract_document_file_guard() RETURNS trigger AS $$
+            BEGIN
+                IF OLD.document_type = 'contract_acceptance' AND OLD.current_version_id IS NOT NULL
+                    AND (NEW.current_version_id IS DISTINCT FROM OLD.current_version_id OR NEW.document_type IS DISTINCT FROM OLD.document_type) THEN
+                    RAISE EXCEPTION 'A contract document file cannot be replaced; create a contract version' USING ERRCODE = '23514';
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+            CREATE TRIGGER contract_document_file_guard BEFORE UPDATE ON documents FOR EACH ROW EXECUTE FUNCTION rentfleet_contract_document_file_guard();
             CREATE UNIQUE INDEX extension_one_open_per_contract ON contract_extensions (tenant_id, rental_contract_id) WHERE status IN ('requested', 'offered');
             ALTER TABLE contract_extensions ADD CONSTRAINT extension_status_check CHECK (status IN ('requested', 'offered', 'accepted', 'rejected', 'cancelled'));
             ALTER TABLE contract_extensions ADD CONSTRAINT extension_amount_check CHECK (additional_amount IS NULL OR additional_amount >= 0);
@@ -103,6 +113,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        DB::statement('DROP TRIGGER IF EXISTS contract_document_file_guard ON documents');
+        DB::statement('DROP FUNCTION IF EXISTS rentfleet_contract_document_file_guard()');
         Schema::dropIfExists('portal_contract_acceptances');
         Schema::dropIfExists('contract_extensions');
         DB::statement('DROP FUNCTION IF EXISTS rentfleet_extension_guard()');
