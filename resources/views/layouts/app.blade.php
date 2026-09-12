@@ -88,7 +88,6 @@
                     </button>
                     <div id="menu-utilisateur" x-cloak x-show="open" x-transition role="menu" aria-label="{{ __('Menu utilisateur') }}" class="absolute end-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                         <a role="menuitem" href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="users" size="xs" />{{ __('Mon profil') }}</a>
-                        <a role="menuitem" href="{{ route('security.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="shield" size="xs" />{{ __('Sécurité du compte') }}</a>
                         <form method="POST" action="{{ route('logout') }}">@csrf<button role="menuitem" type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="logout" size="xs" />{{ __('Déconnexion') }}</button></form>
                     </div>
                 </div>

@@ -36,6 +36,7 @@ class NavigationBuilder
                         $this->item('platform-training', __('Réentraînement des modèles'), 'platform.training.index', 'platform.training.*'),
                     ],
                 ],
+                $this->accountSection(),
             ];
         }
 
@@ -86,7 +87,18 @@ class NavigationBuilder
                 $this->when($user, 'role.view', $this->item('roles', __('Rôles et permissions'), 'roles.index', 'roles.*')),
                 $this->when($user, 'audit.view', $this->item('audit', __('Journal d’audit'), 'audit-logs.index', 'audit-logs.*')),
             ]),
+            $this->accountSection(),
         ]));
+    }
+
+    private function accountSection(): array
+    {
+        // Account security is available to every active authenticated account,
+        // including platform admins, through the shared account routes.
+        return [
+            'label' => __('Compte utilisateur'),
+            'items' => [$this->item('account-security', __('Sécurité du compte'), 'security.index', 'security.*')],
+        ];
     }
 
     private function section(string $label, array $items): ?array

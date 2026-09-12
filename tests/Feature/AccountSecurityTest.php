@@ -173,6 +173,17 @@ class AccountSecurityTest extends TestCase
             ->assertHeader('Referrer-Policy', 'no-referrer')->assertHeader('Cache-Control', 'no-store, private');
     }
 
+    public function test_security_navigation_is_shared_by_desktop_and_mobile_for_both_account_types(): void
+    {
+        foreach ([$this->createTenantOwner(), User::factory()->create(['is_platform_admin' => true, 'tenant_id' => null])] as $user) {
+            $response = $this->actingAs($user)->get(route('security.index'))->assertOk();
+            $this->assertSame(2, substr_count($response->getContent(), 'data-nav-key="account-security"'));
+            foreach (['desktop', 'mobile'] as $surface) {
+                $this->assertMatchesRegularExpression('/data-nav-key="account-security"\s+data-nav-surface="'.$surface.'"/', $response->getContent());
+            }
+        }
+    }
+
     private function enabled(): User
     {
         $user = $this->createTenantOwner();
