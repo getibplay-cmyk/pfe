@@ -88,8 +88,8 @@ class BelkhirSpaceInterfaceTest extends TestCase
         $this->assertStringContainsString('Opérations en attente', $statistics);
         $this->assertStringContainsString('Analyses et prévisions', $navigation);
         $this->assertStringContainsString('Fonctionnalités et accès', $navigation);
-        $this->assertStringContainsString('title="Aide à la décision"', $intelligence);
-        $this->assertStringNotContainsString('title="Intelligence et export anonymisé"', $intelligence);
+        $this->assertStringContainsString(":title=\"__('Aide à la décision')\"", $intelligence);
+        $this->assertStringNotContainsString('Intelligence et export anonymisé', $intelligence);
     }
 
     public function test_operational_pages_use_business_language_and_a_real_loading_state(): void

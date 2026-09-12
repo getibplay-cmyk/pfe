@@ -425,7 +425,7 @@ jobs:
         run: php artisan migrate --force --no-interaction
 
       - name: Run focused SaaS regressions before the full suite
-        run: php artisan test --filter='AccountSecurity|WorkspaceExperience|GuidedInspection|VisionAnnotationsAndQuality|ReservationReplan|ActiveCustomerPortal|PublicBooking|VehicleEconomics|LocalizationCatalog|Saas|CmiSignature|PlatformOperationsMonitoring|TenantOnboardingInvitation|SecurityHeaders'
+        run: php artisan test --filter='BelkhirSpaceBrandIdentity|BelkhirSpaceInterface|BelkhirSpaceVisualStatistics|Lot06FE2BrowserReadiness|Lot06FG1SecurityBootstrap|AccountSecurity|WorkspaceExperience|GuidedInspection|VisionAnnotationsAndQuality|ReservationReplan|ActiveCustomerPortal|PublicBooking|VehicleEconomics|LocalizationCatalog|Saas|CmiSignature|PlatformOperationsMonitoring|TenantOnboardingInvitation|SecurityHeaders'
 
       - name: Run test suite
         run: php artisan test --log-junit "$RUNNER_TEMP/j15-tests.xml"

@@ -24,7 +24,7 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
 
     public function test_first_platform_admin_is_bootstrapped_transactionally_without_a_seeder(): void
     {
-        $password = Str::password(24, true, true, true, false);
+        $password = Str::password(20, true, true, true, false).'Aa1!';
 
         $this->bootstrapPlatformAdmin($password)->assertSuccessful();
 
@@ -54,7 +54,7 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
 
     public function test_second_bootstrap_is_refused_without_explicit_authorization(): void
     {
-        $this->bootstrapPlatformAdmin(Str::password(24, true, true, true, false))
+        $this->bootstrapPlatformAdmin(Str::password(20, true, true, true, false).'Aa1!')
             ->assertSuccessful();
 
         $this->artisan('rentfleet:bootstrap-platform-admin')
@@ -67,7 +67,7 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
 
     public function test_explicit_additional_bootstrap_requires_confirmation(): void
     {
-        $this->bootstrapPlatformAdmin(Str::password(24, true, true, true, false))
+        $this->bootstrapPlatformAdmin(Str::password(20, true, true, true, false).'Aa1!')
             ->assertSuccessful();
 
         $this->artisan('rentfleet:bootstrap-platform-admin', ['--allow-additional' => true])
@@ -189,7 +189,7 @@ class Lot06FG1SecurityBootstrapTest extends TestCase
         ]);
         $user = $this->tenantOwner($tenant);
         $previousHash = $user->getAuthPassword();
-        $password = Str::password(24, true, true, true, false);
+        $password = Str::password(20, true, true, true, false).'Aa1!';
 
         $this->artisan('rentfleet:reset-user-password', [
             'email' => $user->email,
