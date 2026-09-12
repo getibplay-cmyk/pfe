@@ -183,6 +183,67 @@ class TrainingWorkbenchTest(unittest.TestCase):
 
 @unittest.skipUnless(importlib.util.find_spec("PIL"), "Vision preprocessing is tested in the image runtime job")
 class TrainingVisionPreparationTest(unittest.TestCase):
+    def test_csv_conversion_copies_verified_bytes_and_preserves_image_digests(self):
+        from PIL import Image
+        from prepare_dataset import convert
+        for extension, format_name in (("jpg", "JPEG"), ("jpeg", "JPEG"), ("png", "PNG"), ("webp", "WEBP")):
+            with self.subTest(extension=extension), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                photos = root / "photos"
+                photos.mkdir()
+                image = photos / ("photo." + extension)
+                Image.new("RGB", (40, 40), "red").save(image, format=format_name)
+                original = image.read_bytes()
+                source = root / "source.csv"
+                source.write_text(f"key;group;image;label\nrow_1;car_1;{image.name};red\n", encoding="utf-8")
+                index = convert(source, "color", root / "output", photos)
+                row = json.loads(index.read_text())["rows"][0]
+                self.assertEqual(row["image_sha256"], hashlib.sha256(original).hexdigest())
+                copies = list((index.parent / "images_verifiees").iterdir())
+                self.assertEqual(len(copies), 1)
+                self.assertEqual(copies[0].read_bytes(), original)
+                self.assertEqual(image.read_bytes(), original)
+
+    def test_csv_conversion_rejects_invalid_or_disguised_images_before_copy(self):
+        import io
+        from PIL import Image
+        from prepare_dataset import convert
+        buffer = io.BytesIO()
+        Image.new("RGB", (40, 40), "red").save(buffer, format="PNG")
+        png = buffer.getvalue()
+        cases = [
+            ("photo.jpg", b"MZ synthetic non-image fixture"),
+            ("photo.png", png[:len(png) // 2]),
+            ("photo.jpg", png),
+        ]
+        for name, content in cases:
+            with self.subTest(name=name, bytes=len(content)), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                photos = root / "photos"
+                photos.mkdir()
+                (photos / name).write_bytes(content)
+                source = root / "source.csv"
+                source.write_text(f"key;group;image;label\nrow_1;car_1;{name};red\n", encoding="utf-8")
+                output = root / "output"
+                with self.assertRaisesRegex(ValueError, "[Ii]mage"):
+                    convert(source, "color", output, photos)
+                self.assertFalse((output / "images_verifiees").exists())
+                self.assertFalse((output / "dataset.json").exists())
+
+    def test_csv_conversion_rejects_oversized_dimensions_before_copy(self):
+        from PIL import Image
+        from prepare_dataset import convert
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            photos = root / "photos"
+            photos.mkdir()
+            Image.new("RGB", (8001, 1), "red").save(photos / "photo.png")
+            source = root / "source.csv"
+            source.write_text("key;group;image;label\nrow_1;car_1;photo.png;red\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Oversized image"):
+                convert(source, "color", root / "output", photos)
+            self.assertFalse((root / "output/images_verifiees").exists())
+
     def test_prepared_images_strip_metadata_and_preserve_verified_coco_boxes(self):
         from PIL import Image
         with tempfile.TemporaryDirectory() as tmp:

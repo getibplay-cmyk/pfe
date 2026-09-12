@@ -19,6 +19,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -156,6 +157,27 @@ class SaasModelTrainingTest extends TestCase
         $this->assertSame($response->json('manifest_sha256'), hash('sha256', $response->json('manifest_json')));
         $this->get(route('platform.training.show', $campaign))->assertOk()->assertSee('Ouvrir Colab');
         $this->actingAs($a['user'])->get(route('platform.training.show', $campaign))->assertForbidden();
+    }
+
+    public function test_download_preserves_signed_zero_and_exact_stored_manifest_bytes(): void
+    {
+        [, $dataset, $admin, $original] = $this->campaign();
+        $campaign = $original->replicate();
+        $campaign->public_id = (string) Str::uuid();
+        $campaign->stored_path = 'intelligence/training/campaigns/'.$campaign->public_id.'.json';
+        $disk = Storage::disk(IntelligencePrivateStorage::DISK);
+        $raw = str_replace($original->public_id, $campaign->public_id, $disk->get($original->stored_path));
+        $raw = preg_replace('/"value":2/', '"value":-0', $raw, 1);
+        $this->assertStringContainsString('"value":-0', $raw);
+        $campaign->sha256 = hash('sha256', $raw);
+        $disk->put($campaign->stored_path, $raw);
+        $campaign->save();
+        DB::table('model_training_contributions')->insert(['campaign_id' => $campaign->id, 'tenant_id' => $dataset->tenant_id, 'dataset_id' => $dataset->id]);
+
+        $response = $this->actingAs($admin)->get(route('platform.training.download', $campaign))->assertOk();
+        $this->assertSame($raw, $response->json('manifest_json'));
+        $this->assertSame($campaign->sha256, $response->json('manifest_sha256'));
+        $this->assertSame($response->json('manifest_sha256'), hash('sha256', $response->json('manifest_json')));
     }
 
     public function test_incomplete_and_conflicting_time_series_are_rejected(): void

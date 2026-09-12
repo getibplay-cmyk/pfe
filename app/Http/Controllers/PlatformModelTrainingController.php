@@ -50,11 +50,11 @@ class PlatformModelTrainingController extends Controller
 
     public function download(Request $request, ModelTrainingCampaign $campaign, TrainingWorkbench $workbench, AuditRecorder $audit)
     {
-        $data = $workbench->campaignData($request->user(), $campaign);
+        $manifestJson = $workbench->campaignJson($request->user(), $campaign);
         $audit->record('platform.training.campaign.downloaded', $campaign);
 
         // The envelope binds the exact canonical manifest bytes used by the SaaS.
-        return response()->json(['manifest_sha256' => $campaign->sha256, 'manifest_json' => json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)])
+        return response()->json(['manifest_sha256' => $campaign->sha256, 'manifest_json' => $manifestJson])
             ->withHeaders(['Content-Disposition' => 'attachment; filename="campaign-'.$campaign->public_id.'.json"', 'Cache-Control' => 'no-store, private', 'X-Content-Type-Options' => 'nosniff']);
     }
 

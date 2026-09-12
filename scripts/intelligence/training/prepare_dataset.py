@@ -4,12 +4,36 @@ All paths are local. No network, database, inference or automatic annotation.
 """
 import argparse
 import csv
+import hashlib
+import io
 import json
 import re
-import shutil
+import warnings
 from pathlib import Path
 
 from workbench import FAMILIES, require, sha256, write_json
+
+
+def verified_image_bytes(path, extension):
+    from PIL import Image
+
+    with path.open("rb") as stream:
+        payload = stream.read(8 * 1024 * 1024 + 1)
+    require(0 < len(payload) <= 8 * 1024 * 1024, "Image exceeds 8 MiB or is empty")
+    expected = {".jpg": "JPEG", ".jpeg": "JPEG", ".png": "PNG", ".webp": "WEBP"}[extension]
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(payload)) as image:
+                require(image.format == expected, "Image content does not match its extension")
+                require(0 < image.width <= 8000 and 0 < image.height <= 8000, "Oversized image")
+                require(not getattr(image, "is_animated", False), "Animated images are not supported")
+                image.verify()
+            with Image.open(io.BytesIO(payload)) as image:
+                image.load()
+    except (OSError, SyntaxError, Image.DecompressionBombError, Image.DecompressionBombWarning) as error:
+        raise ValueError("Invalid or corrupt image content") from error
+    return payload
 
 
 def convert(source, family, output, image_root=None, delimiter=";"):
@@ -41,7 +65,8 @@ def convert(source, family, output, image_root=None, delimiter=";"):
                 extension = path.suffix.lower()
                 require(extension in {".jpg", ".jpeg", ".png", ".webp"}, "Supported images: JPEG, PNG, WebP")
                 require(path.stat().st_size <= 8 * 1024 * 1024, "Image exceeds 8 MiB")
-                image_hash = sha256(path)
+                payload = verified_image_bytes(path, extension)
+                image_hash = hashlib.sha256(payload).hexdigest()
                 require(image_hash not in digests, "Duplicate photo: keep one verified annotation")
                 digests.add(image_hash)
                 row["image_sha256"] = image_hash
@@ -51,7 +76,8 @@ def convert(source, family, output, image_root=None, delimiter=";"):
                     row["label"] = record["label"].strip()
                 destination = output / 'images_verifiees' / (image_hash + ('.jpg' if extension == '.jpeg' else extension))
                 destination.parent.mkdir(exist_ok=True, mode=0o700)
-                shutil.copyfile(path, destination)
+                with destination.open('xb') as image_file:
+                    image_file.write(payload)
                 destination.chmod(0o600)
             rows.append(row)
     require(rows, "No observations in CSV")

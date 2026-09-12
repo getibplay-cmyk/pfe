@@ -150,20 +150,30 @@ final class TrainingWorkbench
 
     public function campaignData(User $user, ModelTrainingCampaign $campaign): array
     {
+        return json_decode($this->campaignJson($user, $campaign), true, 24, JSON_THROW_ON_ERROR);
+    }
+
+    public function campaignJson(User $user, ModelTrainingCampaign $campaign): string
+    {
         self::platform($user);
         $this->assertContributions($campaign);
 
-        return $this->read($campaign->stored_path, $campaign->sha256);
+        return $this->readJson($campaign->stored_path, $campaign->sha256);
     }
 
     public function read(string $path, string $hash): array
     {
+        return json_decode($this->readJson($path, $hash), true, 24, JSON_THROW_ON_ERROR);
+    }
+
+    private function readJson(string $path, string $hash): string
+    {
         $resolved = IntelligencePrivateStorage::path('model_training.disk', $path);
         abort_if(filesize($resolved) > 20 * 1024 * 1024, 409);
         $contents = file_get_contents($resolved);
-        abort_unless(hash_equals($hash, hash('sha256', $contents)), 409, 'Le contrôle d’intégrité a échoué.');
+        abort_unless(is_string($contents) && hash_equals($hash, hash('sha256', $contents)), 409, 'Le contrôle d’intégrité a échoué.');
 
-        return json_decode($contents, true, 24, JSON_THROW_ON_ERROR);
+        return $contents;
     }
 
     public function importResult(User $user, ModelTrainingCampaign $campaign, array $report): ModelTrainingResult
