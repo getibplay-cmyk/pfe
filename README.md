@@ -17,7 +17,7 @@ Livewire reste réservé aux interactions ciblées ; les pages actuelles utilise
 
 ## Prérequis
 
-- PHP 8.5 avec les extensions PostgreSQL ;
+- PHP 8.5 avec les extensions PostgreSQL, GD, ZIP et mbstring ;
 - Composer 2 ;
 - PostgreSQL 18 ;
 - Node.js et npm.
@@ -118,6 +118,17 @@ Une réinitialisation administrative exige un périmètre exact :
 php artisan rentfleet:reset-user-password utilisateur@entreprise.test --tenant=slug-tenant
 php artisan rentfleet:reset-user-password administrateur@plateforme.test --platform
 ```
+
+## Parcours SaaS avancés
+
+Les dix améliorations ajoutent MFA et appareils, corrections IA vérifiées, inspections
+mobiles reprenables, déplacement de réservations avec aperçu, acceptation et prolongation
+par le locataire, catalogue public facultatif, coûts de possession versionnés, suivi de
+qualité des modèles, recherche/favoris/filtres et interface français/arabe avec RTL.
+
+Le [guide d’installation et d’utilisation](docs/operations/advanced-saas-workflows.md)
+présente les accès, paramètres, limites et commandes de validation.
+L’[ADR 0020](docs/adr/0020-advanced-saas-workflows.md) décrit les décisions et invariants.
 
 ## Tests, formatage et frontend
 

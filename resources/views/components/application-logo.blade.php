@@ -4,7 +4,7 @@
 <svg
     viewBox="0 0 48 48"
     role="img"
-    aria-label="Monogramme {{ config('brand.name') }}"
+    aria-label="{{ __('Monogramme ') }}{{ config('brand.name') }}"
     xmlns="http://www.w3.org/2000/svg"
     data-brand-mark="belkhir-space-monogram"
     {{ $attributes->class(['text-white' => $dark, 'text-belkhir-space-blue' => ! $dark]) }}

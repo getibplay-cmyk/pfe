@@ -40,11 +40,11 @@ class MaintenanceController extends Controller
                 ->latest()->paginate(20)->withQueryString(),
             'statuses' => ['planned', 'approved', 'in_progress', 'completed', 'cancelled'],
             'summary' => [
-                'Planifiées à venir' => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->whereBetween('scheduled_start_at', [$now, $soon])->count(),
-                'En retard' => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->where('scheduled_start_at', '<', $now)->count(),
-                'En cours' => $scope(MaintenanceOrder::query())->where('status', 'in_progress')->count(),
-                'Échéances kilométriques' => $scope(MaintenanceOrder::query())->whereNotNull('next_due_mileage')->whereHas('vehicle', fn ($query) => $query->whereColumn('vehicles.current_mileage', '>=', 'maintenance_orders.next_due_mileage'))->count(),
-                'Échéances calendaires' => $scope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', $soon)->count(),
+                __('Planifiées à venir') => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->whereBetween('scheduled_start_at', [$now, $soon])->count(),
+                __('En retard') => $scope(MaintenanceOrder::query())->whereIn('status', ['planned', 'approved'])->where('scheduled_start_at', '<', $now)->count(),
+                __('En cours') => $scope(MaintenanceOrder::query())->where('status', 'in_progress')->count(),
+                __('Échéances kilométriques') => $scope(MaintenanceOrder::query())->whereNotNull('next_due_mileage')->whereHas('vehicle', fn ($query) => $query->whereColumn('vehicles.current_mileage', '>=', 'maintenance_orders.next_due_mileage'))->count(),
+                __('Échéances calendaires') => $scope(MaintenanceOrder::query())->whereNotNull('next_due_date')->whereDate('next_due_date', '<=', $soon)->count(),
             ],
         ]);
     }
@@ -64,7 +64,7 @@ class MaintenanceController extends Controller
     {
         $order = $action->handle($request->validated(), $request->user()->id);
 
-        return redirect()->route('maintenance.show', $order)->with('status', 'Maintenance planifiée.');
+        return redirect()->route('maintenance.show', $order)->with('status', __('Maintenance planifiée.'));
     }
 
     public function show(Request $request, MaintenanceOrder $maintenance): View
@@ -92,7 +92,7 @@ class MaintenanceController extends Controller
     {
         $action->handle($maintenance, $request->validated());
 
-        return redirect()->route('maintenance.show', $maintenance)->with('status', 'Maintenance modifiée.');
+        return redirect()->route('maintenance.show', $maintenance)->with('status', __('Maintenance modifiée.'));
     }
 
     public function editSchedule(Request $request, MaintenanceOrder $maintenance): View
@@ -106,7 +106,7 @@ class MaintenanceController extends Controller
     {
         $action->handle($maintenance, $request->validated(), $request->user()->id);
 
-        return redirect()->route('maintenance.show', $maintenance)->with('status', 'Maintenance replanifiée avec son bloc véhicule.');
+        return redirect()->route('maintenance.show', $maintenance)->with('status', __('Maintenance replanifiée avec son bloc véhicule.'));
     }
 
     public function approve(Request $request, MaintenanceOrder $maintenance, ApproveMaintenanceOrder $action): RedirectResponse
@@ -114,7 +114,7 @@ class MaintenanceController extends Controller
         $this->authorize('approve', $maintenance);
         $action->handle($maintenance, $request->user()->id);
 
-        return back()->with('status', 'Maintenance approuvée et véhicule bloqué.');
+        return back()->with('status', __('Maintenance approuvée et véhicule bloqué.'));
     }
 
     public function start(Request $request, MaintenanceOrder $maintenance, StartMaintenanceOrder $action): RedirectResponse
@@ -122,20 +122,20 @@ class MaintenanceController extends Controller
         $this->authorize('start', $maintenance);
         $action->handle($maintenance, $request->user()->id);
 
-        return back()->with('status', 'Maintenance démarrée.');
+        return back()->with('status', __('Maintenance démarrée.'));
     }
 
     public function complete(CompleteMaintenanceOrderRequest $request, MaintenanceOrder $maintenance, CompleteMaintenanceOrder $action): RedirectResponse
     {
         $action->handle($maintenance, $request->validated(), $request->user()->id);
 
-        return back()->with('status', 'Maintenance terminée.');
+        return back()->with('status', __('Maintenance terminée.'));
     }
 
     public function cancel(CancelMaintenanceOrderRequest $request, MaintenanceOrder $maintenance, CancelMaintenanceOrder $action): RedirectResponse
     {
         $action->handle($maintenance, $request->validated('reason'), $request->user()->id);
 
-        return back()->with('status', 'Maintenance annulée.');
+        return back()->with('status', __('Maintenance annulée.'));
     }
 }

@@ -1,4 +1,5 @@
-export const BUSINESS_VALUE_UNAVAILABLE = 'Indisponible';
+import { t } from './i18n.js';
+export const BUSINESS_VALUE_UNAVAILABLE = t('Indisponible');
 
 const INTEGER_FORMAT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
 
@@ -31,7 +32,7 @@ export function formatVehicleUnits(value) {
     const formatted = formatBusinessInteger(value);
     if (formatted === BUSINESS_VALUE_UNAVAILABLE) return formatted;
 
-    return `${formatted} ${[0, 1].includes(Number(value)) ? 'véhicule' : 'véhicules'}`;
+    return `${formatted} ${t([0, 1].includes(Number(value)) ? 'véhicule' : 'véhicules')}`;
 }
 
 export function formatForecastPlanningVehicles(conditionalMean) {

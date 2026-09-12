@@ -24,7 +24,7 @@ final class TenantSaasPlanChangeController extends Controller
         ]);
         $change->handle($request->user(), SaasPlan::query()->findOrFail($data['saas_plan_id']));
 
-        return redirect()->route('tenant-saas-account.show')->with('status', 'Demande de changement enregistrée. Consultez la facture et son état.');
+        return redirect()->route('tenant-saas-account.show')->with('status', __('Demande de changement enregistrée. Consultez la facture et son état.'));
     }
 
     public function destroy(Request $request, SaasSubscription $subscription, CancelSaasPlanChange $cancel): RedirectResponse
@@ -33,7 +33,7 @@ final class TenantSaasPlanChangeController extends Controller
             && $request->user()->tenant_id === $subscription->tenant_id, 404);
         $cancel->handle($subscription);
 
-        return redirect()->route('tenant-saas-account.show')->with('status', 'Changement annulé ; la formule précédente est conservée.');
+        return redirect()->route('tenant-saas-account.show')->with('status', __('Changement annulé ; la formule précédente est conservée.'));
     }
 
     public function renewal(Request $request, SaasSubscription $subscription): RedirectResponse
@@ -50,7 +50,7 @@ final class TenantSaasPlanChangeController extends Controller
             if ($subscription->status->isTerminal() || $subscription->status->value === 'pending_payment'
                 || SaasSubscription::query()->where('tenant_id', $subscription->tenant_id)->where('status', 'pending_payment')->exists()
                 || ($enabled && ($anchor === null || ! $anchor->isFuture() || $subscription->status->value === 'suspended'))) {
-                throw ValidationException::withMessages(['auto_renew' => 'Régularisez la période courante et les changements en cours avant cette opération.']);
+                throw ValidationException::withMessages(['auto_renew' => __('Régularisez la période courante et les changements en cours avant cette opération.')]);
             }
             $old = $subscription->auto_renew;
             $subscription->forceFill(['auto_renew' => $enabled])->save();
@@ -58,6 +58,6 @@ final class TenantSaasPlanChangeController extends Controller
                 ['auto_renew' => $old], ['auto_renew' => $enabled]);
         });
 
-        return back()->with('status', $enabled ? 'Émission des factures de renouvellement activée, sans prélèvement.' : 'Renouvellement désactivé. Les factures déjà émises restent dues.');
+        return back()->with('status', $enabled ? __('Émission des factures de renouvellement activée, sans prélèvement.') : __('Renouvellement désactivé. Les factures déjà émises restent dues.'));
     }
 }

@@ -32,23 +32,23 @@ class RecordSaasPayment
         ]);
         $method = SaasPaymentMethod::tryFrom((string) ($data['payment_method'] ?? ''));
         if ($method === null) {
-            throw ValidationException::withMessages(['payment_method' => 'Le mode de paiement SaaS est invalide.']);
+            throw ValidationException::withMessages(['payment_method' => __('Le mode de paiement SaaS est invalide.')]);
         }
         if ($method === SaasPaymentMethod::Cmi) {
             throw ValidationException::withMessages([
-                'payment_method' => 'Un paiement CMI ne peut être créé que par un callback signé de la passerelle.',
+                'payment_method' => __('Un paiement CMI ne peut être créé que par un callback signé de la passerelle.'),
             ]);
         }
 
         $amount = $this->positiveMoney($data['amount'] ?? null);
         $idempotencyKey = trim((string) ($data['idempotency_key'] ?? ''));
         if ($idempotencyKey === '') {
-            throw ValidationException::withMessages(['idempotency_key' => 'La demande n’a pas pu être sécurisée. Rechargez la page puis réessayez.']);
+            throw ValidationException::withMessages(['idempotency_key' => __('La demande n’a pas pu être sécurisée. Rechargez la page puis réessayez.')]);
         }
         $reference = $this->nullableText($data['reference'] ?? null);
         $note = $this->nullableText($data['note'] ?? null);
         if (isset($data['occurred_at']) && CarbonImmutable::parse((string) $data['occurred_at'])->isFuture()) {
-            throw ValidationException::withMessages(['occurred_at' => 'Un paiement ne peut pas être daté dans le futur.']);
+            throw ValidationException::withMessages(['occurred_at' => __('Un paiement ne peut pas être daté dans le futur.')]);
         }
 
         try {
@@ -73,7 +73,7 @@ class RecordSaasPayment
                     ->first();
                 if ($existing !== null) {
                     if ($existing->saas_invoice_id !== ($data['saas_invoice_id'] ?? null)) {
-                        throw ValidationException::withMessages(['idempotency_key' => 'Cette demande désigne une autre facture.']);
+                        throw ValidationException::withMessages(['idempotency_key' => __('Cette demande désigne une autre facture.')]);
                     }
                     $this->assertSamePayment(
                         $existing,
@@ -89,7 +89,7 @@ class RecordSaasPayment
                 }
                 app(SaasBillingLock::class)->ensureNoCheckout($locked->getKey());
                 if (SaasSubscription::query()->where('previous_subscription_id', $locked->getKey())->where('status', 'pending_payment')->exists()) {
-                    throw ValidationException::withMessages(['payment' => 'Réglez ou annulez le changement de formule en cours avant un autre paiement.']);
+                    throw ValidationException::withMessages(['payment' => __('Réglez ou annulez le changement de formule en cours avant un autre paiement.')]);
                 }
                 $invoice = empty($data['saas_invoice_id']) ? null : SaasInvoice::query()
                     ->whereKey($data['saas_invoice_id'])->where('tenant_id', $locked->tenant_id)
@@ -97,15 +97,15 @@ class RecordSaasPayment
                 if ($invoice !== null) {
                     app(SaasInvoiceLifecycle::class)->payable($invoice);
                     if ($invoice->amount !== $amount) {
-                        throw ValidationException::withMessages(['amount' => 'Le montant doit correspondre exactement à la facture.']);
+                        throw ValidationException::withMessages(['amount' => __('Le montant doit correspondre exactement à la facture.')]);
                     }
                 } elseif ($locked->invoices()->exists() || $locked->status->value === 'pending_payment') {
-                    throw ValidationException::withMessages(['saas_invoice_id' => 'Sélectionnez une facture ouverte.']);
+                    throw ValidationException::withMessages(['saas_invoice_id' => __('Sélectionnez une facture ouverte.')]);
                 }
                 if ($reference !== null && SaasPayment::query()
                     ->whereRaw('lower(reference) = lower(?)', [$reference])
                     ->exists()) {
-                    throw ValidationException::withMessages(['reference' => 'Cette référence administrative est déjà utilisée.']);
+                    throw ValidationException::withMessages(['reference' => __('Cette référence administrative est déjà utilisée.')]);
                 }
 
                 $payment = new SaasPayment;
@@ -142,7 +142,7 @@ class RecordSaasPayment
         } catch (QueryException $exception) {
             if ((string) $exception->getCode() === '23505'
                 && str_contains($exception->getMessage(), 'saas_payments_reference_unique_idx')) {
-                throw ValidationException::withMessages(['reference' => 'Cette référence administrative est déjà utilisée.']);
+                throw ValidationException::withMessages(['reference' => __('Cette référence administrative est déjà utilisée.')]);
             }
 
             throw $exception;
@@ -172,7 +172,7 @@ class RecordSaasPayment
 
         if (! $same) {
             throw ValidationException::withMessages([
-                'idempotency_key' => 'Cette demande a déjà été envoyée avec des informations différentes. Rechargez la page puis réessayez.',
+                'idempotency_key' => __('Cette demande a déjà été envoyée avec des informations différentes. Rechargez la page puis réessayez.'),
             ]);
         }
     }
@@ -182,10 +182,10 @@ class RecordSaasPayment
         try {
             $minor = DecimalMoney::toMinorUnits((string) $value);
         } catch (InvalidArgumentException) {
-            throw ValidationException::withMessages(['amount' => 'Le montant doit être un décimal valide.']);
+            throw ValidationException::withMessages(['amount' => __('Le montant doit être un décimal valide.')]);
         }
         if ($minor <= 0) {
-            throw ValidationException::withMessages(['amount' => 'Le montant doit être strictement positif.']);
+            throw ValidationException::withMessages(['amount' => __('Le montant doit être strictement positif.')]);
         }
 
         return DecimalMoney::fromMinorUnits($minor);
@@ -210,7 +210,7 @@ class RecordSaasPayment
     {
         $unexpected = array_values(array_diff(array_keys($data), $allowed));
         if ($unexpected !== []) {
-            throw ValidationException::withMessages([$unexpected[0] => 'Ce champ n’est pas autorisé.']);
+            throw ValidationException::withMessages([$unexpected[0] => __('Ce champ n’est pas autorisé.')]);
         }
     }
 }

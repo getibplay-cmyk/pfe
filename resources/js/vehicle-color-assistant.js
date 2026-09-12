@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { formatConfidence } from './business-number.js';
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
@@ -11,7 +12,7 @@ const SUPPORTED_COLORS = new Set([
     'white',
     'yellow',
 ]);
-const MANUAL_MESSAGE = 'La couleur n’a pas pu être déterminée. Sélectionnez-la manuellement.';
+const MANUAL_MESSAGE = t('La couleur n’a pas pu être déterminée. Sélectionnez-la manuellement.');
 
 export function createVehicleColorAssistantState(initialColor = '') {
     return {
@@ -34,7 +35,7 @@ export function createVehicleColorAssistantState(initialColor = '') {
             this.phase = 'uploading';
             this.suggestion = null;
             this.confidence = null;
-            this.message = 'Analyse de la photo en cours…';
+            this.message = t('Analyse de la photo en cours…');
             this.acceptedRunId = '';
             this.showUseSuggestion = false;
 
@@ -55,7 +56,7 @@ export function createVehicleColorAssistantState(initialColor = '') {
 
             if (ACTIVE_STATUSES.has(payload.status)) {
                 this.phase = 'processing';
-                this.message = safeMessage(payload.message, 'Analyse de la photo en cours…');
+                this.message = safeMessage(payload.message, t('Analyse de la photo en cours…'));
 
                 return true;
             }
@@ -86,7 +87,7 @@ export function createVehicleColorAssistantState(initialColor = '') {
             this.confidence = confidence;
             this.message = safeMessage(
                 payload.message,
-                'Vous pouvez modifier cette couleur avant l’enregistrement.',
+                t('Vous pouvez modifier cette couleur avant l’enregistrement.'),
             );
             this.acceptedRunId = String(runId);
             if (this.colorWasEdited) {
@@ -198,7 +199,7 @@ export function createVehicleColorAssistant(config = {}) {
 
             this.acceptStatus(sequence, payload.run_id, {
                 status: payload.status,
-                message: 'Analyse de la photo en cours…',
+                message: t('Analyse de la photo en cours…'),
             });
             this.poll(sequence, payload.run_id, payload.status_url, 0);
         } catch {

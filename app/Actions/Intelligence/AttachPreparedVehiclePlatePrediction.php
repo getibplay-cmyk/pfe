@@ -27,7 +27,7 @@ final class AttachPreparedVehiclePlatePrediction
             || $run->status !== VehiclePlatePredictionStatus::Succeeded
             || ! $run->hasCompleteSuggestion()) {
             throw ValidationException::withMessages([
-                'plate_prediction_run' => 'Cette lecture d’immatriculation ne peut pas être associée à ce véhicule.',
+                'plate_prediction_run' => __('Cette lecture d’immatriculation ne peut pas être associée à ce véhicule.'),
             ]);
         }
 

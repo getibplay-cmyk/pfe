@@ -55,7 +55,7 @@ class StoreReservationDemandForecastRequest extends FormRequest
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $declared) as $key) {
                 $validator->errors()->add(
                     $key,
-                    'Ce champ n’est pas autorisé pour la prévision de demande.',
+                    __('Ce champ n’est pas autorisé pour la prévision de demande.'),
                 );
             }
         }];

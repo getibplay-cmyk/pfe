@@ -79,18 +79,18 @@ class ReturnDamageAssistantController extends Controller
             VehicleDamagePredictionStatus::Queued,
             VehicleDamagePredictionStatus::Running,
         ], true)) {
-            return $this->status($run, [], 'Analyse de la photo en cours…');
+            return $this->status($run, [], __('Analyse de la photo en cours…'));
         }
         if ($run->status === VehicleDamagePredictionStatus::Failed) {
             return $this->status(
                 $run,
                 [],
-                'La photo n’a pas pu être analysée. Poursuivez l’inspection manuelle.',
+                __('La photo n’a pas pu être analysée. Poursuivez l’inspection manuelle.'),
             );
         }
         if (! $inputArtifact->valid($run)) {
             return response()->json([
-                'message' => 'La suggestion n’est pas disponible. Poursuivez l’inspection manuelle.',
+                'message' => __('La suggestion n’est pas disponible. Poursuivez l’inspection manuelle.'),
             ], 422);
         }
 
@@ -98,14 +98,14 @@ class ReturnDamageAssistantController extends Controller
             $detections = $presenter->detections($run);
         } catch (UnexpectedValueException) {
             return response()->json([
-                'message' => 'La suggestion n’est pas disponible. Poursuivez l’inspection manuelle.',
+                'message' => __('La suggestion n’est pas disponible. Poursuivez l’inspection manuelle.'),
             ], 422);
         }
 
         $message = match (true) {
-            $run->quality_status === 'abstained' => 'La qualité de cette photo ne permet pas de suggestion. Prenez une nouvelle photo et poursuivez l’inspection visuelle.',
-            $detections === [] => 'Aucun dommage n’a été suggéré sur cette photo. Poursuivez l’inspection visuelle du véhicule.',
-            default => count($detections).' zone(s) de dommage possible à vérifier visuellement.',
+            $run->quality_status === 'abstained' => __('La qualité de cette photo ne permet pas de suggestion. Prenez une nouvelle photo et poursuivez l’inspection visuelle.'),
+            $detections === [] => __('Aucun dommage n’a été suggéré sur cette photo. Poursuivez l’inspection visuelle du véhicule.'),
+            default => count($detections).__(' zone(s) de dommage possible à vérifier visuellement.'),
         };
 
         return $this->status($run, $detections, $message, route(
@@ -230,7 +230,7 @@ class ReturnDamageAssistantController extends Controller
     private function unavailable(): JsonResponse
     {
         return response()->json([
-            'message' => 'La photo n’a pas pu être analysée. Poursuivez l’inspection manuelle.',
+            'message' => __('La photo n’a pas pu être analysée. Poursuivez l’inspection manuelle.'),
         ], 503);
     }
 }

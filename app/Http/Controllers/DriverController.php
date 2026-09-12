@@ -26,7 +26,7 @@ class DriverController extends Controller
         $this->authorize('update', $customer);
         $driver = $action->handle($customer, $request->validated());
 
-        return redirect()->route('drivers.show', $driver)->with('status', 'Conducteur ajouté avec le statut en attente.');
+        return redirect()->route('drivers.show', $driver)->with('status', __('Conducteur ajouté avec le statut en attente.'));
     }
 
     public function show(Driver $driver, IdentityProtector $protector): View
@@ -49,7 +49,7 @@ class DriverController extends Controller
         $this->authorize('update', $driver);
         $action->handle($driver, $request->validated());
 
-        return redirect()->route('drivers.show', $driver)->with('status', 'Conducteur mis à jour.');
+        return redirect()->route('drivers.show', $driver)->with('status', __('Conducteur mis à jour.'));
     }
 
     public function verify(Driver $driver, VerifyDriver $action): RedirectResponse
@@ -57,7 +57,7 @@ class DriverController extends Controller
         $this->authorize('verify', $driver);
         $action->handle($driver);
 
-        return back()->with('status', 'Conducteur vérifié.');
+        return back()->with('status', __('Conducteur vérifié.'));
     }
 
     public function reject(RejectVerificationRequest $request, Driver $driver, RejectDriverVerification $action): RedirectResponse
@@ -65,7 +65,7 @@ class DriverController extends Controller
         $this->authorize('verify', $driver);
         $action->handle($driver, $request->validated('reason'));
 
-        return back()->with('status', 'Vérification du conducteur rejetée.');
+        return back()->with('status', __('Vérification du conducteur rejetée.'));
     }
 
     public function destroy(Driver $driver, ArchiveDriver $action): RedirectResponse
@@ -74,7 +74,7 @@ class DriverController extends Controller
         $customerId = $driver->customer_id;
         $action->handle($driver);
 
-        return redirect()->route('customers.show', $customerId)->with('status', 'Conducteur archivé.');
+        return redirect()->route('customers.show', $customerId)->with('status', __('Conducteur archivé.'));
     }
 
     public function restore(int $driverId, RestoreDriver $action): RedirectResponse
@@ -84,7 +84,7 @@ class DriverController extends Controller
         $customerId = $driver->customer_id;
         $action->handle($driver);
 
-        return redirect()->route('customers.show', $customerId)->with('status', 'Conducteur restauré.');
+        return redirect()->route('customers.show', $customerId)->with('status', __('Conducteur restauré.'));
     }
 
     public function licence(Driver $driver, RevealDriverLicence $action): Response

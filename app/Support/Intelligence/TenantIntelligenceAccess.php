@@ -8,6 +8,7 @@ use App\Exceptions\TenantIntelligenceUnavailableException;
 use App\Models\TenantIntelligenceAccess as TenantIntelligenceAccessModel;
 use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Ui\UiText;
 use Illuminate\Support\Facades\DB;
 
 final class TenantIntelligenceAccess
@@ -102,11 +103,11 @@ final class TenantIntelligenceAccess
         bool $planAuthorized,
     ): string {
         return match (true) {
-            ! $tenantActive => 'Cette entreprise n’est pas active.',
-            ! $tenantSettingEnabled => 'Cette fonctionnalité n’est pas autorisée pour cette entreprise.',
-            ! $planAuthorized => 'Cette fonctionnalité n’est pas incluse dans le plan ou son quota mensuel est atteint.',
-            ! $globallyEnabled, ! $runtimeReady => 'Cette fonctionnalité est temporairement indisponible.',
-            default => 'Disponible pour cette entreprise.',
+            ! $tenantActive => UiText::t('Cette entreprise n’est pas active.'),
+            ! $tenantSettingEnabled => UiText::t('Cette fonctionnalité n’est pas autorisée pour cette entreprise.'),
+            ! $planAuthorized => UiText::t('Cette fonctionnalité n’est pas incluse dans le plan ou son quota mensuel est atteint.'),
+            ! $globallyEnabled, ! $runtimeReady => UiText::t('Cette fonctionnalité est temporairement indisponible.'),
+            default => UiText::t('Disponible pour cette entreprise.'),
         };
     }
 }

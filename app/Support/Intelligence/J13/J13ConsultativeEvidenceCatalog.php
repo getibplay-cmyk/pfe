@@ -3,6 +3,7 @@
 namespace App\Support\Intelligence\J13;
 
 use App\Enums\J11AdvisoryModule;
+use App\Support\Ui\UiText;
 use JsonException;
 use LogicException;
 
@@ -32,12 +33,12 @@ final class J13ConsultativeEvidenceCatalog
 
         foreach ($entries as $entry) {
             if (! is_array($entry)) {
-                $this->invalid('Une entrée de module n’est pas un objet.');
+                $this->invalid(UiText::t('Une entrée de module n’est pas un objet.'));
             }
 
             $id = $this->requiredString($entry, 'id', 'identifiant de module');
             if (array_key_exists($id, $modulesById)) {
-                $this->invalid('Le module '.$id.' est dupliqué.');
+                $this->invalid(UiText::t('Le module ').$id.UiText::t(' est dupliqué.'));
             }
 
             $modulesById[$id] = $entry;
@@ -52,7 +53,7 @@ final class J13ConsultativeEvidenceCatalog
         sort($actualIds);
 
         if ($actualIds !== $expectedIds) {
-            $this->invalid('Le manifeste J13 doit contenir exactement les quatre modules J11 autorisés.');
+            $this->invalid(UiText::t('Le manifeste J13 doit contenir exactement les quatre modules J11 autorisés.'));
         }
 
         $cards = [];
@@ -62,19 +63,19 @@ final class J13ConsultativeEvidenceCatalog
             $evidenceDescription = $taxonomy[$evidenceClass] ?? null;
             $forbiddenClaims = $entry['claims_forbidden'] ?? null;
             $fixture = $this->requiredArray($entry, 'fixture', 'fixture');
-            $schema = $this->requiredArray($entry, 'schema', 'schéma');
+            $schema = $this->requiredArray($entry, 'schema', UiText::t('schéma'));
 
             if (! is_string($evidenceDescription) || $evidenceDescription === '') {
-                $this->invalid('La classe de preuve '.$evidenceClass.' n’est pas documentée.');
+                $this->invalid(UiText::t('La classe de preuve ').$evidenceClass.UiText::t(' n’est pas documentée.'));
             }
 
             if (! is_array($forbiddenClaims) || $forbiddenClaims === []) {
-                $this->invalid('Les limites scientifiques de '.$module->value.' sont absentes.');
+                $this->invalid(UiText::t('Les limites scientifiques de ').$module->value.' sont absentes.');
             }
 
             foreach ($forbiddenClaims as $claim) {
                 if (! is_string($claim) || $claim === '') {
-                    $this->invalid('Une limite scientifique de '.$module->value.' est invalide.');
+                    $this->invalid(UiText::t('Une limite scientifique de ').$module->value.' est invalide.');
                 }
             }
 
@@ -87,21 +88,21 @@ final class J13ConsultativeEvidenceCatalog
                 || ($fixture['sha256'] ?? null) !== $module->fixtureSha256()
                 || ($schema['path'] ?? null) !== 'resources/intelligence/j11/schemas/'.$module->schemaFile()
                 || ($schema['sha256'] ?? null) !== $module->schemaSha256()) {
-                $this->invalid('Les preuves gelées de '.$module->value.' ne correspondent plus au contrat J11/J12.');
+                $this->invalid(UiText::t('Les preuves gelées de ').$module->value.' ne correspondent plus au contrat J11/J12.');
             }
 
             $cards[] = [
                 'id' => $module->value,
                 'label' => $module->label(),
-                'authoritative_stage' => $this->requiredString($entry, 'authoritative_stage', 'étape scientifique'),
+                'authoritative_stage' => $this->requiredString($entry, 'authoritative_stage', UiText::t('étape scientifique')),
                 'gate_decision' => $module->gateDecision(),
                 'audit_score' => $module->auditScore(),
                 'benchmark_gate_passed' => $entry['benchmark_gate_passed'],
                 'evidence_class' => $evidenceClass,
                 'evidence_label' => $this->evidenceLabel($evidenceClass),
                 'evidence_description' => $evidenceDescription,
-                'benchmark_role' => $this->requiredString($entry, 'benchmark_role', 'rôle du benchmark'),
-                'claim_allowed' => $this->requiredString($entry, 'claim_allowed', 'affirmation autorisée'),
+                'benchmark_role' => $this->requiredString($entry, 'benchmark_role', UiText::t('rôle du benchmark')),
+                'claim_allowed' => $this->requiredString($entry, 'claim_allowed', UiText::t('affirmation autorisée')),
                 'claims_forbidden' => array_values($forbiddenClaims),
                 'feature_enabled' => $gate['feature_flags_enabled'],
                 'ready_for_saas' => false,
@@ -115,11 +116,11 @@ final class J13ConsultativeEvidenceCatalog
     /** @return array<string, bool|int|string> */
     public function gate(): array
     {
-        $gate = $this->requiredArray($this->manifest(), 'j13_entry_gate', 'porte d’entrée J13');
+        $gate = $this->requiredArray($this->manifest(), 'j13_entry_gate', UiText::t('porte d’entrée J13'));
 
         if (($gate['mode'] ?? null) !== self::MODE
             || ($gate['module_count'] ?? null) !== count(J11AdvisoryModule::cases())) {
-            $this->invalid('La porte d’entrée J13 ne correspond pas au mode consultatif gelé.');
+            $this->invalid(UiText::t('La porte d’entrée J13 ne correspond pas au mode consultatif gelé.'));
         }
 
         foreach ([
@@ -136,14 +137,14 @@ final class J13ConsultativeEvidenceCatalog
             'operational_business_write_allowed',
         ] as $closedBoundary) {
             if (($gate[$closedBoundary] ?? null) !== false) {
-                $this->invalid('La frontière J13 '.$closedBoundary.' doit rester fermée.');
+                $this->invalid(UiText::t('La frontière J13 ').$closedBoundary.UiText::t(' doit rester fermée.'));
             }
         }
 
         if (($gate['human_decision_required'] ?? null) !== true
             || ($gate['tenant_and_agency_server_derived'] ?? null) !== true
             || ($gate['decision_effect'] ?? null) !== 'NO_OPERATIONAL_ACTION') {
-            $this->invalid('Les garanties humaines et de périmètre J13 ne sont plus intactes.');
+            $this->invalid(UiText::t('Les garanties humaines et de périmètre J13 ne sont plus intactes.'));
         }
 
         return $gate;
@@ -152,7 +153,7 @@ final class J13ConsultativeEvidenceCatalog
     /** @return array<string, array<string, bool|string>> */
     public function anomalyLineage(): array
     {
-        $lineage = $this->requiredArray($this->manifest(), 'anomaly_lineage', 'lignée des anomalies');
+        $lineage = $this->requiredArray($this->manifest(), 'anomaly_lineage', UiText::t('lignée des anomalies'));
         $j9 = $this->requiredArray($lineage, 'j9_public_proxy_benchmark', 'benchmark public J9');
         $legacy = $this->requiredArray($lineage, 'legacy_lot07b1_synthetic_artifact', 'artefact historique Lot 07B1');
         $fixture = $this->requiredArray($lineage, 'j11_j12_fixture', 'fixture J11/J12');
@@ -168,7 +169,7 @@ final class J13ConsultativeEvidenceCatalog
             || ($legacy['allowed_in_j13'] ?? null) !== false
             || ($fixture['computation_status'] ?? null) !== 'not_run_synthetic_contract_fixture'
             || ($fixture['relationship_to_models'] ?? null) !== 'no_model_or_solver_was_executed') {
-            $this->invalid('La lignée J9, Lot 07B1 et J11/J12 est ambiguë ou incohérente.');
+            $this->invalid(UiText::t('La lignée J9, Lot 07B1 et J11/J12 est ambiguë ou incohérente.'));
         }
 
         return [
@@ -187,24 +188,24 @@ final class J13ConsultativeEvidenceCatalog
 
         $path = base_path(self::MANIFEST_PATH);
         if (! is_file($path) || ! is_readable($path)) {
-            $this->invalid('Le manifeste scientifique J12 est introuvable.');
+            $this->invalid(UiText::t('Le manifeste scientifique J12 est introuvable.'));
         }
 
         $contents = file_get_contents($path);
         if ($contents === false) {
-            $this->invalid('Le manifeste scientifique J12 ne peut pas être lu.');
+            $this->invalid(UiText::t('Le manifeste scientifique J12 ne peut pas être lu.'));
         }
 
         try {
             $manifest = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
-            throw new LogicException('Le manifeste scientifique J12 est invalide.', 0, $exception);
+            throw new LogicException(UiText::t('Le manifeste scientifique J12 est invalide.'), 0, $exception);
         }
 
         if (! is_array($manifest)
             || ($manifest['manifest_version'] ?? null) !== self::MANIFEST_VERSION
             || ($manifest['decision'] ?? null) !== self::DECISION) {
-            $this->invalid('La version ou la décision du manifeste scientifique J12 est inattendue.');
+            $this->invalid(UiText::t('La version ou la décision du manifeste scientifique J12 est inattendue.'));
         }
 
         return $this->manifest = $manifest;
@@ -218,7 +219,7 @@ final class J13ConsultativeEvidenceCatalog
     {
         $value = $source[$key] ?? null;
         if (! is_array($value)) {
-            $this->invalid('Le champ '.$label.' est absent ou invalide.');
+            $this->invalid(UiText::t('Le champ ').$label.' est absent ou invalide.');
         }
 
         return $value;
@@ -229,7 +230,7 @@ final class J13ConsultativeEvidenceCatalog
     {
         $value = $source[$key] ?? null;
         if (! is_string($value) || $value === '') {
-            $this->invalid('Le champ '.$label.' est absent ou invalide.');
+            $this->invalid(UiText::t('Le champ ').$label.' est absent ou invalide.');
         }
 
         return $value;
@@ -238,11 +239,11 @@ final class J13ConsultativeEvidenceCatalog
     private function evidenceLabel(string $evidenceClass): string
     {
         return match ($evidenceClass) {
-            'public_proxy_benchmark' => 'Benchmark public proxy',
-            'synthetic_contract_proof' => 'Preuve contractuelle synthétique',
-            'software_integration_proof' => 'Preuve d’intégration logicielle',
-            'rentfleet_local_validation' => 'Validation locale RentFleet',
-            'production_evidence' => 'Preuve de production',
+            'public_proxy_benchmark' => UiText::t('Benchmark public proxy'),
+            'synthetic_contract_proof' => UiText::t('Preuve contractuelle synthétique'),
+            'software_integration_proof' => UiText::t('Preuve d’intégration logicielle'),
+            'rentfleet_local_validation' => UiText::t('Validation locale RentFleet'),
+            'production_evidence' => UiText::t('Preuve de production'),
             default => $evidenceClass,
         };
     }

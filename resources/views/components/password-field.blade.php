@@ -9,11 +9,11 @@
         <button
             type="button"
             x-on:click="visible = ! visible"
-            aria-label="Afficher le mot de passe"
+            aria-label="{{ __('Afficher le mot de passe') }}"
             x-bind:aria-label="visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
             aria-pressed="false"
             x-bind:aria-pressed="visible.toString()"
-            title="Afficher le mot de passe"
+            title="{{ __('Afficher le mot de passe') }}"
             x-bind:title="visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
             class="absolute inset-y-0 end-0 flex min-h-11 min-w-11 items-center justify-center rounded-e-lg text-belkhir-space-muted transition hover:bg-brand-50 hover:text-belkhir-space-blue focus-visible:z-10"
         >

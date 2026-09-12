@@ -45,8 +45,8 @@ class J11ContractDemoController extends Controller
         return redirect()->route('intelligence.contract-demo.index')->with(
             'status',
             $result->created
-                ? 'Démonstration vérifiée et ajoutée sans action automatique.'
-                : 'Cette démonstration est déjà présente et n’a pas été dupliquée.',
+                ? __('Démonstration vérifiée et ajoutée sans action automatique.')
+                : __('Cette démonstration est déjà présente et n’a pas été dupliquée.'),
         );
     }
 
@@ -64,6 +64,6 @@ class J11ContractDemoController extends Controller
         );
 
         return redirect()->route('intelligence.contract-demo.index')
-            ->with('status', 'Décision humaine de démonstration enregistrée, sans action métier.');
+            ->with('status', __('Décision humaine de démonstration enregistrée, sans action métier.'));
     }
 }

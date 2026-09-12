@@ -45,7 +45,7 @@ class ReversePayment
             }
 
             if ($original->status !== 'posted' || $original->reversal_of_id) {
-                throw ValidationException::withMessages(['payment' => 'Seul un paiement comptabilisé non inversé peut être contrepassé.']);
+                throw ValidationException::withMessages(['payment' => __('Seul un paiement comptabilisé non inversé peut être contrepassé.')]);
             }
 
             $reversal = Payment::create([

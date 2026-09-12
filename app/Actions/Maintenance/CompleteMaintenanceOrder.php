@@ -23,31 +23,31 @@ class CompleteMaintenanceOrder
     public function handle(MaintenanceOrder $order, array $data, int $actorId): MaintenanceOrder
     {
         if (! array_key_exists('return_to_active', $data) || ! is_bool($data['return_to_active'])) {
-            throw ValidationException::withMessages(['return_to_active' => 'La décision humaine sur le retour à l’état actif est obligatoire.']);
+            throw ValidationException::withMessages(['return_to_active' => __('La décision humaine sur le retour à l’état actif est obligatoire.')]);
         }
         try {
             $cost = DecimalMoney::toMinorUnits($data['actual_cost'] ?? '0.00');
         } catch (InvalidArgumentException) {
-            throw ValidationException::withMessages(['actual_cost' => 'Le coût réel doit être un montant décimal positif ou nul.']);
+            throw ValidationException::withMessages(['actual_cost' => __('Le coût réel doit être un montant décimal positif ou nul.')]);
         }
 
         return DB::transaction(function () use ($order, $data, $actorId, $cost) {
             $locked = MaintenanceOrder::whereKey($order)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'in_progress') {
-                throw ValidationException::withMessages(['maintenance' => 'Seule une maintenance en cours peut être terminée.']);
+                throw ValidationException::withMessages(['maintenance' => __('Seule une maintenance en cours peut être terminée.')]);
             }
             $vehicle = Vehicle::query()->whereKey($locked->vehicle_id)->lockForUpdate()->firstOrFail();
             $blocks = VehicleBlock::query()->where('maintenance_order_id', $locked->id)->lockForUpdate()->get();
             $block = $blocks->first();
             if ($blocks->count() !== 1 || ! $block || ! $this->isCoherentBlock($block, $locked)) {
-                throw ValidationException::withMessages(['maintenance' => 'Le bloc actif de cette maintenance est absent ou incohérent.']);
+                throw ValidationException::withMessages(['maintenance' => __('Le bloc actif de cette maintenance est absent ou incohérent.')]);
             }
             $mileage = $data['mileage'] ?? $vehicle->current_mileage;
             if ($mileage < $vehicle->current_mileage || ($locked->mileage_at_opening !== null && $mileage < $locked->mileage_at_opening)) {
-                throw ValidationException::withMessages(['mileage' => 'Le kilométrage final doit être supérieur ou égal aux kilométrages d’ouverture et du véhicule.']);
+                throw ValidationException::withMessages(['mileage' => __('Le kilométrage final doit être supérieur ou égal aux kilométrages d’ouverture et du véhicule.')]);
             }
             if (isset($data['next_due_mileage']) && $data['next_due_mileage'] < $mileage) {
-                throw ValidationException::withMessages(['next_due_mileage' => 'La prochaine échéance kilométrique ne peut pas être antérieure au kilométrage final.']);
+                throw ValidationException::withMessages(['next_due_mileage' => __('La prochaine échéance kilométrique ne peut pas être antérieure au kilométrage final.')]);
             }
             MaintenanceTransition::allow('in_progress', 'completed');
             $locked->forceFill([
@@ -58,12 +58,12 @@ class CompleteMaintenanceOrder
             $block->forceFill(['status' => 'released', 'released_at' => now()])->save();
             if ($cost > 0) {
                 if ($locked->expenses()->exists()) {
-                    throw ValidationException::withMessages(['maintenance' => 'Une dépense est déjà rattachée à cette maintenance.']);
+                    throw ValidationException::withMessages(['maintenance' => __('Une dépense est déjà rattachée à cette maintenance.')]);
                 }
-                $this->createExpense->handle(['agency_id' => $locked->agency_id, 'vehicle_id' => $locked->vehicle_id, 'maintenance_order_id' => $locked->id, 'category' => 'maintenance', 'description' => 'Maintenance '.$locked->maintenance_number, 'amount' => DecimalMoney::fromMinorUnits($cost), 'expense_date' => today(), 'supplier' => $locked->supplier], $actorId);
+                $this->createExpense->handle(['agency_id' => $locked->agency_id, 'vehicle_id' => $locked->vehicle_id, 'maintenance_order_id' => $locked->id, 'category' => 'maintenance', 'description' => __('Maintenance ').$locked->maintenance_number, 'amount' => DecimalMoney::fromMinorUnits($cost), 'expense_date' => today(), 'supplier' => $locked->supplier], $actorId);
             }
             if (($data['return_to_active'] ?? false) === true) {
-                $this->changeVehicleStatus->handle($vehicle, VehicleOperationalStatus::Active, 'Retour actif confirmé après maintenance', $actorId);
+                $this->changeVehicleStatus->handle($vehicle, VehicleOperationalStatus::Active, __('Retour actif confirmé après maintenance'), $actorId);
             }
             MaintenanceStatusHistory::create(['maintenance_order_id' => $locked->id, 'from_status' => 'in_progress', 'to_status' => 'completed', 'reason' => $data['reason'] ?? null, 'changed_by' => $actorId]);
             $this->audit->record('maintenance.completed', $locked, ['status' => 'in_progress'], ['status' => 'completed', 'actual_cost' => $locked->actual_cost]);

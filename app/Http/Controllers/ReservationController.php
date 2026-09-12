@@ -23,6 +23,7 @@ use App\Support\Intelligence\TenantIntelligenceAccess;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -42,7 +43,7 @@ class ReservationController extends Controller
             ? $agencies->firstWhere('id', $request->user()->agency_id)
             : ($requestedAgencyId > 0 ? $agencies->firstWhere('id', $requestedAgencyId) : null);
         if ($requestedAgencyId > 0 && $selectedAgency === null) {
-            abort(403, 'Cette agence ne fait pas partie du contexte actif.');
+            abort(403, __('Cette agence ne fait pas partie du contexte actif.'));
         }
 
         $reservations = Reservation::with(['agency', 'customer', 'vehicle'])
@@ -83,7 +84,7 @@ class ReservationController extends Controller
         $this->authorize('create', Reservation::class);
         $reservation = $action->handle($this->validated($request), $request->user()->id);
 
-        return redirect()->route('reservations.show', $reservation)->with('status', 'Réservation brouillon créée.');
+        return redirect()->route('reservations.show', $reservation)->with('status', __('Réservation brouillon créée.'));
     }
 
     public function show(Reservation $reservation, ResolvePricingRule $resolve, CalculateReservationQuote $calculate): View
@@ -100,7 +101,10 @@ class ReservationController extends Controller
             }
         }
 
-        return view('reservations.show', compact('reservation', 'quote', 'quoteError'));
+        $replans = DB::table('reservation_replans')->where('tenant_id', $reservation->tenant_id)->where('agency_id', $reservation->agency_id)
+            ->where(fn ($query) => $query->where('previous_reservation_id', $reservation->id)->orWhere('replacement_reservation_id', $reservation->id))->get();
+
+        return view('reservations.show', compact('reservation', 'quote', 'quoteError', 'replans'));
     }
 
     public function edit(Request $request, Reservation $reservation): View
@@ -115,7 +119,7 @@ class ReservationController extends Controller
         $this->authorize('update', $reservation);
         $action->handle($reservation, $this->validated($request));
 
-        return redirect()->route('reservations.show', $reservation)->with('status', 'Réservation mise à jour.');
+        return redirect()->route('reservations.show', $reservation)->with('status', __('Réservation mise à jour.'));
     }
 
     public function confirm(Request $request, Reservation $reservation, ConfirmReservation $action): RedirectResponse
@@ -127,7 +131,7 @@ class ReservationController extends Controller
             return back()->withErrors(['vehicle_id' => $exception->getMessage()]);
         }
 
-        return back()->with('status', 'Réservation confirmée et véhicule bloqué.');
+        return back()->with('status', __('Réservation confirmée et véhicule bloqué.'));
     }
 
     public function cancel(Request $request, Reservation $reservation, CancelReservation $action): RedirectResponse
@@ -136,7 +140,7 @@ class ReservationController extends Controller
         $data = $request->validate(['tenant_id' => ['prohibited'], 'reason' => ['required', 'string', 'max:2000']]);
         $action->handle($reservation, $data['reason'], $request->user()->id);
 
-        return back()->with('status', 'Réservation annulée et bloc libéré.');
+        return back()->with('status', __('Réservation annulée et bloc libéré.'));
     }
 
     private function validated(Request $request): array
@@ -172,7 +176,7 @@ class ReservationController extends Controller
             ?? $agencies->first()?->id;
 
         if (! $agencies->contains('id', $selectedAgencyId)) {
-            abort(403, 'Cette agence ne fait pas partie du contexte actif.');
+            abort(403, __('Cette agence ne fait pas partie du contexte actif.'));
         }
 
         return [
@@ -229,9 +233,9 @@ class ReservationController extends Controller
                 'scope' => ['agency' => (string) ($agency?->name ?? '')],
                 'forecasts' => [],
                 'message' => match (true) {
-                    $agency === null => 'Sélectionnez une agence pour consulter ses prévisions.',
-                    ! $available => 'Le service de prévision est momentanément indisponible. Le planning reste utilisable.',
-                    default => 'Aucune prévision récente n’est disponible pour cette agence.',
+                    $agency === null => __('Sélectionnez une agence pour consulter ses prévisions.'),
+                    ! $available => __('Le service de prévision est momentanément indisponible. Le planning reste utilisable.'),
+                    default => __('Aucune prévision récente n’est disponible pour cette agence.'),
                 },
             ],
         ];

@@ -117,3 +117,31 @@ preuve détaillée des corrections.
 - **Dépenses sans affectation** : montants approuvés sans véhicule direct ou indirect, signalés séparément sans ventilation inventée.
 
 Ce tableau porte sur les véhicules actuellement rattachés aux agences autorisées, archives comprises. Les agrégats sont indépendants pour éviter la multiplication des montants par les jointures.
+
+
+## Coûts de possession et estimation économique
+
+Le rapport de rentabilité conserve la marge connue fondée sur les factures et dépenses
+approuvées. Le volet économique utilise les profils versionnés du véhicule, leur date
+d’application et leur devise. Chaque période est découpée aux changements de profil.
+Les dates d’acquisition et d’application bornent la couverture des hypothèses.
+
+- Amortissement : coût d’achat moins valeur résiduelle, réparti en centimes sur les jours
+  calendaires de la durée choisie, sans dépassement du montant amortissable.
+- Assurance non saisie : maximum de zéro et du budget proratisé de la période moins les
+  dépenses d’assurance approuvées de cette période et devise.
+- Autres coûts : budget mensuel des seuls coûts non enregistrés, proratisé sur les jours
+  réels du mois.
+- Achat associé : dépense approuvée de type Autre, du même véhicule, de la même agence et
+  devise. Elle reste dans les dépenses réelles et est exclue des coûts estimés où
+  l’amortissement la remplace.
+- Marge estimée : facturé moins dépenses approuvées hors achat associé, amortissement,
+  assurance non saisie et autres coûts non saisis.
+
+Le rapport et le CSV exposent la couverture des hypothèses. Une absence de profil n’est
+pas un coût nul. Les montants de devises différentes ne sont pas additionnés. Les
+estimations ne créent ni facture, ni dépense, ni mouvement comptable.
+
+Le complément d’assurance dépend de la fenêtre choisie : ne pas sommer des marges
+estimées de fenêtres distinctes, en particulier quand une prime annuelle est payée en
+une seule fois. Recalculer directement sur la période consolidée souhaitée.

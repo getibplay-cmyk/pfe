@@ -30,7 +30,7 @@ class ChangeAgencyDistanceStatusRequest extends FormRequest
         return [function (Validator $validator): void {
             $allowed = ['tenant_id', 'active', 'verified_by_user_id'];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour ce changement d’état.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé pour ce changement d’état.'));
             }
         }];
     }

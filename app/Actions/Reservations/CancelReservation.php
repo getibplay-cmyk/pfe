@@ -19,7 +19,7 @@ class CancelReservation
         return DB::transaction(function () use ($reservation, $reason, $actorId) {
             $locked = Reservation::whereKey($reservation)->lockForUpdate()->firstOrFail();
             if (! $locked->status->canBeCancelled()) {
-                throw ValidationException::withMessages(['status' => 'Cette réservation ne peut plus être annulée.']);
+                throw ValidationException::withMessages(['status' => __('Cette réservation ne peut plus être annulée.')]);
             }
             $from = $locked->status;
             $locked->vehicleBlocks()->where('status', VehicleBlockStatus::Active)->update(['status' => VehicleBlockStatus::Released->value, 'released_at' => now(), 'updated_at' => now()]);

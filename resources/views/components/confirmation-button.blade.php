@@ -2,28 +2,14 @@
     'message',
     'variant' => 'danger',
     'type' => 'submit',
-    'title' => 'Confirmer cette action',
-    'resource' => 'Élément sélectionné',
-    'confirmLabel' => 'Confirmer',
-    'loadingLabel' => 'Traitement en cours…',
+    'title' => __('Confirmer cette action'),
+    'resource' => __('Élément sélectionné'),
+    'confirmLabel' => __('Confirmer'),
+    'loadingLabel' => __('Traitement en cours…'),
     'icon' => null,
 ])
 @php
-    $normalizedLabel = mb_strtolower(trim(strip_tags((string) $slot)));
-    $resolvedIcon = $icon ?? match (true) {
-        str_contains($normalizedLabel, 'enregistr') => 'save',
-        str_contains($normalizedLabel, 'cré'), str_contains($normalizedLabel, 'ajout') => 'add',
-        str_contains($normalizedLabel, 'actualis') => 'refresh',
-        str_contains($normalizedLabel, 'génér') => 'chart',
-        str_contains($normalizedLabel, 'analys') => 'analysis',
-        str_contains($normalizedLabel, 'import') => 'upload',
-        str_contains($normalizedLabel, 'export'), str_contains($normalizedLabel, 'télécharg') => 'download',
-        str_contains($normalizedLabel, 'paiement') => 'payment',
-        str_contains($normalizedLabel, 'abonnement') => 'add',
-        str_contains($normalizedLabel, 'supprim') => 'delete',
-        str_contains($normalizedLabel, 'désactiv') => 'disable',
-        default => 'warning',
-    };
+    $resolvedIcon = $icon ?? App\Support\Ui\UiLabel::buttonIcon((string) $slot, 'warning');
 @endphp
 <button
     type="{{ $type }}"

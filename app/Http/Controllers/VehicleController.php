@@ -60,7 +60,7 @@ class VehicleController extends Controller
             $platePredictionRunId,
         );
 
-        return redirect()->route('vehicles.show', $vehicle)->with('status', 'Véhicule créé.');
+        return redirect()->route('vehicles.show', $vehicle)->with('status', __('Véhicule créé.'));
     }
 
     public function show(Vehicle $vehicle): View
@@ -89,7 +89,7 @@ class VehicleController extends Controller
         $this->authorize('update', $vehicle);
         $action->handle($vehicle, $this->validated($request, $vehicle));
 
-        return redirect()->route('vehicles.show', $vehicle)->with('status', 'Véhicule mis à jour.');
+        return redirect()->route('vehicles.show', $vehicle)->with('status', __('Véhicule mis à jour.'));
     }
 
     public function changeStatus(Request $request, Vehicle $vehicle, ChangeVehicleOperationalStatus $action): RedirectResponse
@@ -98,7 +98,7 @@ class VehicleController extends Controller
         $data = $request->validate(['tenant_id' => ['prohibited'], 'operational_status' => ['required', Rule::enum(VehicleOperationalStatus::class)], 'reason' => ['nullable', 'max:2000']]);
         $action->handle($vehicle, VehicleOperationalStatus::from($data['operational_status']), $data['reason'] ?? null, $request->user()->id);
 
-        return back()->with('status', 'Statut opérationnel mis à jour.');
+        return back()->with('status', __('Statut opérationnel mis à jour.'));
     }
 
     private function formData(Request $request, Vehicle $vehicle): array

@@ -5,6 +5,7 @@ namespace App\Support\Reporting;
 use App\Models\Reservation;
 use App\Models\Tenant;
 use App\Models\Vehicle;
+use App\Models\VehicleEconomicProfile;
 use App\Support\Pricing\DecimalMoney;
 use App\Support\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
@@ -480,7 +481,73 @@ class BuildMinimalReport
         }
         unset($currencies);
 
-        return compact('vehicles', 'amounts', 'downtime', 'unallocated');
+        $economics = $this->economicEstimates($criteria, $ids, $expensesQuery, $vehicleExpression);
+        foreach ($economics as $vehicleId => &$currencies) {
+            foreach ($currencies as $currency => &$values) {
+                $actual = $amounts[$vehicleId][$currency] ?? ['invoiced' => '0.00', 'expenses' => '0.00'];
+                $operating = DecimalMoney::toMinorUnits($actual['expenses']) - DecimalMoney::toMinorUnits($values['acquisition_recorded']);
+                $values['operating_expenses'] = DecimalMoney::fromMinorUnits($operating);
+                $values['estimated_margin'] = DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits($actual['invoiced']) - $operating - DecimalMoney::toMinorUnits($values['additional_costs']));
+            }
+            unset($values);
+        }
+        unset($currencies);
+
+        return compact('vehicles', 'amounts', 'downtime', 'unallocated', 'economics');
+    }
+
+    private function economicEstimates(ReportCriteria $criteria, array $ids, Builder $expensesQuery, string $vehicleExpression): array
+    {
+        $profiles = VehicleEconomicProfile::whereIn('vehicle_id', $ids)->where('effective_from', '<', $criteria->endsAt->toDateString())->orderBy('effective_from')->orderBy('revision')->get();
+        $result = [];
+        foreach ($profiles->groupBy('vehicle_id') as $vehicleId => $versions) {
+            $versions = $versions->values();
+            foreach ($versions as $index => $profile) {
+                $from = max($criteria->dateFrom(), $profile->effective_from->toDateString());
+                $until = min($criteria->endsAt->toDateString(), isset($versions[$index + 1]) ? $versions[$index + 1]->effective_from->toDateString() : $criteria->endsAt->toDateString());
+                if ($from >= $until || ($criteria->currency !== null && $profile->currency !== $criteria->currency)) {
+                    continue;
+                }
+                $projection = app(VehicleOwnershipCosts::class)->project([
+                    ...$profile->only(['acquisition_cost', 'residual_value', 'depreciation_months', 'annual_insurance', 'monthly_unrecorded_costs']),
+                    'acquired_on' => $profile->acquired_on->toDateString(), 'effective_from' => $profile->effective_from->toDateString(),
+                ], $from, $until);
+                $currency = $profile->currency;
+                $result[$vehicleId][$currency] ??= ['depreciation' => 0, 'insurance_budget' => 0, 'other_unrecorded' => 0, 'days' => 0, 'profile_ids' => []];
+                foreach (['depreciation', 'insurance_budget', 'other_unrecorded', 'days'] as $key) {
+                    $result[$vehicleId][$currency][$key] += $projection[$key];
+                }
+                foreach (['acquisition_cost', 'residual_value', 'remaining_value'] as $key) {
+                    $result[$vehicleId][$currency][$key] = $projection[$key];
+                }
+                $result[$vehicleId][$currency]['profile_ids'][] = $profile->id;
+            }
+        }
+        $insurance = (clone $expensesQuery)->whereIn(DB::raw($vehicleExpression), $ids)->where('e.category', 'insurance')
+            ->selectRaw($vehicleExpression.' AS vehicle_id, e.currency, SUM(e.amount) AS amount')->groupByRaw($vehicleExpression.', e.currency')->get();
+        $acquisitions = (clone $expensesQuery)->whereIn('e.id', $profiles->pluck('acquisition_expense_id')->filter()->unique()->all())
+            ->selectRaw($vehicleExpression.' AS vehicle_id, e.currency, SUM(e.amount) AS amount')->groupByRaw($vehicleExpression.', e.currency')->get();
+        foreach ($result as $vehicleId => &$currencies) {
+            foreach ($currencies as $currency => &$values) {
+                $actualInsurance = $insurance->first(fn ($item) => (int) $item->vehicle_id === (int) $vehicleId && $item->currency === $currency);
+                $acquisition = $acquisitions->first(fn ($item) => (int) $item->vehicle_id === (int) $vehicleId && $item->currency === $currency);
+                $values['insurance_recorded'] = DecimalMoney::toMinorUnits((string) ($actualInsurance?->amount ?? '0.00'));
+                $values['insurance_unrecorded'] = max(0, $values['insurance_budget'] - $values['insurance_recorded']);
+                $values['acquisition_recorded'] = DecimalMoney::toMinorUnits((string) ($acquisition?->amount ?? '0.00'));
+                $values['additional_costs'] = $values['depreciation'] + $values['insurance_unrecorded'] + $values['other_unrecorded'];
+                $values['coverage_days'] = $values['days'];
+                unset($values['days']);
+                foreach ($values as $key => $minor) {
+                    if (! in_array($key, ['profile_ids', 'coverage_days'], true)) {
+                        $values[$key] = DecimalMoney::fromMinorUnits($minor);
+                    }
+                }
+            }
+            unset($values);
+        }
+        unset($currencies);
+
+        return $result;
     }
 
     private function scoped(string $table, string $alias, ReportCriteria $criteria): Builder

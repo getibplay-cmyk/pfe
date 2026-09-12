@@ -18,26 +18,26 @@ class RescheduleApprovedMaintenanceOrder
     public function handle(MaintenanceOrder $order, array $data, int $actorId): MaintenanceOrder
     {
         if (! isset($data['scheduled_start_at'], $data['scheduled_end_at'], $data['reason']) || trim((string) $data['reason']) === '') {
-            throw ValidationException::withMessages(['schedule' => 'La nouvelle période et son motif sont obligatoires.']);
+            throw ValidationException::withMessages(['schedule' => __('La nouvelle période et son motif sont obligatoires.')]);
         }
         $start = CarbonImmutable::parse($data['scheduled_start_at']);
         $end = CarbonImmutable::parse($data['scheduled_end_at']);
         if ($end->lessThanOrEqualTo($start) || $end->lessThanOrEqualTo(now())) {
-            throw ValidationException::withMessages(['scheduled_end_at' => 'La fin doit être postérieure au début et située dans le futur.']);
+            throw ValidationException::withMessages(['scheduled_end_at' => __('La fin doit être postérieure au début et située dans le futur.')]);
         }
 
         try {
             return DB::transaction(function () use ($order, $data, $actorId, $start, $end) {
                 $locked = MaintenanceOrder::whereKey($order)->lockForUpdate()->firstOrFail();
                 if (! in_array($locked->status, ['planned', 'approved'], true)) {
-                    throw ValidationException::withMessages(['maintenance' => 'Seule une maintenance planifiée ou approuvée peut être replanifiée.']);
+                    throw ValidationException::withMessages(['maintenance' => __('Seule une maintenance planifiée ou approuvée peut être replanifiée.')]);
                 }
 
                 $block = null;
                 if ($locked->status === 'approved') {
                     $blocks = VehicleBlock::query()->where('maintenance_order_id', $locked->id)->lockForUpdate()->get();
                     if ($blocks->count() !== 1 || ! $this->isCoherentBlock($blocks->first(), $locked)) {
-                        throw ValidationException::withMessages(['schedule' => 'Le bloc actif de cette maintenance est absent ou incohérent.']);
+                        throw ValidationException::withMessages(['schedule' => __('Le bloc actif de cette maintenance est absent ou incohérent.')]);
                     }
                     $block = $blocks->first();
                 }
@@ -71,7 +71,7 @@ class RescheduleApprovedMaintenanceOrder
             });
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23P01') {
-                throw ValidationException::withMessages(['schedule' => 'Cette période chevauche une réservation, un contrat ou un autre bloc actif.']);
+                throw ValidationException::withMessages(['schedule' => __('Cette période chevauche une réservation, un contrat ou un autre bloc actif.')]);
             }
 
             throw $exception;

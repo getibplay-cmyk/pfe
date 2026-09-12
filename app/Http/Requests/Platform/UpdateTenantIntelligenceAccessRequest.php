@@ -28,7 +28,7 @@ class UpdateTenantIntelligenceAccessRequest extends FormRequest
         return [function (Validator $validator): void {
             $allowed = array_keys($this->rules());
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $allowed) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé.'));
             }
         }];
     }

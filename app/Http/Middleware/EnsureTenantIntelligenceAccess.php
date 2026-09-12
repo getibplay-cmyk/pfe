@@ -15,7 +15,7 @@ final class EnsureTenantIntelligenceAccess
     public function handle(Request $request, Closure $next, string $capability): Response
     {
         $resolved = IntelligenceCapability::tryFrom($capability);
-        abort_if($resolved === null, 403, 'Cette fonctionnalité n’est pas disponible.');
+        abort_if($resolved === null, 403, __('Cette fonctionnalité n’est pas disponible.'));
 
         $this->access->ensureAuthorized($resolved);
 

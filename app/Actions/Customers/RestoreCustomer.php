@@ -22,7 +22,7 @@ class RestoreCustomer
             }
             $this->agencyAccess->required($locked->agency_id);
             if (! Agency::whereKey($locked->agency_id)->where('is_active', true)->exists()) {
-                throw ValidationException::withMessages(['customer' => 'L’agence du client doit être active avant restauration.']);
+                throw ValidationException::withMessages(['customer' => __('L’agence du client doit être active avant restauration.')]);
             }
 
             $locked->restore();

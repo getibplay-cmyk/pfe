@@ -1,10 +1,11 @@
+import { t } from './i18n.js';
 import { formatConfidence } from './business-number.js';
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 const INPUT_KINDS = new Set(['full_vehicle_image', 'plate_crop']);
-const MANUAL_MESSAGE = 'L’immatriculation n’a pas pu être lue. Saisissez-la manuellement.';
-const CLOSE_UP_MESSAGE = 'Plaque non détectée. Ajoutez une photo rapprochée de la plaque.';
-const PROCESSING_MESSAGE = 'Lecture de la photo en cours…';
+const MANUAL_MESSAGE = t('L’immatriculation n’a pas pu être lue. Saisissez-la manuellement.');
+const CLOSE_UP_MESSAGE = t('Plaque non détectée. Ajoutez une photo rapprochée de la plaque.');
+const PROCESSING_MESSAGE = t('Lecture de la photo en cours…');
 const FORBIDDEN_CLIENT_TERMS = /\b(?:anpr|ocr|paddleocr|faster(?:\s+r-cnn)?|checkpoint|runtime|worker|queue|sha|path|chemin|exception|traceback)\b/iu;
 
 export function createVehicleRegistrationAssistantState(initialRegistration = '') {
@@ -120,7 +121,7 @@ export function createVehicleRegistrationAssistantState(initialRegistration = ''
             this.confidence = confidence;
             this.message = safeMessage(
                 payload.message,
-                'Vérifiez l’immatriculation avant d’enregistrer le véhicule.',
+                t('Vérifiez l’immatriculation avant d’enregistrer le véhicule.'),
             );
             this.acceptedRunId = String(runId);
             this.requiresCloseUp = false;

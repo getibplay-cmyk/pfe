@@ -1,5 +1,6 @@
+import { t } from './i18n.js';
 const DEFAULT_PROGRESS_DELAY = 140;
-const SAFE_LOADING_MESSAGE = 'Opération en cours…';
+const SAFE_LOADING_MESSAGE = t('Opération en cours…');
 
 function setBusy(element, busy) {
     if (element?.setAttribute) element.setAttribute('aria-busy', busy ? 'true' : 'false');
@@ -81,7 +82,7 @@ export function createBelkhirSpaceLoadingController({
 
         if (signal?.aborted) {
             cancel();
-            throw signal.reason ?? new DOMException('Opération annulée', 'AbortError');
+            throw signal.reason ?? new DOMException(t('Opération annulée'), 'AbortError');
         }
 
         signal?.addEventListener?.('abort', cancel, { once: true });
@@ -298,7 +299,7 @@ export function setFormLoading(form, loading) {
     for (const label of form.querySelectorAll('[data-loading-label]')) {
         if (! label.dataset.loadingOriginal) label.dataset.loadingOriginal = label.textContent;
         label.textContent = loading
-            ? (label.dataset.loadingText || 'Traitement en cours…')
+            ? (label.dataset.loadingText || t('Traitement en cours…'))
             : label.dataset.loadingOriginal;
     }
 }

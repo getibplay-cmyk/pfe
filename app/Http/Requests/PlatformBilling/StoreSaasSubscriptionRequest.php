@@ -49,7 +49,7 @@ class StoreSaasSubscriptionRequest extends PlatformBillingRequest
                         && $value !== ''
                         && ! $validator->errors()->has($field)
                         && CarbonImmutable::parse((string) $value)->greaterThan($end)) {
-                        $validator->errors()->add($field, 'Cette date ne peut pas dépasser la fin prévue de l’abonnement.');
+                        $validator->errors()->add($field, __('Cette date ne peut pas dépasser la fin prévue de l’abonnement.'));
                     }
                 }
             },

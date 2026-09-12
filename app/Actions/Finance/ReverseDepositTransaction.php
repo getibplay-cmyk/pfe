@@ -44,7 +44,7 @@ class ReverseDepositTransaction
             }
 
             if ($original->transaction_type === 'reversal' || DepositTransaction::where('reversal_of_id', $original->id)->exists()) {
-                throw ValidationException::withMessages(['transaction' => 'Ce mouvement ne peut pas être contrepassé.']);
+                throw ValidationException::withMessages(['transaction' => __('Ce mouvement ne peut pas être contrepassé.')]);
             }
 
             $contract = RentalContract::whereKey($original->rental_contract_id)->lockForUpdate()->firstOrFail();

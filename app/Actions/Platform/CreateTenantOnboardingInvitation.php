@@ -28,15 +28,15 @@ class CreateTenantOnboardingInvitation
         $this->rejectUnexpected($data, ['email', 'saas_plan_id', 'trial_days', 'expires_in_hours']);
         $email = mb_strtolower(trim((string) ($data['email'] ?? '')));
         if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw ValidationException::withMessages(['email' => 'L’adresse e-mail est invalide.']);
+            throw ValidationException::withMessages(['email' => __('L’adresse e-mail est invalide.')]);
         }
         $trialDays = filter_var($data['trial_days'] ?? config('platform_billing.onboarding.default_trial_days'), FILTER_VALIDATE_INT);
         $expiresInHours = filter_var($data['expires_in_hours'] ?? config('platform_billing.onboarding.invitation_ttl_hours'), FILTER_VALIDATE_INT);
         if ($trialDays === false || $trialDays < 1 || $trialDays > 90) {
-            throw ValidationException::withMessages(['trial_days' => 'La durée d’essai doit être comprise entre 1 et 90 jours.']);
+            throw ValidationException::withMessages(['trial_days' => __('La durée d’essai doit être comprise entre 1 et 90 jours.')]);
         }
         if ($expiresInHours === false || $expiresInHours < 1 || $expiresInHours > 168) {
-            throw ValidationException::withMessages(['expires_in_hours' => 'La validité du lien doit être comprise entre 1 et 168 heures.']);
+            throw ValidationException::withMessages(['expires_in_hours' => __('La validité du lien doit être comprise entre 1 et 168 heures.')]);
         }
 
         try {
@@ -46,13 +46,13 @@ class CreateTenantOnboardingInvitation
                     ->lockForUpdate()
                     ->first();
                 if ($plan === null || ! $plan->is_active) {
-                    throw ValidationException::withMessages(['saas_plan_id' => 'Sélectionnez un plan SaaS actif.']);
+                    throw ValidationException::withMessages(['saas_plan_id' => __('Sélectionnez un plan SaaS actif.')]);
                 }
 
                 $entitlements = $this->entitlements->normalize($plan->entitlements);
                 if ($entitlements['max_agencies'] === 0 || $entitlements['max_users'] === 0) {
                     throw ValidationException::withMessages([
-                        'saas_plan_id' => 'Ce plan doit autoriser au moins une agence et un utilisateur pour l’accueil initial.',
+                        'saas_plan_id' => __('Ce plan doit autoriser au moins une agence et un utilisateur pour l’accueil initial.'),
                     ]);
                 }
 
@@ -67,14 +67,14 @@ class CreateTenantOnboardingInvitation
                     ])->save());
 
                 if (DB::table('users')->whereRaw('lower(email) = ?', [$email])->exists()) {
-                    throw ValidationException::withMessages(['email' => 'Un compte utilise déjà cette adresse e-mail.']);
+                    throw ValidationException::withMessages(['email' => __('Un compte utilise déjà cette adresse e-mail.')]);
                 }
                 if (TenantOnboardingInvitation::query()
                     ->whereRaw('lower(email) = ?', [$email])
                     ->where('status', TenantOnboardingInvitationStatus::Pending->value)
                     ->lockForUpdate()
                     ->exists()) {
-                    throw ValidationException::withMessages(['email' => 'Une invitation active existe déjà pour cette adresse.']);
+                    throw ValidationException::withMessages(['email' => __('Une invitation active existe déjà pour cette adresse.')]);
                 }
 
                 $token = Str::random(80);
@@ -101,7 +101,7 @@ class CreateTenantOnboardingInvitation
             });
         } catch (QueryException $exception) {
             if ((string) $exception->getCode() === '23505') {
-                throw ValidationException::withMessages(['email' => 'Une invitation active existe déjà pour cette adresse.']);
+                throw ValidationException::withMessages(['email' => __('Une invitation active existe déjà pour cette adresse.')]);
             }
 
             throw $exception;
@@ -112,7 +112,7 @@ class CreateTenantOnboardingInvitation
     {
         $unexpected = array_values(array_diff(array_keys($data), $allowed));
         if ($unexpected !== []) {
-            throw ValidationException::withMessages([$unexpected[0] => 'Ce champ n’est pas autorisé.']);
+            throw ValidationException::withMessages([$unexpected[0] => __('Ce champ n’est pas autorisé.')]);
         }
     }
 }

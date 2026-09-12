@@ -1,4 +1,4 @@
-<x-public-layout :title="'Accueil'">
+<x-public-layout :title="__('Accueil')">
     <section class="relative isolate overflow-hidden bg-belkhir-space-ink text-white">
         <div class="absolute inset-0 -z-10 opacity-70" aria-hidden="true">
             <span class="absolute -right-24 -top-28 h-96 w-96 rounded-full border-[4rem] border-belkhir-space-blue/20"></span>
@@ -6,15 +6,15 @@
         </div>
         <div class="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:px-8 lg:py-28">
             <div>
-                <p class="border-s-4 border-belkhir-space-orange ps-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-300">SaaS de gestion automobile</p>
-                <h1 class="mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">Une vue claire de chaque véhicule, contrat et décision.</h1>
-                <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">{{ config('brand.name') }} réunit les opérations, la finance et les assistances intelligentes de votre entreprise dans un espace multi-agences sécurisé.</p>
+                <p class="border-s-4 border-belkhir-space-orange ps-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-300">{{ __('SaaS de gestion automobile') }}</p>
+                <h1 class="mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">{{ __('Une vue claire de chaque véhicule, contrat et décision.') }}</h1>
+                <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-300">{{ config('brand.name') }} {{ __('réunit les opérations, la finance et les assistances intelligentes de votre entreprise dans un espace multi-agences sécurisé.') }}</p>
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <a href="{{ route('pricing') }}" class="rf-button-primary min-h-12 px-6">Voir les tarifs <x-icon name="next" size="xs" /></a>
-                    <a href="{{ route('subscription.public') }}" class="rf-button min-h-12 border-white/20 bg-white/5 px-6 text-white hover:bg-white/10">Comment s’abonner</a>
+                    <a href="{{ route('pricing') }}" class="rf-button-primary min-h-12 px-6">{{ __('Voir les tarifs') }} <x-icon name="next" size="xs" /></a>
+                    <a href="{{ route('subscription.public') }}" class="rf-button min-h-12 border-white/20 bg-white/5 px-6 text-white hover:bg-white/10">{{ __('Comment s’abonner') }}</a>
                 </div>
             </div>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" aria-label="Points forts">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" aria-label="{{ __('Points forts') }}">
                 @foreach ([
                     ['icon' => 'vehicle', 'title' => 'Parc maîtrisé', 'text' => 'Disponibilité, maintenance et assurance au même endroit.'],
                     ['icon' => 'file', 'title' => 'Cycle locatif suivi', 'text' => 'De la réservation au retour et à la facture.'],
@@ -31,7 +31,7 @@
     </section>
 
     <section class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-        <div class="max-w-2xl"><p class="text-xs font-bold uppercase tracking-[0.18em] text-belkhir-space-orange">Un espace, plusieurs métiers</p><h2 class="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Conçu pour suivre l’activité réelle.</h2></div>
+        <div class="max-w-2xl"><p class="text-xs font-bold uppercase tracking-[0.18em] text-belkhir-space-orange">{{ __('Un espace, plusieurs métiers') }}</p><h2 class="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{{ __('Conçu pour suivre l’activité réelle.') }}</h2></div>
         <div class="mt-10 grid gap-5 md:grid-cols-3">
             @foreach ([
                 ['01', 'Exploiter', 'Réservations, contrats, inspections, clients et disponibilité du parc.'],
@@ -46,16 +46,16 @@
     @if($plans->isNotEmpty())
         <section class="border-y border-slate-200 bg-white">
             <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-bold uppercase tracking-[0.18em] text-belkhir-space-orange">Offres disponibles</p><h2 class="mt-2 text-3xl font-bold text-slate-950">Choisissez une base adaptée.</h2></div><a href="{{ route('pricing') }}" class="rf-button-link">Comparer toutes les offres <x-icon name="next" size="xs" /></a></div>
-                <div class="mt-8 grid gap-5 md:grid-cols-3">@foreach($plans as $plan)<article class="rounded-2xl border border-slate-200 p-6"><h3 class="text-lg font-bold text-slate-950">{{ $plan->name }}</h3><p class="mt-3 text-3xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\UiLabel::money($plan->price_amount, $plan->currency) }}</p><p class="mt-1 text-sm text-slate-500">par {{ $plan->billing_interval->value === 'annual' ? 'an' : 'mois' }}</p></article>@endforeach</div>
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-bold uppercase tracking-[0.18em] text-belkhir-space-orange">{{ __('Offres disponibles') }}</p><h2 class="mt-2 text-3xl font-bold text-slate-950">{{ __('Choisissez une base adaptée.') }}</h2></div><a href="{{ route('pricing') }}" class="rf-button-link">{{ __('Comparer toutes les offres') }} <x-icon name="next" size="xs" /></a></div>
+                <div class="mt-8 grid gap-5 md:grid-cols-3">@foreach($plans as $plan)<article class="rounded-2xl border border-slate-200 p-6"><h3 class="text-lg font-bold text-slate-950">{{ $plan->name }}</h3><p class="mt-3 text-3xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\UiLabel::money($plan->price_amount, $plan->currency) }}</p><p class="mt-1 text-sm text-slate-500">{{ __('par') }} {{ $plan->billing_interval->value === 'annual' ? 'an' : __('mois') }}</p></article>@endforeach</div>
             </div>
         </section>
     @endif
 
     <section class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
         <div class="overflow-hidden rounded-3xl bg-belkhir-space-blue p-7 text-white shadow-xl sm:p-10 lg:flex lg:items-center lg:justify-between lg:gap-10">
-            <div><h2 class="text-2xl font-bold sm:text-3xl">Votre entreprise est déjà cliente ?</h2><p class="mt-3 max-w-2xl text-brand-100">Connectez-vous pour consulter votre abonnement et, lorsque CMI est activé, régler votre échéance sur la page bancaire sécurisée.</p></div>
-            <a href="{{ route('login') }}" class="rf-button mt-6 min-h-12 shrink-0 border-white bg-white px-6 text-belkhir-space-blue hover:bg-brand-50 lg:mt-0"><x-icon name="login" size="xs" />Accéder à mon espace</a>
+            <div><h2 class="text-2xl font-bold sm:text-3xl">{{ __('Votre entreprise est déjà cliente ?') }}</h2><p class="mt-3 max-w-2xl text-brand-100">{{ __('Connectez-vous pour consulter votre abonnement et, lorsque CMI est activé, régler votre échéance sur la page bancaire sécurisée.') }}</p></div>
+            <a href="{{ route('login') }}" class="rf-button mt-6 min-h-12 shrink-0 border-white bg-white px-6 text-belkhir-space-blue hover:bg-brand-50 lg:mt-0"><x-icon name="login" size="xs" />{{ __('Accéder à mon espace') }}</a>
         </div>
     </section>
 </x-public-layout>

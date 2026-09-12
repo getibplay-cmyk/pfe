@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum J11DemoDecision: string
 {
     case AcceptedForDemoReview = 'accepted_for_demo_review';
@@ -9,9 +11,9 @@ enum J11DemoDecision: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::AcceptedForDemoReview => 'Accepté pour la revue de démonstration',
-            self::Rejected => 'Rejeté',
-        };
+        return UiText::t(match ($this) {
+            self::AcceptedForDemoReview => UiText::t('Accepté pour la revue de démonstration'),
+            self::Rejected => UiText::t('Rejeté'),
+        });
     }
 }

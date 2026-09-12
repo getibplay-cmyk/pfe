@@ -5,6 +5,7 @@ namespace App\Support\Intelligence\J14;
 use App\Exceptions\J14ResultBatchValidationException;
 use App\Models\IntelligenceDatasetExportRun;
 use App\Support\Intelligence\PredictionInput;
+use App\Support\Ui\UiText;
 use Illuminate\Support\Facades\Storage;
 
 final class J14DatasetSnapshotInspector
@@ -17,7 +18,7 @@ final class J14DatasetSnapshotInspector
         if (! is_resource($stream)) {
             throw J14ResultBatchValidationException::at(
                 'export.run_id',
-                'le snapshot privé référencé est indisponible',
+                UiText::t('le snapshot privé référencé est indisponible'),
             );
         }
 
@@ -29,22 +30,22 @@ final class J14DatasetSnapshotInspector
             if ($bytes !== $run->byte_size || ! hash_equals($run->content_sha256, $digest)) {
                 throw J14ResultBatchValidationException::at(
                     'export.content_sha256',
-                    'l’intégrité du snapshot privé référencé a échoué',
+                    UiText::t('l’intégrité du snapshot privé référencé a échoué'),
                 );
             }
 
             if (rewind($stream) === false) {
-                throw J14ResultBatchValidationException::at('export.run_id', 'snapshot privé illisible');
+                throw J14ResultBatchValidationException::at('export.run_id', UiText::t('snapshot privé illisible'));
             }
 
             $header = fgetcsv($stream, null, ';', '"', '');
             if (! is_array($header)) {
-                throw J14ResultBatchValidationException::at('export.run_id', 'en-tête CSV absent');
+                throw J14ResultBatchValidationException::at('export.run_id', UiText::t('en-tête CSV absent'));
             }
 
             $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header[0]) ?? '';
             if ($header !== PredictionInput::headers()) {
-                throw J14ResultBatchValidationException::at('export.run_id', 'schéma CSV source inattendu');
+                throw J14ResultBatchValidationException::at('export.run_id', UiText::t('schéma CSV source inattendu'));
             }
 
             $rowKeys = [];
@@ -61,7 +62,7 @@ final class J14DatasetSnapshotInspector
                     || $record['dataset_version'] !== PredictionInput::DATASET_VERSION
                     || preg_match('/^r_[0-9a-f]{64}$/D', $record['row_id']) !== 1
                     || isset($seen[$record['row_id']])) {
-                    throw J14ResultBatchValidationException::at('export.run_id', 'lignée CSV source invalide');
+                    throw J14ResultBatchValidationException::at('export.run_id', UiText::t('lignée CSV source invalide'));
                 }
 
                 $rowKeys[] = $record['row_id'];
@@ -71,7 +72,7 @@ final class J14DatasetSnapshotInspector
             if (count($rowKeys) !== $run->row_count) {
                 throw J14ResultBatchValidationException::at(
                     'export.row_count',
-                    'le nombre de lignes du snapshot privé ne correspond plus au manifeste',
+                    UiText::t('le nombre de lignes du snapshot privé ne correspond plus au manifeste'),
                 );
             }
 

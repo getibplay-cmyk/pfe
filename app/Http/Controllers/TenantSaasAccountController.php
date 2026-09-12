@@ -71,9 +71,9 @@ final class TenantSaasAccountController extends Controller
             ->values();
         $planState = $planAccess->state($tenantId);
         $activationSteps = [
-            ['label' => 'Compte vérifié', 'complete' => $request->user()->hasVerifiedEmail()],
-            ['label' => 'Formule attribuée', 'complete' => $currentSubscription !== null],
-            ['label' => 'Service accessible', 'complete' => $planState['available']],
+            ['label' => __('Compte vérifié'), 'complete' => $request->user()->hasVerifiedEmail()],
+            ['label' => __('Formule attribuée'), 'complete' => $currentSubscription !== null],
+            ['label' => __('Service accessible'), 'complete' => $planState['available']],
         ];
 
         return view('tenant.account-saas', [

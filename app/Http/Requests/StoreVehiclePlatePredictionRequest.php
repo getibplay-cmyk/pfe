@@ -67,7 +67,7 @@ class StoreVehiclePlatePredictionRequest extends FormRequest
                 'detector_model_sha256',
             ];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $declared) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour l’analyse de plaque.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé pour l’analyse de plaque.'));
             }
         }];
     }

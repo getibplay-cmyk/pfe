@@ -97,6 +97,25 @@ class UiLabel
     ];
 
     private const ACTIONS = [
+        'account.mfa_verified' => 'Double authentification vérifiée',
+        'account.mfa_enabled' => 'Double authentification activée',
+        'account.mfa_disabled' => 'Double authentification désactivée',
+        'account.session_revoked' => 'Session révoquée',
+        'vehicle.economics.versioned' => 'Hypothèses de coûts versionnées',
+        'reservation.replanned' => 'Réservation déplacée',
+        'public_booking.settings.updated' => 'Catalogue public mis à jour',
+        'public_booking.rejected' => 'Demande publique écartée',
+        'public_booking.requested' => 'Demande publique reçue',
+        'public_booking.converted' => 'Demande publique convertie en brouillon',
+        'inspection.guided_completed' => 'État des lieux guidé terminé',
+        'prediction.annotation.validated' => 'Annotation humaine validée',
+        'training.dataset.annotation_superseded' => 'Jeu révoqué après correction d’annotation',
+        'portal.extension.requested' => 'Prolongation demandée par le locataire',
+        'contract.extension.offered' => 'Avenant proposé au locataire',
+        'contract.extension.applied' => 'Prolongation appliquée après acceptation',
+        'contract.extension.rejected' => 'Prolongation refusée',
+        'contract.extension.cancelled' => 'Demande de prolongation retirée',
+
         'agency.created' => 'Agence créée', 'agency.updated' => 'Agence mise à jour',
         'fleet.agency_distance.created' => 'Distance inter-agences créée',
         'fleet.agency_distance.corrected' => 'Distance inter-agences corrigée',
@@ -297,6 +316,13 @@ class UiLabel
     ];
 
     private const ENTITIES = [
+        'VisionAnnotation' => 'Annotation vérifiée',
+        'InspectionDraft' => 'État des lieux guidé',
+        'ContractExtension' => 'Demande de prolongation',
+        'PublicBookingRequest' => 'Demande publique',
+        'PublicBookingProfile' => 'Catalogue public',
+        'VehicleEconomicProfile' => 'Hypothèses de coûts',
+
         'Agency' => 'Agence', 'AgencyDistance' => 'Distance inter-agences', 'User' => 'Utilisateur', 'Role' => 'Rôle', 'Tenant' => 'Entreprise',
         'Reservation' => 'Réservation', 'RentalContract' => 'Contrat', 'Customer' => 'Client', 'Driver' => 'Conducteur',
         'Vehicle' => 'Véhicule', 'VehicleBlock' => 'Bloc véhicule', 'Document' => 'Document privé', 'Invoice' => 'Facture',
@@ -361,7 +387,7 @@ class UiLabel
 
         $key = mb_strtolower(trim((string) ($value instanceof BackedEnum ? $value->value : $value)));
 
-        return self::LABELS[$key] ?? 'Valeur inconnue';
+        return UiText::t(self::LABELS[$key] ?? UiText::t('Valeur inconnue'));
     }
 
     public static function tone(mixed $value): string
@@ -373,23 +399,23 @@ class UiLabel
 
     public static function action(?string $action): string
     {
-        return self::ACTIONS[$action ?? ''] ?? 'Activité enregistrée';
+        return UiText::t(self::ACTIONS[$action ?? ''] ?? UiText::t('Activité enregistrée'));
     }
 
     public static function report(string $metric): string
     {
-        return self::REPORT_LABELS[$metric] ?? 'Indicateur non documenté';
+        return UiText::t(self::REPORT_LABELS[$metric] ?? UiText::t('Indicateur non documenté'));
     }
 
     public static function permissionGroup(string $group): string
     {
-        return self::PERMISSION_GROUPS[$group] ?? 'Autres permissions';
+        return UiText::t(self::PERMISSION_GROUPS[$group] ?? UiText::t('Autres permissions'));
     }
 
     public static function permission(string $permission): string
     {
         if (isset(self::SPECIAL_PERMISSIONS[$permission])) {
-            return self::SPECIAL_PERMISSIONS[$permission];
+            return UiText::t(self::SPECIAL_PERMISSIONS[$permission]);
         }
 
         $parts = explode('.', $permission);
@@ -397,10 +423,10 @@ class UiLabel
         $entity = implode('_', $parts);
 
         if (! isset(self::PERMISSION_ENTITIES[$entity], self::PERMISSION_ACTIONS[$action])) {
-            return 'Permission non documentée';
+            return UiText::t('Permission non documentée');
         }
 
-        return self::PERMISSION_ACTIONS[$action].' '.self::PERMISSION_ENTITIES[$entity];
+        return UiText::t(self::PERMISSION_ACTIONS[$action]).' '.UiText::t(self::PERMISSION_ENTITIES[$entity]);
     }
 
     public static function permissionRisk(string $permission): string
@@ -411,21 +437,21 @@ class UiLabel
     public static function permissionDescription(string $permission): string
     {
         if ($permission === 'prediction.color.review') {
-            return 'Effet : analyse consultative et revue humaine auditée, sans modification automatique du véhicule.';
+            return UiText::t('Effet : analyse consultative et revue humaine auditée, sans modification automatique du véhicule.');
         }
         if ($permission === 'prediction.damage.review') {
-            return 'Effet : analyse consultative d’une photo de retour et revue humaine auditée, sans dommage, frais ni responsabilité automatiques.';
+            return UiText::t('Effet : analyse consultative d’une photo de retour et revue humaine auditée, sans dommage, frais ni responsabilité automatiques.');
         }
         if ($permission === 'prediction.plate.review') {
-            return 'Effet : immatriculation suggérée et correction humaine enregistrée, sans modification automatique de la fiche véhicule.';
+            return UiText::t('Effet : immatriculation suggérée et correction humaine enregistrée, sans modification automatique de la fiche véhicule.');
         }
         if ($permission === 'prediction.anomaly.review') {
-            return 'Effet : aide à la vérification humaine, sans sanction, frais, accusation ni modification de contrat.';
+            return UiText::t('Effet : aide à la vérification humaine, sans sanction, frais, accusation ni modification de contrat.');
         }
 
         return str_ends_with($permission, '.view')
-            ? 'Effet : consultation des informations autorisées, sans modification.'
-            : 'Effet : exécution d’une action métier contrôlée et auditée lorsque nécessaire.';
+            ? UiText::t('Effet : consultation des informations autorisées, sans modification.')
+            : UiText::t('Effet : exécution d’une action métier contrôlée et auditée lorsque nécessaire.');
     }
 
     public static function permissionScope(string $permission): string
@@ -433,8 +459,8 @@ class UiLabel
         $group = explode('.', $permission)[0];
 
         return in_array($group, ['tenant', 'role', 'fleet', 'report', 'audit'], true)
-            ? 'Portée : entreprise cliente.'
-            : 'Portée : agence autorisée ou ensemble des agences pour l’administrateur de l’entreprise.';
+            ? UiText::t('Portée : entreprise cliente.')
+            : UiText::t('Portée : agence autorisée ou ensemble des agences pour l’administrateur de l’entreprise.');
     }
 
     public static function permissionCriticality(string $permission): string
@@ -448,15 +474,50 @@ class UiLabel
         ];
 
         return in_array($permission, $critical, true)
-            ? 'Criticité : élevée.'
-            : (str_ends_with($permission, '.view') ? 'Criticité : lecture.' : 'Criticité : standard.');
+            ? UiText::t('Criticité : élevée.')
+            : (str_ends_with($permission, '.view') ? UiText::t('Criticité : lecture.') : UiText::t('Criticité : standard.'));
     }
 
     public static function entity(?string $class): string
     {
         $basename = class_basename((string) $class);
 
-        return self::ENTITIES[$basename] ?? 'Élément métier';
+        return UiText::t(self::ENTITIES[$basename] ?? UiText::t('Élément métier'));
+    }
+
+    /** Derive a decorative icon from a known French or Arabic action label. */
+    public static function buttonIcon(string $label, string $fallback = 'save'): string
+    {
+        $label = mb_strtolower(trim(strip_tags($label)));
+        $hints = [
+            'logout' => ['déconnect', 'déconnexion', 'تسجيل الخروج'],
+            'disable' => ['désactiv', 'إلغاء التفعيل'],
+            'reset' => ['réinitialis', 'إعادة التعيين'],
+            'delete' => ['supprim', 'حذف'],
+            'close' => ['rejet', 'رفض'],
+            'download' => ['export', 'télécharg', 'تصدير', 'تنزيل'],
+            'upload' => ['import', 'استيراد'],
+            'search' => ['recherch', 'بحث'],
+            'filter' => ['filtr', 'appliquer', 'تصفية', 'تطبيق'],
+            'refresh' => ['actualis', 'تحديث'],
+            'analysis' => ['analys', 'تحليل'],
+            'chart' => ['génér'],
+            'add' => ['cré', 'ajout', 'إنشاء', 'إضافة'],
+            'payment' => ['paiement', 'allou', 'دفع', 'تخصيص'],
+            'print' => ['imprim', 'طباعة'],
+            'launch' => ['lancer', 'تشغيل'],
+            'login' => ['connect', 'تسجيل الدخول'],
+            'save' => ['enregistr', 'حفظ', 'تسجيل'],
+        ];
+        foreach ($hints as $icon => $words) {
+            foreach ($words as $word) {
+                if (str_contains($label, $word)) {
+                    return $icon;
+                }
+            }
+        }
+
+        return $fallback;
     }
 
     public static function date(?CarbonInterface $date): string
@@ -478,6 +539,6 @@ class UiLabel
     {
         $key = mb_strtolower(trim((string) ($value instanceof BackedEnum ? $value->value : $value)));
 
-        return $key === 'manual' ? self::LABELS['manual_block'] : self::get($value);
+        return $key === 'manual' ? UiText::t(self::LABELS['manual_block']) : self::get($value);
     }
 }

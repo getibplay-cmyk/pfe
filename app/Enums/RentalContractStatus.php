@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum RentalContractStatus: string
 {
     case Draft = 'draft';
@@ -15,8 +17,8 @@ enum RentalContractStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Draft => 'Brouillon', self::Ready => 'Prêt', self::Accepted => 'Accepté', self::Active => 'Actif', self::ReturnPending => 'Retour à traiter', self::Returned => 'Retourné', self::Closed => 'Clôturé', self::Cancelled => 'Annulé'
-        };
+        return UiText::t(match ($this) {
+            self::Draft => 'Brouillon', self::Ready => UiText::t('Prêt'), self::Accepted => UiText::t('Accepté'), self::Active => 'Actif', self::ReturnPending => UiText::t('Retour à traiter'), self::Returned => UiText::t('Retourné'), self::Closed => UiText::t('Clôturé'), self::Cancelled => UiText::t('Annulé')
+        });
     }
 }

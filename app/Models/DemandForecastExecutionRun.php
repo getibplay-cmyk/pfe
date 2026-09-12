@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DemandForecastExecutionStatus;
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Ui\UiText;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -74,15 +75,15 @@ class DemandForecastExecutionRun extends Model
         }
 
         return match ($this->failure_code) {
-            'RUN_STALE_RECOVERED' => 'L’exécution précédente a expiré et a été fermée.',
-            'RUN_ACTOR_NOT_AUTHORIZED' => 'L’utilisateur demandeur n’est plus autorisé.',
-            'MODEL_ARTIFACT_INVALID', 'HISTORY_ARTIFACT_INVALID' => 'Les éléments nécessaires à la prévision ne sont plus disponibles.',
-            'RUNTIME_CONFIGURATION_INVALID' => 'Le service de prévision n’est pas correctement configuré.',
-            'HGB_PROCESS_TIMEOUT' => 'La prévision a dépassé le délai autorisé.',
-            'HGB_PROCESS_FAILED' => 'Le service de prévision n’a pas terminé le calcul.',
-            'HGB_OUTPUT_INVALID', 'HGB_OUTPUT_CONTRACT_INVALID' => 'Le résultat reçu n’a pas pu être vérifié.',
-            'HGB_OUTPUT_IMPORT_FAILED' => 'Le résultat vérifié n’a pas pu être enregistré.',
-            default => 'La prévision n’a pas pu être générée. Aucune donnée métier n’a été modifiée.',
+            'RUN_STALE_RECOVERED' => UiText::t('L’exécution précédente a expiré et a été fermée.'),
+            'RUN_ACTOR_NOT_AUTHORIZED' => UiText::t('L’utilisateur demandeur n’est plus autorisé.'),
+            'MODEL_ARTIFACT_INVALID', 'HISTORY_ARTIFACT_INVALID' => UiText::t('Les éléments nécessaires à la prévision ne sont plus disponibles.'),
+            'RUNTIME_CONFIGURATION_INVALID' => UiText::t('Le service de prévision n’est pas correctement configuré.'),
+            'HGB_PROCESS_TIMEOUT' => UiText::t('La prévision a dépassé le délai autorisé.'),
+            'HGB_PROCESS_FAILED' => UiText::t('Le service de prévision n’a pas terminé le calcul.'),
+            'HGB_OUTPUT_INVALID', 'HGB_OUTPUT_CONTRACT_INVALID' => UiText::t('Le résultat reçu n’a pas pu être vérifié.'),
+            'HGB_OUTPUT_IMPORT_FAILED' => UiText::t('Le résultat vérifié n’a pas pu être enregistré.'),
+            default => UiText::t('La prévision n’a pas pu être générée. Aucune donnée métier n’a été modifiée.'),
         };
     }
 }

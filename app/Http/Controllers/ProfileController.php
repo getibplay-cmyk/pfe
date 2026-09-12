@@ -42,12 +42,12 @@ class ProfileController extends Controller
         $audit->record('profile.updated', $request->user(), $old, $request->user()->only(['name', 'email']));
 
         if ($emailChanged && ! $verificationSender->send($request->user())) {
-            return Redirect::route('profile.edit')->with('error', 'Profil enregistré, mais le lien de vérification n’a pas pu être envoyé.');
+            return Redirect::route('profile.edit')->with('error', __('Profil enregistré, mais le lien de vérification n’a pas pu être envoyé.'));
         }
 
         return Redirect::route('profile.edit')->with(
             'status',
-            $emailChanged ? 'Profil enregistré. Un lien de vérification a été envoyé.' : 'profile-updated',
+            $emailChanged ? __('Profil enregistré. Un lien de vérification a été envoyé.') : 'profile-updated',
         );
     }
 }

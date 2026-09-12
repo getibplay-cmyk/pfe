@@ -20,7 +20,7 @@ class RecalculateInvoiceBalance
         $paid = DecimalMoney::toMinorUnits((string) $row->paid);
         $total = DecimalMoney::toMinorUnits($locked->total_amount);
         if ($paid < 0 || $paid > $total) {
-            throw ValidationException::withMessages(['allocation' => 'Le total alloué est incohérent.']);
+            throw ValidationException::withMessages(['allocation' => __('Le total alloué est incohérent.')]);
         }
         $status = $paid === 0 ? 'issued' : ($paid === $total ? 'paid' : 'partially_paid');
         $locked->forceFill(['paid_amount' => DecimalMoney::fromMinorUnits($paid), 'balance_due' => DecimalMoney::fromMinorUnits($total - $paid), 'status' => $status])->save();

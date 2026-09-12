@@ -22,10 +22,10 @@ final class SaasInvoiceLifecycle
         $blocked = $subscription->status->isTerminal()
             || ($subscription->status === TenantSubscriptionStatus::Suspended && ! $subscription->billing_suspended);
         if ($invoice->status !== 'open' || $blocked) {
-            throw ValidationException::withMessages(['payment' => 'Cette facture ne peut pas être réglée dans l’état actuel du compte.']);
+            throw ValidationException::withMessages(['payment' => __('Cette facture ne peut pas être réglée dans l’état actuel du compte.')]);
         }
         if ($subscription->invoices()->where('status', 'open')->where('period_starts_at', '<', $invoice->period_starts_at)->exists()) {
-            throw ValidationException::withMessages(['payment' => 'Réglez d’abord la facture la plus ancienne.']);
+            throw ValidationException::withMessages(['payment' => __('Réglez d’abord la facture la plus ancienne.')]);
         }
         if ($subscription->status === TenantSubscriptionStatus::PendingPayment) {
             $previous = SaasSubscription::query()->whereKey($subscription->previous_subscription_id)->lockForUpdate()->firstOrFail();
@@ -33,7 +33,7 @@ final class SaasInvoiceLifecycle
             if ($previous->status->isTerminal() || $previous->status === TenantSubscriptionStatus::Suspended
                 || $subscription->change_expires_at->lessThanOrEqualTo(now())
                 || $previous->invoices()->where('status', 'open')->exists()) {
-                throw ValidationException::withMessages(['payment' => 'Le changement de formule n’est plus payable. Annulez-le puis renouvelez la demande.']);
+                throw ValidationException::withMessages(['payment' => __('Le changement de formule n’est plus payable. Annulez-le puis renouvelez la demande.')]);
             }
             app(TenantPlanAccess::class)->ensureEntitlementsFit($subscription->tenant_id, $subscription->entitlements);
         }
@@ -48,7 +48,7 @@ final class SaasInvoiceLifecycle
         if (($invoice->amount !== '0.00' && $payment === null)
             || ($payment !== null && ($payment->saas_invoice_id !== $invoice->getKey()
                 || $payment->amount !== $invoice->amount || $payment->currency !== $invoice->currency))) {
-            throw new \LogicException('Exact invoice settlement required.');
+            throw new \LogicException(__('Exact invoice settlement required.'));
         }
         if ($subscription->status === TenantSubscriptionStatus::PendingPayment) {
             SaasSubscription::query()->whereKey($subscription->previous_subscription_id)->update([
@@ -75,7 +75,7 @@ final class SaasInvoiceLifecycle
     public function reverse(SaasInvoice $invoice, SaasPayment $reversal): void
     {
         if ($invoice->saas_payment_id !== $reversal->reversal_of_id || $invoice->status !== 'paid') {
-            throw ValidationException::withMessages(['payment' => 'Cette facture ne correspond pas au règlement contrepassé.']);
+            throw ValidationException::withMessages(['payment' => __('Cette facture ne correspond pas au règlement contrepassé.')]);
         }
         $invoice->forceFill([
             'status' => $invoice->type === 'plan_change' ? 'void' : 'open',
@@ -97,7 +97,7 @@ final class SaasInvoiceLifecycle
     public function event(SaasInvoice $invoice, string $type, string $suffix = ''): void
     {
         if (DB::transactionLevel() < 1) {
-            throw new \LogicException('Invoice events and notification jobs require the billing transaction.');
+            throw new \LogicException(__('Invoice events and notification jobs require the billing transaction.'));
         }
         $inserted = DB::table('saas_invoice_events')->insertOrIgnore([
             'saas_invoice_id' => $invoice->getKey(), 'type' => $type,

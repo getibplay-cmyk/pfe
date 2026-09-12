@@ -2,11 +2,14 @@
 
 use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\EnsureJ11ContractDemoEnabled;
+use App\Http\Middleware\EnsureMfaVerified;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureTenantIntelligenceAccess;
 use App\Http\Middleware\RequestCorrelation;
 use App\Http\Middleware\ResolveCustomerPortal;
+use App\Http\Middleware\ResolveLocale;
+use App\Http\Middleware\ResolvePublicBooking;
 use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -39,14 +42,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'active.account' => EnsureActiveAccount::class,
             'tenant' => ResolveTenantContext::class,
             'customer.portal' => ResolveCustomerPortal::class,
+            'public.booking' => ResolvePublicBooking::class,
             'platform' => EnsurePlatformAdmin::class,
             'password.changed' => EnsurePasswordChanged::class,
             'intelligence.contract-demo' => EnsureJ11ContractDemoEnabled::class,
             'tenant.intelligence' => EnsureTenantIntelligenceAccess::class,
         ]);
 
+        $middleware->web(append: [ResolveLocale::class, EnsureMfaVerified::class]);
+        $middleware->prependToPriorityList(SubstituteBindings::class, EnsureMfaVerified::class);
+        $middleware->prependToPriorityList(EnsureMfaVerified::class, ResolveLocale::class);
+
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenantContext::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->dontFlash(['code', 'session_key']);
     })->create();

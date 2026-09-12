@@ -7,7 +7,7 @@
         default => 'h-5 w-5',
     };
 @endphp
-<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-icon="{{ $name }}" {{ $attributes->class([$sizeClass, 'shrink-0']) }}>
+<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-icon="{{ $name }}" {{ $attributes->class([$sizeClass, 'shrink-0', 'rf-directional-icon' => in_array($name, ['previous', 'next', 'chevron-left', 'chevron-right', 'back', 'return', 'logout', 'login'], true)]) }}>
     @switch($name)
         @case('view') @case('eye') <path d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z" /><circle cx="12" cy="12" r="2.5" /> @break
         @case('edit') @case('pencil') <path d="m14 5 5 5M4 20l4.2-1 10.3-10.3a2.1 2.1 0 0 0-3-3L5.2 16 4 20Z" /> @break

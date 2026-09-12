@@ -17,10 +17,10 @@ class DeactivateInsuranceCompany
         return DB::transaction(function () use ($company, $actorId): InsuranceCompany {
             $locked = InsuranceCompany::whereKey($company)->lockForUpdate()->firstOrFail();
             if (! $locked->is_active) {
-                throw ValidationException::withMessages(['company' => 'Cette compagnie est déjà inactive.']);
+                throw ValidationException::withMessages(['company' => __('Cette compagnie est déjà inactive.')]);
             }
             if ($locked->policies()->whereIn('status', ['draft', 'active'])->lockForUpdate()->exists()) {
-                throw ValidationException::withMessages(['company' => 'La compagnie possède encore une police brouillon ou active.']);
+                throw ValidationException::withMessages(['company' => __('La compagnie possède encore une police brouillon ou active.')]);
             }
             InsuranceCompanyTransition::allow(true, false);
             $locked->forceFill(['is_active' => false, 'deactivated_at' => now(), 'deactivated_by' => $actorId])->save();

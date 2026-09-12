@@ -12,7 +12,7 @@ class CalculateReservationQuote
     public function handle(PricingRule $rule, CarbonInterface $startsAt, CarbonInterface $endsAt, string|int $optionsTotal = '0.00'): array
     {
         if ($endsAt->lte($startsAt)) {
-            throw ValidationException::withMessages(['ends_at' => 'La fin doit être strictement postérieure au début.']);
+            throw ValidationException::withMessages(['ends_at' => __('La fin doit être strictement postérieure au début.')]);
         }
 
         $seconds = $startsAt->diffInSeconds($endsAt);

@@ -26,13 +26,13 @@ class AssignSaasSubscription
         ]);
         $status = TenantSubscriptionStatus::tryFrom((string) ($data['status'] ?? ''));
         if ($status === null) {
-            throw ValidationException::withMessages(['status' => 'Le statut d’abonnement est invalide.']);
+            throw ValidationException::withMessages(['status' => __('Le statut d’abonnement est invalide.')]);
         }
         if (! in_array($status, [TenantSubscriptionStatus::Trialing, TenantSubscriptionStatus::Active], true)) {
-            throw ValidationException::withMessages(['status' => 'Seuls un essai ou un abonnement actif peuvent être créés.']);
+            throw ValidationException::withMessages(['status' => __('Seuls un essai ou un abonnement actif peuvent être créés.')]);
         }
         if ($status === TenantSubscriptionStatus::Trialing && empty($data['trial_ends_at'])) {
-            throw ValidationException::withMessages(['trial_ends_at' => 'La fin de la période d’essai est obligatoire.']);
+            throw ValidationException::withMessages(['trial_ends_at' => __('La fin de la période d’essai est obligatoire.')]);
         }
 
         return DB::transaction(function () use ($tenant, $plan, $data, $actorId, $status): SaasSubscription {
@@ -40,7 +40,7 @@ class AssignSaasSubscription
             $lockedPlan = SaasPlan::query()->whereKey($plan)->lockForUpdate()->firstOrFail();
 
             if (! $lockedPlan->is_active) {
-                throw ValidationException::withMessages(['saas_plan_id' => 'Ce plan SaaS est inactif.']);
+                throw ValidationException::withMessages(['saas_plan_id' => __('Ce plan SaaS est inactif.')]);
             }
 
             $currentStatuses = array_map(
@@ -52,7 +52,7 @@ class AssignSaasSubscription
                 ->whereIn('status', $currentStatuses)
                 ->lockForUpdate()
                 ->exists()) {
-                throw ValidationException::withMessages(['subscription' => 'Cette entreprise possède déjà un abonnement courant.']);
+                throw ValidationException::withMessages(['subscription' => __('Cette entreprise possède déjà un abonnement courant.')]);
             }
 
             $subscription = new SaasSubscription;
@@ -93,7 +93,7 @@ class AssignSaasSubscription
     {
         $unexpected = array_values(array_diff(array_keys($data), $allowed));
         if ($unexpected !== []) {
-            throw ValidationException::withMessages([$unexpected[0] => 'Ce champ n’est pas autorisé.']);
+            throw ValidationException::withMessages([$unexpected[0] => __('Ce champ n’est pas autorisé.')]);
         }
     }
 

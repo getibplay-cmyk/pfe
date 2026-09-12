@@ -21,7 +21,7 @@ class AddDocumentVersion
         $path = 'tenants/'.$document->tenant_id.'/documents/'.$document->id.'/'.Str::uuid().'.'.$extension;
         $stored = $disk->putFileAs(dirname($path), $file, basename($path));
         if (! $stored) {
-            throw ValidationException::withMessages(['file' => 'Le document n’a pas pu être stocké.']);
+            throw ValidationException::withMessages(['file' => __('Le document n’a pas pu être stocké.')]);
         }
 
         try {
@@ -56,7 +56,7 @@ class AddDocumentVersion
         if ($dangerous || ! in_array($extension, config('documents.allowed_extensions'), true)
             || ! in_array($file->getMimeType(), config('documents.allowed_mime_types'), true)
             || $file->getSize() > config('documents.max_size_kb') * 1024) {
-            throw ValidationException::withMessages(['file' => 'Type, extension ou taille de document non autorisé.']);
+            throw ValidationException::withMessages(['file' => __('Type, extension ou taille de document non autorisé.')]);
         }
     }
 }

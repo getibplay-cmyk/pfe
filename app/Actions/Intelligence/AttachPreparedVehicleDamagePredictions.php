@@ -89,7 +89,7 @@ final class AttachPreparedVehicleDamagePredictions
     private function invalid(): never
     {
         throw ValidationException::withMessages([
-            'damage_prediction_runs' => 'Une suggestion de dommage ne peut pas être associée à cette inspection.',
+            'damage_prediction_runs' => __('Une suggestion de dommage ne peut pas être associée à cette inspection.'),
         ]);
     }
 }

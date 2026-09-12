@@ -1,5 +1,5 @@
 @props([
-    'title' => 'Filtres',
+    'title' => __('Filtres'),
     'activeCount' => 0,
     'resultCount' => null,
     'collapsible' => true,
@@ -23,9 +23,9 @@
                 <h2 class="truncate text-sm font-bold text-belkhir-space-text">{{ $title }}</h2>
                 <p class="mt-0.5 text-xs text-belkhir-space-muted">
                     @if ((int) $activeCount > 0)
-                        {{ App\Support\Ui\BusinessNumber::count($activeCount, 'filtre') }} actif{{ (int) $activeCount > 1 ? 's' : '' }}
+                        {{ App\Support\Ui\BusinessNumber::count($activeCount, 'filtre') }} {{ (int) $activeCount > 1 ? __('actifs') : __('actif') }}
                     @else
-                        Affinez les résultats sans quitter la page.
+                        {{ __('Affinez les résultats sans quitter la page.') }}
                     @endif
                     @if ($resultCount !== null) · {{ App\Support\Ui\BusinessNumber::count($resultCount, 'résultat') }} @endif
                 </p>
@@ -42,7 +42,7 @@
                     x-bind:aria-expanded="filtersOpen.toString()"
                     aria-controls="{{ $filterBodyId }}"
                 >
-                    <span x-text="filtersOpen ? 'Masquer' : 'Filtres'">Filtres</span>
+                    <span x-text="filtersOpen ? 'Masquer' : 'Filtres'">{{ __('Filtres') }}</span>
                     @if ((int) $activeCount > 0)<span class="rounded-md bg-belkhir-space-blue px-1.5 py-0.5 text-xs text-white">{{ $activeCount }}</span>@endif
                 </button>
             @endif
@@ -50,7 +50,7 @@
     </div>
 
     @if (isset($tags))
-        <div class="mt-3 flex flex-wrap gap-2" aria-label="Filtres actifs">{{ $tags }}</div>
+        <div class="mt-3 flex flex-wrap gap-2" aria-label="{{ __('Filtres actifs') }}">{{ $tags }}</div>
     @endif
 
     <div

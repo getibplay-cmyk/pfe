@@ -75,8 +75,8 @@ class IntelligenceResultBatchController extends Controller
         return redirect()->route('intelligence.result-batches.index')->with(
             'status',
             $result->created
-                ? 'Résultats vérifiés et importés sans action automatique.'
-                : 'Ces résultats sont déjà présents et n’ont pas été dupliqués.',
+                ? __('Résultats vérifiés et importés sans action automatique.')
+                : __('Ces résultats sont déjà présents et n’ont pas été dupliqués.'),
         );
     }
 
@@ -94,7 +94,7 @@ class IntelligenceResultBatchController extends Controller
         );
 
         return redirect()->route('intelligence.result-batches.index')
-            ->with('status', 'Décision enregistrée sans action automatique.');
+            ->with('status', __('Décision enregistrée sans action automatique.'));
     }
 
     public function download(

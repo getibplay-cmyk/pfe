@@ -54,7 +54,7 @@ class DemandHistoryExportRequest extends FormRequest
             $days = $from->diffInDays($to) + 1;
             if ($days < DemandForecastContract::MINIMUM_HISTORY_DAYS
                 || $days > DemandForecastContract::MAXIMUM_HISTORY_DAYS) {
-                $validator->errors()->add('date_to', 'La période doit contenir entre 35 et 731 jours inclus.');
+                $validator->errors()->add('date_to', __('La période doit contenir entre 35 et 731 jours inclus.'));
             }
         }];
     }

@@ -307,7 +307,7 @@ jobs:
         with:
           php-version: 8.5.8
           tools: composer:2.10.1
-          extensions: mbstring, intl, dom, fileinfo, pdo_pgsql, pgsql
+          extensions: mbstring, intl, dom, fileinfo, gd, zip, pdo_pgsql, pgsql
           coverage: none
 
       - name: Setup frozen Python
@@ -425,7 +425,7 @@ jobs:
         run: php artisan migrate --force --no-interaction
 
       - name: Run focused SaaS regressions before the full suite
-        run: php artisan test --filter='Saas|CmiSignature|PlatformOperationsMonitoring|TenantOnboardingInvitation|SecurityHeaders'
+        run: php artisan test --filter='AccountSecurity|WorkspaceExperience|GuidedInspection|VisionAnnotationsAndQuality|ReservationReplan|ActiveCustomerPortal|PublicBooking|VehicleEconomics|LocalizationCatalog|Saas|CmiSignature|PlatformOperationsMonitoring|TenantOnboardingInvitation|SecurityHeaders'
 
       - name: Run test suite
         run: php artisan test --log-junit "$RUNNER_TEMP/j15-tests.xml"

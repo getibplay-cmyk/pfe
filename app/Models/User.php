@@ -6,14 +6,20 @@ use App\Notifications\Auth\ResetPasswordNotification;
 use App\Notifications\Auth\VerifyEmailNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements MustVerifyEmailContract
+class User extends Authenticatable implements HasLocalePreference, MustVerifyEmailContract
 {
+    public function preferredLocale(): string
+    {
+        return in_array($this->locale, ['fr', 'ar'], true) ? $this->locale : 'fr';
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -38,6 +44,9 @@ class User extends Authenticatable implements MustVerifyEmailContract
     protected $hidden = [
         'password',
         'remember_token',
+        'mfa_secret',
+        'mfa_pending_secret',
+        'mfa_recovery_hashes',
     ];
 
     /**
@@ -54,6 +63,14 @@ class User extends Authenticatable implements MustVerifyEmailContract
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
             'last_login_at' => 'immutable_datetime',
+            'mfa_secret' => 'encrypted',
+            'mfa_pending_secret' => 'encrypted',
+            'mfa_recovery_hashes' => 'encrypted:array',
+            'mfa_confirmed_at' => 'immutable_datetime',
+            'mfa_pending_at' => 'immutable_datetime',
+            'mfa_last_counter' => 'integer',
+            'security_version' => 'integer',
+            'workspace_preferences' => 'array',
         ];
     }
 

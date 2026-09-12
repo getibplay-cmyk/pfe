@@ -22,7 +22,7 @@ class RestoreDriver
             }
             $customer = Customer::whereKey($locked->customer_id)->first();
             if (! $customer) {
-                throw ValidationException::withMessages(['driver' => 'Le client doit être actif avant de restaurer ce conducteur.']);
+                throw ValidationException::withMessages(['driver' => __('Le client doit être actif avant de restaurer ce conducteur.')]);
             }
             $this->agencyAccess->required($customer->agency_id);
 

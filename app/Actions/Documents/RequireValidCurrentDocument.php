@@ -21,7 +21,7 @@ class RequireValidCurrentDocument
 
         if (! $document) {
             throw ValidationException::withMessages([
-                $field => 'Un document privé courant, physiquement présent et intègre est obligatoire.',
+                $field => __('Un document privé courant, physiquement présent et intègre est obligatoire.'),
             ]);
         }
 

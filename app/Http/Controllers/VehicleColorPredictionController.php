@@ -109,7 +109,7 @@ class VehicleColorPredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-colors.index')->with(
             'status',
-            'L’analyse de la couleur a été lancée.',
+            __('L’analyse de la couleur a été lancée.'),
         );
     }
 
@@ -171,7 +171,7 @@ class VehicleColorPredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-colors.index')->with(
             'status',
-            'Décision humaine enregistrée sans modifier la fiche véhicule.',
+            __('Décision humaine enregistrée sans modifier la fiche véhicule.'),
         );
     }
 }

@@ -21,7 +21,7 @@ final class CancelSaasPlanChange
                 return;
             }
             if ($subscription->status !== TenantSubscriptionStatus::PendingPayment) {
-                throw ValidationException::withMessages(['subscription' => 'Seul un changement non réglé peut être annulé.']);
+                throw ValidationException::withMessages(['subscription' => __('Seul un changement non réglé peut être annulé.')]);
             }
             $locks->ensureNoCheckout($subscription->getKey());
             foreach ($subscription->invoices()->where('status', 'open')->lockForUpdate()->get() as $invoice) {

@@ -55,23 +55,23 @@ class PlatformDashboardController extends Controller
 
         return view('platform.dashboard', [
             'metrics' => [
-                'Entreprises clientes' => $statistics['totals']['tenants'],
-                'Entreprises clientes actives' => $statistics['totals']['active_tenants'],
-                'Entreprises clientes suspendues' => $statistics['tenant_states'][1]['total'],
-                'Agences' => $statistics['totals']['agencies'],
+                __('Entreprises clientes') => $statistics['totals']['tenants'],
+                __('Entreprises clientes actives') => $statistics['totals']['active_tenants'],
+                __('Entreprises clientes suspendues') => $statistics['tenant_states'][1]['total'],
+                __('Agences') => $statistics['totals']['agencies'],
                 'Utilisateurs' => $statistics['totals']['users'],
-                'Véhicules' => $statistics['totals']['vehicles'],
-                'Réservations' => $statistics['totals']['reservations'],
-                'Contrats' => $statistics['totals']['contracts'],
-                'Paiements SaaS sur 30 jours' => $statistics['totals']['recorded_saas_payments'],
-                'Assistances autorisées' => $statistics['totals']['enabled_capabilities'],
-                'Travaux en attente' => $statistics['totals']['jobs'],
-                'Traitements en échec' => $statistics['totals']['failed_jobs'],
-                'Invitations en attente' => TenantOnboardingInvitation::query()
+                __('Véhicules') => $statistics['totals']['vehicles'],
+                __('Réservations') => $statistics['totals']['reservations'],
+                __('Contrats') => $statistics['totals']['contracts'],
+                __('Paiements SaaS sur 30 jours') => $statistics['totals']['recorded_saas_payments'],
+                __('Assistances autorisées') => $statistics['totals']['enabled_capabilities'],
+                __('Travaux en attente') => $statistics['totals']['jobs'],
+                __('Traitements en échec') => $statistics['totals']['failed_jobs'],
+                __('Invitations en attente') => TenantOnboardingInvitation::query()
                     ->where('status', TenantOnboardingInvitationStatus::Pending->value)
                     ->where('expires_at', '>', now())
                     ->count(),
-                'Incidents opérationnels ouverts' => PlatformOperationalIncident::query()->where('status', 'open')->count(),
+                __('Incidents opérationnels ouverts') => PlatformOperationalIncident::query()->where('status', 'open')->count(),
             ],
             'latestTenants' => Tenant::query()->latest()->limit(8)->get(),
             'alerts' => $alerts,

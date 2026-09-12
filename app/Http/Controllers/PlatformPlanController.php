@@ -48,7 +48,7 @@ class PlatformPlanController extends Controller
         $create->handle($request->validated(), $request->user()->getKey());
 
         return redirect()->route('platform.plans.index')
-            ->with('status', 'Plan SaaS créé. Aucun paiement réel n’a été déclenché.');
+            ->with('status', __('Plan SaaS créé. Aucun paiement réel n’a été déclenché.'));
     }
 
     public function update(
@@ -59,6 +59,6 @@ class PlatformPlanController extends Controller
         $updated = $update->handle($plan, $request->validated(), $request->user()->getKey());
 
         return redirect()->route('platform.plans.index')
-            ->with('status', $updated->is_active ? 'Plan SaaS mis à jour.' : 'Plan SaaS désactivé.');
+            ->with('status', $updated->is_active ? __('Plan SaaS mis à jour.') : __('Plan SaaS désactivé.'));
     }
 }

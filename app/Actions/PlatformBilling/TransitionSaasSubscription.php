@@ -38,15 +38,15 @@ class TransitionSaasSubscription
                 return $locked;
             }
             if (! $this->allows($oldStatus, $status)) {
-                throw ValidationException::withMessages(['status' => 'Cette transition d’abonnement n’est pas autorisée.']);
+                throw ValidationException::withMessages(['status' => __('Cette transition d’abonnement n’est pas autorisée.')]);
             }
             if ($status->isTerminal()) {
                 if ($locked->invoices()->where('status', 'open')->exists()) {
-                    throw ValidationException::withMessages(['status' => 'Régularisez les factures ouvertes avant de clôturer cet abonnement.']);
+                    throw ValidationException::withMessages(['status' => __('Régularisez les factures ouvertes avant de clôturer cet abonnement.')]);
                 }
                 app(SaasBillingLock::class)->ensureNoCheckout($locked->getKey());
                 if (SaasSubscription::query()->where('previous_subscription_id', $locked->getKey())->where('status', 'pending_payment')->exists()) {
-                    throw ValidationException::withMessages(['status' => 'Réglez ou annulez le changement de formule avant de clôturer cet abonnement.']);
+                    throw ValidationException::withMessages(['status' => __('Réglez ou annulez le changement de formule avant de clôturer cet abonnement.')]);
                 }
             }
 

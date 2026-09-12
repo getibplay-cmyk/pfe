@@ -50,7 +50,7 @@ class ReviewVehiclePlatePredictionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'verified_canonical.regex' => 'Utilisez le format canonique 12345|أ|7.',
+            'verified_canonical.regex' => __('Utilisez le format canonique 12345|أ|7.'),
         ];
     }
 
@@ -68,7 +68,7 @@ class ReviewVehiclePlatePredictionRequest extends FormRequest
                 'confidence',
             ];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $declared) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour la correction humaine.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé pour la correction humaine.'));
             }
         }];
     }

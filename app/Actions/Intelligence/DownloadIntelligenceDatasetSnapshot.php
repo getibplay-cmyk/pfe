@@ -16,7 +16,7 @@ final class DownloadIntelligenceDatasetSnapshot
         $disk = Storage::disk((string) config('intelligence.dataset_exports.disk'));
         $stream = $disk->readStream($run->stored_path);
 
-        abort_unless(is_resource($stream), 410, 'Le snapshot Intelligence privé est indisponible.');
+        abort_unless(is_resource($stream), 410, __('Le snapshot Intelligence privé est indisponible.'));
 
         $hash = hash_init('sha256');
         $bytes = hash_update_stream($hash, $stream);
@@ -24,7 +24,7 @@ final class DownloadIntelligenceDatasetSnapshot
 
         if ($bytes !== $run->byte_size || ! hash_equals($run->content_sha256, $digest) || rewind($stream) === false) {
             fclose($stream);
-            abort(409, 'Le contrôle d’intégrité du snapshot Intelligence a échoué.');
+            abort(409, __('Le contrôle d’intégrité du snapshot Intelligence a échoué.'));
         }
 
         $this->audit->record('prediction.dataset.snapshot_downloaded', $run, [], [

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\RentalUsageAnomalyRunStatus;
 use App\Models\Concerns\BelongsToTenant;
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract;
+use App\Support\Ui\UiText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -105,17 +106,17 @@ class RentalUsageAnomalyRun extends Model
         }
 
         return match ($this->failure_code) {
-            'RUN_STALE_RECOVERED' => 'L’analyse précédente a expiré et a été fermée.',
-            'RUN_ACTOR_NOT_AUTHORIZED' => 'L’utilisateur demandeur n’est plus autorisé.',
-            'SOURCE_SNAPSHOT_INVALID' => 'Les données nécessaires à l’analyse ne sont plus disponibles.',
-            'SOURCE_CONTRACT_UNAVAILABLE' => 'Un contrat source n’est plus disponible dans le périmètre autorisé.',
-            'RUNTIME_CONFIGURATION_INVALID' => 'Le service d’analyse des usages atypiques n’est pas correctement configuré.',
-            'QUEUE_DISPATCH_FAILED' => 'La demande d’analyse n’a pas pu être prise en charge.',
-            'ANOMALY_PROCESS_TIMEOUT' => 'L’analyse a dépassé le délai autorisé.',
-            'ANOMALY_PROCESS_FAILED', 'ANOMALY_PROCESS_START_FAILED' => 'Le service n’a pas terminé l’analyse des usages atypiques.',
+            'RUN_STALE_RECOVERED' => UiText::t('L’analyse précédente a expiré et a été fermée.'),
+            'RUN_ACTOR_NOT_AUTHORIZED' => UiText::t('L’utilisateur demandeur n’est plus autorisé.'),
+            'SOURCE_SNAPSHOT_INVALID' => UiText::t('Les données nécessaires à l’analyse ne sont plus disponibles.'),
+            'SOURCE_CONTRACT_UNAVAILABLE' => UiText::t('Un contrat source n’est plus disponible dans le périmètre autorisé.'),
+            'RUNTIME_CONFIGURATION_INVALID' => UiText::t('Le service d’analyse des usages atypiques n’est pas correctement configuré.'),
+            'QUEUE_DISPATCH_FAILED' => UiText::t('La demande d’analyse n’a pas pu être prise en charge.'),
+            'ANOMALY_PROCESS_TIMEOUT' => UiText::t('L’analyse a dépassé le délai autorisé.'),
+            'ANOMALY_PROCESS_FAILED', 'ANOMALY_PROCESS_START_FAILED' => UiText::t('Le service n’a pas terminé l’analyse des usages atypiques.'),
             'ANOMALY_OUTPUT_INVALID', 'ANOMALY_OUTPUT_JSON_INVALID',
-            'ANOMALY_OUTPUT_CONTRACT_INVALID' => 'Le résultat reçu n’a pas pu être vérifié.',
-            default => 'L’analyse a échoué sans modifier aucun contrat ni élément financier.',
+            'ANOMALY_OUTPUT_CONTRACT_INVALID' => UiText::t('Le résultat reçu n’a pas pu être vérifié.'),
+            default => UiText::t('L’analyse a échoué sans modifier aucun contrat ni élément financier.'),
         };
     }
 }

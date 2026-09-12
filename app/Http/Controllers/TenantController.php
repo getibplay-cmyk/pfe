@@ -37,6 +37,6 @@ class TenantController extends Controller
         ]);
         $audit->record('tenant.settings.updated', $tenant, $old, $tenant->only(array_keys($old)));
 
-        return back()->with('status', 'Paramètres de l’entreprise mis à jour.');
+        return back()->with('status', __('Paramètres de l’entreprise mis à jour.'));
     }
 }

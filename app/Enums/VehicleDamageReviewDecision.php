@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum VehicleDamageReviewDecision: string
 {
     case Confirmed = 'confirmed';
@@ -10,10 +12,10 @@ enum VehicleDamageReviewDecision: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Confirmed => 'Zone candidate confirmée visuellement',
-            self::Rejected => 'Zone candidate rejetée',
-            self::NewPhotoRequired => 'Nouvelle photo requise',
-        };
+        return UiText::t(match ($this) {
+            self::Confirmed => UiText::t('Zone candidate confirmée visuellement'),
+            self::Rejected => UiText::t('Zone candidate rejetée'),
+            self::NewPhotoRequired => UiText::t('Nouvelle photo requise'),
+        });
     }
 }

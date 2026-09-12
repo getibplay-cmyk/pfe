@@ -30,6 +30,6 @@ class ChangeRequiredPasswordController extends Controller
             ->delete();
         $audit->record('user.initial_password_changed', $user, ['must_change_password' => true], ['must_change_password' => false]);
 
-        return redirect()->route('dashboard')->with('status', 'Mot de passe personnel enregistré.');
+        return redirect()->route('dashboard')->with('status', __('Mot de passe personnel enregistré.'));
     }
 }

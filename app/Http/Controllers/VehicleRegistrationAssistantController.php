@@ -130,25 +130,25 @@ class VehicleRegistrationAssistantController extends Controller
             VehiclePlatePredictionStatus::Queued,
             VehiclePlatePredictionStatus::Running,
         ], true)) {
-            return 'Lecture de la photo en cours…';
+            return __('Lecture de la photo en cours…');
         }
         if ($displayable) {
-            return 'Vérifiez l’immatriculation avant d’enregistrer le véhicule.';
+            return __('Vérifiez l’immatriculation avant d’enregistrer le véhicule.');
         }
         if ($run->suggestion_status === 'partial_segmented_suggestion') {
-            return 'Lecture incomplète. Vérifiez manuellement ou essayez une photo rapprochée.';
+            return __('Lecture incomplète. Vérifiez manuellement ou essayez une photo rapprochée.');
         }
         if ($this->requiresCloseUp($run)) {
-            return 'Plaque non détectée. Ajoutez une photo rapprochée de la plaque.';
+            return __('Plaque non détectée. Ajoutez une photo rapprochée de la plaque.');
         }
 
-        return 'L’immatriculation n’a pas pu être lue. Saisissez-la manuellement.';
+        return __('L’immatriculation n’a pas pu être lue. Saisissez-la manuellement.');
     }
 
     private function unavailable(): JsonResponse
     {
         return response()->json([
-            'message' => 'L’immatriculation n’a pas pu être lue. Saisissez-la manuellement.',
+            'message' => __('L’immatriculation n’a pas pu être lue. Saisissez-la manuellement.'),
         ], 503);
     }
 }

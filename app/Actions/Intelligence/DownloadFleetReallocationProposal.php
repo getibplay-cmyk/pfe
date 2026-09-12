@@ -22,7 +22,7 @@ final class DownloadFleetReallocationProposal
             $content = $this->verifier->read($proposal);
         } catch (RuntimeException $exception) {
             abort(
-                $exception->getMessage() === 'La proposition de réallocation privée est indisponible.' ? 410 : 409,
+                $exception->getMessage() === __('La proposition de réallocation privée est indisponible.') ? 410 : 409,
                 $exception->getMessage(),
             );
         }

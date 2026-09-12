@@ -32,6 +32,6 @@ class PasswordController extends Controller
             ->delete();
         $audit->record('profile.password_changed', $request->user());
 
-        return back()->with('status', 'Mot de passe mis à jour. Les autres sessions ont été fermées.');
+        return back()->with('status', __('Mot de passe mis à jour. Les autres sessions ont été fermées.'));
     }
 }

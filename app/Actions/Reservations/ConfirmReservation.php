@@ -38,43 +38,43 @@ class ConfirmReservation
             return DB::transaction(function () use ($reservation, $actorId) {
                 $locked = Reservation::whereKey($reservation)->lockForUpdate()->firstOrFail();
                 if (! $locked->status->canBeConfirmed()) {
-                    throw ValidationException::withMessages(['status' => 'Seule une réservation brouillon ou en attente peut être confirmée.']);
+                    throw ValidationException::withMessages(['status' => __('Seule une réservation brouillon ou en attente peut être confirmée.')]);
                 }
                 if (! $locked->vehicle_id) {
-                    throw ValidationException::withMessages(['vehicle_id' => 'Un véhicule doit être sélectionné avant confirmation.']);
+                    throw ValidationException::withMessages(['vehicle_id' => __('Un véhicule doit être sélectionné avant confirmation.')]);
                 }
                 if (! $locked->driver_id) {
-                    throw ValidationException::withMessages(['driver_id' => 'Un conducteur valide doit être sélectionné avant confirmation.']);
+                    throw ValidationException::withMessages(['driver_id' => __('Un conducteur valide doit être sélectionné avant confirmation.')]);
                 }
 
                 [, $endsAt] = $this->periods->future($locked->starts_at, $locked->ends_at);
 
                 $customer = Customer::withTrashed()->find($locked->customer_id);
                 if (! $customer || $customer->trashed()) {
-                    throw ValidationException::withMessages(['customer_id' => 'Le client doit être actif.']);
+                    throw ValidationException::withMessages(['customer_id' => __('Le client doit être actif.')]);
                 }
                 if ((int) $customer->agency_id !== (int) $locked->agency_id) {
-                    throw ValidationException::withMessages(['customer_id' => 'Le client doit appartenir à la même agence que la réservation.']);
+                    throw ValidationException::withMessages(['customer_id' => __('Le client doit appartenir à la même agence que la réservation.')]);
                 }
                 if ($customer->verification_status !== VerificationStatus::Verified) {
-                    throw ValidationException::withMessages(['customer_id' => 'Le client doit être vérifié avant confirmation.']);
+                    throw ValidationException::withMessages(['customer_id' => __('Le client doit être vérifié avant confirmation.')]);
                 }
 
                 $driver = Driver::withTrashed()->where('customer_id', $customer->id)->find($locked->driver_id);
                 if (! $driver || $driver->trashed()) {
-                    throw ValidationException::withMessages(['driver_id' => 'Le conducteur doit être actif et appartenir au client.']);
+                    throw ValidationException::withMessages(['driver_id' => __('Le conducteur doit être actif et appartenir au client.')]);
                 }
                 if ($driver->verification_status !== VerificationStatus::Verified) {
-                    throw ValidationException::withMessages(['driver_id' => 'Le conducteur doit être vérifié avant confirmation.']);
+                    throw ValidationException::withMessages(['driver_id' => __('Le conducteur doit être vérifié avant confirmation.')]);
                 }
                 if ($driver->licence_expires_at->endOfDay()->lt($endsAt)) {
-                    throw ValidationException::withMessages(['driver_id' => 'Le permis du conducteur doit rester valide pendant toute la location.']);
+                    throw ValidationException::withMessages(['driver_id' => __('Le permis du conducteur doit rester valide pendant toute la location.')]);
                 }
                 $vehicle = Vehicle::where('agency_id', $locked->agency_id)
                     ->where('vehicle_category_id', $locked->vehicle_category_id)
                     ->findOrFail($locked->vehicle_id);
                 if ($vehicle->operational_status !== VehicleOperationalStatus::Active) {
-                    throw ValidationException::withMessages(['vehicle_id' => 'Seul un véhicule opérationnel actif peut être réservé.']);
+                    throw ValidationException::withMessages(['vehicle_id' => __('Seul un véhicule opérationnel actif peut être réservé.')]);
                 }
 
                 $rule = $this->resolvePricingRule->handle($locked->agency_id, $locked->vehicle_category_id, $locked->starts_at);
@@ -87,7 +87,7 @@ class ConfirmReservation
                     'starts_at' => $locked->starts_at,
                     'ends_at' => $locked->ends_at,
                     'status' => VehicleBlockStatus::Active,
-                    'reason' => 'Réservation '.$locked->reservation_number,
+                    'reason' => __('Réservation ').$locked->reservation_number,
                     'created_by' => $actorId,
                 ]);
 

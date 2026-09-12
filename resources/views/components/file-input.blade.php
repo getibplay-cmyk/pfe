@@ -1,7 +1,7 @@
 @props([
     'id',
     'name',
-    'label' => 'Fichier',
+    'label' => __('Fichier'),
     'accept' => null,
     'multiple' => false,
     'required' => false,
@@ -56,15 +56,15 @@
             <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-belkhir-space-orange-soft text-belkhir-space-orange">
                 <x-icon :name="$preview === 'image' ? 'image' : 'upload'" size="lg" />
             </span>
-            <span class="mt-3 text-sm font-semibold text-belkhir-space-blue">Choisir un fichier</span>
-            <span class="mt-1 text-xs text-belkhir-space-muted">ou déposez-le dans cette zone</span>
+            <span class="mt-3 text-sm font-semibold text-belkhir-space-blue">{{ __('Choisir un fichier') }}</span>
+            <span class="mt-1 text-xs text-belkhir-space-muted">{{ __('ou déposez-le dans cette zone') }}</span>
         </label>
     </div>
 
     @if ($formats || $maxSize || $hint)
         <p id="{{ $helpId }}" class="rf-field-help">
-            @if($formats)<span>Formats : {{ $formats }}.</span>@endif
-            @if($maxSize)<span> Taille maximale : {{ $maxSize }}.</span>@endif
+            @if($formats)<span>{{ __('Formats :') }} {{ $formats }}.</span>@endif
+            @if($maxSize)<span> {{ __('Taille maximale :') }} {{ $maxSize }}.</span>@endif
             @if($hint)<span> {{ $hint }}</span>@endif
         </p>
     @endif
@@ -75,17 +75,17 @@
             <p class="truncate text-sm font-semibold text-belkhir-space-text" x-text="fileName"></p>
             <p class="text-xs text-belkhir-space-muted" x-text="fileSize"></p>
         </div>
-        <x-icon-button icon="close" label="Retirer le fichier sélectionné" variant="quiet" x-on:click="clear()" />
+        <x-icon-button icon="close" :label="__('Retirer le fichier sélectionné')" variant="quiet" x-on:click="clear()" />
     </div>
 
     @if ($preview === 'image')
         <div class="mt-3 aspect-[4/3] overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
             <template x-if="previewUrl">
-                <img :src="previewUrl" alt="Aperçu local du fichier sélectionné" class="h-full w-full {{ $previewFit }}">
+                <img :src="previewUrl" alt="{{ __('Aperçu local du fichier sélectionné') }}" class="h-full w-full {{ $previewFit }}">
             </template>
             <div x-show="! previewUrl" class="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-sm text-belkhir-space-muted">
                 <x-icon name="image" size="lg" />
-                <span>Aucun aperçu sélectionné</span>
+                <span>{{ __('Aucun aperçu sélectionné') }}</span>
             </div>
         </div>
     @endif

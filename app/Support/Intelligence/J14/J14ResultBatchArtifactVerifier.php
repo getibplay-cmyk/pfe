@@ -3,6 +3,7 @@
 namespace App\Support\Intelligence\J14;
 
 use App\Models\IntelligenceResultBatch;
+use App\Support\Ui\UiText;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
@@ -18,16 +19,16 @@ final class J14ResultBatchArtifactVerifier
                 ? $disk->get($batch->stored_path)
                 : null;
         } catch (Throwable) {
-            throw new RuntimeException('Le lot de résultats privé est indisponible.');
+            throw new RuntimeException(UiText::t('Le lot de résultats privé est indisponible.'));
         }
 
         if (! is_string($content)) {
-            throw new RuntimeException('Le lot de résultats privé est indisponible.');
+            throw new RuntimeException(UiText::t('Le lot de résultats privé est indisponible.'));
         }
 
         if (strlen($content) !== $batch->byte_size
             || ! hash_equals($batch->content_sha256, hash('sha256', $content))) {
-            throw new RuntimeException('Le contrôle d’intégrité du lot de résultats a échoué.');
+            throw new RuntimeException(UiText::t('Le contrôle d’intégrité du lot de résultats a échoué.'));
         }
 
         return $content;

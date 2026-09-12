@@ -6,48 +6,48 @@
     @endphp
     <div class="rf-page">
         <x-page-header
-            title="Contrats de location"
-            eyebrow="Activité locative"
-            description="Suivez les contrats, leurs périodes et leur avancement dans votre périmètre autorisé."
+            :title="__('Contrats de location')"
+            :eyebrow="__('Activité locative')"
+            :description="__('Suivez les contrats, leurs périodes et leur avancement dans votre périmètre autorisé.')"
         />
 
-        <x-filter-panel title="Rechercher un contrat" :active-count="$activeFilterCount" :result-count="$contracts->total()">
+        <x-filter-panel :title="__('Rechercher un contrat')" :active-count="$activeFilterCount" :result-count="$contracts->total()">
             @if ($activeFilterCount > 0)
                 <x-slot:tags>
                     @if (request()->filled('q'))
-                        <a class="rf-filter-tag" href="{{ route('contracts.index', request()->except(['q', 'page'])) }}">Recherche : {{ request('q') }} <span aria-hidden="true">×</span><span class="sr-only">Retirer la recherche</span></a>
+                        <a class="rf-filter-tag" href="{{ route('contracts.index', request()->except(['q', 'page'])) }}">{{ __('Recherche :') }} {{ request('q') }} <span aria-hidden="true">{{ __('×') }}</span><span class="sr-only">{{ __('Retirer la recherche') }}</span></a>
                     @endif
                     @if (request()->filled('status'))
-                        <a class="rf-filter-tag" href="{{ route('contracts.index', request()->except(['status', 'page'])) }}">État <span aria-hidden="true">×</span><span class="sr-only">Retirer le filtre état</span></a>
+                        <a class="rf-filter-tag" href="{{ route('contracts.index', request()->except(['status', 'page'])) }}">{{ __('État') }} <span aria-hidden="true">{{ __('×') }}</span><span class="sr-only">{{ __('Retirer le filtre état') }}</span></a>
                     @endif
                 </x-slot:tags>
             @endif
 
             <form method="GET" class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,16rem)_auto] sm:items-end" data-loading-form>
                 <div>
-                    <x-input-label for="contract-search" value="Numéro de contrat" />
-                    <input id="contract-search" name="q" value="{{ request('q') }}" placeholder="Ex. CTR-2026-000001" class="mt-1 w-full">
+                    <x-input-label for="contract-search" :value="__('Numéro de contrat')" />
+                    <input id="contract-search" name="q" value="{{ request('q') }}" placeholder="{{ __('Ex. CTR-2026-000001') }}" class="mt-1 w-full">
                 </div>
                 <div>
-                    <x-input-label for="contract-status" value="État" />
+                    <x-input-label for="contract-status" :value="__('État')" />
                     <select id="contract-status" name="status" class="mt-1 w-full">
-                        <option value="">Tous les états</option>
+                        <option value="">{{ __('Tous les états') }}</option>
                         @foreach ($statuses as $status)
                             <option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ App\Support\Ui\UiLabel::get($status) }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="flex items-end gap-2">
-                    <x-submit-button label="Appliquer" loading-label="Recherche…" />
-                    @if ($activeFilterCount > 0)<a href="{{ route('contracts.index') }}" class="rf-button-secondary"><x-icon name="reset" size="xs" />Réinitialiser</a>@endif
+                    <x-submit-button :label="__('Appliquer')" loading-label="{{ __('Recherche…') }}" />
+                    @if ($activeFilterCount > 0)<a href="{{ route('contracts.index') }}" class="rf-button-secondary"><x-icon name="reset" size="xs" />{{ __('Réinitialiser') }}</a>@endif
                 </div>
             </form>
         </x-filter-panel>
 
         <x-result-count :paginator="$contracts" />
-        <x-responsive-table label="Liste des contrats de location">
+        <x-responsive-table :label="__('Liste des contrats de location')">
             <table>
-                <thead><tr><th>Contrat</th><th>Client</th><th>Véhicule</th><th>État</th><th>Période</th></tr></thead>
+                <thead><tr><th>{{ __('Contrat') }}</th><th>{{ __('Client') }}</th><th>{{ __('Véhicule') }}</th><th>{{ __('État') }}</th><th>{{ __('Période') }}</th></tr></thead>
                 <tbody>
                     @forelse ($contracts as $contract)
                         <tr>
@@ -58,7 +58,7 @@
                             <td class="whitespace-nowrap">{{ App\Support\Ui\UiLabel::dateTime($contract->expected_start_at) }} — {{ App\Support\Ui\UiLabel::dateTime($contract->expected_return_at) }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5"><x-empty-state title="Aucun contrat" description="Aucun contrat ne correspond aux filtres sélectionnés." /></td></tr>
+                        <tr><td colspan="5"><x-empty-state :title="__('Aucun contrat')" :description="__('Aucun contrat ne correspond aux filtres sélectionnés.')" /></td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -116,7 +116,7 @@ class RentalUsageAnomalyController extends Controller
             ->first();
         if ($export === null) {
             throw ValidationException::withMessages([
-                'analysis' => 'Aucune source de données préparée n’est disponible dans votre périmètre.',
+                'analysis' => __('Aucune source de données préparée n’est disponible dans votre périmètre.'),
             ]);
         }
 
@@ -163,21 +163,21 @@ class RentalUsageAnomalyController extends Controller
             $queue->handle($exportRun, $request->user());
         } catch (RentalUsageAnomalyAlreadyActiveException) {
             throw ValidationException::withMessages([
-                'analysis' => 'Une analyse est déjà en cours pour les données préparées.',
+                'analysis' => __('Une analyse est déjà en cours pour les données préparées.'),
             ]);
         } catch (RentalUsageAnomalyExecutionException $exception) {
             $message = match ($exception->failureCode()) {
-                'SOURCE_SNAPSHOT_INVALID' => 'Les données préparées ne sont plus disponibles. Préparez une nouvelle analyse depuis Intelligence.',
-                'RUNTIME_CONFIGURATION_INVALID' => 'L’analyse est temporairement indisponible.',
-                'QUEUE_DISPATCH_FAILED' => 'L’analyse n’a pas pu être planifiée. Réessayez dans quelques instants.',
-                default => 'L’analyse consultative n’a pas pu être planifiée.',
+                'SOURCE_SNAPSHOT_INVALID' => __('Les données préparées ne sont plus disponibles. Préparez une nouvelle analyse depuis Intelligence.'),
+                'RUNTIME_CONFIGURATION_INVALID' => __('L’analyse est temporairement indisponible.'),
+                'QUEUE_DISPATCH_FAILED' => __('L’analyse n’a pas pu être planifiée. Réessayez dans quelques instants.'),
+                default => __('L’analyse consultative n’a pas pu être planifiée.'),
             };
 
             throw ValidationException::withMessages(['analysis' => $message]);
         }
 
         return redirect()->route('intelligence.rental-usage-anomalies.index')
-            ->with('status', 'Analyse ajoutée à la file de traitement. Les données métier restent inchangées.');
+            ->with('status', __('Analyse ajoutée à la file de traitement. Les données métier restent inchangées.'));
     }
 
     private function recordReview(
@@ -203,6 +203,6 @@ class RentalUsageAnomalyController extends Controller
             'agency' => $anomalyResult->agency_id,
             'date_from' => $returnDate,
             'date_to' => $returnDate,
-        ])->with('status', 'Vérification humaine enregistrée. Les données métier restent inchangées.');
+        ])->with('status', __('Vérification humaine enregistrée. Les données métier restent inchangées.'));
     }
 }

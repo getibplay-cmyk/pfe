@@ -22,7 +22,7 @@ class CreateDriver
     {
         $this->agencyAccess->required($customer->agency_id);
         if (! empty($data['licence_issued_at']) && $data['licence_issued_at'] > $data['licence_expires_at']) {
-            throw ValidationException::withMessages(['licence_issued_at' => 'La date de délivrance doit précéder ou égaler la date d’expiration.']);
+            throw ValidationException::withMessages(['licence_issued_at' => __('La date de délivrance doit précéder ou égaler la date d’expiration.')]);
         }
 
         $protected = $this->protector->protect($data['licence_number']);
@@ -42,7 +42,7 @@ class CreateDriver
             });
         } catch (QueryException $exception) {
             if (in_array($exception->getCode(), ['23505', '23514'], true)) {
-                throw ValidationException::withMessages(['is_primary' => 'Le conducteur principal ou les dates du permis sont incompatibles.']);
+                throw ValidationException::withMessages(['is_primary' => __('Le conducteur principal ou les dates du permis sont incompatibles.')]);
             }
 
             throw $exception;

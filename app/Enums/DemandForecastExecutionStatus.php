@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Ui\UiText;
+
 enum DemandForecastExecutionStatus: string
 {
     case Queued = 'queued';
@@ -11,11 +13,11 @@ enum DemandForecastExecutionStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Queued => 'En attente de traitement',
-            self::Running => 'Prévision en cours',
-            self::Succeeded => 'Prévision terminée',
-            self::Failed => 'Prévision non aboutie',
-        };
+        return UiText::t(match ($this) {
+            self::Queued => UiText::t('En attente de traitement'),
+            self::Running => UiText::t('Prévision en cours'),
+            self::Succeeded => UiText::t('Prévision terminée'),
+            self::Failed => UiText::t('Prévision non aboutie'),
+        });
     }
 }

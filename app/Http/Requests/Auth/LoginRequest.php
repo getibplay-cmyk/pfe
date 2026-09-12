@@ -136,7 +136,7 @@ class LoginRequest extends FormRequest
 
     private function recordIncompatibleHash(User $user): void
     {
-        Log::warning('Authentification refusée : empreinte de mot de passe incompatible.', [
+        Log::warning(__('Authentification refusée : empreinte de mot de passe incompatible.'), [
             'event' => 'auth.password_hash_incompatible',
             'user_id' => $user->id,
         ]);

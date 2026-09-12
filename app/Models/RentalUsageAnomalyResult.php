@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\RentalUsageAnomalyReviewDecision;
 use App\Models\Concerns\BelongsToTenant;
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyContract;
+use App\Support\Ui\UiText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -102,10 +103,10 @@ class RentalUsageAnomalyResult extends Model
     public function reviewStatusLabel(): string
     {
         return match ($this->latestReview?->decision) {
-            RentalUsageAnomalyReviewDecision::FollowUp => 'Usage atypique à vérifier',
-            RentalUsageAnomalyReviewDecision::NeedsInformation => 'Vérification humaine nécessaire — informations complémentaires',
-            RentalUsageAnomalyReviewDecision::Dismissed => 'Vérifié et écarté',
-            default => 'Vérification humaine nécessaire',
+            RentalUsageAnomalyReviewDecision::FollowUp => UiText::t('Usage atypique à vérifier'),
+            RentalUsageAnomalyReviewDecision::NeedsInformation => UiText::t('Vérification humaine nécessaire — informations complémentaires'),
+            RentalUsageAnomalyReviewDecision::Dismissed => UiText::t('Vérifié et écarté'),
+            default => UiText::t('Vérification humaine nécessaire'),
         };
     }
 

@@ -9,6 +9,7 @@ use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyRuntimeReadine
 use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageRuntimeReadiness;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
+use App\Support\Ui\UiText;
 use LogicException;
 use Throwable;
 
@@ -72,12 +73,12 @@ class IntelligenceCapabilityCatalog
         foreach (IntelligenceCapability::cases() as $capability) {
             $definition = self::DEFINITIONS[$capability->value] ?? null;
             if ($definition === null) {
-                throw new LogicException('Le catalogue Intelligence est incomplet.');
+                throw new LogicException(UiText::t('Le catalogue Intelligence est incomplet.'));
             }
             $definitions[$capability->value] = ['capability' => $capability, ...$definition];
         }
         if (count($definitions) !== count(self::DEFINITIONS)) {
-            throw new LogicException('Le catalogue Intelligence contient une capacité inconnue.');
+            throw new LogicException(UiText::t('Le catalogue Intelligence contient une capacité inconnue.'));
         }
 
         return $definitions;

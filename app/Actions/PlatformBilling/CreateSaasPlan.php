@@ -31,7 +31,7 @@ class CreateSaasPlan
 
         $interval = SaasBillingInterval::tryFrom((string) ($data['billing_interval'] ?? ''));
         if ($interval === null) {
-            throw ValidationException::withMessages(['billing_interval' => 'La périodicité du plan est invalide.']);
+            throw ValidationException::withMessages(['billing_interval' => __('La périodicité du plan est invalide.')]);
         }
 
         $price = $this->money($data['price_amount'] ?? null);
@@ -71,7 +71,7 @@ class CreateSaasPlan
         try {
             return DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits((string) $value));
         } catch (InvalidArgumentException) {
-            throw ValidationException::withMessages(['price_amount' => 'Le prix doit être un montant décimal valide.']);
+            throw ValidationException::withMessages(['price_amount' => __('Le prix doit être un montant décimal valide.')]);
         }
     }
 
@@ -86,7 +86,7 @@ class CreateSaasPlan
     {
         $unexpected = array_values(array_diff(array_keys($data), $allowed));
         if ($unexpected !== []) {
-            throw ValidationException::withMessages([$unexpected[0] => 'Ce champ n’est pas autorisé.']);
+            throw ValidationException::withMessages([$unexpected[0] => __('Ce champ n’est pas autorisé.')]);
         }
     }
 }

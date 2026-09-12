@@ -107,18 +107,18 @@ class VehicleColorAssistantController extends Controller
     {
         return match ($run->status) {
             VehicleColorPredictionStatus::Queued,
-            VehicleColorPredictionStatus::Running => 'Analyse de la photo en cours…',
+            VehicleColorPredictionStatus::Running => __('Analyse de la photo en cours…'),
             VehicleColorPredictionStatus::Succeeded => $run->hasLowConfidenceCandidate()
-                ? 'Vérification visuelle recommandée.'
-                : 'Vous pouvez modifier cette couleur avant l’enregistrement.',
-            VehicleColorPredictionStatus::Failed => 'La couleur n’a pas pu être déterminée. Sélectionnez-la manuellement.',
+                ? __('Vérification visuelle recommandée.')
+                : __('Vous pouvez modifier cette couleur avant l’enregistrement.'),
+            VehicleColorPredictionStatus::Failed => __('La couleur n’a pas pu être déterminée. Sélectionnez-la manuellement.'),
         };
     }
 
     private function unavailable(): JsonResponse
     {
         return response()->json([
-            'message' => 'La couleur n’a pas pu être déterminée. Sélectionnez-la manuellement.',
+            'message' => __('La couleur n’a pas pu être déterminée. Sélectionnez-la manuellement.'),
         ], 503);
     }
 }

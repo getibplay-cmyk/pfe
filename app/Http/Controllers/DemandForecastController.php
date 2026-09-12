@@ -105,7 +105,7 @@ class DemandForecastController extends Controller
 
         return redirect()->route('intelligence.demand-forecasts.index')->with(
             'status',
-            'La prévision de demande a été lancée.',
+            __('La prévision de demande a été lancée.'),
         );
     }
 
@@ -115,7 +115,7 @@ class DemandForecastController extends Controller
         CreateDemandHistoryExport $create,
         DownloadDemandHistorySnapshot $download,
     ): StreamedResponse {
-        abort_unless($pseudonymizer->configured(), 503, 'Export de demande temporairement indisponible.');
+        abort_unless($pseudonymizer->configured(), 503, __('Export de demande temporairement indisponible.'));
         $data = $request->validated();
         $run = $create->handle(
             (int) $data['agency_id'],
@@ -187,8 +187,8 @@ class DemandForecastController extends Controller
         return redirect()->route('intelligence.demand-forecasts.index')->with(
             'status',
             $result->created
-                ? 'Prévisions D+1 à D+7 validées et importées en mode consultatif.'
-                : 'Ces prévisions sont déjà présentes et n’ont pas été dupliquées.',
+                ? __('Prévisions D+1 à D+7 validées et importées en mode consultatif.')
+                : __('Ces prévisions sont déjà présentes et n’ont pas été dupliquées.'),
         );
     }
 }

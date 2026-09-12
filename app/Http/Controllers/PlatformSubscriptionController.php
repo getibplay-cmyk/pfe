@@ -68,7 +68,7 @@ class PlatformSubscriptionController extends Controller
         $assign->handle($tenant, $plan, $data, $request->user()->getKey());
 
         return redirect()->route('platform.tenants.show', $tenant)
-            ->with('status', 'Abonnement SaaS enregistré sans transaction bancaire.');
+            ->with('status', __('Abonnement SaaS enregistré sans transaction bancaire.'));
     }
 
     public function transition(
@@ -79,6 +79,6 @@ class PlatformSubscriptionController extends Controller
         $status = TenantSubscriptionStatus::from($request->validated('status'));
         $transition->handle($subscription, $status, $request->user()->getKey());
 
-        return back()->with('status', 'État de l’abonnement SaaS mis à jour.');
+        return back()->with('status', __('État de l’abonnement SaaS mis à jour.'));
     }
 }

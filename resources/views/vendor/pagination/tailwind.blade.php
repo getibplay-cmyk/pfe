@@ -1,16 +1,16 @@
 @if ($paginator->hasPages())
-    <nav role="navigation" aria-label="Pagination" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <nav role="navigation" aria-label="{{ __('Pagination') }}" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-slate-600" aria-live="polite">
-            Affichage de <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($paginator->firstItem()) }}</span>
-            à <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($paginator->lastItem()) }}</span>
-            sur <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::count($paginator->total(), 'résultat') }}</span>
+            {{ __('Affichage de') }} <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($paginator->firstItem()) }}</span>
+            {{ __('à') }} <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::integer($paginator->lastItem()) }}</span>
+            {{ __('sur') }} <span class="font-semibold">{{ App\Support\Ui\BusinessNumber::count($paginator->total(), 'résultat') }}</span>
         </p>
 
         <div class="flex flex-wrap items-center gap-1">
             @if ($paginator->onFirstPage())
-                <span aria-disabled="true" class="rf-button-secondary cursor-not-allowed opacity-50">Précédent</span>
+                <span aria-disabled="true" class="rf-button-secondary cursor-not-allowed opacity-50">{{ __('Précédent') }}</span>
             @else
-                <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="rf-button-secondary">Précédent</a>
+                <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="rf-button-secondary">{{ __('Précédent') }}</a>
             @endif
 
             <span class="hidden items-center sm:flex">
@@ -24,7 +24,7 @@
                             @if ($page == $paginator->currentPage())
                                 <span aria-current="page" class="mx-0.5 inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg bg-brand-700 px-3 py-2 text-sm font-semibold text-white">{{ $page }}</span>
                             @else
-                                <a href="{{ $url }}" class="mx-0.5 inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600" aria-label="Aller à la page {{ $page }}">{{ $page }}</a>
+                                <a href="{{ $url }}" class="mx-0.5 inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600" aria-label="{{ __('Aller à la page ') }}{{ $page }}">{{ $page }}</a>
                             @endif
                         @endforeach
                     @endif
@@ -32,9 +32,9 @@
             </span>
 
             @if ($paginator->hasMorePages())
-                <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="rf-button-secondary">Suivant</a>
+                <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="rf-button-secondary">{{ __('Suivant') }}</a>
             @else
-                <span aria-disabled="true" class="rf-button-secondary cursor-not-allowed opacity-50">Suivant</span>
+                <span aria-disabled="true" class="rf-button-secondary cursor-not-allowed opacity-50">{{ __('Suivant') }}</span>
             @endif
         </div>
     </nav>

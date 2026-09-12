@@ -1,3 +1,4 @@
+import { t, currentLocale } from './i18n.js';
 import { formatAverage, formatBusinessInteger, formatDistance } from './business-number.js';
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
@@ -34,7 +35,7 @@ export function createFleetReallocationPlanning(config = {}) {
             this.generatedAt = null;
             this.agencies = [];
             this.recommendations = [];
-            this.message = 'Calcul du plan en cours…';
+            this.message = t('Calcul du plan en cours…');
             try {
                 const response = await this.fetchRequest(this.storeUrl, {
                     method: 'POST',
@@ -68,7 +69,7 @@ export function createFleetReallocationPlanning(config = {}) {
                 if (! response.ok || ! statusPayload(payload)) return this.fail(sequence);
 
                 this.status = payload.status;
-                this.message = safeText(payload.message, 'Le plan n’est pas disponible.');
+                this.message = safeText(payload.message, t('Le plan n’est pas disponible.'));
                 if (ACTIVE_STATUSES.has(payload.status)) {
                     this.pollTimer = this.schedule(() => this.poll(url, sequence, attempt + 1), this.pollDelay);
                     return;
@@ -86,7 +87,7 @@ export function createFleetReallocationPlanning(config = {}) {
             }
         },
 
-        fail(sequence, message = 'Le plan n’a pas pu être calculé. Les données métier restent inchangées.') {
+        fail(sequence, message = t('Le plan n’a pas pu être calculé. Les données métier restent inchangées.')) {
             if (sequence !== this.requestSequence || this.destroyed) return false;
             this.stopPolling();
             this.status = 'failed';
@@ -94,7 +95,7 @@ export function createFleetReallocationPlanning(config = {}) {
             this.generatedAt = null;
             this.agencies = [];
             this.recommendations = [];
-            this.message = safeText(message, 'Le plan n’est pas disponible.');
+            this.message = safeText(message, t('Le plan n’est pas disponible.'));
             this.busy = false;
             return false;
         },
@@ -196,12 +197,12 @@ function positiveInteger(value) {
 
 function formatDate(value) {
     if (! validDate(value)) return '';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeZone: 'UTC' })
+    return new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'medium', timeZone: 'UTC' })
         .format(new Date(`${value}T12:00:00Z`));
 }
 
 function formatGeneratedAt(value) {
     if (typeof value !== 'string' || Number.isNaN(Date.parse(value))) return '';
-    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Casablanca' })
+    return new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Casablanca' })
         .format(new Date(value));
 }

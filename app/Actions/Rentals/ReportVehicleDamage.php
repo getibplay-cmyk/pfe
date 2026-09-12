@@ -21,7 +21,7 @@ class ReportVehicleDamage
         return DB::transaction(function () use ($contract, $data, $actorId) {
             $locked = RentalContract::whereKey($contract)->lockForUpdate()->firstOrFail();
             if ($locked->status !== RentalContractStatus::ReturnPending) {
-                throw ValidationException::withMessages(['status' => 'Un dommage de retour exige un contrat en attente de retour.']);
+                throw ValidationException::withMessages(['status' => __('Un dommage de retour exige un contrat en attente de retour.')]);
             }
             $return = $locked->inspections()->where('inspection_type', 'return')->where('status', 'completed')->findOrFail($data['return_inspection_id']);
             $departure = $locked->inspections()->where('inspection_type', 'departure')->where('status', 'completed')->first();

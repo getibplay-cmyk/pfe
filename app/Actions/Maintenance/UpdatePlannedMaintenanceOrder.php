@@ -19,10 +19,10 @@ class UpdatePlannedMaintenanceOrder
     {
         $required = ['vehicle_id', 'maintenance_type', 'priority', 'title', 'description', 'scheduled_start_at', 'scheduled_end_at', 'mileage_at_opening', 'estimated_cost', 'supplier'];
         if (collect($required)->contains(fn (string $field) => ! array_key_exists($field, $data))) {
-            throw ValidationException::withMessages(['maintenance' => 'La modification doit transmettre tous les champs éditables.']);
+            throw ValidationException::withMessages(['maintenance' => __('La modification doit transmettre tous les champs éditables.')]);
         }
         if (! in_array($data['maintenance_type'], ['preventive', 'corrective', 'inspection', 'repair'], true) || ! in_array($data['priority'], ['low', 'normal', 'high', 'critical'], true)) {
-            throw ValidationException::withMessages(['maintenance' => 'Type ou priorité de maintenance invalide.']);
+            throw ValidationException::withMessages(['maintenance' => __('Type ou priorité de maintenance invalide.')]);
         }
 
         try {
@@ -30,21 +30,21 @@ class UpdatePlannedMaintenanceOrder
             $end = CarbonImmutable::parse($data['scheduled_end_at']);
             $estimatedCost = DecimalMoney::fromMinorUnits(DecimalMoney::toMinorUnits($data['estimated_cost']));
         } catch (InvalidArgumentException) {
-            throw ValidationException::withMessages(['maintenance' => 'La période ou le coût estimé est invalide.']);
+            throw ValidationException::withMessages(['maintenance' => __('La période ou le coût estimé est invalide.')]);
         }
         if ($end->lessThanOrEqualTo($start) || $end->lessThanOrEqualTo(now())) {
-            throw ValidationException::withMessages(['scheduled_end_at' => 'La fin doit être postérieure au début et située dans le futur.']);
+            throw ValidationException::withMessages(['scheduled_end_at' => __('La fin doit être postérieure au début et située dans le futur.')]);
         }
 
         return DB::transaction(function () use ($order, $data, $estimatedCost, $start, $end) {
             $locked = MaintenanceOrder::whereKey($order)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'planned') {
-                throw ValidationException::withMessages(['maintenance' => 'Seule une maintenance planifiée peut être modifiée.']);
+                throw ValidationException::withMessages(['maintenance' => __('Seule une maintenance planifiée peut être modifiée.')]);
             }
 
             $vehicle = Vehicle::query()->whereKey($data['vehicle_id'])->where('agency_id', $locked->agency_id)->first();
             if (! $vehicle) {
-                throw ValidationException::withMessages(['vehicle_id' => 'Le véhicule doit appartenir à l’agence de maintenance.']);
+                throw ValidationException::withMessages(['vehicle_id' => __('Le véhicule doit appartenir à l’agence de maintenance.')]);
             }
 
             $before = $this->auditValues($locked);

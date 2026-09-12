@@ -77,7 +77,7 @@ class UpdateTenantUser
             ->get(['id']);
 
         if ($activeOwners->where('id', '!=', $subject->id)->isEmpty()) {
-            throw ValidationException::withMessages(['is_active' => 'Le dernier Tenant Owner actif ne peut pas être désactivé ou rétrogradé.']);
+            throw ValidationException::withMessages(['is_active' => __('Le dernier Tenant Owner actif ne peut pas être désactivé ou rétrogradé.')]);
         }
     }
 }

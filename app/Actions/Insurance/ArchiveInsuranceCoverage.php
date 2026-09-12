@@ -17,7 +17,7 @@ class ArchiveInsuranceCoverage
         DB::transaction(function () use ($coverage, $actorId): void {
             $locked = InsurancePolicyCoverage::with('policy')->whereKey($coverage)->lockForUpdate()->firstOrFail();
             if ($locked->policy->status !== InsurancePolicyStatus::Draft) {
-                throw ValidationException::withMessages(['coverage' => 'Cette garantie est immuable hors du brouillon.']);
+                throw ValidationException::withMessages(['coverage' => __('Cette garantie est immuable hors du brouillon.')]);
             }
             $locked->forceFill(['archived_by' => $actorId])->save();
             $locked->delete();

@@ -3,6 +3,16 @@
 @tailwind utilities;
 
 @layer base {
+    [dir='rtl'] { font-family: Tahoma, Arial, sans-serif; }
+    [dir='rtl'] .text-left { text-align: start; }
+    [dir='rtl'] .text-right { text-align: end; }
+    [dir='rtl'] input[type='email'], [dir='rtl'] input[type='tel'],
+    [dir='rtl'] input[type='number'], [dir='rtl'] input[type='datetime-local'],
+    [dir='rtl'] input[type='date'], [dir='rtl'] code { direction: ltr; }
+    [dir='rtl'] .rf-table-scroll thead { text-align: start; }
+}
+
+@layer base {
     :root {
         --belkhir-space-ink: theme('colors.belkhir.space.ink');
         --belkhir-space-navy: theme('colors.belkhir.space.navy');
@@ -69,7 +79,7 @@
 
 @layer components {
     .rf-skip-link {
-        @apply fixed left-4 top-3 z-[100] -translate-y-20 rounded-lg bg-belkhir-space-surface px-4 py-2 text-sm font-semibold text-belkhir-space-blue shadow-lg transition focus:translate-y-0;
+        @apply fixed start-4 top-3 z-[100] -translate-y-20 rounded-lg bg-belkhir-space-surface px-4 py-2 text-sm font-semibold text-belkhir-space-blue shadow-lg transition focus:translate-y-0;
     }
 
     .rf-page { @apply mx-auto w-full max-w-7xl space-y-6; }
@@ -122,7 +132,7 @@
         scrollbar-gutter: stable;
     }
     .rf-table-scroll > table { @apply min-w-full divide-y divide-belkhir-space-border text-sm; }
-    .rf-table-scroll thead { @apply bg-belkhir-space-canvas text-left text-xs font-semibold uppercase tracking-wide text-belkhir-space-muted; }
+    .rf-table-scroll thead { @apply bg-belkhir-space-canvas text-start text-xs font-semibold uppercase tracking-wide text-belkhir-space-muted; }
     .rf-table-scroll th { @apply whitespace-nowrap px-4 py-3; }
     .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-belkhir-space-surface; }
     .rf-table-scroll tbody tr { @apply transition-colors hover:bg-brand-50/40; }
@@ -153,4 +163,9 @@
     0% { transform: translateX(-115%) scaleX(0.55); }
     50% { transform: translateX(115%) scaleX(1); }
     100% { transform: translateX(300%) scaleX(0.55); }
+}
+
+@layer utilities {
+    [dir="rtl"] .rf-directional-icon { transform: scaleX(-1); }
+    [dir="rtl"] .rf-page-progress-bar { transform-origin: right center; }
 }

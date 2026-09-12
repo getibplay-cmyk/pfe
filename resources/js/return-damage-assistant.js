@@ -1,9 +1,10 @@
+import { t } from './i18n.js';
 import { formatConfidence } from './business-number.js';
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
-const PROCESSING_MESSAGE = 'Analyse de la photo en cours…';
-const MANUAL_MESSAGE = 'La photo n’a pas pu être analysée. Poursuivez l’inspection manuelle.';
-const HUMAN_NOTICE = 'Cette analyse est une aide visuelle. Vérifiez toujours l’ensemble du véhicule avant de valider le retour.';
+const PROCESSING_MESSAGE = t('Analyse de la photo en cours…');
+const MANUAL_MESSAGE = t('La photo n’a pas pu être analysée. Poursuivez l’inspection manuelle.');
+const HUMAN_NOTICE = t('Cette analyse est une aide visuelle. Vérifiez toujours l’ensemble du véhicule avant de valider le retour.');
 const FORBIDDEN_CLIENT_TERMS = /\b(?:rt-?detr|ap50?|gate|runtime|worker|queue|checkpoint|artefact|artifact|sha|path|chemin|exception|traceback)\b/iu;
 
 export function createReturnDamageAssistantState(initialNotes = '') {
@@ -21,7 +22,7 @@ export function createReturnDamageAssistantState(initialNotes = '') {
                 this.photos.push({
                     id,
                     file,
-                    name: safeFileName(file?.name, `Photo ${id}`),
+                    name: safeFileName(file?.name, t("Photo :value1", { value1: id })),
                     preview: typeof createPreview === 'function' ? createPreview(file) : '',
                     phase: 'idle',
                     message: '',
@@ -75,7 +76,7 @@ export function createReturnDamageAssistantState(initialNotes = '') {
                 const confidence = Number(detection?.confidence);
                 const box = detection?.box;
                 if (detection?.type !== 'possible_damage'
-                    || detection?.label !== 'Zone de dommage possible'
+                    || detection?.label !== t('Zone de dommage possible')
                     || ! Number.isFinite(confidence)
                     || confidence < 0
                     || confidence > 1
@@ -94,15 +95,15 @@ export function createReturnDamageAssistantState(initialNotes = '') {
             photo.message = safeMessage(
                 payload.message,
                 detections.length === 0
-                    ? 'Aucun dommage n’a été suggéré sur cette photo. Poursuivez l’inspection visuelle du véhicule.'
-                    : `${detections.length} zone(s) de dommage possible à vérifier visuellement.`,
+                    ? t('Aucun dommage n’a été suggéré sur cette photo. Poursuivez l’inspection visuelle du véhicule.')
+                    : t(":value1 zone(s) de dommage possible à vérifier visuellement.", { value1: detections.length }),
             );
             photo.notice = HUMAN_NOTICE;
             photo.detections = detections;
             photo.runId = String(runId);
             photo.suggestionText = detections.length === 0
                 ? ''
-                : `Photo ${photo.id} : ${detections.length} zone(s) de dommage possible à vérifier visuellement.`;
+                : t("Photo :value1 : :value2 zone(s) de dommage possible à vérifier visuellement.", { value1: photo.id, value2: detections.length });
 
             return true;
         },

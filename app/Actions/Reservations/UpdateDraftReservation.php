@@ -23,7 +23,7 @@ class UpdateDraftReservation
         return DB::transaction(function () use ($reservation, $data) {
             $locked = Reservation::whereKey($reservation)->lockForUpdate()->firstOrFail();
             if (! in_array($locked->status, [ReservationStatus::Draft, ReservationStatus::Pending], true)) {
-                throw ValidationException::withMessages(['status' => 'Seule une réservation brouillon ou en attente peut être modifiée.']);
+                throw ValidationException::withMessages(['status' => __('Seule une réservation brouillon ou en attente peut être modifiée.')]);
             }
 
             [$startsAt, $endsAt] = $this->periods->future($data['starts_at'], $data['ends_at']);

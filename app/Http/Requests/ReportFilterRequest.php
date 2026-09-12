@@ -48,7 +48,7 @@ class ReportFilterRequest extends FormRequest
             $from = CarbonImmutable::parse((string) $this->input('date_from'));
             $to = CarbonImmutable::parse((string) $this->input('date_to'));
             if ($from->diffInDays($to) > 365) {
-                $validator->errors()->add('date_to', 'La période du rapport ne peut pas dépasser 366 jours.');
+                $validator->errors()->add('date_to', __('La période du rapport ne peut pas dépasser 366 jours.'));
             }
         }];
     }

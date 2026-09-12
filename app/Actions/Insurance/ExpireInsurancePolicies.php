@@ -29,7 +29,7 @@ class ExpireInsurancePolicies
                         }
                         InsurancePolicyTransition::allow(InsurancePolicyStatus::Active, InsurancePolicyStatus::Expired);
                         $policy->forceFill(['status' => InsurancePolicyStatus::Expired])->save();
-                        InsurancePolicyStatusHistory::create(['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'from_status' => InsurancePolicyStatus::Active, 'to_status' => InsurancePolicyStatus::Expired, 'reason' => 'Expiration automatique à la fin de couverture', 'actor_id' => null, 'changed_at' => now()]);
+                        InsurancePolicyStatusHistory::create(['agency_id' => $policy->agency_id, 'insurance_policy_id' => $policy->id, 'from_status' => InsurancePolicyStatus::Active, 'to_status' => InsurancePolicyStatus::Expired, 'reason' => __('Expiration automatique à la fin de couverture'), 'actor_id' => null, 'changed_at' => now()]);
                         $this->audit->record('insurance.policy.expired', $policy, ['status' => 'active'], ['status' => 'expired']);
                         $expired++;
                     });

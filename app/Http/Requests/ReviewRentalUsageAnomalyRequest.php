@@ -58,7 +58,7 @@ class ReviewRentalUsageAnomalyRequest extends FormRequest
                 'rental_contract_id', 'primary_score', 'challenger_score', 'action', 'fee', 'sanction',
             ];
             foreach (array_diff(array_keys($this->except(['_token', '_method'])), $declared) as $key) {
-                $validator->errors()->add($key, 'Ce champ n’est pas autorisé pour la revue humaine.');
+                $validator->errors()->add($key, __('Ce champ n’est pas autorisé pour la revue humaine.'));
             }
         }];
     }

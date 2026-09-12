@@ -1,3 +1,4 @@
+import { t, currentLocale } from './i18n.js';
 import {
     CategoryScale,
     Chart,
@@ -25,8 +26,8 @@ Chart.register(
 );
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
-const PROCESSING_MESSAGE = 'Préparation des prévisions en cours…';
-const UNAVAILABLE_MESSAGE = 'Les prévisions ne sont pas disponibles. Le planning reste utilisable.';
+const PROCESSING_MESSAGE = t('Préparation des prévisions en cours…');
+const UNAVAILABLE_MESSAGE = t('Les prévisions ne sont pas disponibles. Le planning reste utilisable.');
 const FORBIDDEN_CLIENT_TERMS = /\b(?:hgb|histgradientboosting|joblib|bundle|sha(?:-?256)?|runtime|worker|feature vector|exception|trace(?:back)?)\b/iu;
 
 export function createReservationDemandForecastState(config = {}) {
@@ -56,7 +57,7 @@ export function createReservationDemandForecastState(config = {}) {
         applySucceeded(state, initial);
     } else {
         state.status = 'empty';
-        state.message = safeText(initial?.message, 'Aucune prévision récente n’est disponible.');
+        state.message = safeText(initial?.message, t('Aucune prévision récente n’est disponible.'));
         state.scope = {
             agency: safeText(initial?.scope?.agency, state.agencyName),
         };
@@ -239,7 +240,7 @@ export function chartConfiguration(forecasts) {
         data: {
             labels: forecasts.map((forecast) => formatDate(forecast.date)),
             datasets: [{
-                label: 'Véhicules à prévoir',
+                label: t('Véhicules à prévoir'),
                 data: forecasts.map((forecast) => forecast.planningVehicleUnits),
                 borderColor: colors.blue,
                 backgroundColor: colors.blue,
@@ -259,7 +260,7 @@ export function chartConfiguration(forecasts) {
                 y: {
                     ...scales.y,
                     beginAtZero: true,
-                    title: { display: true, text: 'Véhicules à prévoir' },
+                    title: { display: true, text: t('Véhicules à prévoir') },
                     ticks: {
                         ...scales.y?.ticks,
                         precision: 0,
@@ -268,14 +269,14 @@ export function chartConfiguration(forecasts) {
                 },
                 x: {
                     ...scales.x,
-                    title: { display: true, text: 'Date' },
+                    title: { display: true, text: t('Date') },
                 },
             },
             plugins: {
                 legend: { display: true, labels: { color: colors.muted } },
                 tooltip: {
                     callbacks: {
-                        label: (context) => `Véhicules à prévoir : ${formatVehicleUnits(context.parsed.y)}`,
+                        label: (context) => t("Véhicules à prévoir : :value1", { value1: formatVehicleUnits(context.parsed.y) }),
                     },
                 },
             },
@@ -292,7 +293,7 @@ function applySucceeded(state, payload) {
         conditionalMean: forecast.predicted_demand,
         planningVehicleUnits: forecastPlanningUnits(forecast.predicted_demand),
     }));
-    state.message = safeText(payload.message, 'Les prévisions sont disponibles pour préparer le planning.');
+    state.message = safeText(payload.message, t('Les prévisions sont disponibles pour préparer le planning.'));
 }
 
 function validAcceptedPayload(payload) {
@@ -389,7 +390,7 @@ function safeText(value, fallback) {
 function formatDate(value) {
     if (typeof value !== 'string' || ! /^\d{4}-\d{2}-\d{2}$/u.test(value)) return '';
 
-    return new Intl.DateTimeFormat('fr-FR', {
+    return new Intl.DateTimeFormat(currentLocale(), {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -400,7 +401,7 @@ function formatDate(value) {
 function formatGeneratedAt(value) {
     if (typeof value !== 'string' || Number.isNaN(Date.parse(value))) return '';
 
-    return new Intl.DateTimeFormat('fr-FR', {
+    return new Intl.DateTimeFormat(currentLocale(), {
         dateStyle: 'medium',
         timeStyle: 'short',
         timeZone: 'Africa/Casablanca',

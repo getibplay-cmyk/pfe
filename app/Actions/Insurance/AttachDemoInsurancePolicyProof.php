@@ -45,14 +45,14 @@ class AttachDemoInsurancePolicyProof
                 $locked = InsurancePolicy::whereKey($policy)->lockForUpdate()->firstOrFail();
                 $document = $this->documents->handle($locked, [
                     'document_type' => DocumentType::InsurancePolicySigned->value,
-                    'title' => 'Attestation d’assurance — démonstration non contractuelle',
+                    'title' => __('Attestation d’assurance — démonstration non contractuelle'),
                     'is_sensitive' => true,
                 ], $file, $actorId)->load('currentVersion');
                 $storedPath = $document->currentVersion?->stored_path;
                 $locked->forceFill(['document_id' => $document->id])->save();
                 $this->audit->record($auditAction, $locked, ['document_id' => null], [
                     'document_id' => $document->id,
-                    'reason' => 'Preuve fictive non contractuelle requise par le Lot 06F-C2',
+                    'reason' => __('Preuve fictive non contractuelle requise par le Lot 06F-C2'),
                 ]);
 
                 return $document;

@@ -125,7 +125,7 @@ class VehicleDamagePredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-damages.index')->with(
             'status',
-            'L’analyse des dommages a été lancée.',
+            __('L’analyse des dommages a été lancée.'),
         );
     }
 
@@ -187,7 +187,7 @@ class VehicleDamagePredictionController extends Controller
 
         return redirect()->route('intelligence.vehicle-damages.index')->with(
             'status',
-            'Décision humaine enregistrée sans créer de dommage, frais ou responsabilité.',
+            __('Décision humaine enregistrée sans créer de dommage, frais ou responsabilité.'),
         );
     }
 }

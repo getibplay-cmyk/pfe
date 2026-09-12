@@ -1,4 +1,4 @@
-@props(['label' => 'Traitement en cours…', 'size' => 'sm', 'announce' => true])
+@props(['label' => __('Traitement en cours…'), 'size' => 'sm', 'announce' => true])
 @php
     $sizeClass = match ($size) {
         'lg' => 'h-7 w-7',

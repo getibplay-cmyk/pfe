@@ -40,10 +40,10 @@ class AcceptTenantOnboardingInvitation
             $result = DB::transaction(function () use ($invitation, $token, $data, &$expired): ?array {
                 $locked = TenantOnboardingInvitation::query()->whereKey($invitation)->lockForUpdate()->firstOrFail();
                 if (! hash_equals($locked->secret_hash, hash('sha256', $token))) {
-                    throw ValidationException::withMessages(['invitation' => 'Le lien d’invitation est invalide.']);
+                    throw ValidationException::withMessages(['invitation' => __('Le lien d’invitation est invalide.')]);
                 }
                 if ($locked->status !== TenantOnboardingInvitationStatus::Pending) {
-                    throw ValidationException::withMessages(['invitation' => 'Cette invitation a déjà été utilisée ou révoquée.']);
+                    throw ValidationException::withMessages(['invitation' => __('Cette invitation a déjà été utilisée ou révoquée.')]);
                 }
                 $acceptedAt = CarbonImmutable::now();
                 if ($locked->expires_at->lessThanOrEqualTo($acceptedAt)) {
@@ -55,22 +55,22 @@ class AcceptTenantOnboardingInvitation
 
                 $plan = SaasPlan::query()->whereKey($locked->saas_plan_id)->lockForUpdate()->firstOrFail();
                 if (! $plan->is_active) {
-                    throw ValidationException::withMessages(['invitation' => 'Le plan associé à cette invitation n’est plus disponible.']);
+                    throw ValidationException::withMessages(['invitation' => __('Le plan associé à cette invitation n’est plus disponible.')]);
                 }
                 $planEntitlements = $this->entitlements->normalize($plan->entitlements);
                 if ($planEntitlements['max_agencies'] === 0 || $planEntitlements['max_users'] === 0) {
                     throw ValidationException::withMessages([
-                        'invitation' => 'Le plan associé ne permet plus la création initiale de l’entreprise.',
+                        'invitation' => __('Le plan associé ne permet plus la création initiale de l’entreprise.'),
                     ]);
                 }
                 if (DB::table('users')->whereRaw('lower(email) = ?', [$locked->email])->exists()) {
-                    throw ValidationException::withMessages(['invitation' => 'Un compte utilise déjà cette adresse e-mail.']);
+                    throw ValidationException::withMessages(['invitation' => __('Un compte utilise déjà cette adresse e-mail.')]);
                 }
 
                 $creator = User::query()->whereKey($locked->created_by)->lockForUpdate()->first();
                 if ($creator === null || ! $creator->is_active || ! $creator->is_platform_admin || $creator->tenant_id !== null) {
                     throw ValidationException::withMessages([
-                        'invitation' => 'Cette invitation n’est plus autorisée par la plateforme.',
+                        'invitation' => __('Cette invitation n’est plus autorisée par la plateforme.'),
                     ]);
                 }
                 $ownerRole = Role::query()
@@ -80,7 +80,7 @@ class AcceptTenantOnboardingInvitation
                     ->first();
                 if ($ownerRole === null) {
                     throw ValidationException::withMessages([
-                        'invitation' => 'La configuration du rôle administrateur est indisponible.',
+                        'invitation' => __('La configuration du rôle administrateur est indisponible.'),
                     ]);
                 }
                 $tenant = Tenant::create([
@@ -140,7 +140,7 @@ class AcceptTenantOnboardingInvitation
                     'ends_at' => $trialEndsAt->toIso8601String(),
                     'trial_ends_at' => $trialEndsAt->toIso8601String(),
                     'next_renewal_at' => $trialEndsAt->toIso8601String(),
-                    'admin_note' => 'Essai créé automatiquement depuis une invitation d’accueil.',
+                    'admin_note' => __('Essai créé automatiquement depuis une invitation d’accueil.'),
                 ], (int) $locked->created_by);
 
                 $locked->forceFill([
@@ -160,7 +160,7 @@ class AcceptTenantOnboardingInvitation
         } catch (QueryException $exception) {
             if ((string) $exception->getCode() === '23505') {
                 throw ValidationException::withMessages([
-                    'company_slug' => 'Cet identifiant d’entreprise ou cette adresse e-mail est déjà utilisé.',
+                    'company_slug' => __('Cet identifiant d’entreprise ou cette adresse e-mail est déjà utilisé.'),
                 ]);
             }
 
@@ -168,7 +168,7 @@ class AcceptTenantOnboardingInvitation
         }
 
         if ($expired || $result === null) {
-            throw ValidationException::withMessages(['invitation' => 'Cette invitation a expiré.']);
+            throw ValidationException::withMessages(['invitation' => __('Cette invitation a expiré.')]);
         }
 
         return $result;

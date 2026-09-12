@@ -24,10 +24,10 @@
     @endphp
 
     <div class="rf-page" data-platform-statistics>
-        <x-page-header :title="'Plateforme '.config('brand.name')" eyebrow="Administration SaaS" description="Vue consolidée des entreprises clientes, abonnements et services de la plateforme.">
+        <x-page-header :title="__('Plateforme ').config('brand.name')" :eyebrow="__('Administration SaaS')" :description="__('Vue consolidée des entreprises clientes, abonnements et services de la plateforme.')">
             <x-slot:actions>
-                <a href="{{ route('platform.onboarding-invitations.index') }}#nouvelle-invitation" class="rf-button-secondary"><x-icon name="add" size="xs" />Inviter une entreprise</a>
-                <a href="{{ route('platform.tenants.create') }}" class="rf-button-primary"><x-icon name="add" size="xs" />Créer une entreprise cliente</a>
+                <a href="{{ route('platform.onboarding-invitations.index') }}#nouvelle-invitation" class="rf-button-secondary"><x-icon name="add" size="xs" />{{ __('Inviter une entreprise') }}</a>
+                <a href="{{ route('platform.tenants.create') }}" class="rf-button-primary"><x-icon name="add" size="xs" />{{ __('Créer une entreprise cliente') }}</a>
             </x-slot:actions>
         </x-page-header>
 
@@ -36,20 +36,20 @@
             <span class="absolute -bottom-20 right-28 h-40 w-40 rounded-full border-[2rem] border-belkhir-space-orange/15" aria-hidden="true"></span>
             <div class="relative grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-belkhir-space-orange-soft">Santé de la plateforme</p>
-                    <h2 class="mt-2 max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">Les repères essentiels, sans masquer les alertes.</h2>
-                    <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Les deux progressions reposent sur des dénominateurs réels : entreprises enregistrées et six capacités disponibles par entreprise.</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-belkhir-space-orange-soft">{{ __('Santé de la plateforme') }}</p>
+                    <h2 class="mt-2 max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">{{ __('Les repères essentiels, sans masquer les alertes.') }}</h2>
+                    <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{{ __('Les deux progressions reposent sur des dénominateurs réels : entreprises enregistrées et six capacités disponibles par entreprise.') }}</p>
                 </div>
                 <div class="grid gap-5 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm sm:grid-cols-2 [&_[role=progressbar]]:bg-white/15 [&_span]:text-slate-200">
                     @if ($tenantTotal > 0)
-                        <x-progress-bar label="Entreprises actives" :value="$activeTenantTotal" :max="$tenantTotal" :value-text="App\Support\Ui\BusinessNumber::integer($activeTenantTotal).' sur '.App\Support\Ui\BusinessNumber::integer($tenantTotal)" tone="orange" />
+                        <x-progress-bar :label="__('Entreprises actives')" :value="$activeTenantTotal" :max="$tenantTotal" :value-text="App\Support\Ui\BusinessNumber::integer($activeTenantTotal).' sur '.App\Support\Ui\BusinessNumber::integer($tenantTotal)" tone="orange" />
                     @else
-                        <p class="text-sm text-slate-300">Aucune entreprise enregistrée.</p>
+                        <p class="text-sm text-slate-300">{{ __('Aucune entreprise enregistrée.') }}</p>
                     @endif
                     @if ($capabilitySlots > 0)
-                        <x-progress-bar label="Accès aux capacités" :value="$statistics['totals']['enabled_capabilities']" :max="$capabilitySlots" :value-text="App\Support\Ui\BusinessNumber::integer($statistics['totals']['enabled_capabilities']).' sur '.App\Support\Ui\BusinessNumber::integer($capabilitySlots)" />
+                        <x-progress-bar :label="__('Accès aux capacités')" :value="$statistics['totals']['enabled_capabilities']" :max="$capabilitySlots" :value-text="App\Support\Ui\BusinessNumber::integer($statistics['totals']['enabled_capabilities']).' sur '.App\Support\Ui\BusinessNumber::integer($capabilitySlots)" />
                     @else
-                        <p class="text-sm text-slate-300">Aucune capacité attribuable actuellement.</p>
+                        <p class="text-sm text-slate-300">{{ __('Aucune capacité attribuable actuellement.') }}</p>
                     @endif
                 </div>
             </div>
@@ -67,27 +67,27 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
-            <x-section-card title="Activité des analyses sur 30 jours" description="Nombre réel d’analyses demandées, regroupé par mois.">
-                <x-slot:actions><a href="{{ route('platform.statistics.index') }}" class="rf-button-link">Ouvrir les statistiques</a></x-slot:actions>
+            <x-section-card :title="__('Activité des analyses sur 30 jours')" :description="__('Nombre réel d’analyses demandées, regroupé par mois.')">
+                <x-slot:actions><a href="{{ route('platform.statistics.index') }}" class="rf-button-link">{{ __('Ouvrir les statistiques') }}</a></x-slot:actions>
                 <div class="rf-chart-surface h-72 overflow-hidden" data-chart-shell data-chart-ready="false" aria-busy="true">
-                    <x-skeleton variant="chart" label="Chargement du graphique d’activité…" class="absolute inset-3 z-10 motion-reduce:animate-none" data-chart-skeleton />
-                    <canvas class="opacity-0 transition-opacity duration-500 motion-reduce:transition-none" role="img" data-platform-chart="activity" aria-label="Évolution du nombre d’analyses sur les trente derniers jours" aria-describedby="platform-dashboard-activity-table"></canvas>
+                    <x-skeleton variant="chart" :label="__('Chargement du graphique d’activité…')" class="absolute inset-3 z-10 motion-reduce:animate-none" data-chart-skeleton />
+                    <canvas class="opacity-0 transition-opacity duration-500 motion-reduce:transition-none" role="img" data-platform-chart="activity" aria-label="{{ __('Évolution du nombre d’analyses sur les trente derniers jours') }}" aria-describedby="platform-dashboard-activity-table"></canvas>
                 </div>
-                <table id="platform-dashboard-activity-table" class="mt-5 w-full text-sm"><caption class="sr-only">Analyses mensuelles sur la période du tableau de bord</caption><thead><tr class="border-b border-slate-200"><th class="py-2 text-left" scope="col">Mois</th><th class="py-2 text-right" scope="col">Analyses</th></tr></thead><tbody>@foreach($statistics['monthly_runs'] as $month)<tr class="border-t border-slate-100"><th class="py-2.5 text-left font-medium" scope="row">{{ $month['label'] }}</th><td class="py-2.5 text-right font-semibold">{{ App\Support\Ui\BusinessNumber::integer($month['total']) }}</td></tr>@endforeach</tbody></table>
+                <table id="platform-dashboard-activity-table" class="mt-5 w-full text-sm"><caption class="sr-only">{{ __('Analyses mensuelles sur la période du tableau de bord') }}</caption><thead><tr class="border-b border-slate-200"><th class="py-2 text-start" scope="col">{{ __('Mois') }}</th><th class="py-2 text-end" scope="col">{{ __('Analyses') }}</th></tr></thead><tbody>@foreach($statistics['monthly_runs'] as $month)<tr class="border-t border-slate-100"><th class="py-2.5 text-start font-medium" scope="row">{{ $month['label'] }}</th><td class="py-2.5 text-end font-semibold">{{ App\Support\Ui\BusinessNumber::integer($month['total']) }}</td></tr>@endforeach</tbody></table>
             </x-section-card>
 
-            <x-section-card title="Entreprises par état" description="Répartition actuelle des entreprises clientes.">
+            <x-section-card :title="__('Entreprises par état')" :description="__('Répartition actuelle des entreprises clientes.')">
                 <div class="rf-chart-surface h-72 overflow-hidden" data-chart-shell data-chart-ready="false" aria-busy="true">
-                    <x-skeleton variant="chart" label="Chargement du graphique des entreprises…" class="absolute inset-3 z-10 motion-reduce:animate-none" data-chart-skeleton />
-                    <canvas class="opacity-0 transition-opacity duration-500 motion-reduce:transition-none" role="img" data-platform-chart="tenant-states" aria-label="Répartition des entreprises clientes par état" aria-describedby="platform-dashboard-tenant-table"></canvas>
+                    <x-skeleton variant="chart" :label="__('Chargement du graphique des entreprises…')" class="absolute inset-3 z-10 motion-reduce:animate-none" data-chart-skeleton />
+                    <canvas class="opacity-0 transition-opacity duration-500 motion-reduce:transition-none" role="img" data-platform-chart="tenant-states" aria-label="{{ __('Répartition des entreprises clientes par état') }}" aria-describedby="platform-dashboard-tenant-table"></canvas>
                 </div>
-                <table id="platform-dashboard-tenant-table" class="mt-5 w-full text-sm"><caption class="sr-only">Entreprises clientes par état</caption><tbody>@foreach($statistics['tenant_states'] as $state)<tr class="border-t border-slate-100"><th class="py-2.5 text-left font-medium" scope="row">{{ $state['label'] }}</th><td class="py-2.5 text-right font-semibold">{{ App\Support\Ui\BusinessNumber::integer($state['total']) }}</td></tr>@endforeach</tbody></table>
+                <table id="platform-dashboard-tenant-table" class="mt-5 w-full text-sm"><caption class="sr-only">{{ __('Entreprises clientes par état') }}</caption><tbody>@foreach($statistics['tenant_states'] as $state)<tr class="border-t border-slate-100"><th class="py-2.5 text-start font-medium" scope="row">{{ $state['label'] }}</th><td class="py-2.5 text-end font-semibold">{{ App\Support\Ui\BusinessNumber::integer($state['total']) }}</td></tr>@endforeach</tbody></table>
             </x-section-card>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <x-section-card title="Dernières entreprises clientes">
-                <x-slot:actions><a href="{{ route('platform.tenants.index') }}" class="rf-button-link">Toutes les entreprises</a></x-slot:actions>
+            <x-section-card :title="__('Dernières entreprises clientes')">
+                <x-slot:actions><a href="{{ route('platform.tenants.index') }}" class="rf-button-link">{{ __('Toutes les entreprises') }}</a></x-slot:actions>
                 <div class="space-y-2">
                     @forelse($latestTenants as $tenant)
                         <a href="{{ route('platform.tenants.show', $tenant) }}" class="group flex items-center justify-between gap-3 rounded-xl border border-transparent p-3 text-sm transition duration-150 hover:-translate-y-px hover:border-belkhir-space-border hover:bg-slate-50 motion-reduce:transform-none motion-reduce:transition-none">
@@ -95,29 +95,29 @@
                             <x-status-badge :value="$tenant->status" />
                         </a>
                     @empty
-                        <x-empty-state title="Aucune entreprise cliente" />
+                        <x-empty-state :title="__('Aucune entreprise cliente')" />
                     @endforelse
                 </div>
             </x-section-card>
 
-            <x-section-card title="Alertes d’administration" description="Éléments structurels à compléter pour garantir l’accès au service.">
+            <x-section-card :title="__('Alertes d’administration')" :description="__('Éléments structurels à compléter pour garantir l’accès au service.')">
                 <div class="space-y-3">
                     @forelse($alerts as $alert)
                         <a href="{{ route('platform.tenants.show', $alert['tenant']) }}" class="group flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm transition duration-150 hover:-translate-y-px hover:shadow-sm motion-reduce:transform-none motion-reduce:transition-none">
                             <span class="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-belkhir-space-warning"><x-icon name="warning" size="xs" /></span>
-                            <span><strong class="text-slate-950">{{ $alert['tenant']->name }}</strong><span class="mt-1 block leading-5 text-amber-900">@if($alert['missing_owner'])Aucun administrateur d’entreprise actif. @endif @if($alert['missing_agency'])Aucune agence active.@endif</span></span>
+                            <span><strong class="text-slate-950">{{ $alert['tenant']->name }}</strong><span class="mt-1 block leading-5 text-amber-900">@if($alert['missing_owner']){{ __('Aucun administrateur d’entreprise actif.') }} @endif @if($alert['missing_agency']){{ __('Aucune agence active.') }}@endif</span></span>
                         </a>
                     @empty
-                        <div class="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><x-icon name="success" /><span>Aucune alerte structurelle.</span></div>
+                        <div class="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><x-icon name="success" /><span>{{ __('Aucune alerte structurelle.') }}</span></div>
                     @endforelse
                 </div>
             </x-section-card>
         </div>
 
-        <x-section-card title="Incidents opérationnels" description="Signaux détectés par la supervision planifiée de la plateforme.">
-            <x-slot:actions><a href="{{ route('platform.operations.index') }}" class="rf-button-link">Ouvrir la supervision</a></x-slot:actions>
+        <x-section-card :title="__('Incidents opérationnels')" :description="__('Signaux détectés par la supervision planifiée de la plateforme.')">
+            <x-slot:actions><a href="{{ route('platform.operations.index') }}" class="rf-button-link">{{ __('Ouvrir la supervision') }}</a></x-slot:actions>
             @if(! $monitoringFresh)
-                <div role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-900">La collecte de supervision ne possède pas de heartbeat récent.</div>
+                <div role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-900">{{ __('La collecte de supervision ne possède pas de heartbeat récent.') }}</div>
             @endif
             <div class="grid gap-3 lg:grid-cols-2">
                 @forelse($operationalIncidents as $incident)
@@ -126,13 +126,13 @@
                         <span class="mt-2 block leading-5 text-slate-700">{{ $incident->summary }}</span>
                     </a>
                 @empty
-                    <div class="lg:col-span-2"><x-empty-state title="Aucun incident ouvert" description="Les derniers signaux enregistrés sont dans un état normal." /></div>
+                    <div class="lg:col-span-2"><x-empty-state :title="__('Aucun incident ouvert')" :description="__('Les derniers signaux enregistrés sont dans un état normal.')" /></div>
                 @endforelse
             </div>
         </x-section-card>
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <x-section-card title="Abonnements par état" description="Chaque barre est rapportée au nombre réel d’abonnements enregistrés.">
+            <x-section-card :title="__('Abonnements par état')" :description="__('Chaque barre est rapportée au nombre réel d’abonnements enregistrés.')">
                 <div class="space-y-4">
                     @forelse($statistics['subscription_states'] as $state)
                         @if ($subscriptionTotal > 0)
@@ -142,24 +142,24 @@
                         @endif
                     @empty
                     @endforelse
-                    @if ($subscriptionTotal === 0)<x-empty-state title="Aucun abonnement enregistré" />@endif
+                    @if ($subscriptionTotal === 0)<x-empty-state :title="__('Aucun abonnement enregistré')" />@endif
                 </div>
             </x-section-card>
 
-            <x-section-card title="Encaissements SaaS sur 30 jours" description="Paiements manuels et CMI, nets et séparés par devise ; aucune conversion implicite.">
+            <x-section-card :title="__('Encaissements SaaS sur 30 jours')" :description="__('Paiements manuels et CMI, nets et séparés par devise ; aucune conversion implicite.')">
                 <div class="mb-4 grid grid-cols-2 gap-3">
-                    <div class="rounded-xl bg-belkhir-space-blue/5 p-3"><p class="text-xs text-slate-500">Paiements</p><p class="mt-1 text-xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['recorded_count']) }}</p></div>
-                    <div class="rounded-xl bg-belkhir-space-orange-soft p-3"><p class="text-xs text-slate-600">Contrepassations</p><p class="mt-1 text-xl font-bold text-belkhir-space-orange">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['reversal_count']) }}</p></div>
+                    <div class="rounded-xl bg-belkhir-space-blue/5 p-3"><p class="text-xs text-slate-500">{{ __('Paiements') }}</p><p class="mt-1 text-xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['recorded_count']) }}</p></div>
+                    <div class="rounded-xl bg-belkhir-space-orange-soft p-3"><p class="text-xs text-slate-600">{{ __('Contrepassations') }}</p><p class="mt-1 text-xl font-bold text-belkhir-space-orange">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['reversal_count']) }}</p></div>
                 </div>
                 @forelse($statistics['payments']['currencies'] as $currency)
                     <div class="flex justify-between gap-4 border-t border-slate-100 py-3 text-sm"><span class="font-medium">{{ $currency['currency'] }}</span><strong>{{ App\Support\Ui\UiLabel::money($currency['amount'], $currency['currency']) }}</strong></div>
                 @empty
-                    <x-empty-state title="Aucun encaissement sur la période" />
+                    <x-empty-state :title="__('Aucun encaissement sur la période')" />
                 @endforelse
             </x-section-card>
         </div>
 
-        <x-section-card title="Accès rapides" description="Rejoignez directement les fonctions d’administration les plus utilisées.">
+        <x-section-card :title="__('Accès rapides')" :description="__('Rejoignez directement les fonctions d’administration les plus utilisées.')">
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ([
                     ['route' => 'platform.tenants.index', 'label' => 'Entreprises', 'icon' => 'building'],

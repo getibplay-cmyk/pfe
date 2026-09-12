@@ -27,7 +27,7 @@ class RecordDepositReceipt
     {
         $minor = DecimalMoney::toMinorUnits($amount);
         if ($minor === 0) {
-            throw ValidationException::withMessages(['amount' => 'Le montant doit être positif.']);
+            throw ValidationException::withMessages(['amount' => __('Le montant doit être positif.')]);
         }
 
         return DB::transaction(function () use ($contract, $minor, $idempotencyKey, $actorId, $paymentId) {
@@ -54,7 +54,7 @@ class RecordDepositReceipt
             if ($paymentId !== null) {
                 $payment = Payment::find($paymentId);
                 if (! $payment || $payment->agency_id !== $locked->agency_id || $payment->rental_contract_id !== $locked->id || $payment->customer_id !== $locked->customer_id || trim($payment->currency) !== trim($locked->currency)) {
-                    throw ValidationException::withMessages(['payment_id' => 'Le paiement de caution est incompatible avec ce contrat.']);
+                    throw ValidationException::withMessages(['payment_id' => __('Le paiement de caution est incompatible avec ce contrat.')]);
                 }
             }
 

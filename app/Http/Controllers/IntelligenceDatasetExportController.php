@@ -20,7 +20,7 @@ class IntelligenceDatasetExportController extends Controller
         CreateIntelligenceDatasetExport $create,
         DownloadIntelligenceDatasetSnapshot $download,
     ): StreamedResponse {
-        abort_unless($pseudonymizer->configured(), 503, 'Export Intelligence temporairement indisponible.');
+        abort_unless($pseudonymizer->configured(), 503, __('Export Intelligence temporairement indisponible.'));
 
         $filters = $request->validated();
         $criteria = $resolver->handle($filters);

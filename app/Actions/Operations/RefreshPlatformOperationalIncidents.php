@@ -74,7 +74,7 @@ final class RefreshPlatformOperationalIncidents
                         'resolved_at' => $observedAt,
                         'updated_at' => $observedAt,
                     ])->save();
-                    $this->recordEvent($incident, 'resolved', $incident->severity, 'Le contrôle est revenu à un état normal.', $observedAt);
+                    $this->recordEvent($incident, 'resolved', $incident->severity, __('Le contrôle est revenu à un état normal.'), $observedAt);
                     $summary['resolved']++;
                 }
             }
