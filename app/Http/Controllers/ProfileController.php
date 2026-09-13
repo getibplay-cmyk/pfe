@@ -31,7 +31,7 @@ class ProfileController extends Controller
         VerificationNotificationSender $verificationSender,
     ): RedirectResponse {
         $old = $request->user()->only(['name', 'email']);
-        $request->user()->fill($request->validated());
+        $request->user()->fill($request->safe()->only(['name', 'email']));
 
         $emailChanged = $request->user()->isDirty('email');
         if ($emailChanged) {

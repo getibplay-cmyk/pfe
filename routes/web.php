@@ -148,7 +148,8 @@ Route::get('/health', function () {
 
 Route::middleware(['auth', 'active.account'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->middleware('throttle:5,1,profile-update')->name('profile.update');
 });
 
 Route::middleware(['auth', 'tenant'])->group(function () {

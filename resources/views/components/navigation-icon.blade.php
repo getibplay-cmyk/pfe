@@ -12,7 +12,7 @@
         @case('vehicle-categories') <path d="M4 6h7v5H4V6Zm9 0h7v5h-7V6ZM4 13h7v5H4v-5Zm9 0h7v5h-7v-5Z" /> @break
         @case('vehicle-blocks') <path d="M7 11V8a5 5 0 0 1 10 0v3m-11 0h12v10H6V11Z" /> @break
         @case('maintenance') <path d="m14 6 4-4 4 4-4 4m-2-2L7 17m-4 4 4-4m-2-2 4 4" /> @break
-        @case('insurance') <path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" /> @break
+        @case('insurance') @case('account-security') <path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6l-7-3Zm-3 9 2 2 4-4" /> @break
         @case('reports') @case('platform-statistics') <path d="M5 20V10m7 10V4m7 16v-7" /> @break
         @case('agency-distances') <path d="M5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM7 5h4a3 3 0 0 1 3 3v8a3 3 0 0 0 3 3" /> @break
         @case('fleet-reallocation-planning') <path d="M4 7h14m-3-3 3 3-3 3M20 17H6m3-3-3 3 3 3" /> @break

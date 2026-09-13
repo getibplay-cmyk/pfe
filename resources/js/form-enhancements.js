@@ -276,9 +276,9 @@ export function setFormLoading(form, loading) {
 
     for (const button of form.querySelectorAll('[data-loading-submit]')) {
         if (loading) {
-            button.dataset.loadingWasDisabled = button.disabled ? 'true' : 'false';
+            button.dataset.loadingWasDisabled ??= button.disabled ? 'true' : 'false';
             button.disabled = true;
-        } else {
+        } else if (button.dataset.loadingWasDisabled !== undefined) {
             button.disabled = button.dataset.loadingWasDisabled === 'true';
             delete button.dataset.loadingWasDisabled;
         }
@@ -288,9 +288,9 @@ export function setFormLoading(form, loading) {
 
     for (const icon of form.querySelectorAll('[data-loading-icon]')) {
         if (loading) {
-            icon.dataset.loadingWasHidden = icon.hidden ? 'true' : 'false';
+            icon.dataset.loadingWasHidden ??= icon.hidden ? 'true' : 'false';
             icon.hidden = true;
-        } else {
+        } else if (icon.dataset.loadingWasHidden !== undefined) {
             icon.hidden = icon.dataset.loadingWasHidden === 'true';
             delete icon.dataset.loadingWasHidden;
         }

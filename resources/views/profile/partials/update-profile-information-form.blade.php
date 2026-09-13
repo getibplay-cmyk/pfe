@@ -13,5 +13,11 @@
         <x-text-input id="email" name="email" type="email" class="mt-1" :value="old('email', $user->email)" :invalid="$errors->has('email')" required autocomplete="username" aria-describedby="profile-email-error" />
         <x-field-error id="profile-email-error" class="mt-2" :messages="$errors->get('email')" />
     </div>
+    <div>
+        <x-input-label for="profile-current-password" :value="__('Mot de passe actuel')" />
+        <x-text-input id="profile-current-password" name="current_password" type="password" class="mt-1" autocomplete="current-password" :invalid="$errors->has('current_password')" aria-describedby="profile-password-help profile-password-error" />
+        <p id="profile-password-help" class="rf-field-help">{{ __('Nécessaire uniquement pour changer votre adresse e-mail. La nouvelle adresse devra être vérifiée.') }}</p>
+        <x-field-error id="profile-password-error" class="mt-2" :messages="$errors->get('current_password')" />
+    </div>
     <x-primary-button type="submit">{{ __('Enregistrer le profil') }}</x-primary-button>
 </form>

@@ -1,5 +1,5 @@
 @props(['sections', 'user'])
-<aside x-ref="mobilePanel" role="dialog" aria-modal="true" aria-label="{{ __('Menu principal') }}" class="relative flex h-full w-[min(88vw,22rem)] flex-col overflow-y-auto bg-belkhir-space-ink p-5 text-white shadow-2xl" @keydown="trapMenu($event)">
+<aside x-ref="mobilePanel" role="dialog" aria-modal="true" aria-label="{{ __('Menu principal') }}" class="rf-sidebar relative flex h-full max-h-dvh w-[min(88vw,22rem)] flex-col overflow-y-auto overscroll-contain bg-belkhir-space-ink p-5 text-white shadow-2xl" @keydown="trapMenu($event)">
     <div class="flex items-center justify-between gap-4">
         <x-brand-logo surface="dark" />
         <button type="button" @click="closeMenu()" class="rounded-lg p-2 text-slate-300 hover:bg-white/10 hover:text-white" aria-label="{{ __('Fermer le menu') }}">

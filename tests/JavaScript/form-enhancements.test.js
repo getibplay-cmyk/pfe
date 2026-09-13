@@ -308,6 +308,30 @@ test('l’état de chargement reste accessible et restaure le bouton', () => {
     assert.equal(form.label.textContent, 'Appliquer');
 });
 
+test('un retour arrière ne réactive pas un bouton désactivé par une règle métier', () => {
+    const form = fakeForm();
+    form.button.disabled = true;
+    form.icon.hidden = true;
+    setFormLoading(form, false);
+    assert.equal(form.button.disabled, true);
+    assert.equal(form.icon.hidden, true);
+    setFormLoading(form, true);
+    setFormLoading(form, true);
+    setFormLoading(form, false);
+    setFormLoading(form, false);
+    assert.equal(form.button.disabled, true);
+    assert.equal(form.icon.hidden, true);
+});
+
+test('deux appels de chargement conservent l’état initial du bouton', () => {
+    const form = fakeForm();
+    setFormLoading(form, true);
+    setFormLoading(form, true);
+    setFormLoading(form, false);
+    assert.equal(form.button.disabled, false);
+    assert.equal(form.icon.hidden, false);
+});
+
 test('le branchement formulaire bloque le double clic puis pageshow le réarme', () => {
     const form = fakeForm();
     const hostListeners = new Map();

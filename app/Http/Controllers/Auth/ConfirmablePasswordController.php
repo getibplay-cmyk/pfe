@@ -35,6 +35,11 @@ class ConfirmablePasswordController extends Controller
 
         $request->session()->put('auth.password_confirmed_at', time());
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $destination = config('security.mfa_require_admins') && ! $request->user()->mfa_confirmed_at
+            && ($request->user()->is_platform_admin || $request->user()->isTenantOwner())
+                ? 'security.index'
+                : ($request->user()->is_platform_admin ? 'platform.dashboard' : 'dashboard');
+
+        return redirect()->intended(route($destination, absolute: false));
     }
 }

@@ -1,5 +1,5 @@
 @props(['label', 'value', 'hint' => null, 'tone' => 'brand', 'icon' => null])
-<section {{ $attributes->class('rf-panel relative overflow-hidden p-5') }}>
+<section {{ $attributes->class('rf-panel rf-stat-card relative overflow-hidden p-5') }}>
     <span aria-hidden="true" @class(['absolute inset-y-0 start-0 w-1', 'bg-belkhir-space-blue' => $tone === 'brand', 'bg-belkhir-space-success' => $tone === 'success', 'bg-belkhir-space-orange' => $tone === 'warning', 'bg-belkhir-space-danger' => $tone === 'danger'])></span>
     <div class="flex items-start justify-between gap-3">
         <p class="text-sm font-medium text-slate-600">{{ $label }}</p>
@@ -9,6 +9,6 @@
             </span>
         @endif
     </div>
-    <p class="mt-2 text-3xl font-bold tracking-tight text-slate-950">{{ $value }}</p>
+    <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950">{{ $value }}</p>
     @if ($hint)<p class="mt-2 text-xs leading-5 text-slate-500">{{ $hint }}</p>@endif
 </section>
