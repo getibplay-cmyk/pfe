@@ -1,0 +1,7 @@
+data/
+*.zip
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+report/rendered*/
+
