@@ -35,6 +35,8 @@ class PlatformOperationsMonitoringTest extends TestCase
     public function test_monitor_opens_and_resolves_a_failed_queue_incident_with_append_only_events(): void
     {
         $this->assertSame(config('app.timezone'), DB::selectOne('SHOW TIME ZONE')->TimeZone);
+        $this->assertSame(config('app.timezone'), date_default_timezone_get());
+        $this->assertSame(config('app.timezone'), now()->timezoneName, 'PHP timezone database: '.timezone_version_get());
         $this->artisan('operations:scheduler-heartbeat')->assertSuccessful();
         $recordedAt = DB::table('operational_heartbeats')->where('component', config('operations.scheduler.heartbeat_component'))->value('last_succeeded_at');
         $this->assertEqualsWithDelta(now()->timestamp, CarbonImmutable::parse($recordedAt)->timestamp, 2, 'Heartbeat '.$recordedAt.'; now '.now()->toIso8601String());
