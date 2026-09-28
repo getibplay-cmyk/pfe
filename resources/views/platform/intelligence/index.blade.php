@@ -31,7 +31,7 @@
                             <form
                                 method="POST"
                                 action="{{ route('platform.intelligence.update', [$tenant, $item['capability']->value]) }}"
-                                x-belkhir-space-confirm
+                                x-sanad-pilot-confirm
                                 data-confirm-title="{{ $enabled ? __('Désactiver cette fonctionnalité') : __('Autoriser cette fonctionnalité') }}"
                                 data-confirm-resource="{{ $item['label'] }} · {{ $tenant->name }}"
                                 data-confirm-consequence="{{ $enabled ? __('Les nouveaux traitements seront désactivés pour cette entreprise.') : __('Cette fonctionnalité deviendra accessible à cette entreprise selon ses permissions métier.') }}"

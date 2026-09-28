@@ -50,9 +50,9 @@ class TenantOnboardingInvitationTest extends TestCase
             'expires_in_hours' => 72,
         ];
 
-        $this->post(route('platform.onboarding-invitations.store'), $payload)->assertRedirect(route('login'));
-        $this->actingAs($tenantUser)->post(route('platform.onboarding-invitations.store'), $payload)->assertForbidden();
-        $this->actingAs($platform)->post(route('platform.onboarding-invitations.store'), $payload)
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.onboarding-invitations.store'), $payload)->assertRedirect(route('login'));
+        $this->actingAs($tenantUser)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.onboarding-invitations.store'), $payload)->assertForbidden();
+        $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.onboarding-invitations.store'), $payload)
             ->assertRedirect(route('platform.onboarding-invitations.index'));
 
         $invitation = TenantOnboardingInvitation::query()->sole();
@@ -134,7 +134,7 @@ class TenantOnboardingInvitationTest extends TestCase
         $platform = $this->platformAdmin();
         $plan = $this->plan($platform);
 
-        $this->actingAs($platform)->post(route('platform.onboarding-invitations.store'), [
+        $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.onboarding-invitations.store'), [
             'email' => 'never.logged@example.test',
             'saas_plan_id' => $plan->getKey(),
             'trial_days' => 14,
@@ -164,7 +164,7 @@ class TenantOnboardingInvitationTest extends TestCase
         $platform = $this->platformAdmin();
         $plan = $this->plan($platform);
 
-        $this->actingAs($platform)->post(route('platform.onboarding-invitations.store'), [
+        $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.onboarding-invitations.store'), [
             'email' => 'never.failed-over-to-log@example.test',
             'saas_plan_id' => $plan->getKey(),
             'trial_days' => 14,

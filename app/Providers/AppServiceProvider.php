@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\RequireRecentPassword;
 use App\Models\Customer;
 use App\Models\DamageReport;
 use App\Models\Driver;
@@ -13,16 +14,32 @@ use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Models\VehicleInspection;
+use App\Rules\SafePassword;
+use App\Support\Auth\AuthenticationLimits;
 use App\Support\Intelligence\PredictionScoringService;
 use App\Support\Intelligence\RuleBasedScoringService;
+use App\Support\Security\ClamAvScanner;
+use App\Support\Security\MalwareScanner;
+use App\Support\Security\SecurityEventLogger;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Testing\TestDatabaseGuard;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobExceptionOccurred;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Queue\Jobs\SyncJob;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -35,9 +52,18 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         config(['app.name' => config('brand.name')]);
+        if (in_array(config('mail.from.name'), ['RentFleet', 'BELKHIR SPACE', 'Example'], true)) {
+            config(['mail.from.name' => config('brand.name')]);
+        }
 
         $this->app->singleton(TenantContext::class);
         $this->app->bind(PredictionScoringService::class, RuleBasedScoringService::class);
+        $this->app->bind(MalwareScanner::class, ClamAvScanner::class);
+        $this->app->singleton(RequireRecentPassword::class, fn ($app) => new RequireRecentPassword(
+            $app[ResponseFactory::class],
+            $app[UrlGenerator::class],
+            (int) config('auth.password_timeout', 900),
+        ));
 
         $connections = config('database.connections');
         unset($connections['sqlite']);
@@ -49,7 +75,28 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Password::defaults(fn () => Password::min(12)->mixedCase()->numbers());
+        Password::defaults(fn () => Password::min(15)->max(128)->rules([new SafePassword]));
+
+        foreach ([JobProcessing::class, JobProcessed::class,
+            JobExceptionOccurred::class] as $event) {
+            Event::listen($event, function ($event): void {
+                if ($event->job instanceof SyncJob) {
+                    return;
+                }
+                app(TenantContext::class)->clear();
+                Auth::forgetGuards();
+                Log::withoutContext();
+            });
+        }
+        Event::listen(Failed::class, fn ($event) => SecurityEventLogger::record('auth.login', 'failed', $event->user));
+        Event::listen(Login::class, fn ($event) => SecurityEventLogger::record('auth.login', 'password_verified', $event->user));
+        Event::listen(Lockout::class, fn () => SecurityEventLogger::record('auth.login', 'limited'));
+
+        RateLimiter::for('password-recovery', fn (Request $request) => [
+            Limit::perMinute(30)->by('recovery-global'),
+            Limit::perMinute(5)->by('recovery-ip:'.hash('sha256', (string) $request->ip())),
+            Limit::perHour(5)->by('recovery-account:'.AuthenticationLimits::identity($request)),
+        ]);
 
         RateLimiter::for('reservation-demand-forecast', function (Request $request): array {
             $user = $request->user();

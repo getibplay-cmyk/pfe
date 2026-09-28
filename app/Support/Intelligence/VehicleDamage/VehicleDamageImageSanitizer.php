@@ -3,6 +3,8 @@
 namespace App\Support\Intelligence\VehicleDamage;
 
 use App\Exceptions\VehicleDamageRuntimeUnavailableException;
+use App\Support\Security\RestrictedProcessEnvironment;
+use App\Support\Security\UploadInspection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Process;
 use Throwable;
@@ -16,6 +18,7 @@ class VehicleDamageImageSanitizer
     public function sanitize(UploadedFile $image): SanitizedVehicleDamageImage
     {
         $source = $image->getRealPath();
+        app(UploadInspection::class)->inspect((string) $source, 'image');
         $sourceMime = (string) $image->getMimeType();
         if (! in_array($sourceMime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
             throw new VehicleDamageRuntimeUnavailableException;
@@ -167,7 +170,7 @@ class VehicleDamageImageSanitizer
 
     private function closedEnvironment(): array
     {
-        return [
+        return RestrictedProcessEnvironment::make([
             'PYTHONDONTWRITEBYTECODE' => '1',
             'APP_KEY' => false,
             'DATABASE_URL' => false,
@@ -185,6 +188,6 @@ class VehicleDamageImageSanitizer
             'OPENAI_API_KEY' => false,
             'STRIPE_SECRET' => false,
             'PGPASSWORD' => false,
-        ];
+        ]);
     }
 }

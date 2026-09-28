@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\Security\RestrictedProcessEnvironment;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -145,7 +146,7 @@ final class ExecuteFleetReallocationRun
             $result = Process::path(base_path())
                 ->timeout($timeout)
                 ->idleTimeout(min(10, $timeout))
-                ->env([
+                ->env(RestrictedProcessEnvironment::make([
                     'PYTHONDONTWRITEBYTECODE' => '1',
                     'PYTHONHASHSEED' => '20260814',
                     'APP_KEY' => false,
@@ -155,7 +156,7 @@ final class ExecuteFleetReallocationRun
                     'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
                     'DEMO_PASSWORD' => false,
                     'PGPASSWORD' => false,
-                ])
+                ]))
                 ->input($requestJson)
                 ->run([$binary, $script]);
         } catch (ProcessTimedOutException) {

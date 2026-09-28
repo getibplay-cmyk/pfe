@@ -14,32 +14,32 @@
 
 @layer base {
     :root {
-        --belkhir-space-ink: theme('colors.belkhir.space.ink');
-        --belkhir-space-navy: theme('colors.belkhir.space.navy');
-        --belkhir-space-blue: theme('colors.belkhir.space.blue');
-        --belkhir-space-blue-hover: theme('colors.belkhir.space.blue-hover');
-        --belkhir-space-orange: theme('colors.belkhir.space.orange');
-        --belkhir-space-orange-soft: theme('colors.belkhir.space.orange-soft');
-        --belkhir-space-canvas: theme('colors.belkhir.space.canvas');
-        --belkhir-space-surface: theme('colors.belkhir.space.surface');
-        --belkhir-space-text: theme('colors.belkhir.space.text');
-        --belkhir-space-muted: theme('colors.belkhir.space.muted');
-        --belkhir-space-border: theme('colors.belkhir.space.border');
-        --belkhir-space-success: theme('colors.belkhir.space.success');
-        --belkhir-space-warning: theme('colors.belkhir.space.warning');
-        --belkhir-space-danger: theme('colors.belkhir.space.danger');
-        --belkhir-space-information: theme('colors.belkhir.space.information');
+        --sanad-pilot-ink: theme('colors.sanad.pilot.ink');
+        --sanad-pilot-navy: theme('colors.sanad.pilot.navy');
+        --sanad-pilot-blue: theme('colors.sanad.pilot.blue');
+        --sanad-pilot-blue-hover: theme('colors.sanad.pilot.blue-hover');
+        --sanad-pilot-orange: theme('colors.sanad.pilot.orange');
+        --sanad-pilot-orange-soft: theme('colors.sanad.pilot.orange-soft');
+        --sanad-pilot-canvas: theme('colors.sanad.pilot.canvas');
+        --sanad-pilot-surface: theme('colors.sanad.pilot.surface');
+        --sanad-pilot-text: theme('colors.sanad.pilot.text');
+        --sanad-pilot-muted: theme('colors.sanad.pilot.muted');
+        --sanad-pilot-border: theme('colors.sanad.pilot.border');
+        --sanad-pilot-success: theme('colors.sanad.pilot.success');
+        --sanad-pilot-warning: theme('colors.sanad.pilot.warning');
+        --sanad-pilot-danger: theme('colors.sanad.pilot.danger');
+        --sanad-pilot-information: theme('colors.sanad.pilot.information');
     }
 
     [x-cloak] { display: none !important; }
 
     html {
-        @apply scroll-smooth bg-belkhir-space-canvas;
+        @apply scroll-smooth bg-sanad-pilot-canvas;
         overflow-x: clip;
     }
 
     body {
-        @apply min-w-0 bg-belkhir-space-canvas text-belkhir-space-text;
+        @apply min-w-0 bg-sanad-pilot-canvas text-sanad-pilot-text;
         overflow-x: clip;
         -webkit-font-smoothing: antialiased;
     }
@@ -48,21 +48,21 @@
     ::selection { @apply bg-brand-100 text-brand-900; }
 
     :focus-visible {
-        @apply outline-none ring-2 ring-belkhir-space-blue ring-offset-2;
+        @apply outline-none ring-2 ring-sanad-pilot-blue ring-offset-2;
     }
 
     input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
     select,
     textarea {
-        @apply min-h-11 rounded-lg border-belkhir-space-border bg-belkhir-space-surface text-belkhir-space-text shadow-sm placeholder:text-belkhir-space-muted focus:border-belkhir-space-blue focus:ring-belkhir-space-blue;
+        @apply min-h-11 rounded-lg border-sanad-pilot-border bg-sanad-pilot-surface text-sanad-pilot-text shadow-sm placeholder:text-sanad-pilot-muted focus:border-sanad-pilot-blue focus:ring-sanad-pilot-blue;
     }
 
     input[type='checkbox'], input[type='radio'] {
-        @apply border-belkhir-space-border text-belkhir-space-blue focus:ring-belkhir-space-blue;
+        @apply border-sanad-pilot-border text-sanad-pilot-blue focus:ring-sanad-pilot-blue;
     }
 
     label {
-        @apply text-belkhir-space-text;
+        @apply text-sanad-pilot-text;
     }
 
     button, [role='button'] {
@@ -83,14 +83,14 @@
 
 @layer components {
     .rf-skip-link {
-        @apply fixed start-4 top-3 z-[100] -translate-y-20 rounded-lg bg-belkhir-space-surface px-4 py-2 text-sm font-semibold text-belkhir-space-blue shadow-lg transition focus:translate-y-0;
+        @apply fixed start-4 top-3 z-[100] -translate-y-20 rounded-lg bg-sanad-pilot-surface px-4 py-2 text-sm font-semibold text-sanad-pilot-blue shadow-lg transition focus:translate-y-0;
     }
 
     .rf-page { @apply mx-auto w-full max-w-7xl space-y-6; }
-    .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-belkhir-space-border bg-belkhir-space-surface shadow-panel; }
+    .rf-panel { @apply min-w-0 max-w-full rounded-2xl border border-sanad-pilot-border bg-sanad-pilot-surface shadow-panel; }
     .rf-panel-body { @apply p-4 sm:p-6; }
     .rf-panel-heading { @apply border-b border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6; }
-    .rf-page-heading { @apply rounded-2xl border border-belkhir-space-border bg-white p-5 shadow-sm sm:p-6; }
+    .rf-page-heading { @apply rounded-2xl border border-sanad-pilot-border bg-white p-5 shadow-sm sm:p-6; }
     .rf-sidebar { @apply border-e border-white/10; scrollbar-width: thin; scrollbar-color: #475569 transparent; }
     .rf-topbar { box-shadow: 0 4px 18px rgb(15 23 42 / 0.035); }
     .rf-stat-card { @apply flex flex-col; }
@@ -104,17 +104,17 @@
     .rf-button {
         @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:transform-none;
     }
-    .rf-button-primary { @apply rf-button border-belkhir-space-blue bg-belkhir-space-blue text-white hover:border-belkhir-space-blue-hover hover:bg-belkhir-space-blue-hover; }
-    .rf-button-secondary { @apply rf-button border-belkhir-space-border bg-belkhir-space-surface text-belkhir-space-text shadow-sm hover:border-slate-400 hover:bg-slate-50; }
-    .rf-button-quiet { @apply rf-button border-transparent bg-transparent text-belkhir-space-blue hover:bg-brand-50 hover:text-belkhir-space-blue-hover; }
-    .rf-button-danger { @apply rf-button border-belkhir-space-danger bg-belkhir-space-danger text-white hover:brightness-90; }
-    .rf-button-link { @apply inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-semibold text-belkhir-space-blue hover:bg-brand-50 hover:text-belkhir-space-blue-hover; }
+    .rf-button-primary { @apply rf-button border-sanad-pilot-blue bg-sanad-pilot-blue text-white hover:border-sanad-pilot-blue-hover hover:bg-sanad-pilot-blue-hover; }
+    .rf-button-secondary { @apply rf-button border-sanad-pilot-border bg-sanad-pilot-surface text-sanad-pilot-text shadow-sm hover:border-slate-400 hover:bg-slate-50; }
+    .rf-button-quiet { @apply rf-button border-transparent bg-transparent text-sanad-pilot-blue hover:bg-brand-50 hover:text-sanad-pilot-blue-hover; }
+    .rf-button-danger { @apply rf-button border-sanad-pilot-danger bg-sanad-pilot-danger text-white hover:brightness-90; }
+    .rf-button-link { @apply inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-semibold text-sanad-pilot-blue hover:bg-brand-50 hover:text-sanad-pilot-blue-hover; }
 
-    .rf-field-label { @apply block text-sm font-semibold text-belkhir-space-text; }
-    .rf-field-help { @apply mt-1 text-xs leading-5 text-belkhir-space-muted; }
+    .rf-field-label { @apply block text-sm font-semibold text-sanad-pilot-text; }
+    .rf-field-help { @apply mt-1 text-xs leading-5 text-sanad-pilot-muted; }
     .rf-filter-grid { @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4; }
-    .rf-filter-panel { @apply rounded-2xl border border-belkhir-space-border bg-white p-4 shadow-sm sm:p-5; }
-    .rf-filter-tag { @apply inline-flex min-h-8 items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-belkhir-space-blue transition hover:border-brand-300 hover:bg-brand-100; }
+    .rf-filter-panel { @apply rounded-2xl border border-sanad-pilot-border bg-white p-4 shadow-sm sm:p-5; }
+    .rf-filter-tag { @apply inline-flex min-h-8 items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-sanad-pilot-blue transition hover:border-brand-300 hover:bg-brand-100; }
     .rf-spinner { @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none; }
     .rf-interactive-card { @apply transition duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transform-none motion-reduce:transition-none; }
 
@@ -122,20 +122,20 @@
         @apply pointer-events-none fixed inset-x-0 top-0 z-[110] h-0.5 overflow-hidden bg-brand-100;
     }
     .rf-page-progress-bar {
-        @apply relative block h-full w-2/5 bg-belkhir-space-blue;
-        animation: belkhir-space-page-progress 1.05s ease-in-out infinite;
+        @apply relative block h-full w-2/5 bg-sanad-pilot-blue;
+        animation: sanad-pilot-page-progress 1.05s ease-in-out infinite;
         transform-origin: left center;
     }
     .rf-page-progress-bar::after {
         content: '';
-        @apply absolute inset-y-0 end-0 w-1/4 bg-belkhir-space-orange;
+        @apply absolute inset-y-0 end-0 w-1/4 bg-sanad-pilot-orange;
     }
     .rf-page-progress[data-reduced-motion='true'] .rf-page-progress-bar {
         animation: none;
         width: 100%;
     }
-    .rf-loading-overlay { @apply fixed inset-0 z-[105] grid place-items-center bg-belkhir-space-ink/45 p-5 backdrop-blur-sm; }
-    .rf-loading-overlay-card { @apply flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-belkhir-space-border bg-white px-6 py-8 text-center shadow-2xl; }
+    .rf-loading-overlay { @apply fixed inset-0 z-[105] grid place-items-center bg-sanad-pilot-ink/45 p-5 backdrop-blur-sm; }
+    .rf-loading-overlay-card { @apply flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-sanad-pilot-border bg-white px-6 py-8 text-center shadow-2xl; }
     .rf-spinner[hidden], .rf-page-progress[hidden], .rf-loading-overlay[hidden] { display: none !important; }
 
     [data-loading-form][aria-busy='true'] { @apply cursor-wait; }
@@ -145,13 +145,13 @@
         @apply max-w-full overflow-x-auto overscroll-x-contain;
         scrollbar-gutter: stable;
     }
-    .rf-table-scroll > table { @apply min-w-full divide-y divide-belkhir-space-border text-sm; }
-    .rf-table-scroll thead { @apply bg-belkhir-space-canvas text-start text-xs font-semibold uppercase tracking-wide text-belkhir-space-muted; }
+    .rf-table-scroll > table { @apply min-w-full divide-y divide-sanad-pilot-border text-sm; }
+    .rf-table-scroll thead { @apply bg-sanad-pilot-canvas text-start text-xs font-semibold uppercase tracking-wide text-sanad-pilot-muted; }
     .rf-table-scroll th { @apply whitespace-nowrap px-4 py-3; }
-    .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-belkhir-space-surface; }
+    .rf-table-scroll tbody { @apply divide-y divide-slate-100 bg-sanad-pilot-surface; }
     .rf-table-scroll tbody tr { @apply transition-colors hover:bg-brand-50/40 focus-within:bg-brand-50/60; }
     .rf-table-scroll td { @apply px-4 py-3 align-top text-slate-700; }
-    .rf-mobile-scroll-hint { @apply border-b border-belkhir-space-border bg-belkhir-space-canvas px-4 py-2 text-xs text-belkhir-space-muted sm:hidden; }
+    .rf-mobile-scroll-hint { @apply border-b border-sanad-pilot-border bg-sanad-pilot-canvas px-4 py-2 text-xs text-sanad-pilot-muted sm:hidden; }
     .rf-kbd { @apply rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-[0.7rem] text-slate-600; }
 
     @media (pointer: coarse) {
@@ -164,20 +164,20 @@
     main section[class~='rounded-xl'][class~='bg-white'][class~='shadow'],
     main article[class~='rounded-xl'][class~='bg-white'][class~='shadow'],
     main div[class~='rounded-xl'][class~='bg-white'][class~='shadow'] {
-        @apply border border-belkhir-space-border shadow-panel;
+        @apply border border-sanad-pilot-border shadow-panel;
     }
 
-    .rf-chart-surface { @apply relative min-h-72 rounded-xl border border-belkhir-space-border bg-belkhir-space-surface p-3; }
+    .rf-chart-surface { @apply relative min-h-72 rounded-xl border border-sanad-pilot-border bg-sanad-pilot-surface p-3; }
 
-    main a[class*='text-blue-'], main a[class*='text-indigo-'] { @apply text-belkhir-space-blue hover:text-belkhir-space-blue-hover; }
+    main a[class*='text-blue-'], main a[class*='text-indigo-'] { @apply text-sanad-pilot-blue hover:text-sanad-pilot-blue-hover; }
 
     main button[class*='bg-slate-8'], main button[class*='bg-slate-9'],
     main a[class*='bg-slate-8'], main a[class*='bg-slate-9'] {
-        @apply border-belkhir-space-blue bg-belkhir-space-blue text-white hover:bg-belkhir-space-blue-hover;
+        @apply border-sanad-pilot-blue bg-sanad-pilot-blue text-white hover:bg-sanad-pilot-blue-hover;
     }
 }
 
-@keyframes belkhir-space-page-progress {
+@keyframes sanad-pilot-page-progress {
     0% { transform: translateX(-115%) scaleX(0.55); }
     50% { transform: translateX(115%) scaleX(1); }
     100% { transform: translateX(300%) scaleX(0.55); }

@@ -16,6 +16,7 @@ use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalyRuntimeReadine
 use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalySnapshotInspector;
 use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\PlatformBilling\TenantPlanAccess;
+use App\Support\Security\IntelligenceCapacity;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,7 @@ final class QueueRentalUsageAnomalyRun
         $this->snapshotInspector->inspect($export);
 
         $run = DB::transaction(function () use ($export, $actor): RentalUsageAnomalyRun {
+
             DB::selectOne(
                 'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
                 ['rental-usage-anomaly|'.$export->tenant_id.'|'.$export->id],
@@ -59,6 +61,7 @@ final class QueueRentalUsageAnomalyRun
             }
 
             $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::RentalUsageAnomaly);
+            app(IntelligenceCapacity::class)->assertAvailable();
             $run = RentalUsageAnomalyRun::create([
                 'agency_id' => $lockedExport->agency_id,
                 'run_id' => (string) Str::uuid(),

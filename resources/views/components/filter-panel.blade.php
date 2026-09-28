@@ -14,14 +14,14 @@
 >
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-3">
-            <span aria-hidden="true" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-belkhir-space-blue">
+            <span aria-hidden="true" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-sanad-pilot-blue">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5" focusable="false">
                     <path d="M4 5h16M7 12h10m-6 7h2" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
             </span>
             <div class="min-w-0">
-                <h2 class="truncate text-sm font-bold text-belkhir-space-text">{{ $title }}</h2>
-                <p class="mt-0.5 text-xs text-belkhir-space-muted">
+                <h2 class="truncate text-sm font-bold text-sanad-pilot-text">{{ $title }}</h2>
+                <p class="mt-0.5 text-xs text-sanad-pilot-muted">
                     @if ((int) $activeCount > 0)
                         {{ App\Support\Ui\BusinessNumber::count($activeCount, 'filtre') }} {{ (int) $activeCount > 1 ? __('actifs') : __('actif') }}
                     @else
@@ -33,7 +33,7 @@
         </div>
 
         <div class="flex items-center gap-2">
-            @if (isset($aside))<div class="hidden text-xs text-belkhir-space-muted sm:block">{{ $aside }}</div>@endif
+            @if (isset($aside))<div class="hidden text-xs text-sanad-pilot-muted sm:block">{{ $aside }}</div>@endif
             @if ($collapsible)
                 <button
                     type="button"
@@ -43,7 +43,7 @@
                     aria-controls="{{ $filterBodyId }}"
                 >
                     <span x-text="filtersOpen ? 'Masquer' : 'Filtres'">{{ __('Filtres') }}</span>
-                    @if ((int) $activeCount > 0)<span class="rounded-md bg-belkhir-space-blue px-1.5 py-0.5 text-xs text-white">{{ $activeCount }}</span>@endif
+                    @if ((int) $activeCount > 0)<span class="rounded-md bg-sanad-pilot-blue px-1.5 py-0.5 text-xs text-white">{{ $activeCount }}</span>@endif
                 </button>
             @endif
         </div>

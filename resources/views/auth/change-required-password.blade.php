@@ -6,8 +6,8 @@
         :description="__('Le mot de passe temporaire doit être remplacé avant d’accéder aux fonctions ').config('brand.name').'.'"
     />
 
-    <div class="mt-5 rounded-xl border border-belkhir-space-border bg-belkhir-space-canvas px-4 py-3 text-xs leading-5 text-belkhir-space-muted">
-        {{ __('Utilisez au moins 12 caractères avec majuscules, minuscules et chiffres.') }}
+    <div class="mt-5 rounded-xl border border-sanad-pilot-border bg-sanad-pilot-canvas px-4 py-3 text-xs leading-5 text-sanad-pilot-muted">
+        {{ __('Utilisez une phrase de passe unique d’au moins 15 caractères.') }}
     </div>
 
     <form method="POST" action="{{ route('password.change-required.update') }}" class="mt-7 space-y-5" data-loading-form>

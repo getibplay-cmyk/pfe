@@ -17,14 +17,14 @@
                     @php($isCmiPayment = $payment->payment_method->value === 'cmi')
                     <details class="inline-block text-start">
                         <summary class="rf-button-secondary cursor-pointer"><x-icon name="warning" size="xs" />{{ $isCmiPayment ? __('Enregistrer le remboursement') : __('Contrepasser') }}</summary>
-                        <form method="POST" action="{{ route('platform.saas-payments.reverse', $payment) }}" class="mt-2 w-80 space-y-3 rounded-xl border bg-white p-4 shadow-xl" x-belkhir-space-confirm data-confirm-title="{{ $isCmiPayment ? __('Enregistrer le remboursement CMI') : __('Contrepasser le paiement SaaS') }}" data-confirm-resource="{{ __('Paiement SaaS sélectionné') }}" data-confirm-consequence="{{ __('Une écriture de correction définitive sera créée ; le paiement d’origine restera conservé.') }}" data-confirm-label="{{ __('Enregistrer la contrepassation') }}" data-loading-form>
+                        <form method="POST" action="{{ route('platform.saas-payments.reverse', $payment) }}" class="mt-2 w-80 space-y-3 rounded-xl border bg-white p-4 shadow-xl" x-sanad-pilot-confirm data-confirm-title="{{ $isCmiPayment ? __('Enregistrer le remboursement CMI') : __('Contrepasser le paiement SaaS') }}" data-confirm-resource="{{ __('Paiement SaaS sélectionné') }}" data-confirm-consequence="{{ __('Une écriture de correction définitive sera créée ; le paiement d’origine restera conservé.') }}" data-confirm-label="{{ __('Enregistrer la contrepassation') }}" data-loading-form>
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ (string) Illuminate\Support\Str::uuid() }}">
                             @if($payment->saas_invoice_id)
                                 <p class="text-xs text-amber-950">{{ __('Cette correction rouvre la dette de renouvellement ou annule la facture de changement et peut suspendre le service. L’ancien abonnement ne sera pas réactivé automatiquement.') }}</p>
                             @endif
                             @if($isCmiPayment)
-                                <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">{{ __('Effectuez d’abord le remboursement dans le portail marchand CMI. BELKHIR SPACE enregistre ensuite sa référence sans appeler ni simuler la passerelle.') }}</div>
+                                <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">{{ __('Effectuez d’abord le remboursement dans le portail marchand CMI. SANAD PILOT enregistre ensuite sa référence sans appeler ni simuler la passerelle.') }}</div>
                                 <label class="flex items-start gap-2 text-sm text-slate-700">
                                     <input type="checkbox" name="cmi_refund_confirmed" value="1" required class="mt-1 rounded border-slate-300 text-blue-700 focus:ring-blue-600">
                                     <span>{{ __('Je confirme que le remboursement a été accepté dans le portail CMI.') }}</span>

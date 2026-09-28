@@ -1,0 +1,72 @@
+rules:
+  - id: php-runtime-code-evaluation
+    languages: [php]
+    severity: ERROR
+    message: Runtime code evaluation is not allowed in the application.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: assert($CODE)
+  - id: php-untrusted-object-deserialization
+    languages: [php]
+    severity: ERROR
+    message: Decode a bounded schema instead of deserializing application input.
+    pattern: unserialize(...)
+  - id: php-input-in-raw-sql
+    languages: [php]
+    severity: ERROR
+    message: Request input must use SQL bindings or an explicit identifier allowlist.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ->input(...)
+      - pattern: $REQ->query(...)
+      - pattern: $_GET[$KEY]
+      - pattern: $_POST[$KEY]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: DB::select($SQL, ...)
+              - pattern: DB::statement($SQL, ...)
+              - pattern: DB::unprepared($SQL)
+              - pattern: DB::raw($SQL)
+              - pattern: $QUERY->whereRaw($SQL, ...)
+              - pattern: $QUERY->orderByRaw($SQL, ...)
+          - focus-metavariable: $SQL
+  - id: php-disabled-tls-validation
+    languages: [php]
+    severity: ERROR
+    message: Verify TLS certificates and hostnames for outbound connections.
+    pattern-either:
+      - pattern: $HTTP->withoutVerifying(...)
+      - pattern: curl_setopt($CH, CURLOPT_SSL_VERIFYPEER, false)
+  - id: python-shell-process
+    languages: [python]
+    severity: ERROR
+    message: Use a bounded argument array with shell disabled.
+    pattern-either:
+      - pattern: subprocess.run(..., shell=True, ...)
+      - pattern: subprocess.Popen(..., shell=True, ...)
+      - pattern: os.system(...)
+  - id: python-disabled-tls-validation
+    languages: [python]
+    severity: ERROR
+    message: Do not disable TLS verification.
+    pattern-either:
+      - pattern: requests.get(..., verify=False, ...)
+      - pattern: requests.post(..., verify=False, ...)
+  - id: javascript-runtime-evaluation
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: User-authored JavaScript must not evaluate arbitrary source.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: javascript-response-to-innerhtml
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Render response data as text or through an explicitly reviewed sanitizer.
+    mode: taint
+    pattern-sources:
+      - pattern: $RESPONSE.data
+      - pattern: await $RESPONSE.text()
+    pattern-sinks:
+      - pattern: $ELEMENT.innerHTML = $VALUE

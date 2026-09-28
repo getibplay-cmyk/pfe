@@ -135,7 +135,7 @@
                     @if($damageAssistant['ready'])
                         <div class="mt-4">
                             <x-input-label for="return-damage-photos" :value="__('Photos du véhicule')" />
-                            <div class="mt-2 rounded-2xl border-2 border-dashed border-belkhir-space-border bg-belkhir-space-canvas transition hover:border-slate-400">
+                            <div class="mt-2 rounded-2xl border-2 border-dashed border-sanad-pilot-border bg-sanad-pilot-canvas transition hover:border-slate-400">
                                 <input
                                     id="return-damage-photos"
                                     type="file"
@@ -144,10 +144,10 @@
                                     class="peer sr-only"
                                     x-on:change="addSelectedFiles($event.target.files); $event.target.value = ''"
                                 >
-                                <label for="return-damage-photos" class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl px-5 py-5 text-center peer-focus-visible:ring-2 peer-focus-visible:ring-belkhir-space-blue peer-focus-visible:ring-offset-2">
-                                    <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-belkhir-space-orange-soft text-belkhir-space-orange"><x-icon name="image" size="lg" /></span>
-                                    <span class="mt-3 text-sm font-semibold text-belkhir-space-blue">{{ __('Choisir des photos') }}</span>
-                                    <span class="mt-1 text-xs text-belkhir-space-muted">{{ __('JPEG, PNG ou WebP · sélection multiple possible') }}</span>
+                                <label for="return-damage-photos" class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl px-5 py-5 text-center peer-focus-visible:ring-2 peer-focus-visible:ring-sanad-pilot-blue peer-focus-visible:ring-offset-2">
+                                    <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-sanad-pilot-orange-soft text-sanad-pilot-orange"><x-icon name="image" size="lg" /></span>
+                                    <span class="mt-3 text-sm font-semibold text-sanad-pilot-blue">{{ __('Choisir des photos') }}</span>
+                                    <span class="mt-1 text-xs text-sanad-pilot-muted">{{ __('JPEG, PNG ou WebP · sélection multiple possible') }}</span>
                                 </label>
                             </div>
                             <p class="mt-1 text-xs text-slate-600"><span x-text="photos.length"></span> {{ __('photo(s) sélectionnée(s). Chaque photo garde son propre résultat ; l’inspection manuelle reste disponible.') }}</p>
@@ -157,7 +157,7 @@
                             <template x-for="photo in photos" :key="photo.id">
                                 <article class="rounded-xl border border-slate-200 bg-white p-3">
                                     <div class="flex items-start gap-3">
-                                        <div class="aspect-[4/3] w-32 shrink-0 overflow-hidden rounded-xl border border-belkhir-space-border bg-slate-100">
+                                        <div class="aspect-[4/3] w-32 shrink-0 overflow-hidden rounded-xl border border-sanad-pilot-border bg-slate-100">
                                             <img x-cloak x-show="photo.preview" :src="photo.preview" alt="{{ __('Photo sélectionnée pour l’inspection de retour') }}" class="h-full w-full object-contain">
                                         </div>
                                         <div class="min-w-0 flex-1">
@@ -258,7 +258,7 @@
                 <div class="grid gap-4 lg:grid-cols-2">
                     @foreach($contract->inspections as $inspection)
                         @can('manage', $inspection)
-                            <form method="POST" enctype="multipart/form-data" action="{{ route('inspections.documents.store', $inspection) }}" class="rounded-2xl border border-belkhir-space-border p-4" data-loading-form>
+                            <form method="POST" enctype="multipart/form-data" action="{{ route('inspections.documents.store', $inspection) }}" class="rounded-2xl border border-sanad-pilot-border p-4" data-loading-form>
                                 @csrf
                                 <input type="hidden" name="document_type" value="inspection_photo">
                                 <input type="hidden" name="title" value="Photo inspection {{ App\Support\Ui\UiLabel::get($inspection->inspection_type) }}">
@@ -270,7 +270,7 @@
                     @endforeach
                     @foreach($contract->damages as $damage)
                         @can('report', $damage)
-                            <form method="POST" enctype="multipart/form-data" action="{{ route('damages.documents.store', $damage) }}" class="rounded-2xl border border-belkhir-space-border p-4" data-loading-form>
+                            <form method="POST" enctype="multipart/form-data" action="{{ route('damages.documents.store', $damage) }}" class="rounded-2xl border border-sanad-pilot-border p-4" data-loading-form>
                                 @csrf
                                 <input type="hidden" name="document_type" value="damage_photo">
                                 <input type="hidden" name="title" value="Photo dommage {{ $damage->damage_number }}">

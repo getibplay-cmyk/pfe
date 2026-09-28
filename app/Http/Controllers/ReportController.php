@@ -4,15 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ReportFilterRequest;
 use App\Models\Agency;
-use App\Support\Reporting\BelkhirSpaceReportPresenter;
 use App\Support\Reporting\BuildMinimalReport;
 use App\Support\Reporting\ResolveReportCriteria;
+use App\Support\Reporting\SanadPilotReportPresenter;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\View\View;
 
 class ReportController extends Controller
 {
-    public function index(ReportFilterRequest $request, ResolveReportCriteria $resolver, BuildMinimalReport $report, BelkhirSpaceReportPresenter $presenter, TenantContext $context): View
+    public function index(ReportFilterRequest $request, ResolveReportCriteria $resolver, BuildMinimalReport $report, SanadPilotReportPresenter $presenter, TenantContext $context): View
     {
         $data = $request->validated();
         $criteria = $resolver->handle($data);

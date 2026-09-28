@@ -23,10 +23,10 @@
                 <tbody>
                     @forelse ($categories as $category)
                         <tr>
-                            <td><span class="rounded-lg bg-belkhir-space-canvas px-2.5 py-1 font-mono text-xs font-semibold text-belkhir-space-text">{{ $category->code }}</span></td>
+                            <td><span class="rounded-lg bg-sanad-pilot-canvas px-2.5 py-1 font-mono text-xs font-semibold text-sanad-pilot-text">{{ $category->code }}</span></td>
                             <td><div class="flex items-center gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-belkhir-space-blue" aria-hidden="true"><x-icon name="vehicle" size="sm" /></span>
-                                <span class="font-semibold text-belkhir-space-text">{{ $category->name }}</span>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-sanad-pilot-blue" aria-hidden="true"><x-icon name="vehicle" size="sm" /></span>
+                                <span class="font-semibold text-sanad-pilot-text">{{ $category->name }}</span>
                             </div></td>
                             <td>{{ $category->seats ?? '—' }} {{ __('places') }}</td>
                             <td><div class="flex justify-end">

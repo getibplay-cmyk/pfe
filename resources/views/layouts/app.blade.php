@@ -8,7 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased">
-<x-belkhir-space-loading />
+<x-sanad-pilot-loading />
 @php
     $user = auth()->user();
     $home = $user->is_platform_admin ? route('platform.dashboard') : route('dashboard');
@@ -21,7 +21,7 @@
 @endphp
 <a href="#contenu" class="rf-skip-link">{{ __('Aller au contenu principal') }}</a>
 <div x-data="appShell" data-component="app-shell" class="min-h-screen lg:flex">
-    <aside class="rf-sidebar sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-belkhir-space-ink px-5 py-6 text-white lg:flex" aria-label="{{ __('Barre latérale') }}">
+    <aside class="rf-sidebar sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-sanad-pilot-ink px-5 py-6 text-white lg:flex" aria-label="{{ __('Barre latérale') }}">
         <a href="{{ $home }}" class="rounded-lg px-2" aria-label="{{ config('brand.name') }} — {{ __('Accueil') }}">
             <x-brand-logo surface="dark" />
         </a>
@@ -43,10 +43,10 @@
     </aside>
 
     <div class="min-w-0 flex-1" :inert="mobileMenu">
-        <header class="rf-topbar sticky top-0 z-30 border-b border-belkhir-space-border bg-white px-4 py-3 sm:px-6" aria-label="{{ __('En-tête de l’application') }}">
+        <header class="rf-topbar sticky top-0 z-30 border-b border-sanad-pilot-border bg-white px-4 py-3 sm:px-6" aria-label="{{ __('En-tête de l’application') }}">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
-                    <button x-ref="menuButton" type="button" @click="openMenu($el)" class="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-belkhir-space-border p-2 text-belkhir-space-text hover:bg-brand-50 lg:hidden" aria-label="{{ __('Ouvrir le menu principal') }}" :aria-expanded="mobileMenu.toString()" aria-controls="navigation-mobile">
+                    <button x-ref="menuButton" type="button" @click="openMenu($el)" class="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-sanad-pilot-border p-2 text-sanad-pilot-text hover:bg-brand-50 lg:hidden" aria-label="{{ __('Ouvrir le menu principal') }}" :aria-expanded="mobileMenu.toString()" aria-controls="navigation-mobile">
                         <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     <div class="min-w-0">

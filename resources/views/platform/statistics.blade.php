@@ -30,18 +30,18 @@
         <x-form-errors />
 
         <section class="rf-panel overflow-hidden" aria-labelledby="platform-statistics-filters-title">
-            <div class="border-b border-belkhir-space-border bg-slate-50/80 px-5 py-3">
+            <div class="border-b border-sanad-pilot-border bg-slate-50/80 px-5 py-3">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        <span class="grid h-9 w-9 place-items-center rounded-xl bg-belkhir-space-blue/10 text-belkhir-space-blue" aria-hidden="true"><x-icon name="calendar" size="xs" /></span>
+                        <span class="grid h-9 w-9 place-items-center rounded-xl bg-sanad-pilot-blue/10 text-sanad-pilot-blue" aria-hidden="true"><x-icon name="calendar" size="xs" /></span>
                         <div>
                             <h2 id="platform-statistics-filters-title" class="text-sm font-semibold text-slate-950">{{ __('Période observée') }}</h2>
                             <p class="text-xs text-slate-500">{{ __('Du') }} {{ $statistics['period']['date_from'] }} {{ __('au') }} {{ $statistics['period']['date_to'] }}</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2" aria-label="{{ __('Filtres actifs') }}">
-                        <span class="rounded-full border border-belkhir-space-blue/20 bg-belkhir-space-blue/5 px-3 py-1 text-xs font-medium text-belkhir-space-blue">{{ __('Début :') }} {{ $statistics['period']['date_from'] }}</span>
-                        <span class="rounded-full border border-belkhir-space-orange/20 bg-belkhir-space-orange-soft px-3 py-1 text-xs font-medium text-belkhir-space-orange">{{ __('Fin :') }} {{ $statistics['period']['date_to'] }}</span>
+                        <span class="rounded-full border border-sanad-pilot-blue/20 bg-sanad-pilot-blue/5 px-3 py-1 text-xs font-medium text-sanad-pilot-blue">{{ __('Début :') }} {{ $statistics['period']['date_from'] }}</span>
+                        <span class="rounded-full border border-sanad-pilot-orange/20 bg-sanad-pilot-orange-soft px-3 py-1 text-xs font-medium text-sanad-pilot-orange">{{ __('Fin :') }} {{ $statistics['period']['date_to'] }}</span>
                     </div>
                 </div>
             </div>
@@ -96,14 +96,14 @@
             />
         </div>
 
-        <section class="grid gap-4 rounded-2xl bg-belkhir-space-ink p-5 text-white shadow-lg shadow-belkhir-space-ink/10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-center">
+        <section class="grid gap-4 rounded-2xl bg-sanad-pilot-ink p-5 text-white shadow-lg shadow-sanad-pilot-ink/10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:items-center">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-belkhir-space-orange-soft">{{ __('Couverture plateforme') }}</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sanad-pilot-orange-soft">{{ __('Couverture plateforme') }}</p>
                 <h2 class="mt-2 text-xl font-semibold">{{ __('Entreprises clientes actives') }}</h2>
                 <p class="mt-2 text-sm leading-6 text-slate-300">{{ __('La progression compare les entreprises actives au nombre total réellement enregistré.') }}</p>
             </div>
             @if ($tenantTotal > 0)
-                <div class="rounded-xl border border-white/10 bg-white/5 p-4 [&_[role=progressbar]]:bg-white/15 [&_span]:text-slate-200 [&_span.block]:bg-belkhir-space-orange">
+                <div class="rounded-xl border border-white/10 bg-white/5 p-4 [&_[role=progressbar]]:bg-white/15 [&_span]:text-slate-200 [&_span.block]:bg-sanad-pilot-orange">
                     <x-progress-bar
                         :label="__('Part des entreprises clientes actives')"
                         :value="$statistics['totals']['active_tenants']"
@@ -185,8 +185,8 @@
         <div class="grid gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
             <x-section-card :title="__('Encaissements SaaS')" :description="__('Paiements manuels et CMI, nets après contrepassations et toujours séparés par devise.')">
                 <div class="mb-4 grid grid-cols-2 gap-3">
-                    <div class="rounded-xl bg-belkhir-space-blue/5 p-3"><p class="text-xs text-slate-500">{{ __('Paiements enregistrés') }}</p><p class="mt-1 text-xl font-bold text-belkhir-space-blue">{{ $statistics['payments']['recorded_count'] }}</p></div>
-                    <div class="rounded-xl bg-belkhir-space-orange-soft p-3"><p class="text-xs text-slate-600">{{ __('Contrepassations') }}</p><p class="mt-1 text-xl font-bold text-belkhir-space-orange">{{ $statistics['payments']['reversal_count'] }}</p></div>
+                    <div class="rounded-xl bg-sanad-pilot-blue/5 p-3"><p class="text-xs text-slate-500">{{ __('Paiements enregistrés') }}</p><p class="mt-1 text-xl font-bold text-sanad-pilot-blue">{{ $statistics['payments']['recorded_count'] }}</p></div>
+                    <div class="rounded-xl bg-sanad-pilot-orange-soft p-3"><p class="text-xs text-slate-600">{{ __('Contrepassations') }}</p><p class="mt-1 text-xl font-bold text-sanad-pilot-orange">{{ $statistics['payments']['reversal_count'] }}</p></div>
                 </div>
                 @forelse($statistics['payments']['currencies'] as $currency)
                     <div class="flex items-center justify-between border-t border-slate-100 py-3 text-sm"><span class="font-medium text-slate-700">{{ $currency['currency'] }}</span><strong>{{ App\Support\Ui\UiLabel::money($currency['amount'], $currency['currency']) }}</strong></div>

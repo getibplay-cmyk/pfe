@@ -4,6 +4,7 @@ namespace App\Http\Requests\Auth;
 
 use App\Enums\TenantStatus;
 use App\Models\User;
+use App\Support\Auth\AuthenticationLimits;
 use App\Support\Auth\PasswordHashInspector;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -12,7 +13,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -34,8 +34,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'password' => ['required', 'string', 'max:512'],
         ];
     }
 
@@ -47,6 +47,7 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+        AuthenticationLimits::reserveLogin($this);
 
         $credentials = [
             ...$this->only('email', 'password'),
@@ -131,7 +132,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return AuthenticationLimits::identity($this).'|'.hash('sha256', (string) $this->ip());
     }
 
     private function recordIncompatibleHash(User $user): void

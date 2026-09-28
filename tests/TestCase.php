@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Testing\TestDatabaseGuard;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,25 @@ abstract class TestCase extends BaseTestCase
         TestDatabaseGuard::assertSafe($app);
 
         return $app;
+    }
+
+    public function actingAs(Authenticatable $user, $guard = null)
+    {
+        // Switching actors in a test represents a different browser login. Do not
+        // carry the previous actor's account/MFA proof into that synthetic login.
+        $proof = $this->app['session.store']->get('account_session');
+        if (is_array($proof) && ($proof['user_id'] ?? null) !== $user->getAuthIdentifier()) {
+            $this->app['session.store']->invalidate();
+        }
+
+        return parent::actingAs($user, $guard);
+    }
+
+    public function json($method, $uri, array $data = [], array $headers = [], $options = 0)
+    {
+        // The application accepts JSON objects. Laravel otherwise encodes the
+        // helper's empty default as [], including getJson requests with no fields.
+        return parent::json($method, $uri, $data, $headers, $data === [] ? $options | JSON_FORCE_OBJECT : $options);
     }
 
     protected function assertUsesAuthorizedPostgreSqlTestDatabase(): string

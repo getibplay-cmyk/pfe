@@ -32,7 +32,7 @@ class PasswordResetLinkController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'email', 'max:255'],
         ]);
 
         $user = User::query()->whereRaw('lower(email) = lower(?)', [$request->string('email')->toString()])->first();
@@ -40,7 +40,6 @@ class PasswordResetLinkController extends Controller
             try {
                 Password::sendResetLink(['email' => $user->email]);
             } catch (Throwable $exception) {
-                report($exception);
                 Log::warning('Password reset notification could not be delivered.', [
                     'event' => 'auth.password_reset.delivery_failed',
                     'user_id' => $user->getKey(),

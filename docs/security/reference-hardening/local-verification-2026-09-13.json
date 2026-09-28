@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-13",
+  "application_commit": "6f7e06b712c666b22b0c7be8d17ffa196d5c7143",
+  "branch": "feature/sanad-pilot-security",
+  "baseline_remote_commit": "9321b2565242fa49858f467b871769e7b5c19c59",
+  "scope": "Local source version and isolated runtime checks; no production, PostgreSQL integration or remote CI result.",
+  "runs": {
+    "phpunit": {
+      "status": "PASS",
+      "php_version": "8.5.10",
+      "tests": 43,
+      "assertions": 1946,
+      "test_files": [
+        "tests/Unit/RequireRecentPasswordTest.php",
+        "tests/Unit/PrivateMailTransportTest.php",
+        "tests/Unit/PasswordInputSafetyTest.php",
+        "tests/Unit/LocalizationCatalogTest.php",
+        "tests/Unit/RestrictedProcessEnvironmentTest.php",
+        "tests/Unit/AuditBoundsTest.php",
+        "tests/Unit/ClamAvProtocolTest.php",
+        "tests/Unit/SanadPilotConfirmationMarkupTest.php",
+        "tests/Unit/SanadPilotReportPresenterTest.php"
+      ],
+      "command": "php vendor/bin/phpunit tests/Unit/RequireRecentPasswordTest.php tests/Unit/PrivateMailTransportTest.php tests/Unit/PasswordInputSafetyTest.php tests/Unit/LocalizationCatalogTest.php tests/Unit/RestrictedProcessEnvironmentTest.php tests/Unit/AuditBoundsTest.php tests/Unit/ClamAvProtocolTest.php tests/Unit/SanadPilotConfirmationMarkupTest.php tests/Unit/SanadPilotReportPresenterTest.php"
+    },
+    "javascript": {
+      "status": "PASS",
+      "tests": 103,
+      "command": "npm run test:js"
+    },
+    "php_lint": {
+      "status": "PASS",
+      "files": 187,
+      "scope": "PHP files changed or added since the baseline tree, including the initial security lot"
+    },
+    "pint": {
+      "status": "PASS",
+      "command": "php vendor/bin/pint --test"
+    },
+    "vite": {
+      "status": "PASS",
+      "version": "6.4.3",
+      "modules": 80,
+      "command": "npm run build"
+    },
+    "blade": {
+      "status": "PASS",
+      "command": "php artisan view:cache",
+      "scope": "Compilation only"
+    },
+    "routes": {
+      "status": "PASS",
+      "routes": 387,
+      "command": "php artisan route:list --json",
+      "scope": "Registration and inspection, no request authorization proof"
+    },
+    "guest_http": {
+      "status": "PASS",
+      "cases": [
+        {
+          "path": "/login",
+          "status": 200,
+          "brand": true,
+          "private": true
+        },
+        {
+          "path": "/forgot-password",
+          "status": 200,
+          "brand": true,
+          "private": true
+        },
+        {
+          "path": "/reset-password/synthetic-token",
+          "status": 200,
+          "brand": true,
+          "private": true
+        },
+        {
+          "path": "/login",
+          "status": 422,
+          "invalid_json_rejected": true
+        },
+        {
+          "security_event_with_warning_default": true,
+          "private_request_content_excluded": true
+        }
+      ],
+      "scope": "Actual Laravel HTTP kernel, local environment, ephemeral key, memory sessions/cache; no test database"
+    },
+    "readiness": {
+      "status": "PASS",
+      "checks": 8,
+      "command": "php artisan rentfleet:security-audit --json",
+      "scope": "Local configuration only, no --production or --database"
+    },
+    "composer_audit": {
+      "status": "PASS",
+      "version": "2.10.1",
+      "advisories": 0,
+      "abandoned": 0,
+      "command": "composer audit --locked --format=json",
+      "binary_sha256": "345b9c6a98da5c30dcbd4b0d99fc8710bf0ae98a3898eea18f7b2ad9dec93f06"
+    },
+    "npm_audit": {
+      "status": "PASS",
+      "all_dependencies": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "production_dependencies": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "commands": [
+        "npm audit --json",
+        "npm audit --omit=dev --json"
+      ]
+    },
+    "semgrep": {
+      "status": "PASS",
+      "version": "1.177.0",
+      "rules": 8,
+      "files": 849,
+      "findings": 0,
+      "errors": 0,
+      "scope": "Local authored PHP, JavaScript and Python; metrics disabled; targeted rules only",
+      "command": "semgrep scan --config .github/security/semgrep.yml --metrics=off --disable-version-check --error --strict --timeout 10 --max-memory 1000 app bootstrap routes resources/js scripts/intelligence"
+    },
+    "gitleaks_sources": {
+      "status": "PASS_AFTER_FALSE_POSITIVE_REVIEW",
+      "version": "8.30.1",
+      "files_in_snapshot": 1670,
+      "initial_findings": 4,
+      "reviewed_exact_exceptions": 3,
+      "remaining_findings": 0,
+      "configuration": ".gitleaks.toml",
+      "archive_sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+      "scope": "Tracked and new source files only; vendor, generated bundles and runtime artifacts excluded"
+    },
+    "gitleaks_exception_boundaries": {
+      "status": "PASS",
+      "expected_findings": 2,
+      "scope": "Detect a different high-entropy synthetic value in an excepted path, and an excepted literal in a different path; fully redacted output"
+    },
+    "gitleaks_history": {
+      "status": "INTERRUPTED",
+      "reason": "Partial clone was fetching additional historical objects; no complete-history result is claimed. Re-run the prepared CI on a full checkout."
+    },
+    "sbom": {
+      "status": "PASS",
+      "components": 396,
+      "format": "CycloneDX 1.6",
+      "scope": "Committed lock entries only; not a resolved deployment graph, image or model inventory"
+    },
+    "reference_register": {
+      "status": "PASS",
+      "sources": 4,
+      "sections": 332,
+      "controls": 236,
+      "scenarios": 50
+    },
+    "git_diff_check": {
+      "status": "PASS"
+    },
+    "postgresql_feature_suite": {
+      "status": "NOT_RUN",
+      "reason": "No authorized PostgreSQL test server available; TestDatabaseGuard unchanged."
+    },
+    "remote_ci": {
+      "status": "NOT_RUN",
+      "reason": "Public disclosure of this lot still needs explicit authorization after the prior automatic review rejection."
+    }
+  },
+  "source_attachments": [
+    {
+      "id": "SRC-01",
+      "provided_filename": "DOC-20260913-WA0018.",
+      "sha256": "4402d84ea509c236405181382f76fa2497ad386755feee2c98187a3c61a694fe",
+      "matches_register": true
+    },
+    {
+      "id": "SRC-02",
+      "provided_filename": "guide-securite-saas-webapp.md",
+      "sha256": "752a0714912881052d465b3be3f2dbcc358adf76e7dd99af91033769324ef536",
+      "matches_register": true
+    },
+    {
+      "id": "SRC-03",
+      "provided_filename": "REFERENTIEL_SECURITE_SAAS_WEB_2026-09-13_FR(2).md",
+      "sha256": "57f79e8c7b1745ea8a5ab02e55bcd02eb6dc21b331ffa2cc33e392ea69b843dc",
+      "matches_register": true
+    },
+    {
+      "id": "SRC-04",
+      "provided_filename": "cadre_securite_saas_2026.md.txt",
+      "sha256": "03b8bd3e76b5a07546fa9a52e6a9bcf2d68940a621b7da8d4e02a959a9c754d0",
+      "matches_register": true
+    }
+  ],
+  "lockfile_sha256": {
+    "composer.lock": "d2eff6727483a39d1f19a42cf77f8453ab5ab883588f33c09fc392e716d0120d",
+    "package-lock.json": "79a1b23ba7fc6c48031f7d52aa03bfd8816bc7b45c41c4dc9f97dcbd5e22b9a8"
+  },
+  "report": "docs/security/reference-hardening/continuation-sanad-pilot.md",
+  "conformity_claim": false,
+  "publication_status": "LOCAL_ONLY"
+}

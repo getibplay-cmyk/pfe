@@ -107,7 +107,7 @@
                     <div class="rounded-xl border border-slate-200 bg-white p-4">
                         <p class="text-sm font-semibold text-slate-800">{{ ucfirst($quota['label']) }}</p>
                         @if($quota['limit'] === null)
-                            <p class="mt-2 text-2xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\BusinessNumber::integer($quota['used']) }}</p>
+                            <p class="mt-2 text-2xl font-bold text-sanad-pilot-blue">{{ App\Support\Ui\BusinessNumber::integer($quota['used']) }}</p>
                             <p class="mt-1 text-xs text-slate-500">{{ __('Sans limite contractuelle') }}</p>
                         @else
                             <div class="mt-3"><x-progress-bar :label="$quota['label']" :value="min($quota['used'], $quota['limit'])" :max="max(1, $quota['limit'])" :value-text="App\Support\Ui\BusinessNumber::integer($quota['used']).' sur '.App\Support\Ui\BusinessNumber::integer($quota['limit'])" :tone="$quota['allowed'] ? 'brand' : 'orange'" /></div>

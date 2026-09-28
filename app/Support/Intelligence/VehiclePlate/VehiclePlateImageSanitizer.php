@@ -3,6 +3,8 @@
 namespace App\Support\Intelligence\VehiclePlate;
 
 use App\Exceptions\VehiclePlateRuntimeUnavailableException;
+use App\Support\Security\RestrictedProcessEnvironment;
+use App\Support\Security\UploadInspection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Process;
 use Throwable;
@@ -16,6 +18,7 @@ class VehiclePlateImageSanitizer
     public function sanitize(UploadedFile $image): SanitizedVehiclePlateImage
     {
         $source = $image->getRealPath();
+        app(UploadInspection::class)->inspect((string) $source, 'image');
         $sourceMime = (string) $image->getMimeType();
         if (! in_array($sourceMime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
             throw new VehiclePlateRuntimeUnavailableException;
@@ -183,7 +186,7 @@ class VehiclePlateImageSanitizer
     /** @return array<string, string|false> */
     private function closedEnvironment(): array
     {
-        return [
+        return RestrictedProcessEnvironment::make([
             'PYTHONDONTWRITEBYTECODE' => '1',
             'APP_KEY' => false,
             'DATABASE_URL' => false,
@@ -205,6 +208,6 @@ class VehiclePlateImageSanitizer
             'GOOGLE_APPLICATION_CREDENTIALS' => false,
             'PLATE_DETECTOR_MODEL_PATH' => false,
             'PLATE_DETECTOR_MODEL_SHA256' => false,
-        ];
+        ]);
     }
 }

@@ -13,6 +13,7 @@ use App\Support\Intelligence\DemandForecasting\DemandForecastArtifactVerifier;
 use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\Security\RestrictedProcessEnvironment;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -143,7 +144,7 @@ final class ExecuteDemandForecastExecution
 
             $result = Process::path(base_path())
                 ->timeout($timeout)
-                ->env([
+                ->env(RestrictedProcessEnvironment::make([
                     'PYTHONDONTWRITEBYTECODE' => '1',
                     'PYTHONHASHSEED' => '20260814',
                     'APP_KEY' => false,
@@ -162,7 +163,7 @@ final class ExecuteDemandForecastExecution
                     'OPENAI_API_KEY' => false,
                     'STRIPE_SECRET' => false,
                     'PGPASSWORD' => false,
-                ])
+                ]))
                 ->run([
                     $binary,
                     $script,

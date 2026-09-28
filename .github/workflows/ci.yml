@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup frozen Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -69,6 +71,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup frozen Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -115,6 +119,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup frozen Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -153,6 +159,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Verify Python runtime
         shell: bash
@@ -195,6 +203,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup frozen Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -285,7 +295,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:18.4-bookworm
+        image: postgres:18.6-bookworm
         env:
           POSTGRES_DB: rentfleet_test
           POSTGRES_USER: rentfleet_app
@@ -301,11 +311,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Synchronize PostgreSQL Casablanca timezone rules
+        shell: bash
+        env:
+          SANAD_PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          # tzdb 2026d, signed upstream tag; verify the exact public-domain source.
+          tz_work="$RUNNER_TEMP/sanad-tzdata-2026d"
+          mkdir -p "$tz_work/zoneinfo"
+          curl --fail --silent --show-error --location --retry 3 \
+            https://raw.githubusercontent.com/eggert/tz/d633fe7ed3de8e00ce7cac991376a064a1373bb1/africa \
+            --output "$tz_work/africa"
+          printf '%s  %s\n' f2851d4be4a4925cbdc9d56e10d780bccadb89d6ffb9aed78c3e35f97c200aed "$tz_work/africa" | sha256sum --check
+          zic -b fat -d "$tz_work/zoneinfo" "$tz_work/africa"
+          docker exec "$SANAD_PG_CONTAINER" pg_config --configure | grep -q -- '--with-system-tzdata=/usr/share/zoneinfo'
+          for zone in Casablanca El_Aaiun; do
+            docker cp "$tz_work/zoneinfo/Africa/$zone" "$SANAD_PG_CONTAINER:/usr/share/zoneinfo/Africa/$zone"
+          done
+          # This is the disposable CI service, before migrations or test data.
+          docker restart --time 10 "$SANAD_PG_CONTAINER"
+          for attempt in {1..30}; do
+            if docker exec "$SANAD_PG_CONTAINER" pg_isready -U "$DB_USERNAME" -d "$DB_DATABASE"; then
+              break
+            fi
+            sleep 1
+          done
+          offset=$(docker exec "$SANAD_PG_CONTAINER" psql --no-password -U "$DB_USERNAME" -d "$DB_DATABASE" -Atc \
+            "SELECT EXTRACT(EPOCH FROM (TIMESTAMPTZ '2026-09-21 12:00:00+00' AT TIME ZONE 'Africa/Casablanca') - (TIMESTAMPTZ '2026-09-21 12:00:00+00' AT TIME ZONE 'UTC'))::int")
+          test "$offset" = 0
 
       - name: Setup PHP and Composer
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: 8.5.8
+          ini-values: date.timezone=Africa/Casablanca
           tools: composer:2.10.1
           extensions: mbstring, intl, dom, fileinfo, gd, zip, pdo_pgsql, pgsql
           coverage: none
@@ -425,7 +468,7 @@ jobs:
         run: php artisan migrate --force --no-interaction
 
       - name: Run focused SaaS regressions before the full suite
-        run: php artisan test --filter='BelkhirSpaceConfirmationMarkup|ProfileTest|PasswordUpdate|SessionDevice|BelkhirSpaceBrandIdentity|BelkhirSpaceInterface|BelkhirSpaceVisualStatistics|Lot06FE2BrowserReadiness|Lot06FG1SecurityBootstrap|AccountSecurity|WorkspaceExperience|GuidedInspection|VisionAnnotationsAndQuality|ReservationReplan|ActiveCustomerPortal|PublicBooking|VehicleEconomics|LocalizationCatalog|Saas|CmiSignature|PlatformOperationsMonitoring|TenantOnboardingInvitation|SecurityHeaders'
+        run: php artisan test --filter='SecurityHardening|RestrictedProcessEnvironment|SanadPilotConfirmationMarkup|ProfileTest|PasswordUpdate|SessionDevice|SanadPilotBrandIdentity|SanadPilotInterface|SanadPilotVisualStatistics|Lot06FE2BrowserReadiness|Lot06FG1SecurityBootstrap|AccountSecurity|WorkspaceExperience|GuidedInspection|VisionAnnotationsAndQuality|ReservationReplan|ActiveCustomerPortal|PublicBooking|VehicleEconomics|LocalizationCatalog|Saas|CmiSignature|PlatformOperationsMonitoring|TenantOnboardingInvitation|SecurityHeaders|ProductionConfiguration|RentalUsageAnomalyBusinessReview'
 
       - name: Run test suite
         run: php artisan test --log-junit "$RUNNER_TEMP/j15-tests.xml"

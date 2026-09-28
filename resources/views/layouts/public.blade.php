@@ -8,10 +8,10 @@
     <title>{{ $title }} — {{ config('brand.name') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-belkhir-space-canvas font-sans antialiased">
-    <x-belkhir-space-loading />
+<body class="bg-sanad-pilot-canvas font-sans antialiased">
+    <x-sanad-pilot-loading />
     <a href="#contenu" class="rf-skip-link">{{ __('Aller au contenu principal') }}</a>
-    <header class="sticky top-0 z-40 border-b border-white/10 bg-belkhir-space-ink/95 text-white shadow-lg shadow-slate-950/5 backdrop-blur">
+    <header class="sticky top-0 z-40 border-b border-white/10 bg-sanad-pilot-ink/95 text-white shadow-lg shadow-slate-950/5 backdrop-blur">
         <nav class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8" aria-label="{{ __('Navigation publique') }}">
             <a href="{{ route('home') }}" class="rounded-lg"><x-brand-logo surface="dark" /></a>
             <x-locale-switcher />

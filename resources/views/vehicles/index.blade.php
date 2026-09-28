@@ -71,7 +71,7 @@
                 <tbody>
                     @forelse ($vehicles as $vehicle)
                         <tr>
-                            <td><a class="font-semibold text-belkhir-space-blue hover:text-belkhir-space-blue-hover" href="{{ route('vehicles.show', $vehicle) }}">{{ $vehicle->registration_number }}</a></td>
+                            <td><a class="font-semibold text-sanad-pilot-blue hover:text-sanad-pilot-blue-hover" href="{{ route('vehicles.show', $vehicle) }}">{{ $vehicle->registration_number }}</a></td>
                             <td>{{ $vehicle->brand }} {{ $vehicle->model }}</td>
                             <td>{{ $vehicle->agency->name }}</td>
                             <td><x-status-badge :value="$vehicle->operational_status" /></td>

@@ -14,7 +14,7 @@
 <button
     type="{{ $type }}"
     data-loading-submit
-    x-on:click.prevent="$dispatch('belkhir-space-confirm-request', {
+    x-on:click.prevent="$dispatch('sanad-pilot-confirm-request', {
         form: $el.form,
         submitter: $el,
         title: @js($title),

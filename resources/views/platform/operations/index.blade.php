@@ -49,7 +49,7 @@
                         <div class="text-end text-xs text-slate-500"><p>{{ __('Première détection') }}<br><strong class="text-slate-700">{{ App\Support\Ui\UiLabel::dateTime($incident->first_detected_at) }}</strong></p><p class="mt-2">{{ __('Dernière détection') }}<br><strong class="text-slate-700">{{ App\Support\Ui\UiLabel::dateTime($incident->last_detected_at) }}</strong></p></div>
                     </div>
                     @if($incident->events->isNotEmpty())
-                        <details class="mt-4 border-t border-slate-100 pt-3"><summary class="cursor-pointer text-sm font-semibold text-belkhir-space-blue">{{ __('Historique des changements d’état') }}</summary><ol class="mt-3 space-y-2">@foreach($incident->events as $event)<li class="flex flex-wrap justify-between gap-2 text-sm"><span>{{ match($event->event_type) {'opened' => __('Incident ouvert'), 'reopened' => __('Incident rouvert'), default => __('Incident résolu')} }}</span><time class="text-slate-500">{{ App\Support\Ui\UiLabel::dateTime($event->observed_at) }}</time></li>@endforeach</ol></details>
+                        <details class="mt-4 border-t border-slate-100 pt-3"><summary class="cursor-pointer text-sm font-semibold text-sanad-pilot-blue">{{ __('Historique des changements d’état') }}</summary><ol class="mt-3 space-y-2">@foreach($incident->events as $event)<li class="flex flex-wrap justify-between gap-2 text-sm"><span>{{ match($event->event_type) {'opened' => __('Incident ouvert'), 'reopened' => __('Incident rouvert'), default => __('Incident résolu')} }}</span><time class="text-slate-500">{{ App\Support\Ui\UiLabel::dateTime($event->observed_at) }}</time></li>@endforeach</ol></details>
                     @endif
                 </article>
             @empty

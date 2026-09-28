@@ -75,12 +75,12 @@
                                 <td class="p-3">
                                     @can('update', $block)
                                         @if($block->starts_at->isFuture())
-                                            <form method="POST" action="{{ route('vehicle-blocks.cancel', $block) }}" x-belkhir-space-confirm data-confirm-title="{{ __('Annuler le bloc manuel') }}" data-confirm-resource="{{ __('Bloc véhicule sélectionné') }}" data-confirm-consequence="{{ __('Ce bloc manuel futur sera annulé et la disponibilité sera recalculée selon les règles existantes.') }}" data-confirm-label="{{ __('Annuler le bloc') }}">
+                                            <form method="POST" action="{{ route('vehicle-blocks.cancel', $block) }}" x-sanad-pilot-confirm data-confirm-title="{{ __('Annuler le bloc manuel') }}" data-confirm-resource="{{ __('Bloc véhicule sélectionné') }}" data-confirm-consequence="{{ __('Ce bloc manuel futur sera annulé et la disponibilité sera recalculée selon les règles existantes.') }}" data-confirm-label="{{ __('Annuler le bloc') }}">
                                                 @csrf
                                                 <button type="submit" class="text-rose-700 underline">{{ __('Annuler') }}</button>
                                             </form>
                                         @else
-                                            <form method="POST" action="{{ route('vehicle-blocks.release', $block) }}" x-belkhir-space-confirm data-confirm-title="{{ __('Libérer le bloc manuel') }}" data-confirm-resource="{{ __('Bloc véhicule sélectionné') }}" data-confirm-consequence="{{ __('Ce bloc manuel sera libéré selon les règles de disponibilité existantes.') }}" data-confirm-label="{{ __('Libérer le bloc') }}">
+                                            <form method="POST" action="{{ route('vehicle-blocks.release', $block) }}" x-sanad-pilot-confirm data-confirm-title="{{ __('Libérer le bloc manuel') }}" data-confirm-resource="{{ __('Bloc véhicule sélectionné') }}" data-confirm-consequence="{{ __('Ce bloc manuel sera libéré selon les règles de disponibilité existantes.') }}" data-confirm-label="{{ __('Libérer le bloc') }}">
                                                 @csrf
                                                 <button type="submit" class="text-indigo-700 underline">{{ __('Libérer') }}</button>
                                             </form>

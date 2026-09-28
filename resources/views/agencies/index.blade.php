@@ -22,7 +22,7 @@
                 <div>
                     <x-input-label for="agency-search" :value="__('Nom ou code')" />
                     <div class="relative mt-1">
-                        <span class="pointer-events-none absolute inset-y-0 start-0 flex w-11 items-center justify-center text-belkhir-space-muted" aria-hidden="true"><x-icon name="search" size="sm" /></span>
+                        <span class="pointer-events-none absolute inset-y-0 start-0 flex w-11 items-center justify-center text-sanad-pilot-muted" aria-hidden="true"><x-icon name="search" size="sm" /></span>
                         <input id="agency-search" name="q" value="{{ request('q') }}" class="w-full ps-11" autocomplete="off">
                     </div>
                 </div>
@@ -54,8 +54,8 @@
                 <tbody>
                     @forelse ($agencies as $agency)
                         <tr>
-                            <td><span class="rounded-lg bg-belkhir-space-canvas px-2.5 py-1 font-mono text-xs font-semibold text-belkhir-space-text">{{ $agency->code }}</span></td>
-                            <td class="font-semibold text-belkhir-space-text">{{ $agency->name }}</td>
+                            <td><span class="rounded-lg bg-sanad-pilot-canvas px-2.5 py-1 font-mono text-xs font-semibold text-sanad-pilot-text">{{ $agency->code }}</span></td>
+                            <td class="font-semibold text-sanad-pilot-text">{{ $agency->name }}</td>
                             <td><x-status-badge :value="$agency->is_active ? 'active' : 'inactive'" /></td>
                             <td><div class="flex justify-end gap-2">
                                 <x-icon-button icon="view" :label="__('Consulter l’agence ').$agency->name" :href="route('agencies.show', $agency)" />

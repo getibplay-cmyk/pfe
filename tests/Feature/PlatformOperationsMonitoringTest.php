@@ -6,6 +6,7 @@ use App\Actions\Operations\RefreshPlatformOperationalIncidents;
 use App\Models\PlatformOperationalIncident;
 use App\Models\PlatformOperationalIncidentEvent;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\QueryException;
@@ -33,7 +34,12 @@ class PlatformOperationsMonitoringTest extends TestCase
 
     public function test_monitor_opens_and_resolves_a_failed_queue_incident_with_append_only_events(): void
     {
+        $this->assertSame(config('app.timezone'), DB::selectOne('SHOW TIME ZONE')->TimeZone);
+        $this->assertSame(config('app.timezone'), date_default_timezone_get());
+        $this->assertSame(config('app.timezone'), now()->timezoneName, 'PHP timezone database: '.timezone_version_get());
         $this->artisan('operations:scheduler-heartbeat')->assertSuccessful();
+        $recordedAt = DB::table('operational_heartbeats')->where('component', config('operations.scheduler.heartbeat_component'))->value('last_succeeded_at');
+        $this->assertEqualsWithDelta(now()->timestamp, CarbonImmutable::parse($recordedAt)->timestamp, 2, 'Heartbeat '.$recordedAt.'; now '.now()->toIso8601String());
         DB::table('failed_jobs')->insert([
             'uuid' => '00000000-0000-4000-8000-000000000001',
             'connection' => 'database',
@@ -106,7 +112,7 @@ class PlatformOperationsMonitoringTest extends TestCase
             ->assertOk()
             ->assertSee('Supervision de production')
             ->assertSee('La collecte est inactive ou trop ancienne.');
-        $this->actingAs($platform)->post(route('platform.operations.refresh'))
+        $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.operations.refresh'))
             ->assertRedirect()
             ->assertSessionHas('status');
         $this->get(route('platform.operations.index'))

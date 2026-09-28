@@ -17,6 +17,7 @@ use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorImageSanitizer;
 use App\Support\Intelligence\VehicleColor\VehicleColorRuntimeReadiness;
 use App\Support\PlatformBilling\TenantPlanAccess;
+use App\Support\Security\IntelligenceCapacity;
 use App\Support\Tenancy\AgencyAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -106,6 +107,7 @@ final class QueueVehicleColorPrediction
                 $sha256,
                 $storedPath,
             ): VehicleColorPredictionRun {
+
                 if ($vehicle !== null) {
                     DB::selectOne(
                         'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
@@ -123,6 +125,7 @@ final class QueueVehicleColorPrediction
                 }
 
                 $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::VehicleColor);
+                app(IntelligenceCapacity::class)->assertAvailable();
                 $run = VehicleColorPredictionRun::create([
                     'agency_id' => $agencyId,
                     'run_id' => $runId,

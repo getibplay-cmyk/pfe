@@ -26,8 +26,11 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
-        $request->session()->forget('mfa_verified');
+        $request->session()->regenerate(true);
+        $request->session()->forget(['mfa_verified', 'auth.password_confirmed_at']);
+        $request->session()->put('account_session', [
+            'user_id' => $request->user()->id, 'version' => $request->user()->security_version, 'started_at' => now()->timestamp,
+        ]);
 
         $request->user()->forceFill(['last_login_at' => now()])->saveQuietly();
 

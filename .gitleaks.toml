@@ -1,0 +1,30 @@
+title = "SANAD PILOT — default rules with reviewed synthetic fixtures"
+
+[extend]
+useDefault = true
+
+# Each exception requires both this exact path and this exact non-secret value.
+# Never exclude an entire test directory, rule, commit or credential pattern.
+[[allowlists]]
+description = "Public example row identifier in the training JSON template; no authentication use."
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)app/Http/Controllers/ModelTrainingDatasetController\.php$''']
+regexes = ['''^observation_001$''']
+
+[[allowlists]]
+description = "Literal sentinel asserted absent from the agency dashboard in a negative test."
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)tests/Feature/Lot06EUxNavigationAuthorizationTest\.php$''']
+regexes = ['''^NE-JAMAIS-AFFICHER-06E$''']
+
+[[allowlists]]
+description = "Password for a disposable PostgreSQL test fixture, never a seeded production account."
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "secret"
+paths = ['''(^|/)tests/Feature/TenantOnboardingInvitationTest\.php$''']
+regexes = ['''^MotDePasseSolide2026$''']

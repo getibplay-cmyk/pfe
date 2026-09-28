@@ -131,7 +131,7 @@ class PlatformAdministrationHttpTest extends TestCase
 
         $planPayload = $this->validPlanPayload('http-administration');
         $this->actingAs($platform)
-            ->post(route('platform.plans.store'), $planPayload)
+            ->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.plans.store'), $planPayload)
             ->assertRedirect(route('platform.plans.index'))
             ->assertSessionHasNoErrors();
         $plan = SaasPlan::query()->where('code', 'http-administration')->firstOrFail();
@@ -139,7 +139,7 @@ class PlatformAdministrationHttpTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'platform.saas_plan.created']);
 
         $this->actingAs($platform)
-            ->patch(route('platform.plans.update', $plan), $this->validPlanUpdatePayload())
+            ->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('platform.plans.update', $plan), $this->validPlanUpdatePayload())
             ->assertRedirect(route('platform.plans.index'))
             ->assertSessionHasNoErrors();
         $this->assertSame('799.90', $plan->refresh()->price_amount);
@@ -163,7 +163,7 @@ class PlatformAdministrationHttpTest extends TestCase
 
         $this->actingAs($platform)
             ->from(route('platform.subscriptions.index'))
-            ->patch(route('platform.subscriptions.transition', $subscription), ['status' => 'past_due'])
+            ->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('platform.subscriptions.transition', $subscription), ['status' => 'past_due'])
             ->assertRedirect(route('platform.subscriptions.index'))
             ->assertSessionHasNoErrors();
         $this->assertSame('past_due', $subscription->refresh()->status->value);
@@ -203,7 +203,7 @@ class PlatformAdministrationHttpTest extends TestCase
 
         $this->actingAs($platform)
             ->from(route('platform.intelligence.index'))
-            ->patch(route('platform.intelligence.update', [
+            ->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('platform.intelligence.update', [
                 $tenant,
                 IntelligenceCapability::VehicleColor->value,
             ]), ['enabled' => false])
@@ -360,7 +360,7 @@ class PlatformAdministrationHttpTest extends TestCase
 
         $before = $this->platformCounts();
         $this->actingAs($owner)
-            ->post(route('platform.plans.store'), $this->validPlanPayload('owner-forbidden-plan'))
+            ->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.plans.store'), $this->validPlanPayload('owner-forbidden-plan'))
             ->assertForbidden();
         $this->assertSame($before, $this->platformCounts());
     }
@@ -375,7 +375,7 @@ class PlatformAdministrationHttpTest extends TestCase
 
         $this->actingAs($platform)
             ->from(route('platform.intelligence.index'))
-            ->patch(route('platform.intelligence.update', [$target, $capability->value]), [
+            ->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('platform.intelligence.update', [$target, $capability->value]), [
                 'enabled' => false,
             ])
             ->assertRedirect(route('platform.intelligence.index'))
@@ -536,13 +536,13 @@ class PlatformAdministrationHttpTest extends TestCase
         SaasPayment $payment,
     ): array {
         return [
-            $this->post(route('platform.plans.store'), $this->validPlanPayload('blocked-new-plan')),
-            $this->patch(route('platform.plans.update', $plan), $this->validPlanUpdatePayload()),
+            $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.plans.store'), $this->validPlanPayload('blocked-new-plan')),
+            $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('platform.plans.update', $plan), $this->validPlanUpdatePayload()),
             $this->post(
                 route('platform.tenants.subscriptions.store', $tenant),
                 $this->validSubscriptionPayload($plan),
             ),
-            $this->patch(route('platform.subscriptions.transition', $subscription), ['status' => 'past_due']),
+            $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('platform.subscriptions.transition', $subscription), ['status' => 'past_due']),
             $this->post(
                 route('platform.tenants.saas-payments.store', [$tenant, $subscription]),
                 $this->validPaymentPayload('blocked-payment'),
@@ -551,7 +551,7 @@ class PlatformAdministrationHttpTest extends TestCase
                 route('platform.saas-payments.reverse', $payment),
                 $this->validReversalPayload('blocked-reversal'),
             ),
-            $this->patch(route('platform.intelligence.update', [
+            $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('platform.intelligence.update', [
                 $tenant,
                 IntelligenceCapability::VehicleColor->value,
             ]), ['enabled' => false]),

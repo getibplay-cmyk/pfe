@@ -61,7 +61,7 @@ export async function runSmoke(input = {}) {
                 const response = await fetch(`${options.baseUrl}${path}`, {
                     method: 'GET', redirect: 'manual', credentials: 'omit',
                     signal: AbortSignal.any([deadline, AbortSignal.timeout(options.timeoutMs)]),
-                    headers: { 'User-Agent': 'BELKHIR-SPACE-local-smoke/1.0' },
+                    headers: { 'User-Agent': 'SANAD-PILOT-local-smoke/1.0' },
                 });
                 status = response.status;
                 let bytes = 0;

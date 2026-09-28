@@ -31,12 +31,12 @@
             </x-slot:actions>
         </x-page-header>
 
-        <section class="relative overflow-hidden rounded-2xl bg-belkhir-space-ink p-6 text-white shadow-xl shadow-belkhir-space-ink/10">
-            <span class="absolute -right-20 -top-24 h-64 w-64 rounded-full border-[3rem] border-belkhir-space-blue/20" aria-hidden="true"></span>
-            <span class="absolute -bottom-20 right-28 h-40 w-40 rounded-full border-[2rem] border-belkhir-space-orange/15" aria-hidden="true"></span>
+        <section class="relative overflow-hidden rounded-2xl bg-sanad-pilot-ink p-6 text-white shadow-xl shadow-sanad-pilot-ink/10">
+            <span class="absolute -right-20 -top-24 h-64 w-64 rounded-full border-[3rem] border-sanad-pilot-blue/20" aria-hidden="true"></span>
+            <span class="absolute -bottom-20 right-28 h-40 w-40 rounded-full border-[2rem] border-sanad-pilot-orange/15" aria-hidden="true"></span>
             <div class="relative grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
                 <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-belkhir-space-orange-soft">{{ __('Santé de la plateforme') }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sanad-pilot-orange-soft">{{ __('Santé de la plateforme') }}</p>
                     <h2 class="mt-2 max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">{{ __('Les repères essentiels, sans masquer les alertes.') }}</h2>
                     <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{{ __('Les deux progressions reposent sur des dénominateurs réels : entreprises enregistrées et six capacités disponibles par entreprise.') }}</p>
                 </div>
@@ -90,8 +90,8 @@
                 <x-slot:actions><a href="{{ route('platform.tenants.index') }}" class="rf-button-link">{{ __('Toutes les entreprises') }}</a></x-slot:actions>
                 <div class="space-y-2">
                     @forelse($latestTenants as $tenant)
-                        <a href="{{ route('platform.tenants.show', $tenant) }}" class="group flex items-center justify-between gap-3 rounded-xl border border-transparent p-3 text-sm transition duration-150 hover:-translate-y-px hover:border-belkhir-space-border hover:bg-slate-50 motion-reduce:transform-none motion-reduce:transition-none">
-                            <span class="flex min-w-0 items-center gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-belkhir-space-blue/10 text-belkhir-space-blue"><x-icon name="building" size="sm" /></span><span class="min-w-0"><strong class="block truncate text-slate-950">{{ $tenant->name }}</strong><span class="block truncate text-slate-500">{{ $tenant->slug }}</span></span></span>
+                        <a href="{{ route('platform.tenants.show', $tenant) }}" class="group flex items-center justify-between gap-3 rounded-xl border border-transparent p-3 text-sm transition duration-150 hover:-translate-y-px hover:border-sanad-pilot-border hover:bg-slate-50 motion-reduce:transform-none motion-reduce:transition-none">
+                            <span class="flex min-w-0 items-center gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-sanad-pilot-blue/10 text-sanad-pilot-blue"><x-icon name="building" size="sm" /></span><span class="min-w-0"><strong class="block truncate text-slate-950">{{ $tenant->name }}</strong><span class="block truncate text-slate-500">{{ $tenant->slug }}</span></span></span>
                             <x-status-badge :value="$tenant->status" />
                         </a>
                     @empty
@@ -104,7 +104,7 @@
                 <div class="space-y-3">
                     @forelse($alerts as $alert)
                         <a href="{{ route('platform.tenants.show', $alert['tenant']) }}" class="group flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm transition duration-150 hover:-translate-y-px hover:shadow-sm motion-reduce:transform-none motion-reduce:transition-none">
-                            <span class="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-belkhir-space-warning"><x-icon name="warning" size="xs" /></span>
+                            <span class="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-sanad-pilot-warning"><x-icon name="warning" size="xs" /></span>
                             <span><strong class="text-slate-950">{{ $alert['tenant']->name }}</strong><span class="mt-1 block leading-5 text-amber-900">@if($alert['missing_owner']){{ __('Aucun administrateur d’entreprise actif.') }} @endif @if($alert['missing_agency']){{ __('Aucune agence active.') }}@endif</span></span>
                         </a>
                     @empty
@@ -148,8 +148,8 @@
 
             <x-section-card :title="__('Encaissements SaaS sur 30 jours')" :description="__('Paiements manuels et CMI, nets et séparés par devise ; aucune conversion implicite.')">
                 <div class="mb-4 grid grid-cols-2 gap-3">
-                    <div class="rounded-xl bg-belkhir-space-blue/5 p-3"><p class="text-xs text-slate-500">{{ __('Paiements') }}</p><p class="mt-1 text-xl font-bold text-belkhir-space-blue">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['recorded_count']) }}</p></div>
-                    <div class="rounded-xl bg-belkhir-space-orange-soft p-3"><p class="text-xs text-slate-600">{{ __('Contrepassations') }}</p><p class="mt-1 text-xl font-bold text-belkhir-space-orange">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['reversal_count']) }}</p></div>
+                    <div class="rounded-xl bg-sanad-pilot-blue/5 p-3"><p class="text-xs text-slate-500">{{ __('Paiements') }}</p><p class="mt-1 text-xl font-bold text-sanad-pilot-blue">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['recorded_count']) }}</p></div>
+                    <div class="rounded-xl bg-sanad-pilot-orange-soft p-3"><p class="text-xs text-slate-600">{{ __('Contrepassations') }}</p><p class="mt-1 text-xl font-bold text-sanad-pilot-orange">{{ App\Support\Ui\BusinessNumber::integer($statistics['payments']['reversal_count']) }}</p></div>
                 </div>
                 @forelse($statistics['payments']['currencies'] as $currency)
                     <div class="flex justify-between gap-4 border-t border-slate-100 py-3 text-sm"><span class="font-medium">{{ $currency['currency'] }}</span><strong>{{ App\Support\Ui\UiLabel::money($currency['amount'], $currency['currency']) }}</strong></div>
@@ -171,8 +171,8 @@
                     ['route' => 'platform.operations.index', 'label' => 'Supervision', 'icon' => 'warning'],
                     ['route' => 'platform.audit-logs.index', 'label' => 'Journal global', 'icon' => 'file'],
                 ] as $shortcut)
-                    <a href="{{ route($shortcut['route']) }}" class="group flex min-h-24 flex-col justify-between rounded-xl border border-belkhir-space-border bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:border-belkhir-space-blue/40 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none">
-                        <span class="grid h-10 w-10 place-items-center rounded-xl bg-belkhir-space-blue/10 text-belkhir-space-blue"><x-icon :name="$shortcut['icon']" /></span>
+                    <a href="{{ route($shortcut['route']) }}" class="group flex min-h-24 flex-col justify-between rounded-xl border border-sanad-pilot-border bg-white p-4 transition duration-150 hover:-translate-y-0.5 hover:border-sanad-pilot-blue/40 hover:shadow-md motion-reduce:transform-none motion-reduce:transition-none">
+                        <span class="grid h-10 w-10 place-items-center rounded-xl bg-sanad-pilot-blue/10 text-sanad-pilot-blue"><x-icon :name="$shortcut['icon']" /></span>
                         <span class="mt-4 flex items-center justify-between gap-2 text-sm font-semibold text-slate-900">{{ $shortcut['label'] }}<x-icon name="next" size="xs" class="text-slate-400 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" /></span>
                     </a>
                 @endforeach

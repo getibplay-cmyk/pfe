@@ -175,7 +175,7 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::get('/reports/vehicle-profitability/export', VehicleProfitabilityExportController::class)->middleware('throttle:10,1,profitability-export')->name('vehicle-profitability.export');
     Route::get('/fleet/planning', FleetPlanningController::class)->name('fleet.planning.index');
     Route::get('/booking-catalog', [BookingAdministrationController::class, 'settings'])->name('booking-admin.settings');
-    Route::post('/booking-catalog', [BookingAdministrationController::class, 'saveSettings'])->name('booking-admin.settings.save');
+    Route::post('/booking-catalog', [BookingAdministrationController::class, 'saveSettings'])->middleware(['password.confirm', 'throttle:10,1,administration'])->name('booking-admin.settings.save');
     Route::get('/booking-requests', [BookingAdministrationController::class, 'index'])->name('booking-admin.index');
     Route::get('/booking-requests/{booking}', [BookingAdministrationController::class, 'show'])->whereUuid('booking')->name('booking-admin.show');
     Route::post('/booking-requests/{booking}/convert', [BookingAdministrationController::class, 'convert'])->whereUuid('booking')->name('booking-admin.convert');
@@ -190,7 +190,7 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::post('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'store'])->middleware(['password.confirm', 'throttle:10,1,portal-issue'])->name('customers.portal-access.store');
     Route::delete('/customers/{customer}/portal-access', [CustomerPortalAccessController::class, 'revoke'])->name('customers.portal-access.revoke');
     Route::get('/tenant', [TenantController::class, 'show'])->name('tenant.show');
-    Route::patch('/tenant', [TenantController::class, 'update'])->name('tenant.update');
+    Route::patch('/tenant', [TenantController::class, 'update'])->middleware(['password.confirm', 'throttle:10,1,administration'])->name('tenant.update');
     Route::get('/tenant/saas-account', TenantSaasAccountController::class)->name('tenant-saas-account.show');
     Route::get('/tenant/saas-account/invoices/{invoice}', SaasInvoiceController::class)
         ->whereUuid('invoice')->name('tenant-saas-invoices.show');
@@ -207,7 +207,8 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
         ->whereUuid('attempt')
         ->middleware('throttle:30,1,cmi-checkout-view')
         ->name('tenant-saas-checkout.show');
-    Route::resource('agencies', AgencyController::class);
+    Route::resource('agencies', AgencyController::class)
+        ->middlewareFor(['create', 'store', 'edit', 'update', 'destroy'], 'password.confirm');
     Route::get('/fleet/agency-distances', [AgencyDistanceController::class, 'index'])
         ->name('agency-distances.index');
     Route::post('/fleet/agency-distances', [AgencyDistanceController::class, 'store'])
@@ -230,12 +231,14 @@ Route::middleware(['auth', 'tenant', 'password.changed', 'verified'])->group(fun
     Route::get('/fleet/reallocation-planning/runs/{run}/status', [FleetReallocationPlanningController::class, 'status'])
         ->middleware('throttle:60,1')
         ->name('fleet.reallocation-planning.runs.status');
-    Route::resource('users', TenantUserController::class)->only(['index', 'create', 'store', 'edit', 'update']);
-    Route::post('/users/{user}/reset-password', [TenantUserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::resource('users', TenantUserController::class)->only(['index', 'create', 'store', 'edit', 'update'])
+        ->middlewareFor(['create', 'store', 'edit', 'update'], 'password.confirm');
+    Route::post('/users/{user}/reset-password', [TenantUserController::class, 'resetPassword'])->middleware(['password.confirm', 'throttle:10,1,administration'])->name('users.reset-password');
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
-    Route::resource('roles', RoleController::class)->only(['index', 'create', 'store', 'edit', 'update']);
+    Route::resource('roles', RoleController::class)->only(['index', 'create', 'store', 'edit', 'update'])
+        ->middlewareFor(['create', 'store', 'edit', 'update'], 'password.confirm');
     Route::get('/role-delegations', [RoleController::class, 'delegations'])->name('roles.delegations');
-    Route::put('/role-delegations/{agency}', [RoleController::class, 'updateDelegations'])->name('roles.delegations.update');
+    Route::put('/role-delegations/{agency}', [RoleController::class, 'updateDelegations'])->middleware(['password.confirm', 'throttle:10,1,administration'])->name('roles.delegations.update');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::patch('/notifications/{notification}/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
@@ -535,7 +538,7 @@ Route::prefix('platform')->name('platform.')->middleware(['auth', 'active.accoun
         Route::post('/model-training/{campaign}/retry', [PlatformModelTrainingController::class, 'retry'])->name('training.retry');
     });
 
-    Route::middleware('throttle:30,1')->group(function () {
+    Route::middleware(['password.confirm', 'throttle:30,1'])->group(function () {
         Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
         Route::match(['put', 'patch'], '/tenants/{tenant}', [PlatformTenantController::class, 'update'])->name('tenants.update');
         Route::post('/tenants/{tenant}/suspend', [PlatformTenantController::class, 'suspend'])->name('tenants.suspend');

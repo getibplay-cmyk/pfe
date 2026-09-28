@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\EmailChangeController;
 use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,7 +25,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->middleware('throttle:5,1,password-reset-request')
+        ->middleware('throttle:password-recovery')
         ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
@@ -36,6 +37,9 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'active.account'])->group(function () {
+    Route::get('profile/email-change/{token}', [EmailChangeController::class, 'show'])->middleware(['signed', 'throttle:5,1,email-change'])->name('profile.email-change.show');
+    Route::post('profile/email-change/{token}', [EmailChangeController::class, 'confirm'])->middleware(['signed', 'throttle:5,1,email-change'])->name('profile.email-change.confirm');
+    Route::delete('profile/email-change', [EmailChangeController::class, 'cancel'])->middleware(['password.confirm', 'throttle:5,1,email-change'])->name('profile.email-change.cancel');
     Route::get('security/challenge', [AccountSecurityController::class, 'challenge'])->name('security.challenge');
     Route::post('security/challenge', [AccountSecurityController::class, 'verify'])->middleware('throttle:5,1,mfa-challenge')->name('security.verify');
     Route::get('profile/security', [AccountSecurityController::class, 'index'])->name('security.index');

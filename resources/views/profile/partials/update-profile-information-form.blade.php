@@ -1,4 +1,14 @@
 <form id="send-verification" method="post" action="{{ route('verification.send') }}">@csrf</form>
+@if ($user->pending_email && $user->pending_email_expires_at?->isFuture())
+    <div class="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <p>{{ __('Une nouvelle adresse est en attente de confirmation :') }} {{ $user->pending_email }}</p>
+        <form method="post" action="{{ route('profile.email-change.cancel') }}" class="mt-3">
+            @csrf
+            @method('delete')
+            <x-secondary-button type="submit">{{ __('Annuler le changement d’adresse') }}</x-secondary-button>
+        </form>
+    </div>
+@endif
 <form method="post" action="{{ route('profile.update') }}" class="space-y-5">
     @csrf
     @method('patch')

@@ -18,9 +18,13 @@ class RequestCorrelation
         $request->attributes->set('correlation_id', $correlationId);
         Log::withContext(['correlation_id' => $correlationId]);
 
-        $response = $next($request);
-        $response->headers->set('X-Correlation-ID', $correlationId);
+        try {
+            $response = $next($request);
+            $response->headers->set('X-Correlation-ID', $correlationId);
 
-        return $response;
+            return $response;
+        } finally {
+            Log::withoutContext(['correlation_id']);
+        }
     }
 }

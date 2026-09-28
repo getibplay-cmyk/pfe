@@ -4,7 +4,7 @@
             <x-slot:actions>
                 <a href="{{ route('customers.index') }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />{{ __('Retour aux clients') }}</a>
                 @can('update', $customer)<a href="{{ route('customers.edit', $customer) }}" class="rf-button-secondary">{{ __('Modifier') }}</a>@endcan
-                @can('archive', $customer)<form method="POST" action="{{ route('customers.destroy', $customer) }}" x-belkhir-space-confirm data-confirm-title="{{ __('Archiver ce client') }}" data-confirm-resource="{{ __('Fiche client sélectionnée') }}" data-confirm-consequence="{{ __('Le client sera archivé sans suppression de son historique.') }}" data-confirm-label="{{ __('Archiver') }}">@csrf @method('DELETE')<button class="rf-button-danger">{{ __('Archiver') }}</button></form>@endcan
+                @can('archive', $customer)<form method="POST" action="{{ route('customers.destroy', $customer) }}" x-sanad-pilot-confirm data-confirm-title="{{ __('Archiver ce client') }}" data-confirm-resource="{{ __('Fiche client sélectionnée') }}" data-confirm-consequence="{{ __('Le client sera archivé sans suppression de son historique.') }}" data-confirm-label="{{ __('Archiver') }}">@csrf @method('DELETE')<button class="rf-button-danger">{{ __('Archiver') }}</button></form>@endcan
             </x-slot:actions>
         </x-page-header>
         @if(auth()->user()->can('update', $customer) && app(App\Support\Tenancy\CustomerPortalContext::class)->canManage(auth()->user()))<a href="{{ route('customers.portal-access.show', $customer) }}" class="rf-button-secondary">{{ __('Gérer l’accès au portail locataire') }}</a>@endif

@@ -13,15 +13,15 @@ import { createReservationDemandForecast } from './reservation-demand-forecast';
 import { createFleetReallocationPlanning } from './fleet-reallocation-planning';
 import { initializePlatformStatistics } from './platform-statistics';
 import { initializeTenantStatistics } from './tenant-statistics';
-import { initializeBelkhirSpaceLoading, initializeLoadingForms } from './form-enhancements';
-import { registerBelkhirSpaceUi } from './belkhir-space-ui';
+import { initializeSanadPilotLoading, initializeLoadingForms } from './form-enhancements';
+import { registerSanadPilotUi } from './sanad-pilot-ui';
 import { initializeCmiCheckout } from './cmi-checkout';
 import { initializeUnsavedForms } from './unsaved-form';
 
 window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
-    registerBelkhirSpaceUi(Alpine);
+    registerSanadPilotUi(Alpine);
 
     Alpine.data('vehicleColorAssistant', (config) => createVehicleColorAssistant(config));
     Alpine.data('vehicleRegistrationAssistant', (config) => createVehicleRegistrationAssistant(config));
@@ -41,8 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeWorkspaceSearch();
     initializePlatformStatistics();
     initializeTenantStatistics();
-    const belkhirSpaceLoading = initializeBelkhirSpaceLoading();
-    initializeLoadingForms(document, window, belkhirSpaceLoading);
+    const sanadPilotLoading = initializeSanadPilotLoading();
+    initializeLoadingForms(document, window, sanadPilotLoading);
     initializeCmiCheckout();
     initializeUnsavedForms();
 

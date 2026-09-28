@@ -14,7 +14,7 @@ function safeLoadingMessage(message) {
     return normalized || SAFE_LOADING_MESSAGE;
 }
 
-export function createBelkhirSpaceLoadingController({
+export function createSanadPilotLoadingController({
     progressElement = null,
     overlayElement = null,
     busyElement = null,
@@ -46,7 +46,7 @@ export function createBelkhirSpaceLoadingController({
         timer = null;
     };
     const begin = ({ immediate = false } = {}) => {
-        const token = Symbol('belkhir-space-loading');
+        const token = Symbol('sanad-pilot-loading');
         activities.add(token);
 
         if (immediate || delay <= 0) {
@@ -99,7 +99,7 @@ export function createBelkhirSpaceLoadingController({
         longOperation = begin({ immediate: true });
 
         if (overlayElement) {
-            const messageElement = overlayElement.querySelector?.('[data-belkhir-space-loading-message]');
+            const messageElement = overlayElement.querySelector?.('[data-sanad-pilot-loading-message]');
             if (messageElement) messageElement.textContent = safeLoadingMessage(message);
             overlayElement.hidden = false;
         }
@@ -155,10 +155,10 @@ export function shouldTrackNavigation(event, link, location = globalThis.locatio
     }
 }
 
-export function initializeBelkhirSpaceLoading(root = document, host = window, options = {}) {
-    const progressElement = root.querySelector?.('[data-belkhir-space-progress]') ?? null;
-    const overlayElement = root.querySelector?.('[data-belkhir-space-loading-overlay]') ?? null;
-    const controller = createBelkhirSpaceLoadingController({
+export function initializeSanadPilotLoading(root = document, host = window, options = {}) {
+    const progressElement = root.querySelector?.('[data-sanad-pilot-progress]') ?? null;
+    const overlayElement = root.querySelector?.('[data-sanad-pilot-loading-overlay]') ?? null;
+    const controller = createSanadPilotLoadingController({
         progressElement,
         overlayElement,
         busyElement: root.body,
@@ -192,9 +192,9 @@ export function initializeBelkhirSpaceLoading(root = document, host = window, op
     host.addEventListener?.('pagehide', reset);
     host.addEventListener?.('error', reset);
     host.addEventListener?.('unhandledrejection', reset);
-    host.addEventListener?.('belkhir-space:loading-cancel', reset);
-    host.addEventListener?.('belkhir-space:long-operation-start', startLongOperation);
-    host.addEventListener?.('belkhir-space:long-operation-end', controller.endLongOperation);
+    host.addEventListener?.('sanad-pilot:loading-cancel', reset);
+    host.addEventListener?.('sanad-pilot:long-operation-start', startLongOperation);
+    host.addEventListener?.('sanad-pilot:long-operation-end', controller.endLongOperation);
 
     controller.destroy = () => {
         reset();
@@ -203,9 +203,9 @@ export function initializeBelkhirSpaceLoading(root = document, host = window, op
         host.removeEventListener?.('pagehide', reset);
         host.removeEventListener?.('error', reset);
         host.removeEventListener?.('unhandledrejection', reset);
-        host.removeEventListener?.('belkhir-space:loading-cancel', reset);
-        host.removeEventListener?.('belkhir-space:long-operation-start', startLongOperation);
-        host.removeEventListener?.('belkhir-space:long-operation-end', controller.endLongOperation);
+        host.removeEventListener?.('sanad-pilot:loading-cancel', reset);
+        host.removeEventListener?.('sanad-pilot:long-operation-start', startLongOperation);
+        host.removeEventListener?.('sanad-pilot:long-operation-end', controller.endLongOperation);
     };
 
     return controller;
@@ -248,13 +248,13 @@ export function initializeLoadingForms(root = document, host = window, loadingCo
                 }
 
                 setFormLoading(form, true);
-                form.__belkhirSpaceLoadingToken = loadingController?.begin();
+                form.__sanadPilotLoadingToken = loadingController?.begin();
             });
         });
         form.addEventListener('reset', () => {
             guard.reset();
-            loadingController?.finish(form.__belkhirSpaceLoadingToken);
-            form.__belkhirSpaceLoadingToken = null;
+            loadingController?.finish(form.__sanadPilotLoadingToken);
+            form.__sanadPilotLoadingToken = null;
             setFormLoading(form, false);
         });
         form.__rentfleetSubmissionGuard = guard;
@@ -263,8 +263,8 @@ export function initializeLoadingForms(root = document, host = window, loadingCo
     host.addEventListener('pageshow', () => {
         for (const form of forms) {
             form.__rentfleetSubmissionGuard?.reset();
-            loadingController?.finish(form.__belkhirSpaceLoadingToken);
-            form.__belkhirSpaceLoadingToken = null;
+            loadingController?.finish(form.__sanadPilotLoadingToken);
+            form.__sanadPilotLoadingToken = null;
             setFormLoading(form, false);
         }
     });

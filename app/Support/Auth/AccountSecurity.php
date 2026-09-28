@@ -7,6 +7,7 @@ use App\Support\Audit\AuditRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use SensitiveParameter;
@@ -70,9 +71,14 @@ final class AccountSecurity
 
     public function trustSession(Request $request, int $version): void
     {
+        $request->user()->refresh();
         $request->session()->regenerate(true);
         $request->session()->put('mfa_verified', [
             'user_id' => $request->user()->id, 'version' => $version,
+        ]);
+        $request->session()->put('account_session', [
+            'user_id' => $request->user()->id, 'version' => $version,
+            'started_at' => $request->session()->get('account_session.started_at', now()->timestamp),
         ]);
     }
 
@@ -94,7 +100,9 @@ final class AccountSecurity
             $user->forceFill([
                 'password' => Hash::make($newPassword), 'must_change_password' => false,
                 'remember_token' => Str::random(60), 'security_version' => $user->security_version + 1,
+                'pending_email' => null, 'pending_email_token_hash' => null, 'pending_email_expires_at' => null,
             ])->save();
+            Password::deleteToken($user);
             $this->revokeOtherSessions($request);
             $this->audit->record($initial ? 'user.initial_password_changed' : 'profile.password_changed', $user, [], ['sessions_revoked' => true]);
 
@@ -121,11 +129,15 @@ final class AccountSecurity
         $this->trustSession($request, $version);
     }
 
-    private function assertCurrentMfaProof(Request $request, User $user): void
+    public function assertCurrentMfaProof(Request $request, User $user): void
     {
+        abort_unless($user->is_active, 403);
         $proof = $request->session()->get('mfa_verified', []);
         abort_if($user->mfa_confirmed_at && (($proof['user_id'] ?? null) !== $user->id
             || ($proof['version'] ?? null) !== $user->security_version), 403);
+        $session = $request->session()->get('account_session');
+        abort_if(is_array($session) && (($session['user_id'] ?? null) !== $user->id
+            || ($session['version'] ?? null) !== $user->security_version), 403);
     }
 
     /** @return list<string> */

@@ -1,5 +1,5 @@
 @props(['variant' => 'card', 'label' => __('Chargement du contenu…')])
-<div role="status" aria-live="polite" {{ $attributes->class('animate-pulse overflow-hidden rounded-xl border border-belkhir-space-border bg-white p-4') }}>
+<div role="status" aria-live="polite" {{ $attributes->class('animate-pulse overflow-hidden rounded-xl border border-sanad-pilot-border bg-white p-4') }}>
     @if ($variant === 'chart')
         <div class="h-4 w-40 rounded bg-slate-200"></div>
         <div class="mt-5 flex h-52 items-end gap-3" aria-hidden="true">
