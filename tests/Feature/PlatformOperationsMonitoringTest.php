@@ -33,6 +33,7 @@ class PlatformOperationsMonitoringTest extends TestCase
 
     public function test_monitor_opens_and_resolves_a_failed_queue_incident_with_append_only_events(): void
     {
+        $this->assertSame(config('app.timezone'), DB::selectOne('SHOW TIME ZONE')->TimeZone);
         $this->artisan('operations:scheduler-heartbeat')->assertSuccessful();
         DB::table('failed_jobs')->insert([
             'uuid' => '00000000-0000-4000-8000-000000000001',

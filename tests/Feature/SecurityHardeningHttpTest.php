@@ -11,12 +11,13 @@ class SecurityHardeningHttpTest extends TestCase
     public function test_malformed_deep_and_oversized_json_fail_before_a_controller_executes(): void
     {
         Route::post('/__test/bounded-json', fn () => response()->json(['processed' => true]));
-        foreach (['{broken', str_repeat('{"a":', 34).'0'.str_repeat('}', 34), '[1,2]'] as $body) {
+        foreach (['{broken', str_repeat('{"a":', 34).'0'.str_repeat('}', 34), '[1,2]', '[]'] as $body) {
             $this->call('POST', '/__test/bounded-json', server: ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'], content: $body)
                 ->assertStatus(422)->assertHeader('X-Content-Type-Options', 'nosniff');
         }
         $this->call('POST', '/__test/bounded-json', server: ['CONTENT_TYPE' => 'application/json'], content: '{"a":"'.str_repeat('a', 1_048_576).'"}')->assertStatus(413);
         $this->postJson('/__test/bounded-json', ['a' => 'valid'])->assertOk()->assertJson(['processed' => true]);
+        $this->postJson('/__test/bounded-json')->assertOk()->assertJson(['processed' => true]);
     }
 
     public function test_csp_nonces_differ_between_responses_and_script_policy_is_explicitly_report_only(): void

@@ -27,10 +27,17 @@ abstract class TestCase extends BaseTestCase
         // carry the previous actor's account/MFA proof into that synthetic login.
         $proof = $this->app['session.store']->get('account_session');
         if (is_array($proof) && ($proof['user_id'] ?? null) !== $user->getAuthIdentifier()) {
-            $this->app['session.store']->flush();
+            $this->app['session.store']->invalidate();
         }
 
         return parent::actingAs($user, $guard);
+    }
+
+    public function json($method, $uri, array $data = [], array $headers = [], $options = 0)
+    {
+        // The application accepts JSON objects. Laravel otherwise encodes the
+        // helper's empty default as [], including getJson requests with no fields.
+        return parent::json($method, $uri, $data, $headers, $data === [] ? $options | JSON_FORCE_OBJECT : $options);
     }
 
     protected function assertUsesAuthorizedPostgreSqlTestDatabase(): string

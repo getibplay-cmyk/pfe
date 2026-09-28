@@ -19,7 +19,7 @@ class SanadPilotInterfaceTest extends TestCase
         $this->assertStringContainsString('prefers-reduced-motion: reduce', $css);
         $this->assertStringContainsString('.rf-button-quiet', $css);
         $this->assertStringContainsString('.rf-chart-surface', $css);
-        $this->assertStringContainsString('space: SANAD_PILOT_COLORS', file_get_contents(base_path('tailwind.config.js')));
+        $this->assertStringContainsString('pilot: SANAD_PILOT_COLORS', file_get_contents(base_path('tailwind.config.js')));
         $this->assertStringContainsString("theme('colors.sanad.pilot.blue')", $css);
         $this->assertFileExists(resource_path('views/components/loading-state.blade.php'));
         $this->assertFileExists(resource_path('views/components/quiet-button.blade.php'));

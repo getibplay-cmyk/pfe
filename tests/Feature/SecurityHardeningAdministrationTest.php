@@ -4,12 +4,19 @@ namespace Tests\Feature;
 
 use App\Models\Tenant;
 use App\Models\User;
+use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SecurityHardeningAdministrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolesPermissionsSeeder::class);
+    }
 
     public function test_stale_confirmation_cannot_suspend_a_tenant_and_fresh_confirmation_can(): void
     {
@@ -39,7 +46,7 @@ class SecurityHardeningAdministrationTest extends TestCase
         $owner = $this->createTenantOwner();
         $other = $this->createTenantOwner();
         $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])
-            ->putJson(route('users.update', $other), ['name' => 'Intrusion fictive'])->assertNotFound();
+            ->putJson(route('users.update', $other), ['name' => 'Intrusion fictive'])->assertForbidden();
         $this->assertNotSame('Intrusion fictive', $other->fresh()->name);
     }
 

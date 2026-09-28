@@ -28,6 +28,7 @@ class SecurityHardeningWorkerTest extends TestCase
         $context->setFromUser($ownerA);
         Auth::setUser($ownerA);
         $job = Mockery::mock(DatabaseJob::class);
+        $job->shouldReceive('payload')->andReturn([]);
         Event::dispatch(new JobExceptionOccurred('database', $job, new \RuntimeException('Synthetic failure')));
         $this->assertFalse($context->hasTenant());
         $this->assertFalse(Auth::check());
@@ -45,7 +46,9 @@ class SecurityHardeningWorkerTest extends TestCase
         $context = app(TenantContext::class);
         $context->setFromUser($owner);
         Auth::setUser($owner);
-        Event::dispatch(new JobProcessing('sync', Mockery::mock(SyncJob::class)));
+        $job = Mockery::mock(SyncJob::class);
+        $job->shouldReceive('payload')->andReturn([]);
+        Event::dispatch(new JobProcessing('sync', $job));
         $this->assertSame($owner->tenant_id, $context->tenantId());
         $this->assertSame($owner->id, Auth::id());
         $context->clear();

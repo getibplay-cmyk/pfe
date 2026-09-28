@@ -36,6 +36,10 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
 
     protected $guarded = ['tenant_id', 'agency_id', 'role_id', 'is_platform_admin'];
 
+    // Keep newly created instances consistent with the PostgreSQL default before
+    // their first reload, including session proofs made immediately after creation.
+    protected $attributes = ['security_version' => 0];
+
     /**
      * The attributes that should be hidden for serialization.
      *

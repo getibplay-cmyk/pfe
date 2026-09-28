@@ -26,6 +26,7 @@ class SecurityHardeningAccountsTest extends TestCase
     {
         Notification::fake();
         $user = $this->createTenantOwner();
+        $this->assertSame($user->fresh()->security_version, $user->security_version);
         $original = $user->email;
         $url = null;
         $this->actingAs($user)->patch(route('profile.update'), ['name' => 'Test', 'email' => 'pending@example.test', 'current_password' => 'password'])->assertSessionHasNoErrors();
