@@ -18,6 +18,7 @@ use App\Support\Intelligence\VehiclePlate\VehiclePlateHybridContract;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateImageSanitizer;
 use App\Support\Intelligence\VehiclePlate\VehiclePlateRuntimeReadiness;
 use App\Support\PlatformBilling\TenantPlanAccess;
+use App\Support\Security\IntelligenceCapacity;
 use App\Support\Tenancy\AgencyAccess;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -140,6 +141,7 @@ final class QueueVehiclePlatePrediction
                 $detectorThreshold,
                 $detectorPadding,
             ): VehiclePlatePredictionRun {
+
                 if ($vehicle !== null) {
                     DB::selectOne(
                         'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
@@ -157,6 +159,7 @@ final class QueueVehiclePlatePrediction
                 }
 
                 $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::VehiclePlate);
+                app(IntelligenceCapacity::class)->assertAvailable();
                 $run = VehiclePlatePredictionRun::create([
                     'agency_id' => $agencyId,
                     'run_id' => $runId,

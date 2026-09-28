@@ -106,7 +106,7 @@ class PlatformOperationsMonitoringTest extends TestCase
             ->assertOk()
             ->assertSee('Supervision de production')
             ->assertSee('La collecte est inactive ou trop ancienne.');
-        $this->actingAs($platform)->post(route('platform.operations.refresh'))
+        $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.operations.refresh'))
             ->assertRedirect()
             ->assertSessionHas('status');
         $this->get(route('platform.operations.index'))

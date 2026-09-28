@@ -24,6 +24,7 @@ class ConfirmablePasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $request->validate(['password' => ['required', 'string', 'max:512']]);
         if (! Auth::guard('web')->validate([
             'email' => $request->user()->email,
             'password' => $request->password,
@@ -33,7 +34,8 @@ class ConfirmablePasswordController extends Controller
             ]);
         }
 
-        $request->session()->put('auth.password_confirmed_at', time());
+        $request->session()->regenerate(true);
+        $request->session()->put('auth.password_confirmed_at', now()->timestamp);
 
         $destination = config('security.mfa_require_admins') && ! $request->user()->mfa_confirmed_at
             && ($request->user()->is_platform_admin || $request->user()->isTenantOwner())

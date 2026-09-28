@@ -16,6 +16,7 @@ use App\Support\Intelligence\RentalUsageAnomaly\RentalUsageAnomalySnapshotInspec
 use App\Support\Intelligence\RentalUsageAnomaly\ResolveRentalUsageAnomalyContracts;
 use App\Support\Intelligence\RentalUsageAnomaly\ValidatedRentalUsageAnomalyOutput;
 use App\Support\Intelligence\TenantIntelligenceAccess;
+use App\Support\Security\RestrictedProcessEnvironment;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -208,7 +209,7 @@ final class ExecuteRentalUsageAnomalyRun
     /** @return array<string, string|false> */
     private function closedEnvironment(): array
     {
-        return [
+        return RestrictedProcessEnvironment::make([
             'PYTHONDONTWRITEBYTECODE' => '1',
             'PYTHONHASHSEED' => (string) RentalUsageAnomalyContract::RANDOM_STATE,
             'OMP_NUM_THREADS' => '1',
@@ -230,6 +231,6 @@ final class ExecuteRentalUsageAnomalyRun
             'OPENAI_API_KEY' => false,
             'STRIPE_SECRET' => false,
             'PGPASSWORD' => false,
-        ];
+        ]);
     }
 }

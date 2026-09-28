@@ -2,17 +2,17 @@
     <div class="rf-page">
         <x-page-header :title="__('Tableau de bord')" :eyebrow="__('Vue d’ensemble')" :description="__('Priorités opérationnelles de votre périmètre actuel, sans donnée sensible.')" />
 
-        <section class="relative overflow-hidden rounded-2xl bg-belkhir-space-ink p-6 text-white shadow-xl shadow-belkhir-space-ink/10">
-            <span class="absolute -right-16 -top-20 h-56 w-56 rounded-full border-[2.5rem] border-belkhir-space-blue/20" aria-hidden="true"></span>
-            <span class="absolute -bottom-14 right-24 h-32 w-32 rounded-full border-[1.75rem] border-belkhir-space-orange/15" aria-hidden="true"></span>
+        <section class="relative overflow-hidden rounded-2xl bg-sanad-pilot-ink p-6 text-white shadow-xl shadow-sanad-pilot-ink/10">
+            <span class="absolute -right-16 -top-20 h-56 w-56 rounded-full border-[2.5rem] border-sanad-pilot-blue/20" aria-hidden="true"></span>
+            <span class="absolute -bottom-14 right-24 h-32 w-32 rounded-full border-[1.75rem] border-sanad-pilot-orange/15" aria-hidden="true"></span>
             <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div class="max-w-2xl">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-belkhir-space-orange-soft">{{ __('Priorités opérationnelles') }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sanad-pilot-orange-soft">{{ __('Priorités opérationnelles') }}</p>
                     <h2 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{{ __('Pilotez l’activité avec les informations de votre périmètre.') }}</h2>
                     <p class="mt-3 text-sm leading-6 text-slate-300">{{ __('Les cartes et listes ci-dessous respectent vos droits ainsi que votre agence active.') }}</p>
                 </div>
                 @if (auth()->user()->hasPermission('report.view'))
-                    <a href="{{ route('reports.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-belkhir-space-ink transition duration-150 hover:-translate-y-0.5 hover:bg-belkhir-space-orange-soft motion-reduce:transform-none motion-reduce:transition-none"><x-icon name="chart" size="xs" />{{ __('Consulter les rapports') }}</a>
+                    <a href="{{ route('reports.index') }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-sanad-pilot-ink transition duration-150 hover:-translate-y-0.5 hover:bg-sanad-pilot-orange-soft motion-reduce:transform-none motion-reduce:transition-none"><x-icon name="chart" size="xs" />{{ __('Consulter les rapports') }}</a>
                 @endif
             </div>
         </section>
@@ -74,7 +74,7 @@
                     <div class="flex items-center justify-between gap-3"><h2 class="font-semibold">{{ __('Réservations à venir') }}</h2><a href="{{ route('reservations.index') }}" class="rf-button-link">{{ __('Voir tout') }}</a></div>
                     <div class="mt-4 space-y-3">
                         @forelse ($upcomingReservations as $reservation)
-                            <a href="{{ route('reservations.show', $reservation) }}" class="block rounded-xl border border-belkhir-space-border p-3 transition duration-150 hover:-translate-y-px hover:border-belkhir-space-blue/30 hover:bg-slate-50 hover:shadow-sm motion-reduce:transform-none motion-reduce:transition-none"><div class="flex justify-between gap-3"><span class="font-medium">{{ $reservation->reservation_number }}</span><x-status-badge :value="$reservation->status" /></div><p class="mt-1 text-sm text-slate-600">{{ $reservation->customer->displayName() }} · {{ App\Support\Ui\UiLabel::dateTime($reservation->starts_at) }}</p></a>
+                            <a href="{{ route('reservations.show', $reservation) }}" class="block rounded-xl border border-sanad-pilot-border p-3 transition duration-150 hover:-translate-y-px hover:border-sanad-pilot-blue/30 hover:bg-slate-50 hover:shadow-sm motion-reduce:transform-none motion-reduce:transition-none"><div class="flex justify-between gap-3"><span class="font-medium">{{ $reservation->reservation_number }}</span><x-status-badge :value="$reservation->status" /></div><p class="mt-1 text-sm text-slate-600">{{ $reservation->customer->displayName() }} · {{ App\Support\Ui\UiLabel::dateTime($reservation->starts_at) }}</p></a>
                         @empty <x-empty-state :title="__('Aucune réservation à venir')" :description="__('Les réservations confirmées des 30 prochains jours apparaîtront ici.')" /> @endforelse
                     </div>
                 </section>
@@ -143,7 +143,7 @@
             @if ($recentActivity !== null)
                 <section class="rf-panel p-5">
                     <div class="flex items-center justify-between gap-3"><h2 class="font-semibold">{{ __('Activité récente') }}</h2><a href="{{ route('audit-logs.index') }}" class="rf-button-link">{{ __('Voir le journal') }}</a></div>
-                    <ol class="mt-4 space-y-3 text-sm">@forelse ($recentActivity as $activity)<li class="border-l-2 border-belkhir-space-blue/25 ps-3"><strong>{{ App\Support\Ui\UiLabel::action($activity->action) }}</strong><p class="text-slate-500">{{ $activity->user?->name ?? __('Système') }} · {{ App\Support\Ui\UiLabel::dateTime($activity->created_at) }}</p></li>@empty <x-empty-state :title="__('Aucune activité récente')" /> @endforelse</ol>
+                    <ol class="mt-4 space-y-3 text-sm">@forelse ($recentActivity as $activity)<li class="border-l-2 border-sanad-pilot-blue/25 ps-3"><strong>{{ App\Support\Ui\UiLabel::action($activity->action) }}</strong><p class="text-slate-500">{{ $activity->user?->name ?? __('Système') }} · {{ App\Support\Ui\UiLabel::dateTime($activity->created_at) }}</p></li>@empty <x-empty-state :title="__('Aucune activité récente')" /> @endforelse</ol>
                 </section>
             @endif
         </div>

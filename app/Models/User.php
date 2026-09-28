@@ -47,6 +47,8 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         'mfa_secret',
         'mfa_pending_secret',
         'mfa_recovery_hashes',
+        'pending_email',
+        'pending_email_token_hash',
     ];
 
     /**
@@ -71,6 +73,8 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'mfa_last_counter' => 'integer',
             'security_version' => 'integer',
             'workspace_preferences' => 'array',
+            'pending_email' => 'encrypted',
+            'pending_email_expires_at' => 'immutable_datetime',
         ];
     }
 

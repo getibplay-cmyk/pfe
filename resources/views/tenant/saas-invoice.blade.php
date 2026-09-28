@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('Facture') }} {{ $invoice->number }} — BELKHIR SPACE</title>
+    <title>{{ __('Facture') }} {{ $invoice->number }} — SANAD PILOT</title>
     @vite(['resources/css/app.css'])
 </head>
 <body class="bg-white text-slate-900">

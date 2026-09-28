@@ -21,7 +21,7 @@ export function initializeUnsavedForms(root = document, host = window) {
     }
     host.addEventListener('beforeunload', (event) => {
         if (!states.some((state) => state.dirty)) return;
-        host.dispatchEvent(new Event('belkhir-space:loading-cancel'));
+        host.dispatchEvent(new Event('sanad-pilot:loading-cancel'));
         event.preventDefault();
         event.returnValue = '';
     });

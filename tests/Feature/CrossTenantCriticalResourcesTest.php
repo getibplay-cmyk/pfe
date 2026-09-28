@@ -89,8 +89,8 @@ class CrossTenantCriticalResourcesTest extends TestCase
         $this->actingAs($owner)->get(route('agencies.index'))->assertOk()->assertSee($agencyA->name)->assertSee($otherAgencyA->name)->assertDontSee($agencyB->name);
         $this->actingAs($manager)->get(route('agencies.index'))->assertOk()->assertSee($agencyA->name)->assertDontSee($otherAgencyA->name);
         $this->actingAs($agent)->get(route('reservations.index'))->assertOk();
-        $this->actingAs($agent)->post(route('agencies.store'), ['code' => 'NO', 'name' => 'Interdit'])->assertForbidden();
-        $this->actingAs($foreignOwner)->get(route('agencies.edit', $agencyA))->assertNotFound();
+        $this->actingAs($agent)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('agencies.store'), ['code' => 'NO', 'name' => 'Interdit'])->assertForbidden();
+        $this->actingAs($foreignOwner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('agencies.edit', $agencyA))->assertNotFound();
 
         auth()->logout();
         $this->post('/login', ['email' => $inactive->email, 'password' => 'password']);

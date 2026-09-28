@@ -1,5 +1,5 @@
 <x-public-layout :title="__('Abonnement')">
-    <section class="bg-belkhir-space-ink px-4 py-14 text-white sm:px-6 sm:py-20">
+    <section class="bg-sanad-pilot-ink px-4 py-14 text-white sm:px-6 sm:py-20">
         <div class="mx-auto max-w-7xl"><p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-300">{{ __('Abonnement professionnel') }}</p><h1 class="mt-4 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">{{ __('Une activation accompagnée, puis un paiement sécurisé.') }}</h1><p class="mt-5 max-w-2xl text-base leading-7 text-slate-300">{{ __('Aucune inscription anonyme : chaque entreprise, son administrateur et ses fonctions sont configurés avant l’ouverture de l’accès.') }}</p></div>
     </section>
     <section class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
@@ -9,7 +9,7 @@
                 ['2', 'Invitation sécurisée', 'Le propriétaire reçoit un lien personnel, choisit son mot de passe et crée l’agence initiale.'],
                 ['3', 'Règlement CMI', 'Depuis son espace, il rejoint la page CMI, règle en MAD puis retrouve le statut confirmé.'],
             ] as $step)
-                <li class="rf-panel p-6"><span class="grid h-10 w-10 place-items-center rounded-full bg-belkhir-space-blue text-sm font-bold text-white">{{ $step[0] }}</span><h2 class="mt-5 text-xl font-bold text-slate-950">{{ $step[1] }}</h2><p class="mt-3 text-sm leading-6 text-slate-600">{{ $step[2] }}</p></li>
+                <li class="rf-panel p-6"><span class="grid h-10 w-10 place-items-center rounded-full bg-sanad-pilot-blue text-sm font-bold text-white">{{ $step[0] }}</span><h2 class="mt-5 text-xl font-bold text-slate-950">{{ $step[1] }}</h2><p class="mt-3 text-sm leading-6 text-slate-600">{{ $step[2] }}</p></li>
             @endforeach
         </ol>
         <div class="mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

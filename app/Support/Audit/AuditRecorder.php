@@ -46,9 +46,23 @@ class AuditRecorder
 
     public function sanitize(array $values): array
     {
+        $remaining = 300;
+
+        return $this->sanitizeBounded($values, 0, $remaining);
+    }
+
+    private function sanitizeBounded(array $values, int $depth, int &$remaining): array
+    {
+        if ($depth >= 6) {
+            return ['truncated' => true];
+        }
         $sanitized = [];
 
-        foreach ($values as $key => $value) {
+        foreach (array_slice($values, 0, 100, true) as $key => $value) {
+            if ($remaining-- <= 0) {
+                $sanitized['truncated'] = true;
+                break;
+            }
             $normalizedKey = Str::lower((string) $key);
             if (collect(self::SENSITIVE_KEY_FRAGMENTS)->contains(
                 fn (string $fragment) => str_contains($normalizedKey, $fragment)
@@ -56,7 +70,15 @@ class AuditRecorder
                 continue;
             }
 
-            $sanitized[$key] = is_array($value) ? $this->sanitize($value) : $value;
+            $safeKey = is_string($key) ? Str::limit(preg_replace('/[\x00-\x1F\x7F]/', '', $key), 128, '') : $key;
+            $sanitized[$safeKey] = match (true) {
+                is_array($value) => $this->sanitizeBounded($value, $depth + 1, $remaining),
+                $value instanceof \BackedEnum => $value->value,
+                $value instanceof \DateTimeInterface => $value->format(DATE_ATOM),
+                is_string($value) => Str::limit(preg_replace('/[\x00-\x1F\x7F]/', ' ', $value), 2000, ''),
+                is_scalar($value), $value === null => $value,
+                default => '[unsupported value]',
+            };
         }
 
         return $sanitized;

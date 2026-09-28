@@ -14,6 +14,7 @@ use App\Support\Intelligence\VehicleColor\VehicleColorContract;
 use App\Support\Intelligence\VehicleColor\VehicleColorInputArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorResultValidator;
+use App\Support\Security\RestrictedProcessEnvironment;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -143,7 +144,7 @@ final class ExecuteVehicleColorPrediction
             );
             $result = Process::path(sys_get_temp_dir())
                 ->timeout($timeout)
-                ->env([
+                ->env(RestrictedProcessEnvironment::make([
                     'PYTHONDONTWRITEBYTECODE' => '1',
                     'PYTHONHASHSEED' => '20260822',
                     'ORT_DISABLE_TELEMETRY_EVENTS' => '1',
@@ -163,7 +164,7 @@ final class ExecuteVehicleColorPrediction
                     'OPENAI_API_KEY' => false,
                     'STRIPE_SECRET' => false,
                     'PGPASSWORD' => false,
-                ])
+                ]))
                 ->run([
                     $binary,
                     $script,

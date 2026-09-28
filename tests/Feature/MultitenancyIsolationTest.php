@@ -43,9 +43,9 @@ class MultitenancyIsolationTest extends TestCase
         [$otherTenant, $foreignAgency] = $this->tenantUser('tenant-owner');
 
         $payload = ['code' => 'HACK', 'name' => 'Interdit', 'is_active' => '1'];
-        $this->actingAs($owner)->get(route('agencies.edit', $foreignAgency))->assertNotFound();
-        $this->actingAs($owner)->put(route('agencies.update', $foreignAgency), $payload)->assertNotFound();
-        $this->actingAs($owner)->delete(route('agencies.destroy', $foreignAgency))->assertNotFound();
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('agencies.edit', $foreignAgency))->assertNotFound();
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('agencies.update', $foreignAgency), $payload)->assertNotFound();
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->delete(route('agencies.destroy', $foreignAgency))->assertNotFound();
 
         $this->assertDatabaseHas('agencies', ['id' => $foreignAgency->id, 'tenant_id' => $otherTenant->id]);
     }
@@ -55,7 +55,7 @@ class MultitenancyIsolationTest extends TestCase
         [, , $owner] = $this->tenantUser('tenant-owner');
         $other = Tenant::factory()->create();
 
-        $this->actingAs($owner)->post(route('agencies.store'), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('agencies.store'), [
             'tenant_id' => $other->id,
             'code' => 'INJECT',
             'name' => 'Injection',
@@ -114,7 +114,7 @@ class MultitenancyIsolationTest extends TestCase
     {
         [$tenant, $agency, $owner] = $this->tenantUser('tenant-owner');
 
-        $this->actingAs($owner)->put(route('agencies.update', $agency), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('agencies.update', $agency), [
             'code' => $agency->code,
             'name' => 'Agence mise à jour',
             'is_active' => '1',
@@ -133,7 +133,7 @@ class MultitenancyIsolationTest extends TestCase
         [$tenant, $agency, $owner] = $this->tenantUser('tenant-owner');
         $role = Role::where('slug', 'rental-agent')->firstOrFail();
 
-        $this->actingAs($owner)->post(route('users.store'), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), [
             'tenant_id' => $tenant->id,
             'name' => 'Tentative injectée',
             'email' => 'blocked@example.test',
@@ -143,7 +143,7 @@ class MultitenancyIsolationTest extends TestCase
             'is_active' => '1',
         ])->assertSessionHasErrors('tenant_id');
 
-        $this->actingAs($owner)->post(route('users.store'), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), [
             'name' => 'Agent Démo',
             'email' => 'agent@example.test',
             'role_id' => $role->id,

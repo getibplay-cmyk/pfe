@@ -13,7 +13,7 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
-import { belkhirSpaceCartesianScales, belkhirSpaceChartColors } from './belkhir-space-chart-theme.js';
+import { sanadPilotCartesianScales, sanadPilotChartColors } from './sanad-pilot-chart-theme.js';
 import { formatBusinessInteger } from './business-number.js';
 
 Chart.register(
@@ -36,13 +36,13 @@ export function platformChartsPreferReducedMotion() {
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function belkhirSpaceAnimation() {
+function sanadPilotAnimation() {
     return platformChartsPreferReducedMotion()
         ? false
         : { duration: 500, easing: 'easeOutQuart' };
 }
 
-function belkhirSpaceTooltip() {
+function sanadPilotTooltip() {
     return {
         intersect: false,
         callbacks: {
@@ -66,12 +66,12 @@ export function platformChartConfiguration(labels, values, color, {
             responsive: true,
             maintainAspectRatio: false,
             indexAxis: horizontal ? 'y' : 'x',
-            animation: belkhirSpaceAnimation(),
+            animation: sanadPilotAnimation(),
             plugins: {
                 legend: { display: false },
-                tooltip: belkhirSpaceTooltip(),
+                tooltip: sanadPilotTooltip(),
             },
-            scales: belkhirSpaceCartesianScales({ integer: true, horizontal, maximum }),
+            scales: sanadPilotCartesianScales({ integer: true, horizontal, maximum }),
         },
     };
 }
@@ -95,12 +95,12 @@ export function platformLineConfiguration(labels, values, color) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: belkhirSpaceAnimation(),
+            animation: sanadPilotAnimation(),
             plugins: {
                 legend: { display: false },
-                tooltip: belkhirSpaceTooltip(),
+                tooltip: sanadPilotTooltip(),
             },
-            scales: belkhirSpaceCartesianScales({ integer: true }),
+            scales: sanadPilotCartesianScales({ integer: true }),
         },
     };
 }
@@ -116,13 +116,13 @@ export function platformDoughnutConfiguration(labels, values, colors) {
             responsive: true,
             maintainAspectRatio: false,
             cutout: '68%',
-            animation: belkhirSpaceAnimation(),
+            animation: sanadPilotAnimation(),
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: { usePointStyle: true, boxWidth: 8, padding: 18 },
                 },
-                tooltip: belkhirSpaceTooltip(),
+                tooltip: sanadPilotTooltip(),
             },
         },
     };
@@ -180,7 +180,7 @@ export function initializePlatformStatistics() {
             return;
         }
 
-        const colors = belkhirSpaceChartColors(root);
+        const colors = sanadPilotChartColors(root);
 
         renderPlatformDoughnut(
             root.querySelector('[data-platform-chart="tenant-states"]'),

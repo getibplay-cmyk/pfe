@@ -46,6 +46,7 @@
   minute et expiration des polices à 00:15 en `Africa/Casablanca`.
 - [ ] Le heartbeat a moins de cinq minutes et `rentfleet:doctor --production`
   le considère sain.
+- [ ] Un worker `queue:work --queue=notifications --timeout=20 --tries=3` supervisé et réservé traite les e-mails de sécurité ; un essai de réception réelle est conservé.
 - [ ] Un worker `queue:work --queue=intelligence,default` supervisé consomme la
   file PostgreSQL et redémarre proprement à chaque release.
 

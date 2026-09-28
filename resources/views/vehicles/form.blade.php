@@ -15,7 +15,7 @@
         ];
     @endphp
     <form data-unsaved-warning
-        class="mx-auto max-w-4xl space-y-5 rounded-2xl border border-belkhir-space-border bg-white p-5 shadow-panel sm:p-6"
+        class="mx-auto max-w-4xl space-y-5 rounded-2xl border border-sanad-pilot-border bg-white p-5 shadow-panel sm:p-6"
         method="POST"
         action="{{ $vehicle->exists ? route('vehicles.update', $vehicle) : route('vehicles.store') }}"
         x-data='vehicleColorAssistant(@json($assistantConfiguration))'
@@ -81,7 +81,7 @@
                                     x-ref="fullPhoto"
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
-                                    class="mt-1 block w-full rounded-xl border border-belkhir-space-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-belkhir-space-blue hover:file:bg-brand-100"
+                                    class="mt-1 block w-full rounded-xl border border-sanad-pilot-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-sanad-pilot-blue hover:file:bg-brand-100"
                                     @change="selectPhoto($event, 'full_vehicle_image')"
                                 >
                             </label>
@@ -97,7 +97,7 @@
                             </button>
                         </div>
 
-                        <div x-cloak x-show="fullPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
+                        <div x-cloak x-show="fullPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-sanad-pilot-border bg-slate-100">
                             <img :src="fullPreviewUrl" alt="{{ __('Aperçu local de la photo complète du véhicule') }}" class="h-full w-full object-contain">
                         </div>
 
@@ -139,7 +139,7 @@
                                         x-ref="closeUpPhoto"
                                         type="file"
                                         accept="image/jpeg,image/png,image/webp"
-                                        class="mt-1 block w-full rounded-xl border border-belkhir-space-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-belkhir-space-orange-soft file:px-3 file:py-2 file:font-semibold file:text-belkhir-space-orange hover:file:bg-orange-100"
+                                        class="mt-1 block w-full rounded-xl border border-sanad-pilot-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-sanad-pilot-orange-soft file:px-3 file:py-2 file:font-semibold file:text-sanad-pilot-orange hover:file:bg-orange-100"
                                         @change="selectPhoto($event, 'plate_crop')"
                                     >
                                 </label>
@@ -154,7 +154,7 @@
                                     <span x-text="busy && activeMode === 'plate_crop' ? 'Lecture en cours…' : 'Lire la photo rapprochée'">{{ __('Lire la photo rapprochée') }}</span>
                                 </button>
                             </div>
-                            <div x-cloak x-show="closeUpPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
+                            <div x-cloak x-show="closeUpPreviewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-sanad-pilot-border bg-slate-100">
                                 <img :src="closeUpPreviewUrl" alt="{{ __('Aperçu local de la photo rapprochée de la plaque') }}" class="h-full w-full object-contain">
                             </div>
                         </div>
@@ -212,7 +212,7 @@
                                 x-ref="colorPhoto"
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp"
-                                class="mt-1 block w-full rounded-xl border border-belkhir-space-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-belkhir-space-blue hover:file:bg-brand-100"
+                                class="mt-1 block w-full rounded-xl border border-sanad-pilot-border bg-white p-2 text-sm file:me-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:font-semibold file:text-sanad-pilot-blue hover:file:bg-brand-100"
                                 @change="selectPhoto($event)"
                             >
                         </label>
@@ -229,7 +229,7 @@
                         </button>
                     </div>
 
-                    <div x-cloak x-show="previewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-belkhir-space-border bg-slate-100">
+                    <div x-cloak x-show="previewUrl" class="mt-3 aspect-[4/3] max-w-sm overflow-hidden rounded-2xl border border-sanad-pilot-border bg-slate-100">
                         <img :src="previewUrl" alt="{{ __('Aperçu local de la photo utilisée pour suggérer la couleur') }}" class="h-full w-full object-contain">
                     </div>
 

@@ -22,7 +22,7 @@
                 <div>
                     <x-input-label for="user-search" :value="__('Nom ou e-mail')" />
                     <div class="relative mt-1">
-                        <span class="pointer-events-none absolute inset-y-0 start-0 flex w-11 items-center justify-center text-belkhir-space-muted" aria-hidden="true"><x-icon name="search" size="sm" /></span>
+                        <span class="pointer-events-none absolute inset-y-0 start-0 flex w-11 items-center justify-center text-sanad-pilot-muted" aria-hidden="true"><x-icon name="search" size="sm" /></span>
                         <input id="user-search" name="q" value="{{ request('q') }}" class="w-full ps-11" autocomplete="off">
                     </div>
                 </div>
@@ -64,14 +64,14 @@
                     @forelse ($users as $managedUser)
                         <tr>
                             <td><div class="flex items-center gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-belkhir-space-blue" aria-hidden="true"><x-icon name="users" size="sm" /></span>
-                                <div class="min-w-0"><p class="truncate font-semibold text-belkhir-space-text">{{ $managedUser->name }}</p><p class="truncate text-xs text-belkhir-space-muted">{{ $managedUser->email }}</p></div>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-sanad-pilot-blue" aria-hidden="true"><x-icon name="users" size="sm" /></span>
+                                <div class="min-w-0"><p class="truncate font-semibold text-sanad-pilot-text">{{ $managedUser->name }}</p><p class="truncate text-xs text-sanad-pilot-muted">{{ $managedUser->email }}</p></div>
                             </div></td>
                             <td>{{ $managedUser->role?->displayName() ?? __('Aucun rôle') }}</td>
                             <td>{{ $managedUser->agency?->name ?? __('Toutes les agences') }}</td>
                             <td>
                                 <x-status-badge :value="$managedUser->is_active ? 'active' : 'inactive'" />
-                                @if ($managedUser->must_change_password)<p class="mt-1.5 text-xs font-medium text-belkhir-space-warning">{{ __('Mot de passe à changer') }}</p>@endif
+                                @if ($managedUser->must_change_password)<p class="mt-1.5 text-xs font-medium text-sanad-pilot-warning">{{ __('Mot de passe à changer') }}</p>@endif
                             </td>
                             <td>{{ App\Support\Ui\UiLabel::dateTime($managedUser->last_login_at) }}</td>
                             <td><div class="flex justify-end">

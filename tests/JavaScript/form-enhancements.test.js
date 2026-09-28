@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-    createBelkhirSpaceLoadingController,
+    createSanadPilotLoadingController,
     createSubmissionGuard,
-    initializeBelkhirSpaceLoading,
+    initializeSanadPilotLoading,
     initializeLoadingForms,
     setFormLoading,
     shouldTrackNavigation,
@@ -83,7 +83,7 @@ test('le spinner masqué reste invisible malgré sa classe inline-block', () => 
 test('la barre attend 140 ms, expose aria-busy puis se nettoie après succès', () => {
     const elements = fakeLoadingElements();
     const timers = timerHarness();
-    const controller = createBelkhirSpaceLoadingController({
+    const controller = createSanadPilotLoadingController({
         progressElement: elements.progress,
         busyElement: elements.busy,
         setTimer: timers.setTimer,
@@ -105,7 +105,7 @@ test('la barre attend 140 ms, expose aria-busy puis se nettoie après succès', 
 test('une opération terminée avant le délai ne fait jamais clignoter la barre', () => {
     const elements = fakeLoadingElements();
     const timers = timerHarness();
-    const controller = createBelkhirSpaceLoadingController({
+    const controller = createSanadPilotLoadingController({
         progressElement: elements.progress,
         setTimer: timers.setTimer,
         clearTimer: timers.clearTimer,
@@ -119,7 +119,7 @@ test('une opération terminée avant le délai ne fait jamais clignoter la barre
 });
 
 test('succès, erreur et exception précoce nettoient toujours le contrôleur', async () => {
-    const controller = createBelkhirSpaceLoadingController({ delay: 0 });
+    const controller = createSanadPilotLoadingController({ delay: 0 });
 
     assert.equal(await controller.run(() => Promise.resolve('ok')), 'ok');
     assert.equal(controller.active, false);
@@ -130,7 +130,7 @@ test('succès, erreur et exception précoce nettoient toujours le contrôleur', 
 });
 
 test('une annulation déjà signalée ne laisse aucun état actif', async () => {
-    const controller = createBelkhirSpaceLoadingController({ delay: 0 });
+    const controller = createSanadPilotLoadingController({ delay: 0 });
     const abort = new AbortController();
     abort.abort(new Error('annulée'));
 
@@ -140,7 +140,7 @@ test('une annulation déjà signalée ne laisse aucun état actif', async () => 
 });
 
 test('une annulation pendant une opération nettoie avant même sa résolution', async () => {
-    const controller = createBelkhirSpaceLoadingController({ delay: 0 });
+    const controller = createSanadPilotLoadingController({ delay: 0 });
     const abort = new AbortController();
     let resolveOperation;
     const operation = controller.run(
@@ -160,7 +160,7 @@ test('une annulation pendant une opération nettoie avant même sa résolution',
 
 test('le plein écran reste explicite et écrit le message comme texte sûr', () => {
     const elements = fakeLoadingElements();
-    const controller = createBelkhirSpaceLoadingController({
+    const controller = createSanadPilotLoadingController({
         progressElement: elements.progress,
         overlayElement: elements.overlay,
         busyElement: elements.busy,
@@ -178,7 +178,7 @@ test('le plein écran reste explicite et écrit le message comme texte sûr', ()
 
 test('le mode reduced motion est transmis à la barre', () => {
     const elements = fakeLoadingElements();
-    const controller = createBelkhirSpaceLoadingController({
+    const controller = createSanadPilotLoadingController({
         progressElement: elements.progress,
         prefersReducedMotion: true,
         delay: 0,
@@ -212,8 +212,8 @@ test('pageshow, erreur et annulation globale réinitialisent une navigation', ()
     const root = {
         body: elements.busy,
         querySelector(selector) {
-            if (selector === '[data-belkhir-space-progress]') return elements.progress;
-            if (selector === '[data-belkhir-space-loading-overlay]') return elements.overlay;
+            if (selector === '[data-sanad-pilot-progress]') return elements.progress;
+            if (selector === '[data-sanad-pilot-loading-overlay]') return elements.overlay;
             return null;
         },
         addEventListener: (name, listener) => rootListeners.set(name, listener),
@@ -233,7 +233,7 @@ test('pageshow, erreur et annulation globale réinitialisent une navigation', ()
         hasAttribute: () => false,
         getAttribute: (name) => name === 'href' ? '/vehicles' : null,
     };
-    const controller = initializeBelkhirSpaceLoading(root, host, { delay: 0 });
+    const controller = initializeSanadPilotLoading(root, host, { delay: 0 });
 
     rootListeners.get('click')({ button: 0, target: { closest: () => link } });
     assert.equal(controller.active, true);
@@ -245,7 +245,7 @@ test('pageshow, erreur et annulation globale réinitialisent une navigation', ()
     assert.equal(controller.active, false);
 
     rootListeners.get('click')({ button: 0, target: { closest: () => link } });
-    hostListeners.get('belkhir-space:loading-cancel')();
+    hostListeners.get('sanad-pilot:loading-cancel')();
     assert.equal(controller.active, false);
 });
 
@@ -274,7 +274,7 @@ test('un double clic de navigation ne crée qu’une activité différée', () =
     };
     const click = { button: 0, target: { closest: () => link } };
 
-    initializeBelkhirSpaceLoading(root, host);
+    initializeSanadPilotLoading(root, host);
     rootListeners.get('click')(click);
     rootListeners.get('click')(click);
 

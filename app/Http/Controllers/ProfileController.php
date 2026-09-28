@@ -3,51 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
-use App\Support\Audit\AuditRecorder;
-use App\Support\Auth\VerificationNotificationSender;
+use App\Support\Auth\PendingEmailChange;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
     public function edit(Request $request): View
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
+        return view('profile.edit', ['user' => $request->user()]);
     }
 
-    /**
-     * Update the user's profile information.
-     */
-    public function update(
-        ProfileUpdateRequest $request,
-        AuditRecorder $audit,
-        VerificationNotificationSender $verificationSender,
-    ): RedirectResponse {
-        $old = $request->user()->only(['name', 'email']);
-        $request->user()->fill($request->safe()->only(['name', 'email']));
-
-        $emailChanged = $request->user()->isDirty('email');
-        if ($emailChanged) {
-            $request->user()->email_verified_at = null;
+    public function update(ProfileUpdateRequest $request, PendingEmailChange $changes): RedirectResponse
+    {
+        $changed = $request->validated('email') !== $request->user()->email;
+        $delivered = $changes->updateProfile($request, $request->safe()->only(['name', 'email']));
+        if (! $delivered) {
+            return to_route('profile.edit')->with('error', __('Profil enregistré. Un e-mail de confirmation n’a pas pu être envoyé ; votre adresse actuelle reste valable.'));
         }
 
-        $request->user()->save();
-        $audit->record('profile.updated', $request->user(), $old, $request->user()->only(['name', 'email']));
-
-        if ($emailChanged && ! $verificationSender->send($request->user())) {
-            return Redirect::route('profile.edit')->with('error', __('Profil enregistré, mais le lien de vérification n’a pas pu être envoyé.'));
-        }
-
-        return Redirect::route('profile.edit')->with(
-            'status',
-            $emailChanged ? __('Profil enregistré. Un lien de vérification a été envoyé.') : 'profile-updated',
-        );
+        return to_route('profile.edit')->with('status', $changed
+            ? __('Confirmez votre nouvelle adresse avec le lien reçu. Votre adresse actuelle reste valable.')
+            : 'profile-updated');
     }
 }

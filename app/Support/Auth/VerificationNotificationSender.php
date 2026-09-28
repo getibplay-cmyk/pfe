@@ -19,11 +19,11 @@ class VerificationNotificationSender
 
             return true;
         } catch (Throwable $exception) {
-            report($exception);
             Log::warning('Email verification notification could not be delivered.', [
                 'event' => 'auth.email_verification.delivery_failed',
                 'user_id' => $user->getKey(),
                 'tenant_id' => $user->tenant_id,
+                'exception_class' => $exception::class,
             ]);
 
             return false;

@@ -54,7 +54,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
     {
         $platform = User::factory()->create(['tenant_id' => null, 'agency_id' => null, 'role_id' => null, 'is_platform_admin' => true]);
         $data = $this->provisioningData('nouveau-locataire', 'owner@nouveau.test');
-        $response = $this->actingAs($platform)->post(route('platform.tenants.store'), $data);
+        $response = $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.tenants.store'), $data);
 
         $response->assertOk()->assertViewIs('shared.temporary-password')->assertHeader('Cache-Control', 'no-store, private');
         $tenant = Tenant::where('slug', 'nouveau-locataire')->firstOrFail();
@@ -83,7 +83,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
     public function test_temporary_password_must_be_changed_on_first_login(): void
     {
         $platform = User::factory()->create(['tenant_id' => null, 'agency_id' => null, 'role_id' => null, 'is_platform_admin' => true]);
-        $response = $this->actingAs($platform)->post(route('platform.tenants.store'), $this->provisioningData('premiere-connexion', 'first@login.test'));
+        $response = $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.tenants.store'), $this->provisioningData('premiere-connexion', 'first@login.test'));
         $temporaryPassword = $response->viewData('temporaryPassword');
         $owner = User::where('email', 'first@login.test')->firstOrFail();
 
@@ -107,7 +107,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
         $fixture = $this->tenantFixture();
         $agencyId = $fixture['agency']->id;
 
-        $this->actingAs($platform)->post(route('platform.tenants.suspend', $fixture['tenant']), ['reason' => 'Contrôle administratif demandé'])->assertRedirect();
+        $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.tenants.suspend', $fixture['tenant']), ['reason' => 'Contrôle administratif demandé'])->assertRedirect();
         $this->assertSame(TenantStatus::Suspended, $fixture['tenant']->refresh()->status);
         $this->assertDatabaseHas('agencies', ['id' => $agencyId, 'tenant_id' => $fixture['tenant']->id]);
         $this->actingAs($fixture['user'])->get(route('dashboard'))->assertForbidden();
@@ -121,7 +121,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
         $this->assertStringNotContainsString('password', json_encode($audit));
         $this->assertStringNotContainsString('secret', json_encode($audit));
 
-        $this->actingAs($platform)->post(route('platform.tenants.reactivate', $fixture['tenant']))->assertRedirect();
+        $this->actingAs($platform)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('platform.tenants.reactivate', $fixture['tenant']))->assertRedirect();
         $this->assertSame(TenantStatus::Active, $fixture['tenant']->refresh()->status);
         $this->actingAs($fixture['user'])->get(route('dashboard'))->assertOk();
     }
@@ -130,7 +130,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
     {
         $fixture = $this->tenantFixture();
         $agentRole = Role::where('slug', 'rental-agent')->firstOrFail();
-        $create = $this->actingAs($fixture['user'])->post(route('users.store'), [
+        $create = $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), [
             'name' => 'Agent créé', 'email' => 'agent.created@test.local', 'role_id' => $agentRole->id,
             'agency_id' => $fixture['agency']->id, 'is_active' => '1',
         ]);
@@ -139,34 +139,34 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
         $this->assertTrue(Hash::check($create->viewData('temporaryPassword'), $agent->password));
         $this->assertTrue($agent->must_change_password);
 
-        $reset = $this->actingAs($fixture['user'])->post(route('users.reset-password', $agent));
+        $reset = $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.reset-password', $agent));
         $reset->assertOk()->assertViewIs('shared.temporary-password')->assertHeader('Cache-Control', 'no-store, private');
         $this->assertTrue(Hash::check($reset->viewData('temporaryPassword'), $agent->refresh()->password));
         $this->assertTrue($agent->must_change_password);
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $fixture['tenant']->id, 'action' => 'user.password_reset', 'auditable_id' => $agent->id]);
 
-        $this->actingAs($fixture['user'])->put(route('users.update', $fixture['user']), [
+        $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('users.update', $fixture['user']), [
             'name' => 'Auto élévation', 'email' => $fixture['user']->email, 'role_id' => $fixture['user']->role_id,
             'agency_id' => null, 'is_active' => '1',
         ])->assertForbidden();
 
         $other = $this->tenantFixture();
-        $this->actingAs($fixture['user'])->put(route('users.update', $other['user']), [
+        $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('users.update', $other['user']), [
             'name' => $other['user']->name, 'email' => $other['user']->email, 'role_id' => $other['user']->role_id,
             'agency_id' => null, 'is_active' => '1',
         ])->assertForbidden();
 
         $manager = User::factory()->create(['tenant_id' => $fixture['tenant']->id, 'agency_id' => $fixture['agency']->id, 'role_id' => Role::where('slug', 'agency-manager')->value('id')]);
-        $this->actingAs($manager)->post(route('users.store'), [
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), [
             'name' => 'Owner interdit', 'email' => 'forbidden-owner@test.local', 'role_id' => $fixture['user']->role_id,
             'agency_id' => null, 'is_active' => '1',
         ])->assertForbidden();
-        $this->actingAs($manager)->post(route('users.store'), [
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), [
             'name' => 'Plateforme interdite', 'email' => 'platform-forbidden@test.local', 'role_id' => $agentRole->id,
             'agency_id' => $fixture['agency']->id, 'is_active' => '1', 'is_platform_admin' => '1',
         ])->assertSessionHasErrors('is_platform_admin');
         $otherAgency = app(TenantContext::class)->run($fixture['tenant'], fn () => Agency::factory()->create());
-        $this->actingAs($manager)->post(route('users.store'), [
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), [
             'name' => 'Agence interdite', 'email' => 'foreign-agency@test.local', 'role_id' => $agentRole->id,
             'agency_id' => $otherAgency->id, 'is_active' => '1',
         ])->assertForbidden();
@@ -174,13 +174,13 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
         $adminRole = Role::forceCreate(['tenant_id' => $fixture['tenant']->id, 'name' => 'Administrateur utilisateurs', 'slug' => 'user-admin', 'is_system' => false]);
         $adminRole->permissions()->attach(Permission::where('slug', 'user.manage')->value('id'));
         $admin = User::factory()->create(['tenant_id' => $fixture['tenant']->id, 'agency_id' => $fixture['agency']->id, 'role_id' => $adminRole->id]);
-        $this->actingAs($admin)->put(route('users.update', $fixture['user']), [
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('users.update', $fixture['user']), [
             'name' => $fixture['user']->name, 'email' => $fixture['user']->email, 'role_id' => $fixture['user']->role_id,
             'agency_id' => null, 'is_active' => '0',
         ])->assertForbidden();
         $this->assertTrue($fixture['user']->refresh()->is_active);
 
-        $this->actingAs($fixture['user'])->put(route('users.update', $agent), [
+        $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('users.update', $agent), [
             'name' => $agent->name, 'email' => $agent->email, 'role_id' => $agentRole->id,
             'agency_id' => $fixture['agency']->id, 'is_active' => '0',
         ])->assertRedirect(route('users.index'));
@@ -196,13 +196,13 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
             'phone' => '+212500000100', 'address' => 'Casablanca', 'currency' => 'MAD', 'timezone' => 'Africa/Casablanca',
         ];
 
-        $this->actingAs($fixture['user'])->patch(route('tenant.update'), $payload)->assertRedirect();
+        $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('tenant.update'), $payload)->assertRedirect();
         $tenant = $fixture['tenant']->refresh();
         $this->assertSame('Atlas Location', $tenant->name);
         $this->assertSame('MAD', $tenant->settings['currency']);
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $tenant->id, 'action' => 'tenant.settings.updated']);
 
-        $this->actingAs($fixture['user'])->patch(route('tenant.update'), [...$payload, 'status' => 'suspended'])
+        $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('tenant.update'), [...$payload, 'status' => 'suspended'])
             ->assertSessionHasErrors('status');
         $this->assertSame(TenantStatus::Active, $tenant->refresh()->status);
 
@@ -210,7 +210,7 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
             'tenant_id' => $tenant->id, 'agency_id' => $fixture['agency']->id,
             'role_id' => Role::where('slug', 'agency-manager')->value('id'),
         ]);
-        $this->actingAs($manager)->patch(route('tenant.update'), $payload)->assertForbidden();
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->patch(route('tenant.update'), $payload)->assertForbidden();
     }
 
     public function test_platform_dashboard_exposes_only_aggregate_metrics_and_operational_alerts(): void
@@ -247,11 +247,11 @@ class Lot06DSaasAdministrationReportingTest extends TestCase
         }, $fixture['agency']->id);
         $payload = ['code' => $fixture['agency']->code, 'name' => $fixture['agency']->name, 'email' => '', 'phone' => '', 'address' => '', 'is_active' => '0'];
 
-        $this->actingAs($fixture['user'])->put(route('agencies.update', $fixture['agency']), $payload)->assertSessionHasErrors('is_active');
+        $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('agencies.update', $fixture['agency']), $payload)->assertSessionHasErrors('is_active');
         $this->assertTrue($fixture['agency']->refresh()->is_active);
 
         app(TenantContext::class)->run($fixture['tenant'], fn () => app(CancelMaintenanceOrder::class)->handle(MaintenanceOrder::where('maintenance_number', 'MNT-06D-ACTIVE')->firstOrFail(), 'Fin de la dépendance active du test', $fixture['user']->id), $fixture['agency']->id);
-        $this->actingAs($fixture['user'])->put(route('agencies.update', $fixture['agency']), $payload)->assertRedirect(route('agencies.index'));
+        $this->actingAs($fixture['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('agencies.update', $fixture['agency']), $payload)->assertRedirect(route('agencies.index'));
         $this->assertFalse($fixture['agency']->refresh()->is_active);
         $this->assertNotNull(Agency::withoutGlobalScopes()->find($fixture['agency']->id));
         $this->assertTrue($otherAgency->refresh()->is_active);

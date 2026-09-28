@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { belkhirSpaceChartColors } from '../../resources/js/belkhir-space-chart-theme.js';
+import { sanadPilotChartColors } from '../../resources/js/sanad-pilot-chart-theme.js';
 import {
     platformChartConfiguration,
     platformChartsPreferReducedMotion,
@@ -10,8 +10,8 @@ import {
     renderPlatformBar,
 } from '../../resources/js/platform-statistics.js';
 
-test('platform charts use the BELKHIR SPACE palette without changing source values', () => {
-    const colors = belkhirSpaceChartColors();
+test('platform charts use the SANAD PILOT palette without changing source values', () => {
+    const colors = sanadPilotChartColors();
     const labels = ['Actives', 'Suspendues'];
     const values = [12, 3];
     const configuration = platformChartConfiguration(labels, values, colors.blue);
@@ -34,7 +34,7 @@ test('platform charts use the BELKHIR SPACE palette without changing source valu
 test('platform charts expose distinct accessible visual configurations without changing values', () => {
     const labels = ['Actives', 'Suspendues'];
     const values = [12, 3];
-    const colors = belkhirSpaceChartColors();
+    const colors = sanadPilotChartColors();
     const doughnut = platformDoughnutConfiguration(labels, values, [colors.success, colors.warning]);
     const line = platformLineConfiguration(labels, values, colors.orange);
     const horizontal = platformChartConfiguration(labels, values, colors.blue, {

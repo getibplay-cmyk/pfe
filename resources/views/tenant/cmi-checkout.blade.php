@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="rf-page max-w-4xl">
-        <x-page-header :title="__('Paiement sécurisé CMI')" :eyebrow="__('Abonnement SaaS')" :description="__('Vous allez quitter temporairement BELKHIR SPACE pour saisir vos informations sur la page hébergée de CMI.')" />
+        <x-page-header :title="__('Paiement sécurisé CMI')" :eyebrow="__('Abonnement SaaS')" :description="__('Vous allez quitter temporairement SANAD PILOT pour saisir vos informations sur la page hébergée de CMI.')" />
 
         <x-section-card :title="__('Redirection vers CMI')" :description="__('Ne fermez pas cette page pendant la redirection.')">
             <x-progress-bar :label="__('Parcours de paiement')" :value="2" :max="3" value-text="Étape 2 sur 3 : ouverture de la page CMI" tone="orange" />

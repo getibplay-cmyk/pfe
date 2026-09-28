@@ -2,13 +2,37 @@
 
 namespace App\Notifications\Auth;
 
+use App\Support\Security\PrivateMailTransport;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
+use Illuminate\Contracts\Queue\ShouldQueueAfterCommit;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class VerifyEmailNotification extends VerifyEmail
+class VerifyEmailNotification extends VerifyEmail implements ShouldBeEncrypted, ShouldQueueAfterCommit
 {
+    use Queueable;
+
+    public int $tries = 3;
+
+    public int $timeout = 15;
+
+    public array $backoff = [30, 120];
+
+    public function __construct()
+    {
+        $this->onQueue('notifications');
+    }
+
+    public function shouldSend($notifiable, string $channel): bool
+    {
+        return $notifiable->is_active && ! $notifiable->hasVerifiedEmail();
+    }
+
     public function toMail($notifiable): MailMessage
     {
+        PrivateMailTransport::assertReady();
+
         return (new MailMessage)
             ->subject(__('Vérifiez votre adresse e-mail — ').config('brand.name'))
             ->greeting(__('Bonjour ').$notifiable->name.',')

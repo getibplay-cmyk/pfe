@@ -3,7 +3,7 @@
         icon="key"
         :eyebrow="__('Sécurité du compte')"
         :title="__('Réinitialiser le mot de passe')"
-        :description="__('Choisissez un mot de passe unique d’au moins 12 caractères, avec majuscules, minuscules et chiffres.')"
+        :description="__('Choisissez une phrase de passe unique d’au moins 15 caractères.')"
     />
     <form method="POST" action="{{ route('password.store') }}" class="mt-7 space-y-5" data-loading-form>
         @csrf

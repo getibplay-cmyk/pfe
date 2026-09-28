@@ -8,7 +8,7 @@
             </dl>
             @can('download', $document)<div class="mt-5"><x-icon-button icon="download" :label="__('Télécharger la version courante')" :href="route('documents.download', $document)" variant="primary" data-no-global-loading="true" /></div>@endcan
             @can('delete', $document)
-                <form class="mt-4" method="POST" action="{{ route('documents.destroy', $document) }}" x-belkhir-space-confirm data-confirm-title="{{ __('Archiver le document') }}" data-confirm-resource="{{ __('Document sélectionné') }}" data-confirm-consequence="{{ __('Le document sera archivé sans supprimer son fichier ni ses versions.') }}" data-confirm-label="{{ __('Archiver') }}">
+                <form class="mt-4" method="POST" action="{{ route('documents.destroy', $document) }}" x-sanad-pilot-confirm data-confirm-title="{{ __('Archiver le document') }}" data-confirm-resource="{{ __('Document sélectionné') }}" data-confirm-consequence="{{ __('Le document sera archivé sans supprimer son fichier ni ses versions.') }}" data-confirm-label="{{ __('Archiver') }}">
                     @csrf @method('DELETE')
                     <button class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700">{{ __('Archiver le document') }}</button>
                 </form>

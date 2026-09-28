@@ -8,11 +8,11 @@
 @php
     $progress = App\Support\Ui\BusinessNumber::progress($value, $max);
     $barClass = match ($tone) {
-        'success' => 'bg-belkhir-space-success',
-        'warning' => 'bg-belkhir-space-warning',
-        'danger' => 'bg-belkhir-space-danger',
-        'orange' => 'bg-belkhir-space-orange',
-        default => 'bg-belkhir-space-blue',
+        'success' => 'bg-sanad-pilot-success',
+        'warning' => 'bg-sanad-pilot-warning',
+        'danger' => 'bg-sanad-pilot-danger',
+        'orange' => 'bg-sanad-pilot-orange',
+        default => 'bg-sanad-pilot-blue',
     };
     $fraction = $valueText ?? (
         App\Support\Ui\BusinessNumber::integer($value).' sur '.App\Support\Ui\BusinessNumber::integer($max)
@@ -23,8 +23,8 @@
 @endphp
 <div {{ $attributes->class('min-w-0') }}>
     <div class="mb-2 flex items-center justify-between gap-3 text-sm">
-        <span class="font-semibold text-belkhir-space-text">{{ $label }}</span>
-        <span class="shrink-0 text-belkhir-space-muted">{{ $displayValue }}</span>
+        <span class="font-semibold text-sanad-pilot-text">{{ $label }}</span>
+        <span class="shrink-0 text-sanad-pilot-muted">{{ $displayValue }}</span>
     </div>
     <div
         role="progressbar"

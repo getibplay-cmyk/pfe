@@ -16,6 +16,7 @@ use App\Support\Intelligence\DemandForecasting\DemandForecastContract;
 use App\Support\Intelligence\DemandForecasting\DemandForecastRuntimeReadiness;
 use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\PlatformBilling\TenantPlanAccess;
+use App\Support\Security\IntelligenceCapacity;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,7 @@ final class QueueDemandForecastExecution
         }
 
         return DB::transaction(function () use ($history, $actor): DemandForecastExecutionRun {
+
             DB::selectOne(
                 'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
                 ['reservation-demand-forecast|'.$history->tenant_id.'|'.$history->agency_id],
@@ -56,6 +58,7 @@ final class QueueDemandForecastExecution
             }
 
             $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::DemandForecast);
+            app(IntelligenceCapacity::class)->assertAvailable();
             $run = DemandForecastExecutionRun::create([
                 'agency_id' => $history->agency_id,
                 'run_id' => (string) Str::uuid(),

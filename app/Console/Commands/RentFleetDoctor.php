@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Support\Intelligence\DemandForecasting\DemandForecastModelArtifact;
 use App\Support\Intelligence\VehicleColor\VehicleColorModelArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
+use App\Support\Security\RestrictedProcessEnvironment;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Console\Scheduling\Schedule;
@@ -126,7 +127,7 @@ class RentFleetDoctor extends Command
             try {
                 $probe = Process::path(base_path())
                     ->timeout(5)
-                    ->env([
+                    ->env(RestrictedProcessEnvironment::make([
                         'APP_KEY' => false,
                         'DB_PASSWORD' => false,
                         'MAIL_PASSWORD' => false,
@@ -134,7 +135,7 @@ class RentFleetDoctor extends Command
                         'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
                         'DEMO_PASSWORD' => false,
                         'PGPASSWORD' => false,
-                    ])
+                    ]))
                     ->run([
                         $pythonBinary,
                         '-c',
@@ -168,7 +169,7 @@ class RentFleetDoctor extends Command
             try {
                 $probe = Process::path(base_path())
                     ->timeout(8)
-                    ->env([
+                    ->env(RestrictedProcessEnvironment::make([
                         'PYTHONDONTWRITEBYTECODE' => '1',
                         'APP_KEY' => false,
                         'DB_PASSWORD' => false,
@@ -177,7 +178,7 @@ class RentFleetDoctor extends Command
                         'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
                         'DEMO_PASSWORD' => false,
                         'PGPASSWORD' => false,
-                    ])
+                    ]))
                     ->run([
                         $demandBinary,
                         '-c',
@@ -232,7 +233,7 @@ class RentFleetDoctor extends Command
             try {
                 $probe = Process::path(sys_get_temp_dir())
                     ->timeout(8)
-                    ->env([
+                    ->env(RestrictedProcessEnvironment::make([
                         'PYTHONDONTWRITEBYTECODE' => '1',
                         'ORT_DISABLE_TELEMETRY_EVENTS' => '1',
                         'APP_KEY' => false,
@@ -242,7 +243,7 @@ class RentFleetDoctor extends Command
                         'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
                         'DEMO_PASSWORD' => false,
                         'PGPASSWORD' => false,
-                    ])
+                    ]))
                     ->run([
                         $colorBinary,
                         '-c',
@@ -302,7 +303,7 @@ class RentFleetDoctor extends Command
             try {
                 $probe = Process::path(sys_get_temp_dir())
                     ->timeout(8)
-                    ->env([
+                    ->env(RestrictedProcessEnvironment::make([
                         'PYTHONDONTWRITEBYTECODE' => '1',
                         'ORT_DISABLE_TELEMETRY_EVENTS' => '1',
                         'APP_KEY' => false,
@@ -312,7 +313,7 @@ class RentFleetDoctor extends Command
                         'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
                         'DEMO_PASSWORD' => false,
                         'PGPASSWORD' => false,
-                    ])
+                    ]))
                     ->run([
                         $binary,
                         '-c',
@@ -362,7 +363,7 @@ class RentFleetDoctor extends Command
             try {
                 $probe = Process::path(sys_get_temp_dir())
                     ->timeout(8)
-                    ->env([
+                    ->env(RestrictedProcessEnvironment::make([
                         'PYTHONDONTWRITEBYTECODE' => '1',
                         'OMP_NUM_THREADS' => '1',
                         'OPENBLAS_NUM_THREADS' => '1',
@@ -374,7 +375,7 @@ class RentFleetDoctor extends Command
                         'INTELLIGENCE_EXPORT_HMAC_KEY' => false,
                         'DEMO_PASSWORD' => false,
                         'PGPASSWORD' => false,
-                    ])
+                    ]))
                     ->run([
                         $binary,
                         '-c',

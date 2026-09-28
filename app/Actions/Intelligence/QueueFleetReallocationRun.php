@@ -12,6 +12,7 @@ use App\Support\Audit\AuditRecorder;
 use App\Support\Intelligence\FleetReallocation\FleetReallocationContract;
 use App\Support\Intelligence\TenantIntelligenceAccess;
 use App\Support\PlatformBilling\TenantPlanAccess;
+use App\Support\Security\IntelligenceCapacity;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ final class QueueFleetReallocationRun
         $this->tenantAccess->ensureUsable(IntelligenceCapability::FleetReallocation);
 
         return DB::transaction(function () use ($actor, $forecastHorizon): FleetReallocationRun {
+
             DB::selectOne(
                 'SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS text), 0))',
                 ['fleet-reallocation-runtime|'.$this->context->tenantId()],
@@ -46,6 +48,7 @@ final class QueueFleetReallocationRun
             }
 
             $this->planAccess->ensureCanUseIntelligence(IntelligenceCapability::FleetReallocation);
+            app(IntelligenceCapacity::class)->assertAvailable();
             $run = FleetReallocationRun::create([
                 'run_id' => (string) Str::uuid(),
                 'requested_by' => $actor->id,

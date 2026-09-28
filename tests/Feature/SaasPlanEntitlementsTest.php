@@ -133,7 +133,7 @@ class SaasPlanEntitlementsTest extends TestCase
             $this->assertArrayHasKey('plan', $exception->errors());
         }
 
-        $this->actingAs($owner)->post(route('agencies.store'), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('agencies.store'), [
             'code' => 'RABAT-2',
             'name' => 'Agence supplémentaire',
             'email' => null,

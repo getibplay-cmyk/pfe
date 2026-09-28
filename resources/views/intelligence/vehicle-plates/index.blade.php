@@ -130,7 +130,7 @@
                                 @endphp
                                 <x-photo-gallery :id="'plate-gallery-'.$run->id" :images="$plateImages" :label="__('Photos privées de l’analyse d’immatriculation')" fit="contain" />
                                 @if ($run->hasDetectedCrop())
-                                    <p class="text-center text-xs text-belkhir-space-muted">{{ __('Ouvrir l’image recadrée : sélectionnez la seconde vignette.') }}</p>
+                                    <p class="text-center text-xs text-sanad-pilot-muted">{{ __('Ouvrir l’image recadrée : sélectionnez la seconde vignette.') }}</p>
                                 @endif
                                 <p class="text-center text-xs text-slate-500">{{ $run->inputKindLabel() }}</p>
                             </div>

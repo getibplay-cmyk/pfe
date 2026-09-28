@@ -14,10 +14,10 @@ use App\Models\RentalContract;
 use App\Models\Reservation;
 use App\Models\Vehicle;
 use App\Support\PlatformBilling\TenantPlanAccess;
-use App\Support\Reporting\BelkhirSpaceReportPresenter;
 use App\Support\Reporting\BuildMinimalReport;
 use App\Support\Reporting\DashboardActions;
 use App\Support\Reporting\ReportCriteria;
+use App\Support\Reporting\SanadPilotReportPresenter;
 use App\Support\Tenancy\TenantContext;
 use App\Support\Ui\UiLabel;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +26,7 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, BuildMinimalReport $reports, BelkhirSpaceReportPresenter $presenter, TenantContext $context): View
+    public function __invoke(Request $request, BuildMinimalReport $reports, SanadPilotReportPresenter $presenter, TenantContext $context): View
     {
         $user = $request->user();
         $agencyId = $user->agency_id;

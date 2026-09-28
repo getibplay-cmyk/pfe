@@ -9,7 +9,7 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
-import { belkhirSpaceChartColors, belkhirSpaceCartesianScales } from './belkhir-space-chart-theme.js';
+import { sanadPilotChartColors, sanadPilotCartesianScales } from './sanad-pilot-chart-theme.js';
 import {
     forecastPlanningUnits,
     formatVehicleUnits,
@@ -231,8 +231,8 @@ export function createReservationDemandForecast(config = {}) {
 }
 
 export function chartConfiguration(forecasts) {
-    const colors = belkhirSpaceChartColors();
-    const scales = belkhirSpaceCartesianScales();
+    const colors = sanadPilotChartColors();
+    const scales = sanadPilotCartesianScales();
     const maximum = Math.max(0, ...forecasts.map((forecast) => forecast.planningVehicleUnits));
 
     return {

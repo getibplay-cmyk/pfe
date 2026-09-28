@@ -1,5 +1,5 @@
 import { t } from './i18n.js';
-import { belkhirSpaceChartColors } from './belkhir-space-chart-theme.js';
+import { sanadPilotChartColors } from './sanad-pilot-chart-theme.js';
 import { renderPlatformBar, renderPlatformDoughnut } from './platform-statistics.js';
 
 export function parseTenantStatisticsPayload(source) {
@@ -19,7 +19,7 @@ export function initializeTenantStatistics(rootDocument = document) {
         const payload = parseTenantStatisticsPayload(root.querySelector('[data-tenant-statistics-payload]'));
         if (! payload) return;
 
-        const colors = belkhirSpaceChartColors(root);
+        const colors = sanadPilotChartColors(root);
 
         renderPlatformBar(
             root.querySelector('[data-tenant-chart="reservations"]'),

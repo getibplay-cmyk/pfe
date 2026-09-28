@@ -1,6 +1,6 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
-import { BELKHIR_SPACE_COLORS } from './resources/js/belkhir-space-tokens.js';
+import { SANAD_PILOT_COLORS } from './resources/js/sanad-pilot-tokens.js';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -17,8 +17,8 @@ export default {
                 sans: ['Inter', 'Segoe UI', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                belkhir: {
-                    space: BELKHIR_SPACE_COLORS,
+                sanad: {
+                    pilot: SANAD_PILOT_COLORS,
                 },
                 brand: {
                     50: '#EFF6FF', 100: '#DBEAFE', 200: '#BFDBFE', 300: '#93C5FD',

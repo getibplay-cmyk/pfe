@@ -4,7 +4,7 @@
             <x-slot:actions>
                 <a href="{{ route('customers.show', $driver->customer) }}" class="rf-button-secondary"><x-icon name="previous" size="xs" />{{ __('Retour au client') }}</a>
                 @can('update', $driver)<a href="{{ route('drivers.edit', $driver) }}" class="rf-button-secondary">{{ __('Modifier') }}</a>@endcan
-                @can('archive', $driver)<form method="POST" action="{{ route('drivers.destroy', $driver) }}" x-belkhir-space-confirm data-confirm-title="{{ __('Archiver ce conducteur') }}" data-confirm-resource="{{ __('Fiche conducteur sélectionnée') }}" data-confirm-consequence="{{ __('Le conducteur sera archivé et restera présent dans l’historique.') }}" data-confirm-label="{{ __('Archiver') }}">@csrf @method('DELETE')<button class="rf-button-danger">{{ __('Archiver') }}</button></form>@endcan
+                @can('archive', $driver)<form method="POST" action="{{ route('drivers.destroy', $driver) }}" x-sanad-pilot-confirm data-confirm-title="{{ __('Archiver ce conducteur') }}" data-confirm-resource="{{ __('Fiche conducteur sélectionnée') }}" data-confirm-consequence="{{ __('Le conducteur sera archivé et restera présent dans l’historique.') }}" data-confirm-label="{{ __('Archiver') }}">@csrf @method('DELETE')<button class="rf-button-danger">{{ __('Archiver') }}</button></form>@endcan
             </x-slot:actions>
         </x-page-header>
         <x-form-errors />

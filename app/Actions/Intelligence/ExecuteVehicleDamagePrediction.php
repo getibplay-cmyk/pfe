@@ -17,6 +17,7 @@ use App\Support\Intelligence\VehicleDamage\VehicleDamageContract;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageInputArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageModelArtifact;
 use App\Support\Intelligence\VehicleDamage\VehicleDamageResultValidator;
+use App\Support\Security\RestrictedProcessEnvironment;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\DB;
@@ -220,7 +221,7 @@ final class ExecuteVehicleDamagePrediction
 
     private function closedEnvironment(): array
     {
-        return [
+        return RestrictedProcessEnvironment::make([
             'PYTHONDONTWRITEBYTECODE' => '1',
             'PYTHONHASHSEED' => '20260823',
             'ORT_DISABLE_TELEMETRY_EVENTS' => '1',
@@ -240,6 +241,6 @@ final class ExecuteVehicleDamagePrediction
             'OPENAI_API_KEY' => false,
             'STRIPE_SECRET' => false,
             'PGPASSWORD' => false,
-        ];
+        ]);
     }
 }

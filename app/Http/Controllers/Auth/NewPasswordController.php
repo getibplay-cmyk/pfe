@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Auth\ResetPasswordWithToken;
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Support\Audit\AuditRecorder;
-use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -31,32 +27,23 @@ class NewPasswordController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(Request $request, AuditRecorder $audit): RedirectResponse
+    public function store(Request $request, ResetPasswordWithToken $reset): RedirectResponse
     {
         $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
+            'token' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+        ]);
+        $candidate = User::query()->where('email', $request->input('email'))->first();
+        if (! $candidate || ! $candidate->is_active || ! Password::tokenExists($candidate, $request->string('token')->toString())) {
+            return back()->withInput($request->only('email'))->withErrors(['email' => __(Password::INVALID_TOKEN)]);
+        }
+        // Avoid an external password lookup for an invalid recovery request.
+        // The transactional action revalidates the token under lock before consuming it.
+        $request->validate([
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request, $audit) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                    'must_change_password' => false,
-                ])->save();
-
-                DB::table('sessions')->where('user_id', $user->getKey())->delete();
-                $audit->record('user.password_reset.email', $user, [], ['sessions_revoked' => true]);
-
-                event(new PasswordReset($user));
-            }
-        );
+        $status = $reset->handle($request->only('email', 'password', 'password_confirmation', 'token'));
 
         // If the password was successfully reset, we will redirect the user back to
         // the application's home authenticated view. If there is an error we can

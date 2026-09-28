@@ -1,0 +1,37 @@
+-- Review on an isolated instance first; NOT executed by the application or CI.
+-- Roles created by a separate database administrator; secrets provisioned separately.
+-- Existing table ownership must be transferred by a reviewed inventory-driven migration.
+CREATE ROLE rentfleet_migrator NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+CREATE ROLE rentfleet_runtime NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+CREATE ROLE rentfleet_backup NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+GRANT USAGE, CREATE ON SCHEMA public TO rentfleet_migrator;
+GRANT USAGE ON SCHEMA public TO rentfleet_runtime, rentfleet_backup;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO rentfleet_runtime;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO rentfleet_runtime;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO rentfleet_backup;
+REVOKE UPDATE, DELETE ON audit_logs, document_access_logs FROM rentfleet_runtime;
+REVOKE INSERT, UPDATE, DELETE ON migrations FROM rentfleet_runtime;
+ALTER DEFAULT PRIVILEGES FOR ROLE rentfleet_migrator IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO rentfleet_runtime;
+ALTER DEFAULT PRIVILEGES FOR ROLE rentfleet_migrator IN SCHEMA public
+    GRANT USAGE, SELECT ON SEQUENCES TO rentfleet_runtime;
+ALTER DEFAULT PRIVILEGES FOR ROLE rentfleet_migrator IN SCHEMA public
+    GRANT SELECT ON TABLES TO rentfleet_backup;
+
+-- Apply limits to the actual LOGIN roles as well; role membership does not inherit
+-- ALTER ROLE settings automatically. Bind role memberships without ADMIN OPTION.
+-- ALTER ROLE deployment_runtime_login SET statement_timeout = '15s';
+-- ALTER ROLE deployment_runtime_login SET lock_timeout = '3s';
+-- ALTER ROLE deployment_runtime_login SET idle_in_transaction_session_timeout = '30s';
+-- ALTER ROLE deployment_runtime_login SET search_path = 'pg_catalog, public';
+-- ALTER ROLE deployment_runtime_login CONNECTION LIMIT 30;
+-- Use SCRAM, TLS verify-full, private network and explicit pg_hba source ranges.
+
+-- Read-only checks to record with the true runtime LOGIN identity:
+SELECT current_user, session_user, current_database();
+SELECT rolsuper, rolcreaterole, rolcreatedb, rolbypassrls FROM pg_roles WHERE rolname = current_user;
+SELECT n.nspname, c.relname, pg_get_userbyid(c.relowner) AS owner
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p');

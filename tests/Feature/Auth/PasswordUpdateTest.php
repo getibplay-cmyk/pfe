@@ -29,15 +29,15 @@ class PasswordUpdateTest extends TestCase
             ->from('/profile')
             ->put('/password', [
                 'current_password' => 'password',
-                'password' => 'NewPassword2026',
-                'password_confirmation' => 'NewPassword2026',
+                'password' => 'NewPassword2026!',
+                'password_confirmation' => 'NewPassword2026!',
             ]);
 
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect('/profile');
 
-        $this->assertTrue(Hash::check('NewPassword2026', $user->refresh()->password));
+        $this->assertTrue(Hash::check('NewPassword2026!', $user->refresh()->password));
         $this->assertDatabaseMissing('sessions', ['id' => 'another-session-for-password-test']);
     }
 
@@ -50,8 +50,8 @@ class PasswordUpdateTest extends TestCase
             ->from('/profile')
             ->put('/password', [
                 'current_password' => 'wrong-password',
-                'password' => 'NewPassword2026',
-                'password_confirmation' => 'NewPassword2026',
+                'password' => 'NewPassword2026!',
+                'password_confirmation' => 'NewPassword2026!',
             ]);
 
         $response

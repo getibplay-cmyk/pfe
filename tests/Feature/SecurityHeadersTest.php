@@ -41,7 +41,7 @@ class SecurityHeadersTest extends TestCase
 
     public function test_untrusted_hosts_are_rejected_in_production(): void
     {
-        config(['app.url' => 'https://belkhir.example']);
+        config(['app.url' => 'https://sanad.example']);
         $this->app->detectEnvironment(fn () => 'production');
         $this->get('https://attacker.invalid/login')->assertStatus(400);
     }
@@ -63,6 +63,11 @@ class SecurityHeadersTest extends TestCase
             $route = app('router')->getRoutes()->getByName($name);
             $throttle = collect($route->gatherMiddleware())->first(fn ($value) => str_starts_with($value, 'throttle:'));
             $parts = explode(',', $throttle);
+            if ($name === 'password.email') {
+                $this->assertSame('throttle:password-recovery', $throttle);
+
+                continue;
+            }
             $this->assertCount(3, $parts, $name);
             $this->assertNotContains($parts[2], $prefixes);
             $prefixes[] = $parts[2];
@@ -79,7 +84,8 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('Cross-Origin-Opener-Policy', 'same-origin');
 
         $this->assertTrue(Str::isUuid((string) $response->headers->get('X-Correlation-ID')));
-        $this->assertFalse($response->headers->has('Content-Security-Policy'));
+        $this->assertSame("base-uri 'self'; object-src 'none'; frame-ancestors 'self'", $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('nonce-', $response->headers->get('Content-Security-Policy-Report-Only'));
         $this->assertFalse($response->headers->has('Strict-Transport-Security'));
     }
 
@@ -98,6 +104,6 @@ class SecurityHeadersTest extends TestCase
 
         $this->withServerVariables(['HTTPS' => 'on', 'SERVER_PORT' => 443])
             ->get('https://localhost/login')
-            ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000');
     }
 }

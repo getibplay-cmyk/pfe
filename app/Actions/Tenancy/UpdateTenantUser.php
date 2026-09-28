@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Support\Audit\AuditRecorder;
 use App\Support\PlatformBilling\TenantPlanAccess;
 use App\Support\Tenancy\TenantUserAssignment;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
 class UpdateTenantUser
@@ -38,6 +40,11 @@ class UpdateTenantUser
 
             $old = $locked->only(['name', 'email', 'agency_id', 'role_id', 'is_active']);
             $emailChanged = $locked->email !== $data['email'];
+            $securityChanged = $emailChanged || (int) $locked->role_id !== (int) $role->id
+                || $locked->agency_id !== $agencyId || (bool) $locked->is_active !== (bool) $data['is_active'];
+            if ($securityChanged) {
+                Password::deleteToken($locked);
+            }
             $locked->forceFill([
                 'agency_id' => $agencyId,
                 'role_id' => $role->id,
@@ -45,12 +52,21 @@ class UpdateTenantUser
                 'email' => $data['email'],
                 'email_verified_at' => $emailChanged ? null : $locked->email_verified_at,
                 'is_active' => $data['is_active'],
+                ...($securityChanged ? [
+                    'security_version' => $locked->security_version + 1,
+                    'remember_token' => null,
+                    'pending_email' => null,
+                    'pending_email_token_hash' => null,
+                    'pending_email_expires_at' => null,
+                ] : []),
             ])->save();
 
-            if (! $locked->is_active) {
-                DB::table('sessions')->where('user_id', $locked->id)->delete();
+            if ($securityChanged) {
+                DB::connection(config('session.connection'))->table(config('session.table', 'sessions'))->where('user_id', $locked->id)->delete();
             }
-            $this->audit->record('user.updated', $locked, $old, $locked->only(array_keys($old)));
+            $this->audit->record('user.updated', $locked,
+                Arr::only($old, ['agency_id', 'role_id', 'is_active']),
+                [...$locked->only(['agency_id', 'role_id', 'is_active']), 'profile_changed' => true, 'email_changed' => $emailChanged]);
             if ((int) $old['role_id'] !== (int) $locked->role_id || (int) $old['agency_id'] !== (int) $locked->agency_id) {
                 $this->audit->record('user.role.assigned', $locked, ['role_id' => $old['role_id'], 'agency_id' => $old['agency_id']], ['role_id' => $locked->role_id, 'agency_id' => $locked->agency_id]);
             }

@@ -51,7 +51,7 @@
                 <tbody>
                     @forelse ($contracts as $contract)
                         <tr>
-                            <td><a class="font-semibold text-belkhir-space-blue hover:text-belkhir-space-blue-hover" href="{{ route('contracts.show', $contract) }}">{{ $contract->contract_number }}</a></td>
+                            <td><a class="font-semibold text-sanad-pilot-blue hover:text-sanad-pilot-blue-hover" href="{{ route('contracts.show', $contract) }}">{{ $contract->contract_number }}</a></td>
                             <td>{{ $contract->customer->displayName() }}</td>
                             <td>{{ $contract->vehicle->registration_number }}</td>
                             <td><x-status-badge :value="$contract->status" /></td>

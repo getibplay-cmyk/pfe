@@ -4,6 +4,7 @@ namespace App\Support\Intelligence\VehiclePlate;
 
 use App\Exceptions\VehiclePlateHybridExecutionException;
 use App\Models\VehiclePlatePredictionRun;
+use App\Support\Security\RestrictedProcessEnvironment;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\Process;
 use Throwable;
@@ -153,7 +154,7 @@ class VehiclePlateDetectorRuntime
     /** @return array<string, string|false> */
     private function closedEnvironment(): array
     {
-        return [
+        return RestrictedProcessEnvironment::make([
             'PYTHONDONTWRITEBYTECODE' => '1',
             'PYTHONHASHSEED' => '20260828',
             'APP_KEY' => false,
@@ -176,6 +177,6 @@ class VehiclePlateDetectorRuntime
             'GOOGLE_APPLICATION_CREDENTIALS' => false,
             'PLATE_DETECTOR_MODEL_PATH' => false,
             'PLATE_DETECTOR_MODEL_SHA256' => false,
-        ];
+        ]);
     }
 }

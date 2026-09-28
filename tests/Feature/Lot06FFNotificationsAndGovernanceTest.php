@@ -109,7 +109,7 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $f = $this->fixture('tenant-owner');
         $permissionIds = Permission::query()->whereIn('slug', ['customer.view', 'reservation.view'])->pluck('id')->all();
 
-        $this->actingAs($f['user'])->post(route('roles.store'), ['name' => 'Accueil agence', 'permission_ids' => $permissionIds])
+        $this->actingAs($f['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('roles.store'), ['name' => 'Accueil agence', 'permission_ids' => $permissionIds])
             ->assertRedirect(route('roles.index'));
         $role = Role::query()->where('tenant_id', $f['tenant']->id)->where('name', 'Accueil agence')->firstOrFail();
         $this->assertFalse($role->is_system);
@@ -123,7 +123,7 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
             'delegated_by' => $f['user']->id,
         ]));
         $assigned = User::factory()->create(['tenant_id' => $f['tenant']->id, 'agency_id' => $f['agency']->id, 'role_id' => $role->id]);
-        $this->actingAs($f['user'])->put(route('roles.update', $role), ['name' => 'Accueil agence', 'permission_ids' => $permissionIds, 'is_active' => '0', 'replacement_role_id' => $replacement->id, 'confirm_replacement' => '1'])->assertRedirect(route('roles.index'));
+        $this->actingAs($f['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('roles.update', $role), ['name' => 'Accueil agence', 'permission_ids' => $permissionIds, 'is_active' => '0', 'replacement_role_id' => $replacement->id, 'confirm_replacement' => '1'])->assertRedirect(route('roles.index'));
         $this->assertFalse($role->refresh()->is_active);
         $this->assertSame($replacement->id, $assigned->refresh()->role_id);
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $f['tenant']->id, 'action' => 'role.assignments.replaced', 'auditable_id' => $role->id]);
@@ -135,10 +135,10 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $b = $this->fixture('tenant-owner');
         $platformPermission = Permission::query()->create(['slug' => 'platform.tenants.manage', 'name' => 'Administration plateforme', 'group' => 'platform']);
 
-        $this->actingAs($a['user'])->post(route('roles.store'), ['name' => 'Interdit', 'permission_ids' => [$platformPermission->id]])->assertSessionHasErrors('permission_ids');
+        $this->actingAs($a['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('roles.store'), ['name' => 'Interdit', 'permission_ids' => [$platformPermission->id]])->assertSessionHasErrors('permission_ids');
         $role = $this->customRole($a, 'Rôle unique', [Permission::where('slug', 'customer.view')->value('id')]);
-        $this->actingAs($a['user'])->post(route('roles.store'), ['name' => 'rôle UNIQUE', 'permission_ids' => []])->assertSessionHasErrors('name');
-        $this->actingAs($b['user'])->get(route('roles.edit', $role))->assertForbidden();
+        $this->actingAs($a['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('roles.store'), ['name' => 'rôle UNIQUE', 'permission_ids' => []])->assertSessionHasErrors('name');
+        $this->actingAs($b['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('roles.edit', $role))->assertForbidden();
         $this->assertDatabaseHas('roles', ['id' => $role->id, 'tenant_id' => $a['tenant']->id]);
     }
 
@@ -149,13 +149,13 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $rentalRole = Role::query()->where('slug', 'rental-agent')->firstOrFail();
         $accountantRole = Role::query()->where('slug', 'accountant')->firstOrFail();
 
-        $this->actingAs($manager)->post(route('users.store'), $this->userPayload($f, $rentalRole, 'before@test.local'))->assertForbidden();
-        $this->actingAs($f['user'])->put(route('roles.delegations.update', $f['agency']), ['role_ids' => [$rentalRole->id, $accountantRole->id]])->assertRedirect();
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), $this->userPayload($f, $rentalRole, 'before@test.local'))->assertForbidden();
+        $this->actingAs($f['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('roles.delegations.update', $f['agency']), ['role_ids' => [$rentalRole->id, $accountantRole->id]])->assertRedirect();
         $this->assertDatabaseHas('role_agency_delegations', ['tenant_id' => $f['tenant']->id, 'agency_id' => $f['agency']->id, 'role_id' => $rentalRole->id]);
 
-        $this->actingAs($manager)->post(route('users.store'), $this->userPayload($f, $rentalRole, 'allowed@test.local'))->assertOk();
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), $this->userPayload($f, $rentalRole, 'allowed@test.local'))->assertOk();
         $this->assertDatabaseHas('users', ['tenant_id' => $f['tenant']->id, 'agency_id' => $f['agency']->id, 'email' => 'allowed@test.local', 'role_id' => $rentalRole->id]);
-        $this->actingAs($manager)->post(route('users.store'), $this->userPayload($f, $accountantRole, 'ceiling@test.local'))->assertForbidden();
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), $this->userPayload($f, $accountantRole, 'ceiling@test.local'))->assertForbidden();
         $this->assertDatabaseMissing('users', ['email' => 'ceiling@test.local']);
     }
 
@@ -170,19 +170,19 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $payload = $this->userPayload($f, $rentalRole, 'cross@test.local');
         $payload['agency_id'] = $otherAgency->id;
         $payload['tenant_id'] = $f['tenant']->id;
-        $this->actingAs($manager)->post(route('users.store'), $payload)->assertSessionHasErrors('tenant_id');
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), $payload)->assertSessionHasErrors('tenant_id');
         unset($payload['tenant_id']);
-        $this->actingAs($manager)->post(route('users.store'), $payload)->assertForbidden();
-        $this->actingAs($manager)->put(route('users.update', $manager), ['name' => $manager->name, 'email' => $manager->email, 'role_id' => $rentalRole->id, 'agency_id' => $f['agency']->id, 'is_active' => '1'])->assertForbidden();
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('users.store'), $payload)->assertForbidden();
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('users.update', $manager), ['name' => $manager->name, 'email' => $manager->email, 'role_id' => $rentalRole->id, 'agency_id' => $f['agency']->id, 'is_active' => '1'])->assertForbidden();
         $this->actingAs($manager)->get(route('roles.index'))->assertForbidden();
-        $this->actingAs($manager)->post(route('roles.store'), ['name' => 'Escalade', 'permission_ids' => []])->assertForbidden();
+        $this->actingAs($manager)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('roles.store'), ['name' => 'Escalade', 'permission_ids' => []])->assertForbidden();
     }
 
     public function test_system_roles_and_non_admin_roles_are_protected(): void
     {
         $owner = $this->fixture('tenant-owner');
         $system = Role::query()->where('slug', 'rental-agent')->firstOrFail();
-        $this->actingAs($owner['user'])->get(route('roles.edit', $system))->assertForbidden();
+        $this->actingAs($owner['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('roles.edit', $system))->assertForbidden();
 
         foreach (['agency-manager', 'rental-agent', 'fleet-manager', 'accountant', 'viewer-auditor'] as $slug) {
             $actor = $this->user($owner, $slug);
@@ -200,7 +200,7 @@ class Lot06FFNotificationsAndGovernanceTest extends TestCase
         $this->assertSame('Retour à traiter', UiLabel::get('return_pending'));
         $this->assertSame('Avertissement', UiLabel::get('warning'));
 
-        $this->actingAs($f['user'])->post(route('roles.store'), ['permission_ids' => []])->assertSessionHasErrors('name');
+        $this->actingAs($f['user'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('roles.store'), ['permission_ids' => []])->assertSessionHasErrors('name');
         $this->actingAs($f['user'])->get(route('roles.index'))->assertOk()->assertSee('Administrateur de l’entreprise')->assertDontSee('tenant-owner');
         $this->actingAs($f['user'])->get(route('notifications.index', ['priority' => 'invalid']))->assertSessionHasErrors('priority');
         $this->assertSame('fr', app()->getLocale());

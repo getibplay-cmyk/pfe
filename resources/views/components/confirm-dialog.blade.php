@@ -1,7 +1,7 @@
-@props(['id' => 'belkhir-space-confirm-dialog'])
+@props(['id' => 'sanad-pilot-confirm-dialog'])
 <div
-    x-data="belkhirSpaceConfirmDialog"
-    x-on:belkhir-space-confirm-request.window="show($event)"
+    x-data="sanadPilotConfirmDialog"
+    x-on:sanad-pilot-confirm-request.window="show($event)"
     x-on:keydown.escape.window="if (open) close()"
 >
     <template x-teleport="body">
@@ -14,7 +14,7 @@
             x-transition:leave="transition ease-in duration-150 motion-reduce:transition-none"
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
-            class="fixed inset-0 z-[90] flex items-center justify-center bg-belkhir-space-ink/70 p-4"
+            class="fixed inset-0 z-[90] flex items-center justify-center bg-sanad-pilot-ink/70 p-4"
             x-on:click.self="close()"
         >
             <section
@@ -25,16 +25,16 @@
                 aria-labelledby="{{ $id }}-title"
                 aria-describedby="{{ $id }}-description"
                 x-on:keydown.tab="trap($event, $refs.dialog)"
-                class="w-full max-w-md rounded-2xl border border-belkhir-space-border bg-white p-6 shadow-2xl"
+                class="w-full max-w-md rounded-2xl border border-sanad-pilot-border bg-white p-6 shadow-2xl"
             >
                 <div class="flex items-start gap-4">
                     <span aria-hidden="true" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700">
                         <x-icon name="warning" size="lg" />
                     </span>
                     <div class="min-w-0">
-                        <h2 id="{{ $id }}-title" class="text-lg font-bold text-belkhir-space-text" x-text="title"></h2>
-                        <p class="mt-1 break-words text-sm font-semibold text-belkhir-space-text" x-text="resource"></p>
-                        <p id="{{ $id }}-description" class="mt-2 text-sm leading-6 text-belkhir-space-muted" x-text="consequence"></p>
+                        <h2 id="{{ $id }}-title" class="text-lg font-bold text-sanad-pilot-text" x-text="title"></h2>
+                        <p class="mt-1 break-words text-sm font-semibold text-sanad-pilot-text" x-text="resource"></p>
+                        <p id="{{ $id }}-description" class="mt-2 text-sm leading-6 text-sanad-pilot-muted" x-text="consequence"></p>
                     </div>
                 </div>
                 <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

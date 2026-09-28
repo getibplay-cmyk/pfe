@@ -6,7 +6,7 @@ return [
     'self_service_enabled' => (bool) env('SAAS_SELF_SERVICE_ENABLED', false),
     'renewals_enabled' => (bool) env('SAAS_RENEWALS_ENABLED', false),
     'grace_days' => min(30, max(0, (int) env('SAAS_BILLING_GRACE_DAYS', 7))),
-    'invoice_issuer' => env('SAAS_INVOICE_ISSUER', 'BELKHIR SPACE'),
+    'invoice_issuer' => env('SAAS_INVOICE_ISSUER', 'SANAD PILOT'),
     'onboarding' => [
         'invitation_ttl_hours' => min(168, max(1, (int) env('SAAS_INVITATION_TTL_HOURS', 72))),
         'default_trial_days' => min(90, max(1, (int) env('SAAS_DEFAULT_TRIAL_DAYS', 14))),

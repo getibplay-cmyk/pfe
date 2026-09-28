@@ -179,7 +179,7 @@ class Lot06FG2NotificationsRbacAccessibilityTest extends TestCase
             User::factory()->create(['tenant_id' => $fixture['tenant']->id, 'agency_id' => $secondAgency->id, 'role_id' => $source->id]),
         ]);
 
-        $page = $this->actingAs($fixture['owner'])->get(route('roles.edit', $source));
+        $page = $this->actingAs($fixture['owner'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('roles.edit', $source));
         $page->assertOk()->assertSee($safe->name)->assertSee('2 utilisateurs seront réaffectés.')
             ->assertDontSee($escalating->name)->assertDontSee($notDelegated->name)
             ->assertDontSee($foreign->name)->assertDontSee($inactive->name)
@@ -191,18 +191,18 @@ class Lot06FG2NotificationsRbacAccessibilityTest extends TestCase
             'is_active' => '0',
             'replacement_role_id' => $safe->id,
         ];
-        $this->put(route('roles.update', $source), $payload)->assertSessionHasErrors('confirm_replacement');
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('roles.update', $source), $payload)->assertSessionHasErrors('confirm_replacement');
         $this->assertTrue($source->refresh()->is_active);
         $this->assertTrue($users->every(fn (User $user): bool => $user->refresh()->role_id === $source->id));
 
         $payload['replacement_role_id'] = $escalating->id;
         $payload['confirm_replacement'] = '1';
-        $this->put(route('roles.update', $source), $payload)->assertSessionHasErrors('replacement_role_id');
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('roles.update', $source), $payload)->assertSessionHasErrors('replacement_role_id');
         $this->assertTrue($source->refresh()->is_active);
         $this->assertTrue($users->every(fn (User $user): bool => $user->refresh()->role_id === $source->id));
 
         $payload['replacement_role_id'] = $safe->id;
-        $this->put(route('roles.update', $source), $payload)->assertRedirect(route('roles.index'));
+        $this->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('roles.update', $source), $payload)->assertRedirect(route('roles.index'));
         $this->assertFalse($source->refresh()->is_active);
         $this->assertTrue($users->every(fn (User $user): bool => $user->refresh()->role_id === $safe->id));
         $this->assertDatabaseHas('audit_logs', ['action' => 'role.replacement.requested', 'auditable_id' => $source->id]);
@@ -231,7 +231,7 @@ class Lot06FG2NotificationsRbacAccessibilityTest extends TestCase
         $fixture = $this->fixture();
         $role = $this->customRole($fixture, 'Rôle accessible', ['reservation.view']);
 
-        $rolePage = $this->actingAs($fixture['owner'])->get(route('roles.edit', $role));
+        $rolePage = $this->actingAs($fixture['owner'])->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('roles.edit', $role));
         $rolePage->assertOk()
             ->assertSee('for="role-name"', false)
             ->assertSee('id="replacement-role"', false)

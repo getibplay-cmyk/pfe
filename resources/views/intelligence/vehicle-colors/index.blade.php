@@ -107,7 +107,7 @@
                         </div>
 
                         <div class="mt-4 grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
-                            <a href="{{ route('intelligence.vehicle-colors.input', $run) }}" target="_blank" rel="noopener" class="block overflow-hidden rounded-2xl border border-belkhir-space-border bg-belkhir-space-canvas transition duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transform-none">
+                            <a href="{{ route('intelligence.vehicle-colors.input', $run) }}" target="_blank" rel="noopener" class="block overflow-hidden rounded-2xl border border-sanad-pilot-border bg-sanad-pilot-canvas transition duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transform-none">
                                 <x-photo-frame :src="route('intelligence.vehicle-colors.input', $run)" alt="Photo privée soumise pour l’analyse de couleur" kind="evidence" fit="contain" class="rounded-none border-0" />
                                 <span class="block px-3 py-2 text-center text-xs font-medium text-indigo-700">{{ __('Ouvrir la photo privée') }}</span>
                             </a>
