@@ -26,6 +26,10 @@ class ProductionConfigurationTest extends TestCase
     public function test_every_versioned_environment_example_has_only_empty_or_null_sensitive_values(): void
     {
         $violations = [];
+        $publicPasswordSettings = [
+            'AUTH_PASSWORD_TIMEOUT' => '900',
+            'SECURITY_PASSWORD_BREACH_CHECK' => 'true',
+        ];
 
         foreach (File::glob(base_path('.env*.example')) as $path) {
             foreach (file($path, FILE_IGNORE_NEW_LINES) ?: [] as $lineNumber => $line) {
@@ -35,6 +39,11 @@ class ProductionConfigurationTest extends TestCase
                 }
 
                 [$key, $value] = array_map('trim', explode('=', $trimmed, 2));
+                if (array_key_exists($key, $publicPasswordSettings)) {
+                    $this->assertSame($publicPasswordSettings[$key], trim($value, "\"'"), $key);
+
+                    continue;
+                }
                 if (! $this->isSensitiveEnvironmentKey($key)) {
                     continue;
                 }

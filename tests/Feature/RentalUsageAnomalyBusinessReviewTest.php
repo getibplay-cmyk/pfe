@@ -233,6 +233,8 @@ class RentalUsageAnomalyBusinessReviewTest extends TestCase
 
     public function test_reviews_reject_extra_input_remain_append_only_and_are_rate_limited(): void
     {
+        // Start the clock before login so the session proof cannot be in the future.
+        Carbon::setTestNow('2026-08-30 14:00:00+01');
         $fixture = $this->fixture();
         $run = $this->completeRun($fixture, 12.0);
         $user = $fixture['users']['agency-manager'];
@@ -266,7 +268,6 @@ class RentalUsageAnomalyBusinessReviewTest extends TestCase
             ->where('action', 'prediction.rental_usage_anomaly.human_review_recorded')
             ->count());
 
-        Carbon::setTestNow('2026-08-30 14:00:00+01');
         $this->actingAs($user)
             ->post(route('intelligence.rental-usage-anomalies.contract-reviews.store', $contract), [
                 'decision' => 'follow_up',
@@ -295,7 +296,6 @@ class RentalUsageAnomalyBusinessReviewTest extends TestCase
         $reloadedFirstReview = RentalUsageAnomalyReview::withoutGlobalScopes()->findOrFail($firstReview->id);
         $this->assertSame($firstSnapshot, $reloadedFirstReview->only(array_keys($firstSnapshot)));
         $this->assertTrue($reloadedFirstReview->reviewed_at->equalTo($firstReviewedAt));
-        Carbon::setTestNow();
 
         RateLimiter::clear(
             'rental-usage-anomaly-review:tenant:'.$fixture['tenant']->id
