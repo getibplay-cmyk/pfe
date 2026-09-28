@@ -198,7 +198,8 @@ class SaasModelTrainingTest extends TestCase
         $this->actingAs($f['user'])->post(route('model-training.revoke', $dataset))->assertRedirect();
         $this->post(route('model-training.revoke', $dataset))->assertRedirect();
         $this->get(route('model-training.download', $dataset))->assertGone();
-        $this->actingAs($admin)->get(route('platform.training.download', $campaign))->assertConflict();
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])
+            ->get(route('platform.training.download', $campaign))->assertConflict();
         $this->post(route('platform.training.retry', $campaign))->assertConflict();
         $this->post(route('platform.training.review', $campaign), ['decision' => 'qualified', 'note' => 'Tentative de validation'])->assertConflict();
         $this->post(route('platform.training.review', $campaign), ['decision' => 'rejected', 'note' => 'Partage révoqué par la source'])->assertRedirect();

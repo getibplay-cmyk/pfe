@@ -42,7 +42,7 @@ class SecurityHardeningAccountsTest extends TestCase
         $this->assertSame($original, $user->fresh()->email);
         $this->assertNotNull($user->fresh()->email_verified_at);
         $this->assertStringNotContainsString('pending@example.test', DB::table('users')->where('id', $user->id)->value('pending_email'));
-        $this->get($url)->assertOk()->assertHeader('Referrer-Policy', 'no-referrer');
+        $this->actingAs($user->fresh())->get($url)->assertOk()->assertHeader('Referrer-Policy', 'no-referrer');
         $this->assertSame($original, $user->fresh()->email);
         $this->post($url)->assertRedirect(route('profile.edit'));
         $this->assertSame('pending@example.test', $user->fresh()->email);

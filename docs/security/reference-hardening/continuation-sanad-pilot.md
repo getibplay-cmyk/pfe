@@ -1,5 +1,12 @@
 # SANAD PILOT — continuation du point 1
 
+**Reprise du 28 septembre 2026 :** le contenu du commit local `8323256` a été
+publié dans la [PR #38](https://github.com/getibplay-cmyk/pfe/pull/38), avec le même
+arbre Git. Les corrections issues des tests PostgreSQL font partie de cette PR ;
+sa description conserve les résultats de la dernière version vérifiée.
+La fusion exige une CI réussie. Les services réels et la production restent à
+qualifier séparément. Le compte rendu ci-dessous est l’historique local du 13–14 septembre.
+
 **Mise à jour du 14 septembre 2026 :** publication publique et fusion autorisées
 explicitement par l’utilisateur. Les résultats ci-dessous décrivent le passage
 local du 13 septembre ; la CI doit qualifier la version publiée avant fusion.

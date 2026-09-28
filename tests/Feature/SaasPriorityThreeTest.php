@@ -144,6 +144,7 @@ class SaasPriorityThreeTest extends TestCase
         $this->assertSame('499.90', $attempt->amount);
         $this->assertSame('MAD', $attempt->currency);
         $this->assertSame($owner->tenant_id, $attempt->tenant_id);
+        $this->assertTrue($attempt->expires_at->isFuture(), 'Fresh checkout expires at '.$attempt->expires_at->toIso8601String().'; now '.now()->toIso8601String());
 
         $this->actingAs($owner)->get(route('tenant-saas-checkout.show', $attempt))
             ->assertOk()
@@ -245,7 +246,7 @@ class SaasPriorityThreeTest extends TestCase
         $this->assertSame(SaasPaymentAttemptStatus::Pending, $attempt->refresh()->status);
         $this->assertSame(0, SaasPayment::query()->count());
 
-        $this->actingAs($otherOwner)->post(route('tenant-saas-checkout.store', $subscription), [
+        $this->actingAs($otherOwner)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('tenant-saas-checkout.store', $subscription), [
             'idempotency_key' => (string) Str::uuid(),
         ])->assertNotFound();
         $this->actingAs($otherOwner)->get(route('tenant-saas-checkout.show', $attempt))->assertNotFound();

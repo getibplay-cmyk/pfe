@@ -6,6 +6,7 @@ use App\Actions\Operations\RefreshPlatformOperationalIncidents;
 use App\Models\PlatformOperationalIncident;
 use App\Models\PlatformOperationalIncidentEvent;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\RolesPermissionsSeeder;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\QueryException;
@@ -35,6 +36,8 @@ class PlatformOperationsMonitoringTest extends TestCase
     {
         $this->assertSame(config('app.timezone'), DB::selectOne('SHOW TIME ZONE')->TimeZone);
         $this->artisan('operations:scheduler-heartbeat')->assertSuccessful();
+        $recordedAt = DB::table('operational_heartbeats')->where('component', config('operations.scheduler.heartbeat_component'))->value('last_succeeded_at');
+        $this->assertEqualsWithDelta(now()->timestamp, CarbonImmutable::parse($recordedAt)->timestamp, 2, 'Heartbeat '.$recordedAt.'; now '.now()->toIso8601String());
         DB::table('failed_jobs')->insert([
             'uuid' => '00000000-0000-4000-8000-000000000001',
             'connection' => 'database',

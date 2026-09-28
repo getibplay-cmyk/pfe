@@ -1,8 +1,12 @@
 # Durcissement à partir des quatre référentiels
 
-**État : publication et fusion autorisées le 14 septembre 2026 ; qualification
-PostgreSQL et CI requise avant fusion, aucune mise en production effectuée.** Les tests PostgreSQL et la nouvelle CI sécurité n’ont pas
-été exécutés pour ce lot. La continuation SANAD PILOT dispose de résultats locaux
+**État au 28 septembre 2026 : lot publié dans la [PR #38](https://github.com/getibplay-cmyk/pfe/pull/38),
+après autorisation explicite de publication publique et de fusion conditionnée à la CI.**
+La validation PostgreSQL est désormais exécutée par GitHub Actions. Les résultats
+du commit final et les corrections sont conservés dans la description de la PR.
+Le premier workflow sécurité a réussi : 8 règles Semgrep sur 849 fichiers sans
+résultat, 271 commits examinés par Gitleaks sans secret détecté, registre et SBOM
+vérifiés. Aucune mise en production n’est effectuée. La continuation SANAD PILOT dispose de résultats locaux
 PHP, JavaScript, Composer/npm, Semgrep et scan des sources avec Gitleaks, détaillés
 dans `continuation-sanad-pilot.md`. Les protections de production ne sont pas réputées actives
 par la présence de leur configuration dans le dépôt.
