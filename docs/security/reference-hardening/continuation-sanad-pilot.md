@@ -11,8 +11,11 @@ La reprise CI a révélé des données de fuseau différentes entre PHP et l’i
 PostgreSQL 18.4 : `Africa/Casablanca` valait respectivement +00 et +01 le
 28 septembre. La [base IANA 2026c](https://data.iana.org/time-zones/tzdb/NEWS)
 contient le changement du 20 septembre 2026. La CI utilise désormais l’image
-officielle PostgreSQL 18.6-bookworm ; les tests vérifient les fuseaux et la
-conservation de l’instant du heartbeat après écriture/lecture. Avant déploiement,
+officielle PostgreSQL 18.6-bookworm et installe explicitement les règles IANA
+2026d de Casablanca et El Aaiún dans ce service jetable avant les migrations.
+La source amont est figée par commit et SHA-256 ; le décalage après la transition
+est contrôlé par SQL. Les tests vérifient aussi les fuseaux et la conservation
+de l’instant du heartbeat après écriture/lecture. Avant déploiement,
 PHP, PostgreSQL et le système doivent disposer de données de fuseau cohérentes.
 
 **Mise à jour du 14 septembre 2026 :** publication publique et fusion autorisées
