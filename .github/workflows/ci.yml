@@ -457,6 +457,24 @@ jobs:
       - name: Test all JavaScript including bounded smoke harness
         run: npm run test:js
 
+      - name: Check interface in the runner browser
+        env:
+          UI_EVIDENCE_DIR: ${{ runner.temp }}/sanad-ui-evidence
+        run: |
+          command -v google-chrome
+          node tests/Browser/interface-smoke.mjs
+
+      - name: Upload interface screenshots and checks
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: sanad-ui-evidence-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/sanad-ui-evidence/*.png
+            ${{ runner.temp }}/sanad-ui-evidence/results.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Check PHP formatting
         run: |
           if vendor/bin/pint --test; then exit 0; fi

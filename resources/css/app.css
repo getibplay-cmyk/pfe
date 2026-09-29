@@ -14,6 +14,7 @@
 
 @layer base {
     :root {
+        color-scheme: only light;
         --sanad-pilot-ink: theme('colors.sanad.pilot.ink');
         --sanad-pilot-navy: theme('colors.sanad.pilot.navy');
         --sanad-pilot-blue: theme('colors.sanad.pilot.blue');
@@ -91,19 +92,27 @@
     .rf-panel-body { @apply p-4 sm:p-6; }
     .rf-panel-heading { @apply border-b border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6; }
     .rf-page-heading { @apply rounded-2xl border border-sanad-pilot-border bg-white p-5 shadow-sm sm:p-6; }
-    .rf-sidebar { @apply border-e border-white/10; scrollbar-width: thin; scrollbar-color: #475569 transparent; }
+    .rf-sidebar { @apply border-e border-white/10; }
+    .rf-sidebar, .rf-sidebar nav { scrollbar-width: thin; scrollbar-color: #475569 transparent; }
     .rf-topbar { box-shadow: 0 4px 18px rgb(15 23 42 / 0.035); }
     .rf-stat-card { @apply flex flex-col; }
     .rf-stat-card > p { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
     .rf-security-summary { @apply flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 bg-white p-4; }
     .rf-security-icon { @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700; }
     .rf-action-card { @apply flex min-w-0 flex-col overflow-hidden; }
-    .rf-action-card-header { @apply flex items-center gap-3 border-b border-slate-100 bg-slate-50/70 p-4; }
+    .rf-action-card-header { @apply flex min-h-20 items-center gap-3 border-b border-slate-100 bg-slate-50/70 p-4; }
+    .rf-action-card-header h3 { @apply text-sm leading-5; overflow-wrap: anywhere; }
     .rf-action-card ul { @apply flex-1 px-4; }
 
     .rf-button {
-        @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:transform-none;
+        @apply inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 text-center text-sm font-semibold transition focus-visible:ring-offset-2 active:translate-y-px disabled:pointer-events-none disabled:transform-none;
     }
+    .rf-button svg { @apply shrink-0; }
+    .rf-confirm-dialog {
+        @apply m-auto w-[calc(100%-2rem)] max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-sanad-pilot-border bg-white p-5 text-sanad-pilot-text shadow-2xl sm:p-6;
+        max-height: calc(100dvh - 2rem);
+    }
+    .rf-confirm-dialog::backdrop { background: rgb(11 18 32 / 0.65); }
     .rf-button-primary { @apply rf-button border-sanad-pilot-blue bg-sanad-pilot-blue text-white hover:border-sanad-pilot-blue-hover hover:bg-sanad-pilot-blue-hover; }
     .rf-button-secondary { @apply rf-button border-sanad-pilot-border bg-sanad-pilot-surface text-sanad-pilot-text shadow-sm hover:border-slate-400 hover:bg-slate-50; }
     .rf-button-quiet { @apply rf-button border-transparent bg-transparent text-sanad-pilot-blue hover:bg-brand-50 hover:text-sanad-pilot-blue-hover; }

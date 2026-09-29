@@ -21,11 +21,11 @@
 @endphp
 <a href="#contenu" class="rf-skip-link">{{ __('Aller au contenu principal') }}</a>
 <div x-data="appShell" data-component="app-shell" class="min-h-screen lg:flex">
-    <aside class="rf-sidebar sticky top-0 hidden h-screen w-72 shrink-0 flex-col bg-sanad-pilot-ink px-5 py-6 text-white lg:flex" aria-label="{{ __('Barre latérale') }}">
+    <aside class="rf-sidebar sticky top-0 hidden h-dvh w-72 shrink-0 flex-col bg-sanad-pilot-ink px-5 py-6 text-white lg:flex" aria-label="{{ __('Barre latérale') }}">
         <a href="{{ $home }}" class="rounded-lg px-2" aria-label="{{ config('brand.name') }} — {{ __('Accueil') }}">
             <x-brand-logo surface="dark" />
         </a>
-        <nav aria-label="{{ __('Navigation principale') }}" class="mt-8 flex-1 space-y-6 overflow-y-auto pe-1">
+        <nav aria-label="{{ __('Navigation principale') }}" class="mt-8 min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain pe-1">
             @foreach ($navigationSections as $section)
                 <section>
                     <h2 class="px-3 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-slate-400">{{ __($section['label']) }}</h2>
@@ -54,7 +54,7 @@
                         <p class="truncate text-xs text-slate-500">{{ $user->tenant?->name ?? __('Administration de la plateforme') }}@if($user->agency) · {{ $user->agency->name }}@endif</p>
                     </div>
                 </div>
-                <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
+                <div class="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
                 <x-locale-switcher />
                 @unless ($user->is_platform_admin)
                     <x-workspace-search />
@@ -63,7 +63,7 @@
                             <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0" /></svg>
                             @if ($unreadNotificationCount)<span aria-hidden="true" class="absolute -end-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[0.65rem] font-bold leading-5 text-white">{{ min($unreadNotificationCount, 99) }}</span>@endif
                         </button>
-                        <section id="apercu-notifications" x-cloak x-show="open" x-transition role="dialog" aria-label="{{ __('Aperçu des notifications') }}" class="absolute end-0 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <section id="apercu-notifications" x-cloak x-show="open" x-transition role="dialog" aria-label="{{ __('Aperçu des notifications') }}" class="fixed inset-x-4 mt-2 rounded-xl border border-slate-200 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:end-0 sm:w-[min(22rem,calc(100vw-2rem))]">
                             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3"><h2 class="text-sm font-semibold text-slate-950">{{ __('Notifications') }}</h2><span class="text-xs text-slate-500">{{ $unreadNotificationCount }} {{ __('non lue(s)') }}</span></div>
                             <div class="max-h-80 divide-y divide-slate-100 overflow-y-auto">
                                 @forelse ($notificationPreview as $notification)
@@ -81,9 +81,9 @@
                     </div>
                 @endunless
                 <div class="relative" x-data="{ open: false, close(returnFocus = false) { this.open = false; if (returnFocus) this.$nextTick(() => this.$refs.userMenuButton.focus()) } }" @click.outside="close()" @keydown.escape.window="if (open) close(true)">
-                    <button x-ref="userMenuButton" type="button" @click="open = ! open" class="flex min-h-10 items-center gap-3 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-start hover:bg-slate-50" :aria-expanded="open.toString()" aria-haspopup="menu" aria-controls="menu-utilisateur">
+                    <button x-ref="userMenuButton" type="button" @click="open = ! open" class="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-start hover:bg-slate-50" aria-label="{{ __('Menu utilisateur') }}" :aria-expanded="open.toString()" aria-haspopup="menu" aria-controls="menu-utilisateur">
                         <span aria-hidden="true" class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
-                        <span class="hidden min-w-0 sm:block"><span class="block max-w-40 truncate text-xs font-semibold text-slate-900">{{ $user->name }}</span><span class="block max-w-40 truncate text-[0.68rem] text-slate-500">{{ $roleLabel }}</span></span>
+                        <span class="hidden min-w-0 xl:block"><span class="block max-w-40 truncate text-xs font-semibold text-slate-900">{{ $user->name }}</span><span class="block max-w-40 truncate text-[0.68rem] text-slate-500">{{ $roleLabel }}</span></span>
                         <svg aria-hidden="true" class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
                     </button>
                     <div id="menu-utilisateur" x-cloak x-show="open" x-transition role="menu" aria-label="{{ __('Menu utilisateur') }}" class="absolute end-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">

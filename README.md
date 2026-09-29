@@ -62,6 +62,27 @@ DB_USERNAME=rentfleet_app
 DB_PASSWORD=
 ```
 
+## Mise à jour après un pull
+
+Les fichiers CSS et JavaScript compilés dans `public/build` ne sont pas suivis
+par Git. Après un changement de vues ou d’identité visuelle, un simple pull
+conserve donc les anciens assets. Cela peut masquer le logo, désaligner les
+cartes et empêcher les composants interactifs de démarrer.
+
+Après avoir préservé les modifications locales et terminé `git pull --ff-only` :
+
+```powershell
+composer install
+.\scripts\rebuild-ui.ps1
+php artisan db:show
+php artisan migrate
+```
+
+Vérifier la base affichée avant les migrations, puis recharger le navigateur
+avec **Ctrl+F5**. Le script reconstruit les assets et vide les caches de vues et
+de configuration, sans modifier les données. Ne pas utiliser `migrate:fresh`
+ou `migrate:refresh` pour une mise à jour.
+
 ## Bases PostgreSQL
 
 Créer un rôle applicatif et deux bases séparées depuis un compte PostgreSQL

@@ -8,7 +8,7 @@
         'border-amber-200 bg-amber-50 text-amber-950' => $type === 'warning',
         'border-blue-200 bg-blue-50 text-blue-950' => $type === 'info',
     ]) }}>
-        <span aria-hidden="true" class="mt-0.5 font-bold">{{ $isError ? '!' : '✓' }}</span>
-        @if ($message)<p>{{ $message }}</p>@else<div>{{ $slot }}</div>@endif
+        <x-icon :name="match ($type) { 'error' => 'error', 'warning' => 'warning', 'info' => 'info', default => 'check' }" class="mt-0.5 shrink-0" />
+        @if ($message)<p class="min-w-0 break-words leading-6">{{ $message }}</p>@else<div class="min-w-0 break-words leading-6">{{ $slot }}</div>@endif
     </div>
 @endif
