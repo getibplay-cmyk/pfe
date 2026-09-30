@@ -123,3 +123,41 @@ test('le registre Alpine expose uniquement des contrôleurs explicites', () => {
     assert.deepEqual(dataNames, ['sanadPilotConfirmDialog', 'sanadPilotFileInput', 'sanadPilotLightbox']);
     assert.deepEqual(directiveNames, ['sanad-pilot-confirm']);
 });
+
+test('une confirmation reste fermée sans demande et Annuler ne soumet rien', () => {
+    let opened = 0;
+    let submitted = 0;
+    let restored = 0;
+    const state = createSanadPilotConfirmDialog();
+    state.$nextTick = (callback) => callback();
+    state.$refs = { modal: { showModal: () => opened++, close: () => opened-- }, cancel: { focus() {} } };
+    const form = { dataset: {}, requestSubmit: () => submitted++ };
+    const submitter = { focus: () => restored++ };
+
+    state.show({ detail: {} });
+    assert.equal(state.open, false);
+    assert.equal(opened, 0);
+    state.show({ detail: { form, submitter } });
+    assert.equal(opened, 1);
+    assert.ok(state.title && state.consequence && state.confirmLabel);
+    state.show({ detail: { form: { dataset: {} }, title: 'Autre action' } });
+    assert.equal(state.form, form);
+    assert.equal(opened, 1);
+    state.close();
+    assert.equal(state.open, false);
+    assert.equal(opened, 0);
+    assert.equal(submitted, 0);
+    assert.equal(restored, 1);
+});
+
+test('une fermeture avant le prochain rendu empêche une ouverture tardive', () => {
+    let pending;
+    let opened = false;
+    const state = createSanadPilotConfirmDialog();
+    state.$nextTick = (callback) => { pending = callback; };
+    state.$refs = { modal: { showModal: () => { opened = true; }, close() {} } };
+    state.show({ detail: { form: { dataset: {} } } });
+    state.close({ restoreFocus: false });
+    pending();
+    assert.equal(opened, false);
+});

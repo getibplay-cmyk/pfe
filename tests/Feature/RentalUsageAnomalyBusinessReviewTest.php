@@ -77,9 +77,11 @@ class RentalUsageAnomalyBusinessReviewTest extends TestCase
             ->assertDontSee($fixture['export']->stored_path)
             ->assertDontSee($fixture['export']->content_sha256);
 
-        $lowerHtml = mb_strtolower($page->getContent());
+        // Check the wording shown to the user, not shared CSS class names such
+        // as rf-button-danger. Private identifiers remain checked in raw HTML above.
+        $lowerText = mb_strtolower(html_entity_decode(strip_tags($page->getContent()), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         foreach (['fraude', 'culpabilité', 'faute', 'danger', 'sanction', 'jaccard', 'random state', 'sha256', 'csv'] as $forbidden) {
-            $this->assertStringNotContainsString($forbidden, $lowerHtml);
+            $this->assertStringNotContainsString($forbidden, $lowerText);
         }
         $this->assertSame(2, substr_count($page->getContent(), 'data-anomaly-case'));
         $this->assertSame(4, substr_count($page->getContent(), 'data-anomaly-factor'));

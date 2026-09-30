@@ -27,7 +27,6 @@
                     </ul>
                     <div class="border-t border-slate-100 px-4 py-2"><a class="rf-button-link gap-2" href="{{ $group['url'] }}">{{ __('Voir tous les dossiers (') }}{{ $group['count'] }})<x-icon name="next" size="xs" /></a></div>
                 </article>
-                </article>
             @endforeach
         </div>
     </section>

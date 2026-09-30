@@ -47,11 +47,11 @@
                 class="relative flex h-full max-h-[calc(100vh-1.5rem)] w-full max-w-6xl flex-col rounded-2xl bg-white p-3 shadow-2xl sm:max-h-[calc(100vh-3rem)] sm:p-5"
             >
                 <div class="flex items-center justify-between gap-4">
-                    <h2 id="{{ $galleryId }}-title" class="truncate text-base font-bold text-sanad-pilot-text" x-text="current?.alt || 'Photo agrandie'"></h2>
-                    <x-icon-button icon="close" :label="__('Fermer l’aperçu')" variant="quiet" x-ref="close" x-on:click="close()" />
+                    <h2 id="{{ $galleryId }}-title" class="truncate text-base font-bold text-sanad-pilot-text" x-text="current?.alt || @js(__('Photo agrandie'))">{{ __('Photo agrandie') }}</h2>
+                    <x-icon-button icon="close" :label="__('Fermer l’aperçu')" variant="quiet" tooltip-position="bottom-end" x-ref="close" x-on:click="close()" />
                 </div>
                 <div class="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-xl border border-sanad-pilot-border bg-slate-100">
-                    <img :src="current?.src || ''" :alt="current?.alt || __('Photo agrandie')" class="h-full w-full object-contain">
+                    <img :src="current?.src || ''" :alt="current?.alt || @js(__('Photo agrandie'))" class="h-full w-full object-contain">
                     <div x-show="hasSeveral" class="pointer-events-none absolute inset-x-2 top-1/2 flex -translate-y-1/2 justify-between">
                         <span class="pointer-events-auto"><x-icon-button icon="previous" :label="__('Photo précédente')" x-on:click="previous()" /></span>
                         <span class="pointer-events-auto"><x-icon-button icon="next" :label="__('Photo suivante')" x-on:click="next()" /></span>

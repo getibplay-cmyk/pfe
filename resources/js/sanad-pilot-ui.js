@@ -17,7 +17,7 @@ function focusableElements(container) {
 }
 
 export function trapDialogFocus(event, container) {
-    if (event.key !== t('Tab')) {
+    if (event.key !== 'Tab') {
         return;
     }
 
@@ -54,7 +54,7 @@ export function createSanadPilotConfirmDialog() {
         show(event) {
             const detail = event?.detail ?? {};
 
-            if (! detail.form) {
+            if (! detail.form || this.open) {
                 return;
             }
 
@@ -66,13 +66,20 @@ export function createSanadPilotConfirmDialog() {
             this.consequence = detail.consequence || DEFAULT_CONFIRMATION.consequence;
             this.confirmLabel = detail.confirmLabel || DEFAULT_CONFIRMATION.confirmLabel;
             this.open = true;
-            this.$nextTick?.(() => this.$refs?.cancel?.focus());
+            this.$nextTick?.(() => {
+                // Native dialog stays closed even if an outdated bundle fails to
+                // initialise Alpine. It also makes the background inert.
+                if (! this.open) return;
+                this.$refs?.modal?.showModal();
+                this.$refs?.cancel?.focus();
+            });
         },
 
         close({ restoreFocus = true } = {}) {
             const returnFocus = this.returnFocus;
 
             this.open = false;
+            this.$refs?.modal?.close();
             this.form = null;
             this.submitter = null;
             this.returnFocus = null;

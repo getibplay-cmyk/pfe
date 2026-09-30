@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\MessageBag;
+use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
 
 class SanadPilotVisualComponentsTest extends TestCase
@@ -33,7 +35,8 @@ class SanadPilotVisualComponentsTest extends TestCase
         $this->assertStringContainsString('aria-modal="true"', $dialog);
         $this->assertStringContainsString('aria-labelledby="sanad-pilot-confirm-dialog-title"', $dialog);
         $this->assertStringContainsString('x-ref="cancel"', $dialog);
-        $this->assertStringContainsString('x-on:keydown.escape.window', $dialog);
+        $this->assertStringContainsString('<dialog', $dialog);
+        $this->assertStringContainsString('x-on:cancel.prevent="close()"', $dialog);
         $this->assertStringNotContainsString('window.confirm', $dialog);
     }
 
@@ -64,6 +67,25 @@ class SanadPilotVisualComponentsTest extends TestCase
         $this->assertStringContainsString(':src="previewUrl"', $html);
         $this->assertStringNotContainsString('display:none', $html);
         $this->assertStringNotContainsString('base64', $html);
+    }
+
+    public function test_file_input_only_displays_errors_for_its_field_from_the_shared_bag(): void
+    {
+        view()->share('errors', (new ViewErrorBag)->put('default', new MessageBag([
+            'other' => ['Erreur sur un autre champ.'],
+        ])));
+        $html = Blade::render('<x-file-input id="document-file" name="file" />');
+
+        $this->assertStringNotContainsString('aria-invalid="true"', $html);
+        $this->assertStringNotContainsString('role="alert"', $html);
+
+        view()->share('errors', (new ViewErrorBag)->put('default', new MessageBag([
+            'file' => ['Le fichier dépasse la taille autorisée.'],
+        ])));
+        $html = Blade::render('<x-file-input id="document-file" name="file" />');
+
+        $this->assertStringContainsString('aria-invalid="true"', $html);
+        $this->assertStringContainsString('Le fichier dépasse la taille autorisée.', $html);
     }
 
     public function test_photo_frames_and_gallery_preserve_complete_evidence(): void
