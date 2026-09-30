@@ -14,7 +14,8 @@
     'errors' => [],
 ])
 @php
-    $errorMessages = collect(is_array($errors) ? $errors : [$errors])->filter()->values();
+    $validationErrors = $errors instanceof \Illuminate\Support\ViewErrorBag ? $errors->get($name) : $errors;
+    $errorMessages = collect(is_array($validationErrors) ? $validationErrors : [$validationErrors])->filter()->values();
     $helpId = $id.'-help';
     $errorId = $id.'-error';
     $descriptionIds = trim(($formats || $maxSize || $hint ? $helpId : '').($errorMessages->isNotEmpty() ? ' '.$errorId : ''));

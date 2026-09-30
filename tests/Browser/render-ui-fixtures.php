@@ -39,7 +39,7 @@ $user = new class extends User
 $user->forceFill(['id' => 1, 'name' => 'Administrateur de l’entreprise', 'is_platform_admin' => false, 'tenant_id' => 1]);
 $user->setRelation('tenant', new Tenant(['name' => 'Atlas Location Démo']));
 $user->setRelation('agency', null);
-$user->setRelation('role', new Role(['slug' => 'tenant-owner', 'is_active' => true]));
+$user->setRelation('role', (new Role)->forceFill(['slug' => 'tenant-owner', 'is_active' => true]));
 $notifications = Mockery::mock(NotificationInbox::class);
 $notifications->shouldReceive('recent')->andReturn(collect());
 $notifications->shouldReceive('unreadCount')->andReturn(70);

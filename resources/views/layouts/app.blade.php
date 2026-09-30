@@ -54,7 +54,7 @@
                         <p class="truncate text-xs text-slate-500">{{ $user->tenant?->name ?? __('Administration de la plateforme') }}@if($user->agency) · {{ $user->agency->name }}@endif</p>
                     </div>
                 </div>
-                <div class="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
+                <div class="flex w-full shrink-0 flex-wrap items-center justify-end gap-1 sm:w-auto sm:gap-2">
                 <x-locale-switcher />
                 @unless ($user->is_platform_admin)
                     <x-workspace-search />
@@ -81,10 +81,10 @@
                     </div>
                 @endunless
                 <div class="relative" x-data="{ open: false, close(returnFocus = false) { this.open = false; if (returnFocus) this.$nextTick(() => this.$refs.userMenuButton.focus()) } }" @click.outside="close()" @keydown.escape.window="if (open) close(true)">
-                    <button x-ref="userMenuButton" type="button" @click="open = ! open" class="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-start hover:bg-slate-50" aria-label="{{ __('Menu utilisateur') }}" :aria-expanded="open.toString()" aria-haspopup="menu" aria-controls="menu-utilisateur">
+                    <button x-ref="userMenuButton" type="button" @click="open = ! open" class="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-1.5 py-1.5 text-start hover:bg-slate-50 sm:px-2.5" aria-label="{{ __('Menu utilisateur') }}" :aria-expanded="open.toString()" aria-haspopup="menu" aria-controls="menu-utilisateur">
                         <span aria-hidden="true" class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
                         <span class="hidden min-w-0 xl:block"><span class="block max-w-40 truncate text-xs font-semibold text-slate-900">{{ $user->name }}</span><span class="block max-w-40 truncate text-[0.68rem] text-slate-500">{{ $roleLabel }}</span></span>
-                        <svg aria-hidden="true" class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+                        <svg aria-hidden="true" class="hidden h-4 w-4 text-slate-400 sm:block" viewBox="0 0 20 20" fill="currentColor"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
                     </button>
                     <div id="menu-utilisateur" x-cloak x-show="open" x-transition role="menu" aria-label="{{ __('Menu utilisateur') }}" class="absolute end-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                         <a role="menuitem" href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"><x-icon name="users" size="xs" />{{ __('Mon profil') }}</a>

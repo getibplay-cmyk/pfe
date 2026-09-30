@@ -114,6 +114,7 @@ try {
         await waitFor(`location.pathname === '/${name}' && document.readyState === 'complete'`);
         if (name !== 'error') await waitFor("!!window.Alpine && !document.querySelector('[x-cloak]')");
         assert.deepEqual(errors, [], `JavaScript errors on ${name}`);
+        await evaluate('scrollTo(0, 0)');
     };
     const capture = async name => {
         const { data } = await send('Page.captureScreenshot', { format: 'png' });
@@ -138,9 +139,14 @@ try {
                     cardPadding: box ? parseFloat(getComputedStyle(box).paddingLeft) : null,
                     markStroke: mark ? getComputedStyle(mark).stroke : null,
                     colors: getComputedStyle(document.body).backgroundColor,
+                    clippedControls: [...document.querySelectorAll('.rf-topbar button, .rf-topbar select, .rf-topbar a')].filter(e => {
+                        const r = e.getBoundingClientRect();
+                        return r.width > 0 && (r.left < -1 || r.right > innerWidth + 1);
+                    }).map(e => e.getAttribute('aria-label') || e.textContent.trim()),
                 };
             })()`);
             assert.equal(state.overflow, false, `Horizontal page overflow: ${name} ${width}`);
+            assert.deepEqual(state.clippedControls, [], `Clipped header controls: ${name} ${width}`);
             assert.equal(state.headings, 1, `Main heading: ${name}`);
             assert.equal(state.alert, false, `Spontaneous confirmation: ${name}`);
             if (state.cardPadding !== null) assert.ok(state.cardPadding >= 16, `Missing card styles: ${name}`);
@@ -165,7 +171,7 @@ try {
     await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
     await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
     await waitFor('!document.querySelector("#sanad-pilot-confirm-dialog").open');
-    assert.equal(await evaluate('document.activeElement.textContent.trim()'), 'Archiver le document');
+    await waitFor('document.activeElement.textContent.trim() === "Archiver le document"');
     await evaluate('document.querySelector("form[x-sanad-pilot-confirm] button").click()');
     await waitFor('document.querySelector("#sanad-pilot-confirm-dialog").open');
     await evaluate('document.querySelector("#sanad-pilot-confirm-dialog [x-ref=cancel]").click()');
@@ -176,8 +182,8 @@ try {
     await evaluate('document.querySelector("#sanad-pilot-confirm-dialog .rf-button-danger").click()');
     await waitFor('document.querySelector("h1")?.textContent === "Action de démonstration confirmée"');
     await go('components');
-    await evaluate('document.querySelector("button[aria-label^=\"Agrandir\"]").click()');
-    await waitFor('document.querySelector("[aria-label=\"Fermer l’aperçu\"]")?.getClientRects().length > 0');
+    await evaluate(`document.querySelector('button[aria-label^="Agrandir"]').click()`);
+    await waitFor(`document.querySelector('[aria-label="Fermer l’aperçu"]')?.getClientRects().length > 0`);
     assert.deepEqual(errors, [], 'Photo gallery errors');
     await capture('photo-gallery-320');
     // Missing JavaScript must never expose a blank confirmation at page load.
@@ -194,5 +200,10 @@ try {
     server.close();
     // Only a freshly created, dedicated temporary browser profile is removed.
     await new Promise(resolve => chrome.exitCode !== null ? resolve() : chrome.once('exit', resolve));
-    await fs.rm(profile, { recursive: true, force: true });
+    console.log(`Removing dedicated temporary browser profile: ${profile}`);
+    await fs.rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }).catch(error => {
+        // Chrome helpers can briefly keep writing after the main process exits.
+        // Cleanup must not replace a failed browser assertion with ENOTEMPTY.
+        console.warn(`Temporary browser profile cleanup: ${error.code}`);
+    });
 }
