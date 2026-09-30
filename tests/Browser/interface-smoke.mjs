@@ -185,6 +185,11 @@ try {
     await evaluate(`document.querySelector('button[aria-label^="Agrandir"]').click()`);
     await waitFor(`document.querySelector('[aria-label="Fermer l’aperçu"]')?.getClientRects().length > 0`);
     assert.deepEqual(errors, [], 'Photo gallery errors');
+    assert.ok(await evaluate(`(() => {
+        const close = document.querySelector('[aria-label="Fermer l’aperçu"]');
+        const r = close.parentElement.querySelector('[role=tooltip]').getBoundingClientRect();
+        return r.left >= 0 && r.right <= innerWidth && r.top >= 0;
+    })()`), 'Photo close tooltip must remain inside the viewport');
     await capture('photo-gallery-320');
     // Missing JavaScript must never expose a blank confirmation at page load.
     await send('Network.setBlockedURLs', { urls: ['*.js'] });

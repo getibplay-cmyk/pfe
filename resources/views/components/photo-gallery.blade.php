@@ -48,7 +48,7 @@
             >
                 <div class="flex items-center justify-between gap-4">
                     <h2 id="{{ $galleryId }}-title" class="truncate text-base font-bold text-sanad-pilot-text" x-text="current?.alt || @js(__('Photo agrandie'))">{{ __('Photo agrandie') }}</h2>
-                    <x-icon-button icon="close" :label="__('Fermer l’aperçu')" variant="quiet" x-ref="close" x-on:click="close()" />
+                    <x-icon-button icon="close" :label="__('Fermer l’aperçu')" variant="quiet" tooltip-position="bottom-end" x-ref="close" x-on:click="close()" />
                 </div>
                 <div class="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-xl border border-sanad-pilot-border bg-slate-100">
                     <img :src="current?.src || ''" :alt="current?.alt || @js(__('Photo agrandie'))" class="h-full w-full object-contain">
