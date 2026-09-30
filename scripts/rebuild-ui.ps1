@@ -14,17 +14,17 @@ foreach ($command in @($npm, $php)) {
     }
 }
 if (-not (Test-Path -LiteralPath 'vendor/autoload.php' -PathType Leaf)) {
-    throw 'Exécutez composer install avant de reconstruire l’interface.'
+    throw "Executez composer install avant de reconstruire l'interface."
 }
 if (Test-Path -LiteralPath 'public/hot') {
-    throw 'Un serveur Vite de développement est déclaré. Arrêtez npm run dev avant cette reconstruction. Si le serveur est déjà arrêté, retirez uniquement le fichier public/hot obsolète.'
+    throw 'Un serveur Vite de developpement est declare. Arretez npm run dev avant cette reconstruction. Si le serveur est deja arrete, retirez uniquement le fichier public/hot obsolete.'
 }
 
 function Invoke-Checked {
     param([string]$File, [string[]]$Arguments)
     & $File @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Échec de $File ; la reconstruction est interrompue."
+        throw "Echec de $File ; la reconstruction est interrompue."
     }
 }
 
@@ -33,4 +33,4 @@ Invoke-Checked $npm @('run', 'build')
 Invoke-Checked $php @('artisan', 'view:clear')
 Invoke-Checked $php @('artisan', 'config:clear')
 
-Write-Host 'Interface reconstruite. Rechargez la page avec Ctrl+F5. Aucune donnée métier n’a été modifiée.' -ForegroundColor Green
+Write-Host "Interface reconstruite. Rechargez la page avec Ctrl+F5. Aucune donnee metier n'a ete modifiee." -ForegroundColor Green
