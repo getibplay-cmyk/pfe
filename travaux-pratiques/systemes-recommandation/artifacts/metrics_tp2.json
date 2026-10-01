@@ -1,0 +1,234 @@
+{
+  "dataset": {
+    "ratings": 100000,
+    "users": 943,
+    "items": 1682,
+    "density_pct": 6.304669364224532
+  },
+  "nearest_user_to_user_1": {
+    "user_id": 916,
+    "cosine": 0.5492448210716248
+  },
+  "simple": [
+    {
+      "modèle": "User-based simple",
+      "MSE": 7.970089435577393,
+      "RMSE": 2.8231346825076185
+    },
+    {
+      "modèle": "Item-based simple",
+      "MSE": 10.061159133911133,
+      "RMSE": 3.1719330279675093
+    }
+  ],
+  "raw_curve_test": [
+    {
+      "k": 5,
+      "modèle": "User-based",
+      "jeu": "test",
+      "MSE": 3.1616432666778564
+    },
+    {
+      "k": 5,
+      "modèle": "Item-based",
+      "jeu": "test",
+      "MSE": 3.118013858795166
+    },
+    {
+      "k": 15,
+      "modèle": "User-based",
+      "jeu": "test",
+      "MSE": 1.794220209121704
+    },
+    {
+      "k": 15,
+      "modèle": "Item-based",
+      "jeu": "test",
+      "MSE": 1.8116950988769531
+    },
+    {
+      "k": 30,
+      "modèle": "User-based",
+      "jeu": "test",
+      "MSE": 1.386292815208435
+    },
+    {
+      "k": 30,
+      "modèle": "Item-based",
+      "jeu": "test",
+      "MSE": 1.438809871673584
+    },
+    {
+      "k": 50,
+      "modèle": "User-based",
+      "jeu": "test",
+      "MSE": 1.228825569152832
+    },
+    {
+      "k": 50,
+      "modèle": "Item-based",
+      "jeu": "test",
+      "MSE": 1.2473024129867554
+    },
+    {
+      "k": 100,
+      "modèle": "User-based",
+      "jeu": "test",
+      "MSE": 1.1240016222000122
+    },
+    {
+      "k": 100,
+      "modèle": "Item-based",
+      "jeu": "test",
+      "MSE": 1.0986462831497192
+    },
+    {
+      "k": 200,
+      "modèle": "User-based",
+      "jeu": "test",
+      "MSE": 1.0805132389068604
+    },
+    {
+      "k": 200,
+      "modèle": "Item-based",
+      "jeu": "test",
+      "MSE": 1.0615427494049072
+    }
+  ],
+  "centered_curve_test": [
+    {
+      "k": 5,
+      "modèle": "User-based centré",
+      "jeu": "test",
+      "MSE": 1.2249016761779785
+    },
+    {
+      "k": 5,
+      "modèle": "Item-based centré",
+      "jeu": "test",
+      "MSE": 1.1378897428512573
+    },
+    {
+      "k": 15,
+      "modèle": "User-based centré",
+      "jeu": "test",
+      "MSE": 1.1514606475830078
+    },
+    {
+      "k": 15,
+      "modèle": "Item-based centré",
+      "jeu": "test",
+      "MSE": 1.1099046468734741
+    },
+    {
+      "k": 30,
+      "modèle": "User-based centré",
+      "jeu": "test",
+      "MSE": 1.0651743412017822
+    },
+    {
+      "k": 30,
+      "modèle": "Item-based centré",
+      "jeu": "test",
+      "MSE": 1.0667105913162231
+    },
+    {
+      "k": 50,
+      "modèle": "User-based centré",
+      "jeu": "test",
+      "MSE": 1.0075491666793823
+    },
+    {
+      "k": 50,
+      "modèle": "Item-based centré",
+      "jeu": "test",
+      "MSE": 1.031059980392456
+    },
+    {
+      "k": 100,
+      "modèle": "User-based centré",
+      "jeu": "test",
+      "MSE": 0.9699206352233887
+    },
+    {
+      "k": 100,
+      "modèle": "Item-based centré",
+      "jeu": "test",
+      "MSE": 0.9896771311759949
+    },
+    {
+      "k": 200,
+      "modèle": "User-based centré",
+      "jeu": "test",
+      "MSE": 0.9481309652328491
+    },
+    {
+      "k": 200,
+      "modèle": "Item-based centré",
+      "jeu": "test",
+      "MSE": 0.941587507724762
+    }
+  ],
+  "best_raw": {
+    "k": 200,
+    "model": "Item-based",
+    "mse": 1.0615427494049072
+  },
+  "best_centered": {
+    "k": 200,
+    "model": "Item-based centré",
+    "mse": 0.941587507724762
+  },
+  "cosine_neighbors": {
+    "Toy Story": [
+      "Star Wars (1977)",
+      "Return of the Jedi (1983)",
+      "Independence Day (ID4) (1996)",
+      "Mission: Impossible (1996)",
+      "Raiders of the Lost Ark (1981)",
+      "Rock, The (1996)"
+    ],
+    "GoldenEye": [
+      "Under Siege (1992)",
+      "True Lies (1994)",
+      "Top Gun (1986)",
+      "Batman (1989)",
+      "Die Hard: With a Vengeance (1995)",
+      "Cliffhanger (1993)"
+    ],
+    "Muppet Treasure Island": [
+      "Naked Gun 33 1/3: The Final Insult (1994)",
+      "Aladdin (1992)",
+      "Sgt. Bilko (1996)",
+      "Hot Shots! Part Deux (1993)",
+      "Sound of Music, The (1965)",
+      "Stargate (1994)"
+    ]
+  },
+  "pearson_neighbors": {
+    "Toy Story": [
+      "Aladdin (1992)",
+      "Mission: Impossible (1996)",
+      "Star Wars (1977)",
+      "Independence Day (ID4) (1996)",
+      "Beauty and the Beast (1991)",
+      "Willy Wonka and the Chocolate Factory (1971)"
+    ],
+    "GoldenEye": [
+      "Under Siege (1992)",
+      "True Lies (1994)",
+      "Cliffhanger (1993)",
+      "Top Gun (1986)",
+      "Die Hard: With a Vengeance (1995)",
+      "Stargate (1994)"
+    ],
+    "Muppet Treasure Island": [
+      "Naked Gun 33 1/3: The Final Insult (1994)",
+      "Sgt. Bilko (1996)",
+      "Hot Shots! Part Deux (1993)",
+      "Robin Hood: Men in Tights (1993)",
+      "Lightning Jack (1994)",
+      "Addams Family Values (1993)"
+    ]
+  }
+}
