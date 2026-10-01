@@ -17,4 +17,4 @@ onnx==1.18.0
 onnxscript==0.6.2
 # Colab's IPython package declares Jedi but the base image omits it; pinning the
 # Python 3.13-compatible wheel keeps `pip check` a strict, useful gate.
-jedi==0.19.2
+jedi==0.20.0
