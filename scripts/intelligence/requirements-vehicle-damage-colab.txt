@@ -6,7 +6,7 @@
 # builds. These are the first compatible maintenance lines with CPython 3.13
 # wheels while preserving the NumPy 2.x / pandas 2.2 API used by the trainer.
 numpy==2.2.6
-pandas==2.2.3
+pandas==3.0.6
 scikit-learn==1.6.1
 Pillow==11.3.0
 matplotlib==3.10.3
